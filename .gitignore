@@ -1,0 +1,32 @@
+# 調査メモとレポートは Git に入れない (競合調査など。ローカルだけに置く)
+reports/
+research_notes/
+
+# .NET のビルド成果物
+bin/
+obj/
+artifacts/
+publish/
+*.user
+*.suo
+.vs/
+TestResults/
+*.binlog
+
+# MSIX の成果物
+AppPackages/
+BundleArtifacts/
+*.msix
+*.msixbundle
+*.appx
+*.appxbundle
+
+# 環境
+*.log
+.env
+.DS_Store
+Thumbs.db
+
+# Claude Code のローカル設定と worktree
+.claude/settings.local.json
+.claude/worktrees/
