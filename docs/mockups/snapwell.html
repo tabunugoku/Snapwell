@@ -1,0 +1,1941 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Snapwell モックアップ</title>
+<style>
+/* 色はトークンで定義する。暗い配色は OS の設定に合わせ、data-theme で上書きできる */
+:root {
+  --bg: #F7F6F3;
+  --surface: #FFFFFF;
+  --surface-2: #F9F9F8;
+  --border: #EAEAEA;
+  --border-strong: #DADAD7;
+  --text: #2F3437;
+  --muted: #787774;
+  --ink: #111111;
+  --ink-text: #FFFFFF;
+  --ink-hover: #333333;
+  --wall: #ECEAE5;
+  --wall-line: rgba(0, 0, 0, 0.035);
+  --taskbar: rgba(255, 255, 255, 0.82);
+  --dim: rgba(247, 246, 243, 0.55);
+  --cell: rgba(255, 255, 255, 0.55);
+  --cell-border: rgba(0, 0, 0, 0.08);
+  --blue-bg: #E1F3FE;
+  --blue-tx: #1F6C9F;
+  --blue-line: rgba(31, 108, 159, 0.55);
+  --red-bg: #FDEBEC;
+  --red-tx: #9F2F2D;
+  --green-bg: #EDF3EC;
+  --green-tx: #346538;
+  --yellow-bg: #FBF3DB;
+  --yellow-tx: #956400;
+  --skeleton: #EFEEEB;
+  --shadow-lift: 0, 0, 0;
+  --font-ui: 'Segoe UI Variable Text', 'Segoe UI Variable', 'Yu Gothic UI', 'Hiragino Sans', 'Helvetica Neue', sans-serif;
+  --font-display: 'Newsreader', 'Instrument Serif', 'Yu Mincho', 'Hiragino Mincho ProN', Georgia, serif;
+  --font-mono: 'Cascadia Mono', 'SF Mono', 'JetBrains Mono', Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #191918;
+    --surface: #202020;
+    --surface-2: #252524;
+    --border: rgba(255, 255, 255, 0.08);
+    --border-strong: rgba(255, 255, 255, 0.14);
+    --text: #E6E6E3;
+    --muted: #9B9A97;
+    --ink: #F2F2F0;
+    --ink-text: #111111;
+    --ink-hover: #D9D9D6;
+    --wall: #2A2A28;
+    --wall-line: rgba(255, 255, 255, 0.03);
+    --taskbar: rgba(32, 32, 32, 0.85);
+    --dim: rgba(25, 25, 24, 0.5);
+    --cell: rgba(255, 255, 255, 0.05);
+    --cell-border: rgba(255, 255, 255, 0.09);
+    --blue-bg: rgba(31, 108, 159, 0.28);
+    --blue-tx: #8CCBF2;
+    --blue-line: rgba(140, 203, 242, 0.6);
+    --red-bg: rgba(159, 47, 45, 0.28);
+    --red-tx: #F2A7A5;
+    --green-bg: rgba(52, 101, 56, 0.3);
+    --green-tx: #A6D1A9;
+    --yellow-bg: rgba(149, 100, 0, 0.28);
+    --yellow-tx: #E8C46A;
+    --skeleton: #2D2D2B;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #191918;
+  --surface: #202020;
+  --surface-2: #252524;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.14);
+  --text: #E6E6E3;
+  --muted: #9B9A97;
+  --ink: #F2F2F0;
+  --ink-text: #111111;
+  --ink-hover: #D9D9D6;
+  --wall: #2A2A28;
+  --wall-line: rgba(255, 255, 255, 0.03);
+  --taskbar: rgba(32, 32, 32, 0.85);
+  --dim: rgba(25, 25, 24, 0.5);
+  --cell: rgba(255, 255, 255, 0.05);
+  --cell-border: rgba(255, 255, 255, 0.09);
+  --blue-bg: rgba(31, 108, 159, 0.28);
+  --blue-tx: #8CCBF2;
+  --blue-line: rgba(140, 203, 242, 0.6);
+  --red-bg: rgba(159, 47, 45, 0.28);
+  --red-tx: #F2A7A5;
+  --green-bg: rgba(52, 101, 56, 0.3);
+  --green-tx: #A6D1A9;
+  --yellow-bg: rgba(149, 100, 0, 0.28);
+  --yellow-tx: #E8C46A;
+  --skeleton: #2D2D2B;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+html { overflow-y: scroll; }
+.tabs { scrollbar-width: none; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+button, input, select { font: inherit; color: inherit; }
+kbd {
+  display: inline-block;
+  min-width: 22px;
+  padding: 0 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  background: var(--surface-2);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 20px;
+  text-align: center;
+  color: var(--text);
+}
+.mono { font-family: var(--font-mono); }
+.muted { color: var(--muted); }
+
+/* ページの枠 */
+.page { max-width: 1240px; margin: 0 auto; padding: 56px 24px 96px; }
+.masthead { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 14px; }
+.brand h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 44px;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+}
+.brand p { margin: 4px 0 0; color: var(--muted); }
+.theme-toggle {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin: 40px 0 0;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+}
+.tabs a {
+  flex: none;
+  padding: 10px 14px;
+  color: var(--muted);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.tabs a .num { font-family: var(--font-mono); font-size: 11px; margin-right: 6px; }
+.tabs a[aria-current="page"] { color: var(--ink); border-bottom-color: var(--ink); }
+.screen { display: none; padding-top: 40px; }
+.screen.active { display: block; }
+.screen-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px; align-items: end; margin-bottom: 24px; }
+.screen-head h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 30px;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+.screen-head p { margin: 8px 0 0; max-width: 680px; color: var(--muted); }
+.ref { font-family: var(--font-mono); font-size: 12px; color: var(--muted); white-space: nowrap; }
+.tag {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 9999px;
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-weight: 600;
+  vertical-align: 1px;
+}
+.tag.blue { background: var(--blue-bg); color: var(--blue-tx); }
+.tag.red { background: var(--red-bg); color: var(--red-tx); }
+.tag.green { background: var(--green-bg); color: var(--green-tx); }
+.tag.yellow { background: var(--yellow-bg); color: var(--yellow-tx); }
+
+/* 2 列のレイアウト (デスクトップと操作パネル) */
+.stage { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 20px; align-items: start; }
+.panel {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  padding: 20px;
+}
+.panel h3 { margin: 0 0 12px; font-size: 13px; font-weight: 600; color: var(--ink); }
+.panel + .panel { margin-top: 12px; }
+.field { margin-bottom: 14px; }
+.field:last-child { margin-bottom: 0; }
+.field label, .field .label { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 6px; }
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; border: 1px solid var(--border); border-radius: 6px; padding: 2px; background: var(--surface-2); }
+.seg button { border: 0; background: transparent; border-radius: 4px; padding: 5px 8px; cursor: pointer; font-size: 12.5px; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--border); }
+select.input, input.input {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  padding: 6px 8px;
+}
+input[type="range"] { width: 100%; accent-color: var(--ink); }
+.range-row { display: grid; grid-template-columns: 1fr 52px; gap: 10px; align-items: center; }
+.range-row output { font-family: var(--font-mono); font-size: 12px; text-align: right; }
+.btn {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 6px;
+  padding: 7px 14px;
+  cursor: pointer;
+}
+.btn:hover { background: var(--surface-2); }
+.btn:active { transform: scale(0.98); }
+.btn.primary { background: var(--ink); color: var(--ink-text); border-color: var(--ink); }
+.btn.primary:hover { background: var(--ink-hover); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.readout { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 12.5px; }
+.readout dt { color: var(--muted); }
+.readout dd { margin: 0; font-family: var(--font-mono); text-align: right; color: var(--ink); }
+.hint { font-size: 12.5px; color: var(--muted); margin: 0; }
+.hint + .hint { margin-top: 6px; }
+
+/* 疑似デスクトップ */
+.monitor {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background-color: var(--wall);
+  background-image:
+    linear-gradient(var(--wall-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--wall-line) 1px, transparent 1px);
+  background-size: 48px 48px;
+  user-select: none;
+  touch-action: none;
+}
+.workarea { position: absolute; inset: 0 0 40px 0; }
+.taskbar {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 40px;
+  background: var(--taskbar);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  backdrop-filter: blur(12px);
+}
+.taskbar .tb-app { width: 26px; height: 26px; border-radius: 6px; background: var(--skeleton); }
+.taskbar .tb-app.start { background: var(--ink); opacity: 0.85; }
+.taskbar .tray { position: absolute; right: 10px; display: flex; align-items: center; gap: 10px; font-size: 11px; color: var(--muted); }
+.taskbar .clock { text-align: right; line-height: 1.2; font-family: var(--font-mono); font-size: 10.5px; }
+
+.win {
+  position: absolute;
+  left: 0; top: 0;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transform-origin: 50% 50%;
+}
+.win.active { border-color: var(--muted); }
+.win-title {
+  height: 30px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 0 0 10px;
+  font-size: 12px;
+  color: var(--text);
+  cursor: grab;
+}
+.win-title:active { cursor: grabbing; }
+.win-title .ico { width: 12px; height: 12px; border-radius: 3px; background: var(--ico, var(--muted)); flex: none; }
+.win-title .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.caps { display: flex; height: 100%; }
+.caps span { width: 34px; display: grid; place-items: center; color: var(--muted); }
+.caps svg { width: 10px; height: 10px; }
+.win-body { flex: 1; padding: 10px 12px; display: grid; gap: 7px; align-content: start; overflow: hidden; }
+.sk { height: 7px; border-radius: 4px; background: var(--skeleton); }
+.win.fixed .win-title::after {
+  content: 'サイズ固定';
+  font-size: 10px;
+  color: var(--yellow-tx);
+  background: var(--yellow-bg);
+  border-radius: 9999px;
+  padding: 0 7px;
+  margin-right: 6px;
+}
+
+.fx { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
+.fx .zone { fill: var(--blue-bg); stroke: var(--blue-line); stroke-width: 1.5; stroke-dasharray: 6 5; }
+.fx .path { stroke: var(--blue-line); stroke-width: 1.5; stroke-dasharray: 4 4; fill: none; }
+.fx .dot { fill: var(--blue-tx); }
+.fx .label { fill: var(--blue-tx); font-size: 12px; font-family: var(--font-mono); }
+
+/* ランチャー */
+.launcher { position: absolute; inset: 0; background: var(--dim); display: none; z-index: 1000; }
+.launcher.open { display: block; }
+.cell { position: absolute; background: var(--cell); border: 1px solid var(--cell-border); border-radius: 4px; }
+.cell.sel { background: var(--blue-bg); border-color: var(--blue-line); }
+.cell.cursor { box-shadow: inset 0 0 0 2px var(--blue-tx); }
+.sel-label {
+  position: absolute;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink);
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+}
+.lpanel {
+  position: absolute;
+  left: 50%;
+  top: 14px;
+  transform: translateX(-50%);
+  width: min(560px, calc(100% - 28px));
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: grid;
+  gap: 10px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.05);
+}
+.lpanel-top { display: flex; align-items: center; gap: 10px; font-size: 12.5px; }
+.lpanel-top .target { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lpanel-top select { width: auto; padding: 3px 6px; font-size: 12px; }
+.presets { display: flex; flex-wrap: wrap; gap: 6px; }
+.preset {
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  border-radius: 6px;
+  padding: 4px 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 12px;
+}
+.preset:disabled { opacity: 0.4; cursor: not-allowed; }
+.preset svg { width: 18px; height: 12px; }
+.preset svg rect.bg { fill: none; stroke: var(--muted); stroke-width: 1; }
+.preset svg rect.on { fill: var(--muted); }
+.lpanel-keys { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 11.5px; color: var(--muted); }
+.hold-ring { position: absolute; width: 34px; height: 34px; margin: -17px 0 0 -17px; pointer-events: none; display: none; z-index: 1001; }
+.hold-ring.on { display: block; }
+.hold-ring circle { fill: none; stroke: var(--blue-tx); stroke-width: 3; stroke-dasharray: 94.25; stroke-dashoffset: 94.25; transform: rotate(-90deg); transform-origin: 50% 50%; }
+.hold-ring.on circle { animation: hold var(--hold, 450ms) linear forwards; }
+@keyframes hold { to { stroke-dashoffset: 0; } }
+
+/* 設定画面 (Windows 11 の設定アプリに近い構成) */
+.app-frame { border: 1px solid var(--border); border-radius: 12px; background: var(--surface); overflow: hidden; }
+.app-chrome { height: 36px; display: flex; align-items: center; padding-left: 14px; gap: 10px; font-size: 12px; border-bottom: 1px solid var(--border); }
+.app-chrome .name { flex: 1; }
+.app-chrome .caps span { width: 44px; }
+.settings { display: grid; grid-template-columns: 232px minmax(0, 1fr); min-height: 640px; }
+.snav { background: var(--surface-2); border-right: 1px solid var(--border); padding: 14px 10px; }
+.snav button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  background: transparent;
+  border-radius: 6px;
+  padding: 7px 10px;
+  text-align: left;
+  cursor: pointer;
+  color: var(--text);
+  position: relative;
+}
+.snav button:hover { background: var(--surface); }
+.snav button[aria-current="true"] { background: var(--surface); box-shadow: 0 0 0 1px var(--border); }
+.snav button[aria-current="true"]::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 9px; bottom: 9px;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--ink);
+}
+.snav svg { width: 16px; height: 16px; flex: none; color: var(--muted); }
+.spage { padding: 28px 32px 40px; display: none; }
+.spage.active { display: block; }
+.spage h3 {
+  margin: 0 0 4px;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 26px;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+.spage > p.lead { margin: 0 0 20px; color: var(--muted); }
+.group-title { margin: 22px 0 8px; font-size: 12.5px; font-weight: 600; color: var(--ink); }
+.rows { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: center; padding: 12px 16px; background: var(--surface); }
+.row + .row { border-top: 1px solid var(--border); }
+.row .t { color: var(--ink); }
+.row .d { font-size: 12.5px; color: var(--muted); }
+.row .ctl { display: flex; align-items: center; gap: 8px; }
+.switch { position: relative; width: 40px; height: 20px; flex: none; }
+.switch input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.switch span { position: absolute; inset: 0; border-radius: 9999px; border: 1px solid var(--muted); background: transparent; pointer-events: none; }
+.switch span::after { content: ''; position: absolute; width: 12px; height: 12px; left: 3px; top: 3px; border-radius: 50%; background: var(--muted); }
+.switch input:checked + span { background: var(--ink); border-color: var(--ink); }
+.switch input:checked + span::after { left: 23px; background: var(--ink-text); }
+.switch input:focus-visible + span { outline: 2px solid var(--blue-tx); outline-offset: 2px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { border: 1px solid var(--border); background: var(--surface); border-radius: 6px; padding: 5px 12px; cursor: pointer; font-size: 13px; }
+.chip[aria-pressed="true"] { border-color: var(--ink); color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.grid-preview-wrap { display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: 20px; align-items: start; margin-top: 12px; }
+.grid-preview { position: relative; aspect-ratio: 16 / 9; border: 1px solid var(--border); border-radius: 8px; background: var(--wall); overflow: hidden; }
+.grid-preview .gcell { position: absolute; border: 1px dashed var(--cell-border); border-radius: 2px; }
+.grid-preview .gwin { position: absolute; background: var(--surface); border: 1px solid var(--border-strong); border-radius: 4px; display: grid; place-items: center; font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
+.formula { font-family: var(--font-mono); font-size: 12px; line-height: 1.7; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; color: var(--text); }
+table.list { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.list th { text-align: left; font-weight: 500; color: var(--muted); font-size: 12px; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+table.list td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+table.list tr:last-child td { border-bottom: 0; }
+.feel-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.feel-card { border: 1px solid var(--border); border-radius: 8px; padding: 12px; background: var(--surface); cursor: pointer; text-align: left; }
+.feel-card[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.feel-card .fname { font-weight: 600; color: var(--ink); font-size: 13px; }
+.feel-card .fwords { font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
+.feel-card svg { width: 100%; height: 54px; margin-top: 8px; }
+.feel-card svg path.c { fill: none; stroke: var(--ink); stroke-width: 1.5; }
+.feel-card svg line { stroke: var(--border-strong); stroke-dasharray: 3 3; }
+.corner-demo { display: flex; gap: 16px; flex-wrap: wrap; }
+.corner-demo .cd { width: 150px; height: 96px; border: 1px solid var(--border-strong); background: var(--surface); display: grid; place-items: center; font-size: 12px; color: var(--muted); }
+
+/* トレイメニュー */
+.tray-stage { position: relative; height: 560px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background-color: var(--wall); background-image: linear-gradient(var(--wall-line) 1px, transparent 1px), linear-gradient(90deg, var(--wall-line) 1px, transparent 1px); background-size: 48px 48px; }
+.tray-menu {
+  position: absolute;
+  right: 12px;
+  bottom: 52px;
+  width: 320px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.05);
+}
+.tm-head { display: flex; align-items: center; gap: 10px; padding: 10px 10px 12px; border-bottom: 1px solid var(--border); margin-bottom: 4px; }
+.tm-head .n { flex: 1; font-weight: 600; color: var(--ink); }
+.tm-item { display: flex; align-items: center; gap: 10px; width: 100%; border: 0; background: transparent; padding: 7px 10px; border-radius: 4px; text-align: left; cursor: pointer; color: var(--text); }
+.tm-item:hover { background: var(--surface-2); }
+.tm-item .grow { flex: 1; }
+.tm-item .check { width: 14px; color: var(--ink); }
+.tm-sep { height: 1px; background: var(--border); margin: 4px 6px; }
+.tm-sub { font-size: 11.5px; color: var(--muted); padding: 6px 10px 2px; }
+.tray-ico { width: 20px; height: 20px; border-radius: 4px; display: grid; place-items: center; outline: 1px solid var(--blue-line); outline-offset: 3px; }
+
+/* 初回セットアップ */
+.wizard { max-width: 760px; margin: 0 auto; }
+.steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 0 0 16px; }
+.steps div { border-top: 2px solid var(--border); padding-top: 8px; font-size: 12px; color: var(--muted); }
+.steps div.done { border-top-color: var(--muted); }
+.steps div.now { border-top-color: var(--ink); color: var(--ink); }
+.wstep { display: none; }
+.wstep.active { display: block; }
+.wbody { padding: 28px 32px; }
+.wbody h3 { margin: 0 0 6px; font-family: var(--font-display); font-weight: 500; font-size: 28px; letter-spacing: -0.02em; color: var(--ink); line-height: 1.15; }
+.wbody > p { margin: 0 0 18px; color: var(--muted); }
+.wfoot { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-top: 1px solid var(--border); background: var(--surface-2); }
+.consent { display: flex; gap: 10px; align-items: flex-start; margin-top: 16px; font-size: 13px; }
+.consent input { margin-top: 4px; accent-color: var(--ink); }
+.plan-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.plan-card { border: 1px solid var(--border); border-radius: 8px; padding: 12px; background: var(--surface); cursor: pointer; text-align: left; }
+.plan-card[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.plan-card .mini { position: relative; aspect-ratio: 16 / 9; background: var(--wall); border-radius: 4px; margin-bottom: 8px; overflow: hidden; }
+.plan-card .mini i { position: absolute; border: 1px solid var(--cell-border); }
+.plan-card b { color: var(--ink); font-weight: 600; }
+.plan-card span { display: block; font-size: 12px; color: var(--muted); }
+
+.notes { margin-top: 20px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.note { border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; background: var(--surface); font-size: 13px; }
+.note b { display: block; color: var(--ink); margin-bottom: 4px; font-weight: 600; }
+.note p { margin: 0; color: var(--muted); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .screen.active { animation: enter 600ms cubic-bezier(0.16, 1, 0.3, 1); }
+  @keyframes enter { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+}
+@media (max-width: 960px) {
+  .stage { grid-template-columns: 1fr; }
+  .settings { grid-template-columns: 1fr; }
+  .snav { display: flex; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--border); gap: 4px; }
+  .snav button { width: auto; flex: none; white-space: nowrap; }
+  .snav button[aria-current="true"]::before { display: none; }
+  .grid-preview-wrap { grid-template-columns: 1fr; }
+  .feel-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .notes { grid-template-columns: 1fr; }
+  .screen-head { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+  .page { padding: 32px 16px 64px; }
+  .brand h1 { font-size: 34px; }
+  .spage { padding: 20px 16px 32px; }
+  .row { grid-template-columns: 1fr; }
+  .plan-cards { grid-template-columns: 1fr; }
+  .steps { grid-template-columns: repeat(2, 1fr); }
+  .wbody { padding: 20px 16px; }
+  .monitor { aspect-ratio: 4 / 5; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="masthead">
+    <div class="brand">
+      <svg width="44" height="44" viewBox="0 0 44 44" aria-hidden="true">
+        <rect x="1.5" y="1.5" width="41" height="41" rx="9" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--ink)"/>
+        <rect x="23" y="7" width="14" height="14" rx="3" style="fill: var(--ink)"/>
+        <path d="M8 34 C 14 34, 18 26, 26 18" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="3 3" style="color: var(--muted)"/>
+      </svg>
+      <div>
+        <h1>Snapwell</h1>
+        <p>モックアップ v0.1 · 基本設計 <span class="mono">docs/DESIGN.md</span> に対応</p>
+      </div>
+    </div>
+    <button class="theme-toggle" id="themeToggle" type="button">配色: OS に合わせる</button>
+  </header>
+
+  <nav class="tabs" aria-label="画面">
+    <a href="#snap"><span class="num">01</span>スナップ</a>
+    <a href="#launcher"><span class="num">02</span>ランチャー</a>
+    <a href="#settings"><span class="num">03</span>設定</a>
+    <a href="#tray"><span class="num">04</span>トレイメニュー</a>
+    <a href="#setup"><span class="num">05</span>初回セットアップ</a>
+  </nav>
+
+  <!-- 01 スナップ -->
+  <section class="screen" id="screen-snap">
+    <div class="screen-head">
+      <div>
+        <h2>投げたウィンドウが区画に吸い込まれる</h2>
+        <p>タイトルバーをつかんで投げてください。離した瞬間の速度から止まる位置を予測し、いちばん近い区画へばねで運びます。点線が予測、青い枠が吸着先です。ゆっくり離すと通常の移動になります。</p>
+      </div>
+      <span class="ref">DESIGN §5</span>
+    </div>
+    <div class="stage">
+      <div class="monitor" id="snapMonitor">
+        <div class="workarea" id="snapArea">
+          <svg class="fx" id="snapFx"></svg>
+        </div>
+        <div class="taskbar">
+          <i class="tb-app start"></i><i class="tb-app"></i><i class="tb-app"></i><i class="tb-app"></i>
+          <div class="tray"><span class="clock">10:24<br>2026/10/17</span></div>
+        </div>
+      </div>
+      <div>
+        <div class="panel">
+          <h3>吸着先</h3>
+          <div class="field">
+            <div class="seg" id="snapMode">
+              <button type="button" data-v="zones" aria-pressed="true">区画に合わせる</button>
+              <button type="button" data-v="corners" aria-pressed="false">四隅（サイズ維持）</button>
+            </div>
+          </div>
+          <div class="field">
+            <label for="snapGap">間隔（ウィンドウ同士・画面端）</label>
+            <div class="range-row"><input type="range" id="snapGap" min="0" max="24" step="1" value="8"><output id="snapGapOut">8 px</output></div>
+          </div>
+          <div class="field">
+            <span class="label">サイズの変わり方</span>
+            <div class="seg" id="sizeMode">
+              <button type="button" data-v="land" aria-pressed="true">着地時に適用</button>
+              <button type="button" data-v="smooth" aria-pressed="false">なめらか</button>
+            </div>
+            <p class="hint" style="margin-top: 6px">「なめらか」は代理描画（DESIGN §5.4 B）。移動中に浮き上がって見えます。<span class="tag yellow">要検証</span></p>
+          </div>
+        </div>
+        <div class="panel">
+          <h3>操作感</h3>
+          <div class="field">
+            <select class="input" id="snapFeel"></select>
+          </div>
+          <dl class="readout" id="snapParams"></dl>
+          <div style="display: flex; gap: 8px; margin-top: 14px">
+            <button class="btn" type="button" id="flingBtn">対角へフリック</button>
+            <button class="btn" type="button" id="resetBtn">元に戻す</button>
+          </div>
+        </div>
+        <div class="panel">
+          <h3>直前の投げ</h3>
+          <dl class="readout" id="snapReadout">
+            <dt>離した速度</dt><dd>—</dd>
+            <dt>予測点</dt><dd>—</dd>
+            <dt>吸着先</dt><dd>—</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+    <div class="notes">
+      <div class="note"><b>時間ではなく物理</b><p>動きは質量 m・剛性 k・減衰 c だけで決まり、継続時間は指定しません。k = m(2πf)²、c = 2ζ√(km)。</p></div>
+      <div class="note"><b>壁は越えない</b><p>作業領域から余白を引いた範囲が壁です。勢いが余っても画面外へはみ出してから戻る描画はしません。</p></div>
+      <div class="note"><b>サイズ固定のウィンドウ</b><p>右下の「設定」ウィンドウはサイズを変えられません。区画の中で投げた方向の角に寄せ、位置だけを合わせます。</p></div>
+    </div>
+  </section>
+
+  <!-- 02 ランチャー -->
+  <section class="screen" id="screen-launcher">
+    <div class="screen-head">
+      <div>
+        <h2>区画をなぞって配置する</h2>
+        <p>グリッドをドラッグして範囲を選び、<kbd>Enter</kbd> で配置します。<kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Space</kbd> で開くほか、ウィンドウのタイトルバーを長押ししても開きます（下のボタンでも開けます）。</p>
+      </div>
+      <span class="ref">DESIGN §6, §9.2, §9.3</span>
+    </div>
+    <div class="stage">
+      <div class="monitor" id="lMonitor">
+        <div class="workarea" id="lArea">
+          <div class="launcher" id="launcher" tabindex="-1" aria-label="ランチャー">
+            <div id="lCells"></div>
+            <div class="sel-label" id="lSelLabel" hidden></div>
+            <div class="lpanel">
+              <div class="lpanel-top">
+                <span class="tag blue">対象</span>
+                <span class="target" id="lTarget">ドキュメント — 週次レポート</span>
+                <select class="input" id="lPlan" aria-label="分割案">
+                  <option value="8x8">8 × 8</option>
+                  <option value="12x6">12 × 6</option>
+                  <option value="6x4">6 × 4</option>
+                </select>
+              </div>
+              <div class="presets" id="lPresets"></div>
+              <div class="lpanel-keys">
+                <span><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> 移動</span>
+                <span><kbd>Shift</kbd> + 矢印 範囲</span>
+                <span><kbd>Enter</kbd> 配置</span>
+                <span><kbd>Esc</kbd> 閉じる</span>
+              </div>
+            </div>
+          </div>
+          <svg class="hold-ring" id="holdRing" viewBox="0 0 34 34"><circle cx="17" cy="17" r="15"/></svg>
+        </div>
+        <div class="taskbar">
+          <i class="tb-app start"></i><i class="tb-app"></i><i class="tb-app"></i>
+          <div class="tray"><span class="clock">10:24<br>2026/10/17</span></div>
+        </div>
+      </div>
+      <div>
+        <div class="panel">
+          <h3>呼び出し</h3>
+          <p class="hint">ホットキー <kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Space</kbd></p>
+          <p class="hint">タイトルバーを <span class="mono" id="holdMsLabel">450 ms</span> 長押し（6 px 以上動くと通常のドラッグ）</p>
+          <div style="margin-top: 12px"><button class="btn primary" type="button" id="lOpen">ランチャーを開く</button></div>
+        </div>
+        <div class="panel">
+          <h3>選択中</h3>
+          <dl class="readout" id="lReadout">
+            <dt>区画</dt><dd>—</dd>
+            <dt>基本単位の倍率</dt><dd>—</dd>
+            <dt>サイズ</dt><dd>—</dd>
+          </dl>
+          <p class="hint" style="margin-top: 10px">サイズは基本単位（1 区画）の整数倍です。8 × 8 では 1/3 を作れないため、そのプリセットは選べません。</p>
+        </div>
+        <div class="panel">
+          <h3>間隔</h3>
+          <div class="range-row"><input type="range" id="lGap" min="0" max="24" step="1" value="8" aria-label="間隔"><output id="lGapOut">8 px</output></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 03 設定 -->
+  <section class="screen" id="screen-settings">
+    <div class="screen-head">
+      <div>
+        <h2>設定は GUI で完結する</h2>
+        <p>設定ファイルを書かずに、すべての項目を変えられます。左の一覧から各ページを開けます。</p>
+      </div>
+      <span class="ref">DESIGN §6–§13</span>
+    </div>
+    <div class="app-frame">
+      <div class="app-chrome">
+        <span class="name">Snapwell の設定</span>
+        <div class="caps" aria-hidden="true">
+          <span><svg viewBox="0 0 10 10"><path d="M1 5h8" stroke="currentColor"/></svg></span>
+          <span><svg viewBox="0 0 10 10"><rect x="1.5" y="1.5" width="7" height="7" fill="none" stroke="currentColor"/></svg></span>
+          <span><svg viewBox="0 0 10 10"><path d="M1.5 1.5l7 7M8.5 1.5l-7 7" stroke="currentColor"/></svg></span>
+        </div>
+      </div>
+      <div class="settings">
+        <nav class="snav" id="snav"></nav>
+        <div>
+          <!-- 一般 -->
+          <div class="spage" data-page="general">
+            <h3>一般</h3>
+            <p class="lead">起動と動作の基本です。</p>
+            <div class="rows">
+              <div class="row"><div><div class="t">Snapwell を有効にする</div><div class="d">オフにすると、標準のスナップ機能を元の状態に戻します</div></div><div class="ctl"><label class="switch"><input type="checkbox" checked aria-label="有効"><span></span></label></div></div>
+              <div class="row"><div><div class="t">サインイン時に起動する</div><div class="d">スタートアップに登録します</div></div><div class="ctl"><label class="switch"><input type="checkbox" checked aria-label="自動起動"><span></span></label></div></div>
+              <div class="row"><div><div class="t">管理者として起動する</div><div class="d">管理者権限で動くアプリのウィンドウも動かせます。タスク スケジューラに登録します</div></div><div class="ctl"><label class="switch"><input type="checkbox" aria-label="管理者として起動"><span></span></label></div></div>
+              <div class="row"><div><div class="t">言語</div></div><div class="ctl"><select class="input" style="width: 160px"><option>日本語</option><option>English</option></select></div></div>
+            </div>
+            <div class="group-title">対象のウィンドウ</div>
+            <div class="rows">
+              <div class="row"><div><div class="t">サイズ固定のウィンドウも動かす</div><div class="d">サイズは変えず、区画の中で位置だけを合わせます</div></div><div class="ctl"><label class="switch"><input type="checkbox" checked aria-label="サイズ固定"><span></span></label></div></div>
+              <div class="row"><div><div class="t">ポップアップとフライアウトも動かす</div><div class="d">タスクバーから開く小さなウィンドウなど。フォーカスを奪わずに移動します</div></div><div class="ctl"><label class="switch"><input type="checkbox" checked aria-label="ポップアップ"><span></span></label></div></div>
+            </div>
+          </div>
+
+          <!-- 分割と間隔 -->
+          <div class="spage" data-page="grid">
+            <h3>分割と間隔</h3>
+            <p class="lead">モニターごとに分割案を決めます。1 区画が基本単位で、ウィンドウのサイズはその整数倍になります。</p>
+            <div class="rows">
+              <div class="row"><div><div class="t">モニター</div></div><div class="ctl"><select class="input" style="width: 260px"><option>1 · 2560 × 1440 · 150%（メイン）</option><option>2 · 1920 × 1080 · 100%</option></select></div></div>
+            </div>
+            <div class="group-title">分割案</div>
+            <div class="chips" id="gPlans"></div>
+            <div class="grid-preview-wrap">
+              <div class="grid-preview" id="gPreview"></div>
+              <div>
+                <div class="field">
+                  <label for="gGap">ウィンドウの間隔</label>
+                  <div class="range-row"><input type="range" id="gGap" min="0" max="32" value="8"><output id="gGapOut">8 px</output></div>
+                </div>
+                <div class="field">
+                  <label for="gEdge">画面端の余白</label>
+                  <div class="range-row"><input type="range" id="gEdge" min="0" max="32" value="8" disabled><output id="gEdgeOut">8 px</output></div>
+                  <label style="display: flex; gap: 8px; align-items: center; margin-top: 6px; color: var(--text)"><input type="checkbox" id="gLink" checked style="accent-color: var(--ink)"> 間隔と同じにする</label>
+                </div>
+                <div class="formula" id="gFormula"></div>
+              </div>
+            </div>
+            <div class="group-title">区画単位のサイズ変更</div>
+            <div class="rows">
+              <div class="row"><div><div class="t">1 回の拡大・縮小の幅</div></div><div class="ctl"><select class="input" style="width: 160px"><option>1 区画</option><option>2 区画</option></select></div></div>
+              <div class="row"><div><div class="t">固定する位置</div><div class="d">拡大・縮小するときに動かさない辺</div></div><div class="ctl"><select class="input" style="width: 160px"><option>左上</option><option>中心</option><option>近い辺</option></select></div></div>
+              <div class="row"><div><div class="t">手動でリサイズしたら区画に揃える</div></div><div class="ctl"><label class="switch"><input type="checkbox" aria-label="区画に揃える"><span></span></label></div></div>
+            </div>
+            <p class="hint" style="margin-top: 10px">見た目の枠（DWMWA_EXTENDED_FRAME_BOUNDS）で計算するため、間隔 0 でも隙間はできません。</p>
+          </div>
+
+          <!-- ホットキー -->
+          <div class="spage" data-page="keys">
+            <h3>ホットキー</h3>
+            <p class="lead">クリックして新しいキーを押すと変更できます。ほかのアプリと重なるキーには印が付きます。</p>
+            <div class="rows" style="padding: 0">
+              <table class="list">
+                <thead><tr><th>操作</th><th>キー</th><th></th></tr></thead>
+                <tbody>
+                  <tr><td>ランチャーを開く</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Space</kbd></td><td></td></tr>
+                  <tr><td>左・右・上・下の半分</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd></td><td></td></tr>
+                  <tr><td>四分割</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>U</kbd><kbd>I</kbd><kbd>J</kbd><kbd>K</kbd></td><td></td></tr>
+                  <tr><td>1 区画ずつ拡大・縮小</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Shift</kbd> + 矢印</td><td></td></tr>
+                  <tr><td>区画単位で移動</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Win</kbd> + 矢印</td><td><span class="tag red">重複</span></td></tr>
+                  <tr><td>現在のモニターを整列</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>A</kbd></td><td></td></tr>
+                  <tr><td>隣のモニターへ投げる</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>PgUp</kbd><kbd>PgDn</kbd></td><td></td></tr>
+                  <tr><td>一時的に無効化</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Pause</kbd></td><td></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="hint" style="margin-top: 10px"><span class="tag red">重複</span> サンプルの表示です。ほかのアプリが同じキーを登録しているときに出ます。</p>
+            <div class="group-title">Windows のキー</div>
+            <div class="rows">
+              <div class="row"><div><div class="t"><kbd>Win</kbd> + 矢印 を Snapwell で使う</div><div class="d">標準のスナップを止めているときだけ使えます（「標準機能」のページ）</div></div><div class="ctl"><label class="switch"><input type="checkbox" checked aria-label="Win 矢印"><span></span></label></div></div>
+            </div>
+          </div>
+
+          <!-- 操作感 -->
+          <div class="spage" data-page="feel">
+            <h3>操作感</h3>
+            <p class="lead">投げたときの動き方です。言葉で選ぶと、質量・振動数・減衰比が決まります。曲線は手を離してから止まるまでの位置です。</p>
+            <div class="feel-cards" id="feelCards"></div>
+            <div class="group-title">詳細</div>
+            <div class="rows" id="feelAdvanced"></div>
+            <div class="group-title">アクセシビリティ</div>
+            <div class="rows">
+              <div class="row"><div><div class="t">動きを減らす</div><div class="d">オンにすると、アニメーションせずに吸着先へすぐ移動します。Windows の「アニメーション効果」がオフのときも同じです</div></div><div class="ctl"><label class="switch"><input type="checkbox" aria-label="動きを減らす"><span></span></label></div></div>
+            </div>
+          </div>
+
+          <!-- アプリのルール -->
+          <div class="spage" data-page="rules">
+            <h3>アプリごとのルール</h3>
+            <p class="lead">特定のアプリを対象から外したり、位置だけを動かすようにしたりできます。</p>
+            <div class="rows" style="padding: 0">
+              <table class="list">
+                <thead><tr><th>条件</th><th>種類</th><th>扱い</th></tr></thead>
+                <tbody>
+                  <tr><td class="mono">game-launcher.exe</td><td>プロセス名</td><td><span class="tag red">対象外</span></td></tr>
+                  <tr><td class="mono">^ピクチャー イン ピクチャー$</td><td>タイトル（正規表現）</td><td><span class="tag yellow">位置だけ</span></td></tr>
+                  <tr><td class="mono">Chrome_WidgetWin_1</td><td>ウィンドウ クラス</td><td><span class="tag blue">長押しの範囲を上端 40 px に</span></td></tr>
+                  <tr><td class="mono">Shell_TrayWnd</td><td>ウィンドウ クラス</td><td><span class="tag red">対象外（既定）</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div style="margin-top: 12px; display: flex; gap: 8px"><button class="btn" type="button">ルールを追加</button><button class="btn" type="button">ウィンドウを選んで追加</button></div>
+          </div>
+
+          <!-- 標準機能 -->
+          <div class="spage" data-page="os">
+            <h3>Windows の標準機能</h3>
+            <p class="lead">Snapwell が有効な間だけ、次の機能を止めます。止める前の値を保存しておき、無効にしたとき・終了したとき・異常終了のあとに起動したときに戻します。</p>
+            <div class="rows">
+              <div class="row"><div><div class="t">ドラッグでのスナップ</div><div class="d mono">SPI_SETWINARRANGING</div></div><div class="ctl"><span class="tag green">停止中</span><label class="switch"><input type="checkbox" checked aria-label="ドラッグでのスナップ"><span></span></label></div></div>
+              <div class="row"><div><div class="t">スナップ レイアウト（最大化ボタンのメニュー）</div><div class="d">レジストリの値 · Windows のビルドで差があります</div></div><div class="ctl"><span class="tag yellow">要検証</span><label class="switch"><input type="checkbox" checked aria-label="スナップ レイアウト"><span></span></label></div></div>
+              <div class="row"><div><div class="t">画面上端のスナップ バー</div><div class="d">24H2 以降</div></div><div class="ctl"><span class="tag yellow">要検証</span><label class="switch"><input type="checkbox" checked aria-label="スナップ バー"><span></span></label></div></div>
+              <div class="row"><div><div class="t"><kbd>Win</kbd> + 矢印</div><div class="d">Snapwell の操作に置き換えます</div></div><div class="ctl"><span class="tag green">置き換え中</span><label class="switch"><input type="checkbox" checked aria-label="Win 矢印"><span></span></label></div></div>
+            </div>
+            <div style="margin-top: 12px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap"><button class="btn" type="button">標準の動作に戻す</button><span class="hint">保存した値: 2026/10/17 09:58（すべて「オン」）</span></div>
+          </div>
+
+          <!-- 同期 -->
+          <div class="spage" data-page="sync">
+            <h3>同期とバックアップ</h3>
+            <p class="lead">ホットキー・分割案・間隔・操作感・ルールを、ほかの PC と共有できます。モニター構成ごとの配置は、この PC にだけ保存します。</p>
+            <div class="rows">
+              <div class="row"><div><div class="t">同期フォルダ</div><div class="d mono">C:\Users\&lt;ユーザー&gt;\OneDrive\Snapwell</div></div><div class="ctl"><button class="btn" type="button">変更</button><label class="switch"><input type="checkbox" checked aria-label="同期"><span></span></label></div></div>
+              <div class="row"><div><div class="t">最後に同期した時刻</div><div class="d">2026/10/17 10:12 · 変更なし</div></div><div class="ctl"><button class="btn" type="button">今すぐ同期</button></div></div>
+            </div>
+            <div class="group-title">ファイル</div>
+            <div class="rows">
+              <div class="row"><div><div class="t">書き出す</div><div class="d">設定を 1 つの JSON ファイルに保存します</div></div><div class="ctl"><button class="btn" type="button">書き出す</button></div></div>
+              <div class="row"><div><div class="t">取り込む</div><div class="d">取り込む前に、今の設定との違いを表示します。全部を置き換えるか、一部だけ取り込むかを選べます</div></div><div class="ctl"><button class="btn" type="button">取り込む</button></div></div>
+            </div>
+          </div>
+
+          <!-- 外観 -->
+          <div class="spage" data-page="look">
+            <h3>外観</h3>
+            <p class="lead">ウィンドウの角の形と、Snapwell のオーバーレイの見た目です。</p>
+            <div class="rows">
+              <div class="row"><div><div class="t">ウィンドウの角</div><div class="d">DWM の角の設定を使います。半径は Windows が決めます（約 8 px）</div></div><div class="ctl"><select class="input" style="width: 200px" id="cornerSel"><option value="8">角丸を強制する</option><option value="4">小さい角丸</option><option value="0">角丸なし</option><option value="win">Windows の既定</option></select></div></div>
+              <div class="row"><div><div class="t">大きな角丸（macOS 風）</div><div class="d">半径を自由に決める方法を検証しています</div></div><div class="ctl"><span class="tag yellow">要検証</span><label class="switch"><input type="checkbox" disabled aria-label="大きな角丸"><span></span></label></div></div>
+            </div>
+            <div class="group-title">プレビュー</div>
+            <div class="corner-demo"><div class="cd" id="cornerDemo">角丸を強制する</div><div class="cd" style="border-radius: 12px; opacity: 0.55">大きな角丸（参考）</div></div>
+            <div class="group-title">オーバーレイ</div>
+            <div class="rows">
+              <div class="row"><div><div class="t">区画の線を表示する</div></div><div class="ctl"><label class="switch"><input type="checkbox" checked aria-label="区画の線"><span></span></label></div></div>
+              <div class="row"><div><div class="t">投げたときに予測の線を表示する</div><div class="d">慣れたら消せます</div></div><div class="ctl"><label class="switch"><input type="checkbox" checked aria-label="予測の線"><span></span></label></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 04 トレイメニュー -->
+  <section class="screen" id="screen-tray">
+    <div class="screen-head">
+      <div>
+        <h2>トレイからすぐ切り替える</h2>
+        <p>通知領域のアイコンをクリックすると開きます。有効・無効、配置のプロファイル、よく使う操作をここで選べます。</p>
+      </div>
+      <span class="ref">DESIGN §9, §10.3</span>
+    </div>
+    <div class="tray-stage">
+      <div class="tray-menu" role="menu" aria-label="Snapwell">
+        <div class="tm-head">
+          <svg width="22" height="22" viewBox="0 0 44 44" aria-hidden="true"><rect x="2" y="2" width="40" height="40" rx="9" fill="none" stroke="currentColor" stroke-width="3" style="color: var(--ink)"/><rect x="23" y="7" width="14" height="14" rx="3" style="fill: var(--ink)"/></svg>
+          <span class="n">Snapwell</span>
+          <span class="tag green" id="trayState">有効</span>
+          <label class="switch"><input type="checkbox" id="trayToggle" checked aria-label="有効"><span></span></label>
+        </div>
+        <div class="tm-sub">モニター構成: ドック接続 · 3 画面</div>
+        <div class="tm-sub">プロファイル</div>
+        <div id="trayProfiles"></div>
+        <div class="tm-sep"></div>
+        <button class="tm-item" type="button" role="menuitem"><span class="check"></span><span class="grow">現在のモニターを整列</span><span><kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>A</kbd></span></button>
+        <button class="tm-item" type="button" role="menuitem"><span class="check"></span><span class="grow">ランチャーを開く</span><span><kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>Space</kbd></span></button>
+        <button class="tm-item" type="button" role="menuitem"><span class="check"></span><span class="grow">一時的に無効化</span><span><kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>Pause</kbd></span></button>
+        <div class="tm-sep"></div>
+        <button class="tm-item" type="button" role="menuitem"><span class="check"></span><span class="grow">設定を開く</span></button>
+        <button class="tm-item" type="button" role="menuitem"><span class="check"></span><span class="grow">終了（標準の動作に戻す）</span></button>
+      </div>
+      <div class="taskbar">
+        <i class="tb-app start"></i><i class="tb-app"></i><i class="tb-app"></i><i class="tb-app"></i>
+        <div class="tray">
+          <span class="tray-ico"><svg width="16" height="16" viewBox="0 0 44 44"><rect x="3" y="3" width="38" height="38" rx="9" fill="none" stroke="currentColor" stroke-width="4" style="color: var(--ink)"/><rect x="23" y="7" width="14" height="14" rx="3" style="fill: var(--ink)"/></svg></span>
+          <span class="clock">10:24<br>2026/10/17</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 05 初回セットアップ -->
+  <section class="screen" id="screen-setup">
+    <div class="screen-head">
+      <div>
+        <h2>最初の 1 分で使える状態にする</h2>
+        <p>初めて起動したときに表示します。OS の設定を変える前に、変える内容を示して同意を得ます。</p>
+      </div>
+      <span class="ref">DESIGN §8, §9.1, §6</span>
+    </div>
+    <div class="wizard">
+      <div class="steps" id="wSteps"><div>ようこそ</div><div>標準機能</div><div>ホットキー</div><div>分割案</div></div>
+      <div class="app-frame">
+        <div class="wstep" data-step="0"><div class="wbody">
+          <h3>Snapwell へようこそ</h3>
+          <p>ウィンドウを投げると、近い区画に吸い込まれて止まります。ホットキーとランチャーでも配置できます。</p>
+          <div class="rows">
+            <div class="row"><div><div class="t">投げて配置</div><div class="d">タイトルバーをつかんで、置きたい方向へ投げます</div></div></div>
+            <div class="row"><div><div class="t">なぞって配置</div><div class="d"><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Space</kbd>、またはタイトルバーの長押しでランチャーを開きます</div></div></div>
+            <div class="row"><div><div class="t">キーで配置</div><div class="d"><kbd>Ctrl</kbd> <kbd>Alt</kbd> + 矢印で半分、<kbd>Shift</kbd> を足すと 1 区画ずつ拡大・縮小</div></div></div>
+          </div>
+        </div></div>
+        <div class="wstep" data-step="1"><div class="wbody">
+          <h3>標準のスナップを止めますか</h3>
+          <p>Windows のスナップと同時に動くと、ウィンドウの位置が取り合いになります。Snapwell が有効な間だけ、次の設定を変えます。</p>
+          <div class="rows">
+            <div class="row"><div><div class="t">ドラッグでのスナップ</div><div class="d">オン → オフ</div></div></div>
+            <div class="row"><div><div class="t">スナップ レイアウト・スナップ バー</div><div class="d">オン → オフ</div></div></div>
+            <div class="row"><div><div class="t"><kbd>Win</kbd> + 矢印</div><div class="d">Snapwell の操作に置き換え</div></div></div>
+          </div>
+          <label class="consent"><input type="checkbox" id="wConsent" checked> <span>変更前の値を保存し、Snapwell を無効にしたとき・終了したとき・異常終了のあとに元へ戻すことを理解しました。</span></label>
+          <p class="hint" style="margin-top: 8px">止めない場合も Snapwell は使えます。その場合はドラッグでのスナップが両方動きます。</p>
+        </div></div>
+        <div class="wstep" data-step="2"><div class="wbody">
+          <h3>ホットキーの確認</h3>
+          <p>この PC で使われているキーと重ならないかを確かめました。</p>
+          <div class="rows">
+            <div class="row"><div><div class="t">ランチャーを開く</div></div><div class="ctl"><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Space</kbd> <span class="tag green">使えます</span></div></div>
+            <div class="row"><div><div class="t">半分・四分割</div></div><div class="ctl"><kbd>Ctrl</kbd> <kbd>Alt</kbd> + 矢印 / U I J K <span class="tag green">使えます</span></div></div>
+            <div class="row"><div><div class="t">区画単位で移動</div></div><div class="ctl"><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Win</kbd> + 矢印 <span class="tag red">重複</span></div></div>
+          </div>
+          <p class="hint" style="margin-top: 10px">重なっているキーは、あとで設定の「ホットキー」で変えられます。</p>
+        </div></div>
+        <div class="wstep" data-step="3"><div class="wbody">
+          <h3>分割案を選ぶ</h3>
+          <p>1 区画が配置の基本単位です。あとからモニターごとに変えられます。</p>
+          <div class="plan-cards" id="wPlans"></div>
+          <div class="field" style="margin-top: 16px; max-width: 320px">
+            <label for="wGap">ウィンドウの間隔</label>
+            <div class="range-row"><input type="range" id="wGap" min="0" max="24" value="0"><output id="wGapOut">0 px</output></div>
+          </div>
+        </div></div>
+        <div class="wfoot">
+          <button class="btn" type="button" id="wBack">戻る</button>
+          <span class="hint" id="wCount">1 / 4</span>
+          <button class="btn primary" type="button" id="wNext">次へ</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+'use strict';
+
+// ---------- 共通 ----------
+const $ = (s, root = document) => root.querySelector(s);
+const $$ = (s, root = document) => [...root.querySelectorAll(s)];
+const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+const svgNS = 'http://www.w3.org/2000/svg';
+
+// 操作感のプリセット。feel の語彙に合わせた名前。tau は空走の時定数 (予測点 = x + v·tau)
+const FEELS = {
+  airy: { name: 'airy', words: 'airy, slightly magnetic', m: 1, f: 1.6, z: 0.78, tau: 0.22 },
+  snappy: { name: 'snappy', words: 'snappy, precise', m: 1, f: 2.6, z: 0.9, tau: 0.16 },
+  heavy: { name: 'heavy', words: 'heavy, settled', m: 3, f: 1.35, z: 0.74, tau: 0.3 },
+  bouncy: { name: 'bouncy', words: 'light, playful', m: 1, f: 1.9, z: 0.5, tau: 0.2 },
+};
+const springOf = (p) => {
+  const k = p.m * Math.pow(2 * Math.PI * p.f, 2);
+  const c = 2 * p.z * Math.sqrt(k * p.m);
+  return { m: p.m, k, c };
+};
+
+// 全物体で 1 つのフレームループを共有し、すべて止まったらループも止める
+const bodies = new Set();
+let rafId = 0;
+let lastT = 0;
+function addBody(body) {
+  bodies.add(body);
+  if (!rafId) {
+    lastT = performance.now();
+    rafId = requestAnimationFrame(loop);
+  }
+}
+function loop(t) {
+  const dt = Math.min(0.05, (t - lastT) / 1000);
+  lastT = t;
+  const h = 1 / 240;
+  for (const body of [...bodies]) {
+    let acc = dt;
+    while (acc > 1e-6) {
+      const s = Math.min(h, acc);
+      body.step(s);
+      acc -= s;
+    }
+    if (body.settled()) {
+      bodies.delete(body);
+      body.finish();
+    } else {
+      body.render();
+    }
+  }
+  rafId = bodies.size ? requestAnimationFrame(loop) : 0;
+}
+
+/** ウィンドウ 1 枚の 2D のばね。位置は壁で止め、サイズは着地時かなめらかに変える */
+class WindowBody {
+  constructor(win, from, to, vel, feel, opts) {
+    this.win = win;
+    this.s = { ...from };
+    this.v = { x: vel.x, y: vel.y, w: 0, h: 0 };
+    this.to = to;
+    this.sp = springOf(feel);
+    this.opts = opts;
+    this.lift = 0;
+  }
+  step(dt) {
+    const { m, k, c } = this.sp;
+    const axes = this.opts.sizeMode === 'smooth' ? ['x', 'y', 'w', 'h'] : ['x', 'y'];
+    for (const a of axes) {
+      const force = -k * (this.s[a] - this.to[a]) - c * this.v[a];
+      this.v[a] += (force / m) * dt;
+      this.s[a] += this.v[a] * dt;
+    }
+    // 壁: 作業領域の内側で止め、はみ出した描画をしない (着地前のサイズでも目標には届くように広げる)
+    const W = this.opts.areaW;
+    const H = this.opts.areaH;
+    const minX = Math.min(0, this.to.x);
+    const minY = Math.min(0, this.to.y);
+    const maxX = Math.max(W - this.s.w, this.to.x);
+    const maxY = Math.max(H - this.s.h, this.to.y);
+    if (this.s.x < minX) { this.s.x = minX; if (this.v.x < 0) this.v.x = 0; }
+    if (this.s.x > maxX) { this.s.x = maxX; if (this.v.x > 0) this.v.x = 0; }
+    if (this.s.y < minY) { this.s.y = minY; if (this.v.y < 0) this.v.y = 0; }
+    if (this.s.y > maxY) { this.s.y = maxY; if (this.v.y > 0) this.v.y = 0; }
+  }
+  settled() {
+    const near = Math.abs(this.s.x - this.to.x) < 0.5 && Math.abs(this.s.y - this.to.y) < 0.5;
+    const slow = Math.hypot(this.v.x, this.v.y) < 6;
+    const sized = this.opts.sizeMode !== 'smooth'
+      || (Math.abs(this.s.w - this.to.w) < 0.5 && Math.abs(this.s.h - this.to.h) < 0.5);
+    return near && slow && sized;
+  }
+  render() {
+    const speed = Math.hypot(this.v.x, this.v.y);
+    // 浮き上がりは代理描画のときだけ (他プロセスのウィンドウ自体は拡大できないため)
+    this.lift = this.opts.sizeMode === 'smooth' ? Math.min(1, speed / 3000) : 0;
+    placeWin(this.win, this.s, this.lift);
+  }
+  finish() {
+    this.s = { ...this.to };
+    placeWin(this.win, this.to, 0);
+    if (this.opts.onDone) this.opts.onDone();
+  }
+  cancel() {
+    bodies.delete(this);
+    placeWin(this.win, this.s, 0);
+  }
+}
+
+function placeWin(win, r, lift = 0) {
+  const scale = 1 + 0.05 * lift;
+  win.el.style.transform = `translate(${r.x}px, ${r.y}px) scale(${scale})`;
+  win.el.style.width = `${r.w}px`;
+  win.el.style.height = `${r.h}px`;
+  win.el.style.boxShadow = lift > 0.01
+    ? `0 ${4 + 16 * lift}px ${12 + 28 * lift}px rgba(0, 0, 0, ${0.12 + 0.12 * lift})`
+    : '';
+  win.el.style.zIndex = lift > 0.01 ? 50 : win.z;
+  win.r = { ...r };
+}
+
+const CAPS_SVG = '<div class="caps" aria-hidden="true">'
+  + '<span><svg viewBox="0 0 10 10"><path d="M1 5h8" stroke="currentColor"/></svg></span>'
+  + '<span><svg viewBox="0 0 10 10"><rect x="1.5" y="1.5" width="7" height="7" fill="none" stroke="currentColor"/></svg></span>'
+  + '<span><svg viewBox="0 0 10 10"><path d="M1.5 1.5l7 7M8.5 1.5l-7 7" stroke="currentColor"/></svg></span>'
+  + '</div>';
+
+let zTop = 10;
+function makeWin(area, title, color, rect, opts = {}) {
+  const el = document.createElement('div');
+  el.className = 'win' + (opts.fixed ? ' fixed' : '');
+  const lines = opts.lines || [80, 64, 92, 48, 70];
+  el.innerHTML = `<div class="win-title"><span class="ico" style="--ico:${color}"></span>`
+    + `<span class="name">${title}</span>${CAPS_SVG}</div>`
+    + `<div class="win-body">${lines.map((w) => `<div class="sk" style="width:${w}%"></div>`).join('')}</div>`;
+  area.appendChild(el);
+  const win = { el, title, fixed: !!opts.fixed, z: ++zTop, r: null, body: null };
+  placeWin(win, rect);
+  el.addEventListener('pointerdown', () => focusWin(area, win));
+  return win;
+}
+/** 疑似デスクトップの大きさが変わったら、ウィンドウを同じ比率で置き直す (モニターの縮小表示なので、サイズ固定のウィンドウも同じ比率) */
+function keepProportions(area, getWins, after) {
+  let last = areaSize(area);
+  new ResizeObserver(() => {
+    const now = areaSize(area);
+    if (!last.W || !last.H || !now.W || !now.H) { last = now; return; }
+    const sx = now.W / last.W;
+    const sy = now.H / last.H;
+    last = now;
+    const scaleRect = (r) => ({ ...r, x: r.x * sx, y: r.y * sy, w: r.w * sx, h: r.h * sy });
+    for (const win of getWins()) {
+      if (win.body) {
+        // 移動中なら、状態と目標を同じ比率で縮め、そのまま続ける
+        const b = win.body;
+        b.s = scaleRect(b.s);
+        b.to = scaleRect(b.to);
+        b.opts.areaW = now.W;
+        b.opts.areaH = now.H;
+        continue;
+      }
+      const r = win.r;
+      placeWin(win, {
+        x: r.x * sx,
+        y: r.y * sy,
+        w: r.w * sx,
+        h: r.h * sy,
+      });
+    }
+    if (after) after();
+  }).observe(area);
+}
+function focusWin(area, win) {
+  win.z = ++zTop;
+  win.el.style.zIndex = win.z;
+  $$('.win', area).forEach((w) => w.classList.toggle('active', w === win.el));
+}
+
+// ---------- 01 スナップ ----------
+const snap = {
+  mode: 'zones',
+  sizeMode: 'land',
+  gap: 8,
+  feel: 'airy',
+  wins: [],
+  initial: [],
+};
+const snapArea = $('#snapArea');
+const snapFx = $('#snapFx');
+
+function areaSize(area) {
+  const r = area.getBoundingClientRect();
+  return { W: r.width, H: r.height };
+}
+
+function initSnap() {
+  const { W, H } = areaSize(snapArea);
+  const defs = [
+    ['ドキュメント — 週次レポート', '#C9A66B', { x: W * 0.08, y: H * 0.1, w: W * 0.42, h: H * 0.5 }],
+    ['ブラウザ — 社内ポータル', '#7BA7C9', { x: W * 0.46, y: H * 0.18, w: W * 0.4, h: H * 0.48 }],
+    ['設定', '#9BB89A', { x: W * 0.62, y: H * 0.58, w: Math.min(260, W * 0.3), h: Math.min(170, H * 0.32) }, true],
+  ];
+  snap.initial = defs.map((d) => ({ ...d[2] }));
+  snap.wins = defs.map(([t, c, r, fixed]) => makeWin(snapArea, t, c, r, { fixed }));
+  snap.wins.forEach((win) => attachThrow(win));
+  focusWin(snapArea, snap.wins[0]);
+  snap.initSize = { W, H };
+  keepProportions(snapArea, () => snap.wins, clearFx);
+}
+
+/** 区画モードの吸着先。投げた方向で、半分・四分割・最大化から 1 つを選ぶ */
+function zoneTargets(W, H, g) {
+  const e = g;
+  const hw = (W - 2 * e - g) / 2;
+  const hh = (H - 2 * e - g) / 2;
+  return {
+    left: { name: '左半分', x: e, y: e, w: hw, h: H - 2 * e },
+    right: { name: '右半分', x: e + hw + g, y: e, w: hw, h: H - 2 * e },
+    tl: { name: '左上 1/4', x: e, y: e, w: hw, h: hh },
+    tr: { name: '右上 1/4', x: e + hw + g, y: e, w: hw, h: hh },
+    bl: { name: '左下 1/4', x: e, y: e + hh + g, w: hw, h: hh },
+    br: { name: '右下 1/4', x: e + hw + g, y: e + hh + g, w: hw, h: hh },
+    max: { name: '最大化', x: e, y: e, w: W - 2 * e, h: H - 2 * e },
+  };
+}
+
+function chooseTarget(win, proj, W, H) {
+  const g = snap.gap;
+  const cur = win.r;
+  if (snap.mode === 'corners') {
+    const e = g;
+    const corners = [
+      { name: '左上の隅', x: e, y: e },
+      { name: '右上の隅', x: W - cur.w - e, y: e },
+      { name: '右下の隅', x: W - cur.w - e, y: H - cur.h - e },
+      { name: '左下の隅', x: e, y: H - cur.h - e },
+    ];
+    let best = corners[0];
+    let bestD = Infinity;
+    for (const c of corners) {
+      const d = Math.hypot(c.x - proj.x, c.y - proj.y);
+      if (d < bestD) { bestD = d; best = c; }
+    }
+    return { ...best, w: cur.w, h: cur.h };
+  }
+  const z = zoneTargets(W, H, g);
+  // 予測した中心を作業領域に収めてから、上下の帯と左右で振り分ける
+  const cx = Math.max(0, Math.min(W, proj.x + cur.w / 2));
+  const rawCy = proj.y + cur.h / 2;
+  const cy = Math.max(0, Math.min(H, rawCy));
+  let t;
+  if (proj.y < -cur.h * 0.25 && Math.abs(cx - W / 2) < W * 0.25) t = z.max;
+  else if (cy < H * 0.3) t = cx < W / 2 ? z.tl : z.tr;
+  else if (cy > H * 0.7) t = cx < W / 2 ? z.bl : z.br;
+  else t = cx < W / 2 ? z.left : z.right;
+  if (!win.fixed) return { ...t };
+  // サイズ固定: サイズは変えず、区画の中で投げた方向の角に寄せる
+  const alignRight = cx >= W / 2;
+  const alignBottom = cy >= H / 2;
+  return {
+    name: t.name + '（位置だけ）',
+    x: alignRight ? t.x + t.w - cur.w : t.x,
+    y: alignBottom ? t.y + t.h - cur.h : t.y,
+    w: cur.w,
+    h: cur.h,
+    zone: t,
+  };
+}
+
+function attachThrow(win) {
+  const title = $('.win-title', win.el);
+  let drag = null;
+  title.addEventListener('pointerdown', (ev) => {
+    // 移動中につかみ直したら、今の位置から続ける
+    if (win.body) { win.body.cancel(); win.body = null; }
+    title.setPointerCapture(ev.pointerId);
+    drag = { ox: ev.clientX - win.r.x, oy: ev.clientY - win.r.y, samples: [] };
+    clearFx();
+  });
+  title.addEventListener('pointermove', (ev) => {
+    if (!drag) return;
+    const { W, H } = areaSize(snapArea);
+    const x = Math.max(-win.r.w + 60, Math.min(W - 60, ev.clientX - drag.ox));
+    const y = Math.max(0, Math.min(H - 30, ev.clientY - drag.oy));
+    placeWin(win, { ...win.r, x, y });
+    drag.samples.push({ t: ev.timeStamp, x, y });
+    while (drag.samples.length && ev.timeStamp - drag.samples[0].t > 100) drag.samples.shift();
+  });
+  const end = (ev) => {
+    if (!drag) return;
+    const s = drag.samples;
+    drag = null;
+    let vx = 0;
+    let vy = 0;
+    if (s.length >= 2 && ev.timeStamp - s[s.length - 1].t < 60) {
+      const a = s.find((p) => s[s.length - 1].t - p.t <= 80) || s[0];
+      const b = s[s.length - 1];
+      const dt = (b.t - a.t) / 1000;
+      if (dt > 0.008) { vx = (b.x - a.x) / dt; vy = (b.y - a.y) / dt; }
+    }
+    release(win, { x: vx, y: vy });
+  };
+  title.addEventListener('pointerup', end);
+  title.addEventListener('pointercancel', end);
+}
+
+function release(win, vel) {
+  const { W, H } = areaSize(snapArea);
+  const feel = FEELS[snap.feel];
+  const speed = Math.hypot(vel.x, vel.y);
+  const proj = { x: win.r.x + vel.x * feel.tau, y: win.r.y + vel.y * feel.tau };
+  if (speed < 150) {
+    setReadout(speed, proj, '通常の移動（吸着しない）');
+    return;
+  }
+  const target = chooseTarget(win, proj, W, H);
+  drawFx(win.r, proj, target);
+  setReadout(speed, proj, target.name);
+  if (reducedMotion()) {
+    placeWin(win, target);
+    return;
+  }
+  win.body = new WindowBody(win, win.r, target, vel, feel, {
+    sizeMode: snap.sizeMode,
+    areaW: W,
+    areaH: H,
+    onDone: () => { win.body = null; },
+  });
+  addBody(win.body);
+}
+
+function clearFx() { snapFx.innerHTML = ''; }
+function drawFx(from, proj, target) {
+  clearFx();
+  const zone = target.zone || target;
+  const rect = document.createElementNS(svgNS, 'rect');
+  rect.setAttribute('class', 'zone');
+  rect.setAttribute('x', zone.x);
+  rect.setAttribute('y', zone.y);
+  rect.setAttribute('width', zone.w);
+  rect.setAttribute('height', zone.h);
+  rect.setAttribute('rx', 8);
+  snapFx.appendChild(rect);
+  const x1 = from.x + from.w / 2;
+  const y1 = from.y + 15;
+  const x2 = proj.x + from.w / 2;
+  const y2 = proj.y + 15;
+  const line = document.createElementNS(svgNS, 'path');
+  line.setAttribute('class', 'path');
+  line.setAttribute('d', `M${x1} ${y1} L${x2} ${y2}`);
+  snapFx.appendChild(line);
+  const dot = document.createElementNS(svgNS, 'circle');
+  dot.setAttribute('class', 'dot');
+  dot.setAttribute('cx', x2);
+  dot.setAttribute('cy', y2);
+  dot.setAttribute('r', 4);
+  snapFx.appendChild(dot);
+  const label = document.createElementNS(svgNS, 'text');
+  label.setAttribute('class', 'label');
+  label.setAttribute('x', zone.x + 12);
+  label.setAttribute('y', zone.y + zone.h - 12);
+  label.textContent = target.name;
+  snapFx.appendChild(label);
+}
+function setReadout(speed, proj, name) {
+  const dd = $$('#snapReadout dd');
+  dd[0].textContent = `${Math.round(speed).toLocaleString()} px/s`;
+  dd[1].textContent = `${Math.round(proj.x)}, ${Math.round(proj.y)}`;
+  dd[2].textContent = name;
+}
+function renderParams() {
+  const f = FEELS[snap.feel];
+  const sp = springOf(f);
+  $('#snapParams').innerHTML = [
+    ['質量 m', f.m],
+    ['振動数 f', `${f.f} Hz`],
+    ['減衰比 ζ', f.z],
+    ['剛性 k', sp.k.toFixed(0)],
+    ['減衰 c', sp.c.toFixed(1)],
+    ['空走 τ', `${f.tau} s`],
+  ].map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
+}
+function bindSeg(id, onChange) {
+  const root = $(id);
+  root.addEventListener('click', (ev) => {
+    const b = ev.target.closest('button');
+    if (!b) return;
+    $$('button', root).forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    onChange(b.dataset.v);
+  });
+}
+
+bindSeg('#snapMode', (v) => { snap.mode = v; clearFx(); });
+bindSeg('#sizeMode', (v) => { snap.sizeMode = v; });
+$('#snapGap').addEventListener('input', (ev) => {
+  snap.gap = Number(ev.target.value);
+  $('#snapGapOut').textContent = `${snap.gap} px`;
+});
+const feelSel = $('#snapFeel');
+feelSel.innerHTML = Object.entries(FEELS).map(([k, f]) => `<option value="${k}">${f.name} — ${f.words}</option>`).join('');
+feelSel.addEventListener('change', () => { snap.feel = feelSel.value; renderParams(); });
+$('#flingBtn').addEventListener('click', () => {
+  // 前面のウィンドウを、いまいる象限の対角へ弾く
+  const win = snap.wins.reduce((a, b) => (a.z > b.z ? a : b));
+  const { W, H } = areaSize(snapArea);
+  const cx = win.r.x + win.r.w / 2;
+  const cy = win.r.y + win.r.h / 2;
+  const dx = cx < W / 2 ? 1 : -1;
+  const dy = cy < H / 2 ? 1 : -1;
+  const speed = 2600;
+  if (win.body) { win.body.cancel(); win.body = null; }
+  release(win, { x: dx * speed * 0.8, y: dy * speed * 0.6 });
+});
+$('#resetBtn').addEventListener('click', () => {
+  const { W, H } = areaSize(snapArea);
+  const sx = W / snap.initSize.W;
+  const sy = H / snap.initSize.H;
+  snap.wins.forEach((win, i) => {
+    if (win.body) { win.body.cancel(); win.body = null; }
+    const r = snap.initial[i];
+    placeWin(win, { x: r.x * sx, y: r.y * sy, w: r.w * sx, h: r.h * sy });
+  });
+  clearFx();
+});
+
+// ---------- 02 ランチャー ----------
+const L = { cols: 8, rows: 8, gap: 8, anchor: null, end: null, cursor: { c: 0, r: 0 }, win: null, body: null };
+const lArea = $('#lArea');
+const launcher = $('#launcher');
+const HOLD_MS = 450;
+$('#holdMsLabel').textContent = `${HOLD_MS} ms`;
+document.documentElement.style.setProperty('--hold', `${HOLD_MS}ms`);
+
+/** 区画 (列 i, 行 j) の矩形。DESIGN §6.1 の式 */
+function cellRect(i, j, W, H, cols, rows, g) {
+  const e = g;
+  const cw = (W - 2 * e - (cols - 1) * g) / cols;
+  const ch = (H - 2 * e - (rows - 1) * g) / rows;
+  return { x: e + i * (cw + g), y: e + j * (ch + g), w: cw, h: ch };
+}
+function spanRect(sel, W, H) {
+  const a = cellRect(sel.c0, sel.r0, W, H, L.cols, L.rows, L.gap);
+  const b = cellRect(sel.c1, sel.r1, W, H, L.cols, L.rows, L.gap);
+  return { x: a.x, y: a.y, w: b.x + b.w - a.x, h: b.y + b.h - a.y };
+}
+function normSel() {
+  if (!L.anchor || !L.end) return null;
+  return {
+    c0: Math.min(L.anchor.c, L.end.c),
+    c1: Math.max(L.anchor.c, L.end.c),
+    r0: Math.min(L.anchor.r, L.end.r),
+    r1: Math.max(L.anchor.r, L.end.r),
+  };
+}
+
+function buildCells() {
+  const { W, H } = areaSize(lArea);
+  const box = $('#lCells');
+  box.innerHTML = '';
+  for (let j = 0; j < L.rows; j++) {
+    for (let i = 0; i < L.cols; i++) {
+      const r = cellRect(i, j, W, H, L.cols, L.rows, L.gap);
+      const d = document.createElement('div');
+      d.className = 'cell';
+      d.dataset.c = i;
+      d.dataset.r = j;
+      Object.assign(d.style, { left: `${r.x}px`, top: `${r.y}px`, width: `${r.w}px`, height: `${r.h}px` });
+      box.appendChild(d);
+    }
+  }
+  paintSel();
+}
+function paintSel() {
+  const sel = normSel();
+  $$('.cell', launcher).forEach((d) => {
+    const c = Number(d.dataset.c);
+    const r = Number(d.dataset.r);
+    const on = sel && c >= sel.c0 && c <= sel.c1 && r >= sel.r0 && r <= sel.r1;
+    d.classList.toggle('sel', !!on);
+    d.classList.toggle('cursor', c === L.cursor.c && r === L.cursor.r);
+  });
+  const label = $('#lSelLabel');
+  const dd = $$('#lReadout dd');
+  if (!sel) {
+    label.hidden = true;
+    dd.forEach((x) => { x.textContent = '—'; });
+    return;
+  }
+  const { W, H } = areaSize(lArea);
+  const rect = spanRect(sel, W, H);
+  const nc = sel.c1 - sel.c0 + 1;
+  const nr = sel.r1 - sel.r0 + 1;
+  // 疑似デスクトップの幅を 2560 px のモニターとみなして、実際のピクセルで表示する
+  const scale = 2560 / W;
+  label.hidden = false;
+  label.style.left = `${rect.x + rect.w / 2}px`;
+  label.style.top = `${rect.y + rect.h / 2}px`;
+  label.textContent = `${nc} × ${nr} 区画 · ${Math.round(rect.w * scale)} × ${Math.round(rect.h * scale)}`;
+  dd[0].textContent = `列 ${sel.c0 + 1}–${sel.c1 + 1}, 行 ${sel.r0 + 1}–${sel.r1 + 1}`;
+  dd[1].textContent = `横 ×${nc} · 縦 ×${nr}`;
+  dd[2].textContent = `${Math.round(rect.w * scale)} × ${Math.round(rect.h * scale)} px`;
+}
+
+const PRESETS = [
+  { name: '左半分', frac: [0, 0.5, 0, 1] },
+  { name: '右半分', frac: [0.5, 1, 0, 1] },
+  { name: '左上 1/4', frac: [0, 0.5, 0, 0.5] },
+  { name: '左 1/3', frac: [0, 1 / 3, 0, 1] },
+  { name: '中央 1/3', frac: [1 / 3, 2 / 3, 0, 1] },
+  { name: '右 2/3', frac: [1 / 3, 1, 0, 1] },
+  { name: '中央', frac: [0.25, 0.75, 0.125, 0.875] },
+  { name: '最大化', frac: [0, 1, 0, 1] },
+];
+function presetCells(p) {
+  const [x0, x1, y0, y1] = p.frac;
+  const c0 = x0 * L.cols;
+  const c1 = x1 * L.cols;
+  const r0 = y0 * L.rows;
+  const r1 = y1 * L.rows;
+  const ok = [c0, c1, r0, r1].every((v) => Math.abs(v - Math.round(v)) < 1e-9);
+  if (!ok) return null;
+  return { c0: Math.round(c0), c1: Math.round(c1) - 1, r0: Math.round(r0), r1: Math.round(r1) - 1 };
+}
+function buildPresets() {
+  const box = $('#lPresets');
+  box.innerHTML = '';
+  for (const p of PRESETS) {
+    const cells = presetCells(p);
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'preset';
+    b.disabled = !cells;
+    if (!cells) b.title = 'この分割案では、区画の整数倍で作れません';
+    const [x0, x1, y0, y1] = p.frac;
+    b.innerHTML = `<svg viewBox="0 0 18 12"><rect class="bg" x="0.5" y="0.5" width="17" height="11" rx="1.5"/>`
+      + `<rect class="on" x="${1.5 + x0 * 15}" y="${1.5 + y0 * 9}" width="${(x1 - x0) * 15}" height="${(y1 - y0) * 9}" rx="0.5"/></svg>${p.name}`;
+    b.addEventListener('click', () => {
+      L.anchor = { c: cells.c0, r: cells.r0 };
+      L.end = { c: cells.c1, r: cells.r1 };
+      L.cursor = { ...L.end };
+      paintSel();
+      launcher.focus();
+    });
+    box.appendChild(b);
+  }
+}
+
+function openLauncher(at) {
+  launcher.classList.add('open');
+  buildCells();
+  if (at) {
+    const { W, H } = areaSize(lArea);
+    const cw = W / L.cols;
+    const ch = H / L.rows;
+    L.cursor = { c: Math.min(L.cols - 1, Math.floor(at.x / cw)), r: Math.min(L.rows - 1, Math.floor(at.y / ch)) };
+  }
+  paintSel();
+  launcher.focus();
+}
+function closeLauncher() {
+  launcher.classList.remove('open');
+}
+function applySel() {
+  const sel = normSel();
+  if (!sel || !L.win) return;
+  const { W, H } = areaSize(lArea);
+  const target = spanRect(sel, W, H);
+  closeLauncher();
+  if (L.body) L.body.cancel();
+  if (reducedMotion()) {
+    placeWin(L.win, target);
+    return;
+  }
+  L.body = new WindowBody(L.win, L.win.r, target, { x: 0, y: 0 }, FEELS.snappy, {
+    sizeMode: 'smooth',
+    areaW: W,
+    areaH: H,
+    onDone: () => { L.body = null; },
+  });
+  addBody(L.body);
+}
+
+launcher.addEventListener('pointerdown', (ev) => {
+  const cell = ev.target.closest('.cell');
+  if (!cell) {
+    if (!ev.target.closest('.lpanel')) closeLauncher();
+    return;
+  }
+  const p = { c: Number(cell.dataset.c), r: Number(cell.dataset.r) };
+  L.anchor = p;
+  L.end = p;
+  L.cursor = { ...p };
+  L.selecting = true;
+  paintSel();
+});
+launcher.addEventListener('pointermove', (ev) => {
+  if (!L.selecting) return;
+  const el = document.elementFromPoint(ev.clientX, ev.clientY);
+  const cell = el && el.closest('.cell');
+  if (!cell) return;
+  L.end = { c: Number(cell.dataset.c), r: Number(cell.dataset.r) };
+  L.cursor = { ...L.end };
+  paintSel();
+});
+window.addEventListener('pointerup', () => { L.selecting = false; });
+launcher.addEventListener('keydown', (ev) => {
+  const moves = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+  if (moves[ev.key]) {
+    ev.preventDefault();
+    const [dc, dr] = moves[ev.key];
+    L.cursor = {
+      c: Math.max(0, Math.min(L.cols - 1, L.cursor.c + dc)),
+      r: Math.max(0, Math.min(L.rows - 1, L.cursor.r + dr)),
+    };
+    if (ev.shiftKey) {
+      if (!L.anchor) L.anchor = { ...L.cursor };
+      L.end = { ...L.cursor };
+    } else {
+      L.anchor = { ...L.cursor };
+      L.end = { ...L.cursor };
+    }
+    paintSel();
+  } else if (ev.key === 'Enter') {
+    ev.preventDefault();
+    applySel();
+  } else if (ev.key === 'Escape') {
+    closeLauncher();
+  }
+});
+$('#lPlan').addEventListener('change', (ev) => {
+  const [c, r] = ev.target.value.split('x').map(Number);
+  L.cols = c;
+  L.rows = r;
+  L.anchor = null;
+  L.end = null;
+  L.cursor = { c: 0, r: 0 };
+  buildPresets();
+  buildCells();
+  launcher.focus();
+});
+$('#lGap').addEventListener('input', (ev) => {
+  L.gap = Number(ev.target.value);
+  $('#lGapOut').textContent = `${L.gap} px`;
+  if (launcher.classList.contains('open')) buildCells();
+});
+$('#lOpen').addEventListener('click', () => openLauncher());
+document.addEventListener('keydown', (ev) => {
+  if (ev.ctrlKey && ev.altKey && ev.code === 'Space' && current === 'launcher') {
+    ev.preventDefault();
+    openLauncher();
+  }
+});
+
+function initLauncher() {
+  const { W, H } = areaSize(lArea);
+  L.win = makeWin(lArea, 'ドキュメント — 週次レポート', '#C9A66B', { x: W * 0.18, y: H * 0.22, w: W * 0.46, h: H * 0.56 });
+  focusWin(lArea, L.win);
+  keepProportions(lArea, () => [L.win], () => {
+    if (launcher.classList.contains('open')) buildCells();
+  });
+  // 長押しでランチャーを開く。6 px 以上動いたら通常のドラッグとして扱う
+  const title = $('.win-title', L.win.el);
+  const ring = $('#holdRing');
+  let hold = null;
+  title.addEventListener('pointerdown', (ev) => {
+    title.setPointerCapture(ev.pointerId);
+    const box = lArea.getBoundingClientRect();
+    const at = { x: ev.clientX - box.left, y: ev.clientY - box.top };
+    hold = { sx: ev.clientX, sy: ev.clientY, ox: ev.clientX - L.win.r.x, oy: ev.clientY - L.win.r.y, dragging: false, at };
+    ring.style.left = `${at.x}px`;
+    ring.style.top = `${at.y}px`;
+    ring.classList.remove('on');
+    void ring.getBoundingClientRect();
+    ring.classList.add('on');
+    hold.timer = setTimeout(() => {
+      ring.classList.remove('on');
+      const at2 = hold.at;
+      hold = null;
+      openLauncher(at2);
+    }, HOLD_MS);
+  });
+  title.addEventListener('pointermove', (ev) => {
+    if (!hold) return;
+    if (!hold.dragging && Math.hypot(ev.clientX - hold.sx, ev.clientY - hold.sy) >= 6) {
+      hold.dragging = true;
+      clearTimeout(hold.timer);
+      ring.classList.remove('on');
+    }
+    if (hold.dragging) {
+      const { W: aw, H: ah } = areaSize(lArea);
+      const x = Math.max(-L.win.r.w + 60, Math.min(aw - 60, ev.clientX - hold.ox));
+      const y = Math.max(0, Math.min(ah - 30, ev.clientY - hold.oy));
+      placeWin(L.win, { ...L.win.r, x, y });
+    }
+  });
+  const end = () => {
+    if (!hold) return;
+    clearTimeout(hold.timer);
+    ring.classList.remove('on');
+    hold = null;
+  };
+  title.addEventListener('pointerup', end);
+  title.addEventListener('pointercancel', end);
+  buildPresets();
+}
+
+// ---------- 03 設定 ----------
+const NAV = [
+  ['general', '一般', '<circle cx="8" cy="8" r="2.5"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M3.4 12.6l1.4-1.4M11.2 4.8l1.4-1.4"/>'],
+  ['grid', '分割と間隔', '<rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/><path d="M6 2.5v11M10 2.5v11M1.5 8h13"/>'],
+  ['keys', 'ホットキー', '<rect x="1.5" y="4" width="13" height="8" rx="1.5"/><path d="M4 7h1M7 7h2M11 7h1M5 9.5h6"/>'],
+  ['feel', '操作感', '<path d="M1.5 12c2 0 3-8 5-8s2.5 6 4 6 1.5-3 4-3"/>'],
+  ['rules', 'アプリのルール', '<path d="M2.5 3.5h11M2.5 8h11M2.5 12.5h7"/>'],
+  ['os', '標準機能', '<rect x="1.5" y="1.5" width="5.5" height="5.5" rx="1"/><rect x="9" y="1.5" width="5.5" height="5.5" rx="1"/><rect x="1.5" y="9" width="5.5" height="5.5" rx="1"/><rect x="9" y="9" width="5.5" height="5.5" rx="1"/>'],
+  ['sync', '同期とバックアップ', '<path d="M13 6.5A5 5 0 0 0 3.6 4.4M3 9.5a5 5 0 0 0 9.4 2.1"/><path d="M13.5 2.5v4h-4M2.5 13.5v-4h4"/>'],
+  ['look', '外観', '<path d="M1.5 13.5v-6a6 6 0 0 1 6-6h6"/><path d="M5 13.5v-6a2.5 2.5 0 0 1 2.5-2.5h6"/>'],
+];
+function initSettings() {
+  const nav = $('#snav');
+  nav.innerHTML = NAV.map(([id, name, d]) => `<button type="button" data-page="${id}">`
+    + `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`
+    + `<span>${name}</span></button>`).join('');
+  nav.addEventListener('click', (ev) => {
+    const b = ev.target.closest('button');
+    if (b) showPage(b.dataset.page);
+  });
+  showPage('grid');
+  initGridPage();
+  initFeelPage();
+  const cornerSel = $('#cornerSel');
+  cornerSel.addEventListener('change', () => {
+    const v = cornerSel.value;
+    const demo = $('#cornerDemo');
+    demo.style.borderRadius = v === 'win' ? '8px' : `${v}px`;
+    demo.textContent = cornerSel.options[cornerSel.selectedIndex].text;
+  });
+  $('#cornerDemo').style.borderRadius = '8px';
+}
+function showPage(id) {
+  $$('#snav button').forEach((b) => b.setAttribute('aria-current', String(b.dataset.page === id)));
+  $$('.spage').forEach((p) => p.classList.toggle('active', p.dataset.page === id));
+}
+
+const G = { cols: 8, rows: 8, gap: 8, edge: 8, linked: true };
+const PLANS = [[8, 8], [12, 6], [6, 4], [4, 4], [16, 9]];
+function initGridPage() {
+  const chips = $('#gPlans');
+  chips.innerHTML = PLANS.map(([c, r]) => `<button type="button" class="chip" data-c="${c}" data-r="${r}">${c} × ${r}</button>`).join('')
+    + '<button type="button" class="chip" disabled style="opacity: 0.55">カスタム…</button>';
+  chips.addEventListener('click', (ev) => {
+    const b = ev.target.closest('button[data-c]');
+    if (!b) return;
+    G.cols = Number(b.dataset.c);
+    G.rows = Number(b.dataset.r);
+    renderGrid();
+  });
+  $('#gGap').addEventListener('input', (ev) => {
+    G.gap = Number(ev.target.value);
+    if (G.linked) { G.edge = G.gap; $('#gEdge').value = G.edge; }
+    renderGrid();
+  });
+  $('#gEdge').addEventListener('input', (ev) => { G.edge = Number(ev.target.value); renderGrid(); });
+  $('#gLink').addEventListener('change', (ev) => {
+    G.linked = ev.target.checked;
+    $('#gEdge').disabled = G.linked;
+    if (G.linked) { G.edge = G.gap; $('#gEdge').value = G.edge; }
+    renderGrid();
+  });
+  renderGrid();
+}
+function renderGrid() {
+  $$('#gPlans .chip[data-c]').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.c) === G.cols && Number(b.dataset.r) === G.rows)));
+  $('#gGapOut').textContent = `${G.gap} px`;
+  $('#gEdgeOut').textContent = `${G.edge} px`;
+  const box = $('#gPreview');
+  const W = box.clientWidth || 560;
+  const H = box.clientHeight || 315;
+  // プレビューは 2560 × 1440 の縮小。間隔もその比率で縮める
+  const s = W / 2560;
+  const g = G.gap * s;
+  const e = G.edge * s;
+  const cw = (W - 2 * e - (G.cols - 1) * g) / G.cols;
+  const ch = (H - 2 * e - (G.rows - 1) * g) / G.rows;
+  const at = (i, j, nc, nr) => ({ x: e + i * (cw + g), y: e + j * (ch + g), w: nc * cw + (nc - 1) * g, h: nr * ch + (nr - 1) * g });
+  let html = '';
+  for (let j = 0; j < G.rows; j++) {
+    for (let i = 0; i < G.cols; i++) {
+      const r = at(i, j, 1, 1);
+      html += `<div class="gcell" style="left:${r.x}px;top:${r.y}px;width:${r.w}px;height:${r.h}px"></div>`;
+    }
+  }
+  // 例: 左上 1/4 と右半分の 2 枚。左下は区画が見えるように空けておく
+  const half = Math.floor(G.cols / 2);
+  const hr = Math.floor(G.rows / 2);
+  const examples = [at(0, 0, half, hr), at(half, 0, G.cols - half, G.rows)];
+  const labels = [`${half} × ${hr} 区画`, `${G.cols - half} × ${G.rows} 区画`];
+  examples.forEach((r, i) => {
+    html += `<div class="gwin" style="left:${r.x}px;top:${r.y}px;width:${r.w}px;height:${r.h}px">${labels[i]}</div>`;
+  });
+  box.innerHTML = html;
+  const realCw = (2560 - 2 * G.edge - (G.cols - 1) * G.gap) / G.cols;
+  const realCh = (1440 - 40 - 2 * G.edge - (G.rows - 1) * G.gap) / G.rows;
+  $('#gFormula').innerHTML = `作業領域 2560 × 1400<br>区画 = (W − 2e − (N−1)g) / N<br>`
+    + `&nbsp;&nbsp;= ${realCw.toFixed(1)} × ${realCh.toFixed(1)} px<br>a 区画の幅 = a·区画 + (a−1)·g`;
+}
+
+function curvePath(p, w, h) {
+  const { m, k, c } = springOf(p);
+  let x = 0;
+  let v = 0;
+  const T = 1.4;
+  const n = 140;
+  const dt = T / n;
+  let d = `M0 ${h - 4}`;
+  for (let i = 1; i <= n; i++) {
+    for (let s = 0; s < 4; s++) {
+      const f = -k * (x - 1) - c * v;
+      v += (f / m) * (dt / 4);
+      x += v * (dt / 4);
+    }
+    const px = (i / n) * w;
+    const py = h - 4 - x * (h - 16);
+    d += ` L${px.toFixed(1)} ${py.toFixed(1)}`;
+  }
+  return d;
+}
+function initFeelPage() {
+  const box = $('#feelCards');
+  box.innerHTML = Object.entries(FEELS).map(([key, f]) => `<button type="button" class="feel-card" data-k="${key}">`
+    + `<div class="fname">${f.name}</div><div class="fwords">${f.words}</div>`
+    + `<svg viewBox="0 0 160 54" preserveAspectRatio="none"><line x1="0" x2="160" y1="12" y2="12"/>`
+    + `<path class="c" d="${curvePath(f, 160, 54)}"/></svg></button>`).join('');
+  const select = (key) => {
+    $$('.feel-card', box).forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.k === key)));
+    const f = FEELS[key];
+    const sp = springOf(f);
+    $('#feelAdvanced').innerHTML = [
+      ['質量 m', f.m, '重いほど手から遅れ、遠くまで滑ります'],
+      ['固有振動数 f', `${f.f} Hz`, '大きいほど素早く吸着します'],
+      ['減衰比 ζ', f.z, '1 に近いほど行き過ぎません'],
+      ['磁石の強さ', '0.6', '区画の近くで吸い寄せる力'],
+      ['吸着半径', '28 px', 'この距離に入ると吸着します'],
+    ].map(([t, v, d]) => `<div class="row"><div><div class="t">${t}</div><div class="d">${d}</div></div>`
+      + `<div class="ctl mono">${v}</div></div>`).join('')
+      + `<div class="row"><div><div class="t">導かれる値</div><div class="d">k = m(2πf)², c = 2ζ√(km)</div></div>`
+      + `<div class="ctl mono">k ${sp.k.toFixed(0)} · c ${sp.c.toFixed(1)}</div></div>`;
+  };
+  box.addEventListener('click', (ev) => {
+    const b = ev.target.closest('.feel-card');
+    if (b) select(b.dataset.k);
+  });
+  select('airy');
+}
+
+// ---------- 04 トレイ ----------
+function initTray() {
+  const profiles = ['自動（モニター構成に合わせる）', '机: 3 画面', 'ノート PC 単体'];
+  let active = 0;
+  const box = $('#trayProfiles');
+  const render = () => {
+    box.innerHTML = profiles.map((p, i) => `<button class="tm-item" type="button" role="menuitemradio" aria-checked="${i === active}" data-i="${i}">`
+      + `<span class="check">${i === active ? '<svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6.5l2.5 2.5L10 3.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>' : ''}</span>`
+      + `<span class="grow">${p}</span></button>`).join('');
+  };
+  box.addEventListener('click', (ev) => {
+    const b = ev.target.closest('[data-i]');
+    if (!b) return;
+    active = Number(b.dataset.i);
+    render();
+  });
+  render();
+  $('#trayToggle').addEventListener('change', (ev) => {
+    const on = ev.target.checked;
+    const st = $('#trayState');
+    st.textContent = on ? '有効' : '無効';
+    st.className = 'tag ' + (on ? 'green' : 'red');
+  });
+}
+
+// ---------- 05 初回セットアップ ----------
+function initWizard() {
+  let step = 0;
+  const total = 4;
+  const plans = [[8, 8, 'おすすめ。半分・四分割・1/4 を作れます'], [12, 6, '1/3 や 2/3 も作れます'], [6, 4, '大きな区画で手早く']];
+  let plan = 0;
+  const pbox = $('#wPlans');
+  const renderPlans = () => {
+    pbox.innerHTML = plans.map(([c, r, d], i) => {
+      let cells = '';
+      for (let j = 0; j < r; j++) {
+        for (let k = 0; k < c; k++) {
+          cells += `<i style="left:${(k / c) * 100}%;top:${(j / r) * 100}%;width:${100 / c}%;height:${100 / r}%"></i>`;
+        }
+      }
+      return `<button type="button" class="plan-card" data-i="${i}" aria-pressed="${i === plan}"><div class="mini">${cells}</div>`
+        + `<b>${c} × ${r}</b><span>${d}</span></button>`;
+    }).join('');
+  };
+  pbox.addEventListener('click', (ev) => {
+    const b = ev.target.closest('[data-i]');
+    if (!b) return;
+    plan = Number(b.dataset.i);
+    renderPlans();
+  });
+  renderPlans();
+  $('#wGap').addEventListener('input', (ev) => { $('#wGapOut').textContent = `${ev.target.value} px`; });
+  const render = () => {
+    $$('.wstep').forEach((s) => s.classList.toggle('active', Number(s.dataset.step) === step));
+    $$('#wSteps div').forEach((d, i) => {
+      d.className = i < step ? 'done' : (i === step ? 'now' : '');
+    });
+    $('#wBack').disabled = step === 0;
+    $('#wNext').textContent = step === total - 1 ? '完了' : '次へ';
+    $('#wCount').textContent = `${step + 1} / ${total}`;
+  };
+  $('#wBack').addEventListener('click', () => { step = Math.max(0, step - 1); render(); });
+  $('#wNext').addEventListener('click', () => {
+    if (step < total - 1) step += 1;
+    else step = 0;
+    render();
+  });
+  render();
+}
+
+// ---------- 画面の切り替えと配色 ----------
+let current = 'snap';
+const inited = {};
+function route() {
+  const id = (location.hash || '#snap').slice(1);
+  current = ['snap', 'launcher', 'settings', 'tray', 'setup'].includes(id) ? id : 'snap';
+  $$('.tabs a').forEach((a) => {
+    if (a.getAttribute('href') === `#${current}`) a.setAttribute('aria-current', 'page');
+    else a.removeAttribute('aria-current');
+  });
+  $$('.screen').forEach((s) => s.classList.toggle('active', s.id === `screen-${current}`));
+  // 表示されてから大きさを測るため、初めて開いたときに作る
+  if (!inited[current]) {
+    inited[current] = true;
+    ({ snap: () => { initSnap(); renderParams(); }, launcher: initLauncher, settings: initSettings, tray: initTray, setup: initWizard })[current]();
+  } else if (current === 'settings') {
+    renderGrid();
+  }
+}
+window.addEventListener('hashchange', route);
+route();
+
+const THEMES = [['', '配色: OS に合わせる'], ['light', '配色: ライト'], ['dark', '配色: ダーク']];
+let themeIdx = 0;
+try {
+  const saved = localStorage.getItem('snapwell-mock-theme');
+  const i = THEMES.findIndex((t) => t[0] === saved);
+  if (i > 0) themeIdx = i;
+} catch (err) { /* 保存できない環境では OS に合わせる */ }
+function applyTheme() {
+  const [v, label] = THEMES[themeIdx];
+  if (v) document.documentElement.dataset.theme = v;
+  else delete document.documentElement.dataset.theme;
+  $('#themeToggle').textContent = label;
+}
+$('#themeToggle').addEventListener('click', () => {
+  themeIdx = (themeIdx + 1) % THEMES.length;
+  applyTheme();
+  try { localStorage.setItem('snapwell-mock-theme', THEMES[themeIdx][0]); } catch (err) { /* 無視 */ }
+});
+applyTheme();
+</script>
+</body>
+</html>
