@@ -5,7 +5,7 @@ Windows 11 用のウィンドウマネージャー。画面のグリッド分割
 設計は `docs/DESIGN.md`。最初に読むこと。競合調査は `reports/competitive-analysis.md`（ローカルだけにあり、Git には入れない）。
 
 ## 現在のタスク
-基本設計まで完了。次はモックアップ（`docs/mockups/`）。コードはまだ無い。
+基本設計とモックアップ（`docs/mockups/snapwell.html`。`.claude/launch.json` の `mockups` で表示する）まで完了。コードはまだ無い。次は技術検証（`docs/DESIGN.md` §15）と、Core の物理モデル・グリッド計算の実装。
 
 ## 守ること
 - **x64 と ARM64 のネイティブだけ**: ビルド対象は `win-x64` と `win-arm64`。x86（`win-x86`）や AnyCPU の成果物は作らない。どの変更も両方の RID でビルドが通ること
