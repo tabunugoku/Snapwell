@@ -12,10 +12,22 @@ internal sealed class HotkeyCommandExecutor(IWindowInspector inspector, IMonitor
     IMotionEngine motion, IWindowPositionApi positionApi, Func<PortableSettings> settings,
     Func<bool> enabled, Action toggleEnabled, uint ownProcessId)
 {
+    private readonly object _gate = new();
+    private readonly HashSet<nint> _restoring = [];
+    private bool _stopped;
+
+    internal void Stop()
+    {
+        lock (_gate)
+        {
+            _stopped = true;
+        }
+    }
+
     internal void Handle(KeyChord chord)
     {
         var command = (WindowCommand)chord.Id;
-        if (!Enum.IsDefined(command))
+        if (Volatile.Read(ref _stopped) || !Enum.IsDefined(command))
         {
             return;
         }
@@ -32,24 +44,82 @@ internal sealed class HotkeyCommandExecutor(IWindowInspector inspector, IMonitor
         }
 
         var handle = inspector.GetForegroundWindow();
+        lock (_gate)
+        {
+            if (_stopped || _restoring.Contains(handle))
+            {
+                return;
+            }
+        }
+
         if (handle == 0 || !inspector.TryInspect(handle, out var window) ||
             WindowClassifier.Classify(window, ownProcessId) == WindowKind.Excluded)
         {
             return;
         }
 
-        // 最大化中の寸法や不可視枠は使わず、通常状態を取り直して計画する。実機未確認。
-        if (window.IsMaximized &&
-            (!positionApi.Restore(handle) || !inspector.TryInspect(handle, out window)))
+        if (!window.IsMaximized)
         {
+            PlanAndRequest(command, window);
             return;
         }
 
-        if (WindowClassifier.Classify(window, ownProcessId) == WindowKind.Excluded)
+        lock (_gate)
         {
-            return;
+            if (_stopped || !_restoring.Add(handle))
+            {
+                return;
+            }
         }
 
+        // ShowWindow が戻らなくても配送とほかのウィンドウを止めない。実機未確認。
+        var thread = new Thread(() => RestoreAndRequest(command, handle))
+        {
+            IsBackground = true,
+            Name = $"Snapwell restore {handle}",
+        };
+        try
+        {
+            thread.Start();
+        }
+        catch
+        {
+            lock (_gate)
+            {
+                _restoring.Remove(handle);
+            }
+
+            throw;
+        }
+    }
+
+    private void RestoreAndRequest(WindowCommand command, nint handle)
+    {
+        try
+        {
+            // 最大化中の寸法や不可視枠は使わず、通常状態を取り直して計画する。実機未確認。
+            if (!Volatile.Read(ref _stopped) && positionApi.Restore(handle) &&
+                inspector.TryInspect(handle, out var window) && !window.IsMaximized &&
+                WindowClassifier.Classify(window, ownProcessId) != WindowKind.Excluded)
+            {
+                PlanAndRequest(command, window);
+            }
+        }
+        catch (Exception)
+        {
+            // 閉じたウィンドウなどの失敗を背景スレッドの外へ出さない。
+        }
+        finally
+        {
+            lock (_gate)
+            {
+                _restoring.Remove(handle);
+            }
+        }
+    }
+
+    private void PlanAndRequest(WindowCommand command, WindowSnapshot window)
+    {
         var options = settings();
         var areas = monitors.GetMonitors().Select(monitor => monitor.ToMonitorArea()).ToArray();
         var target = CommandPlanner.Plan(command, window.VisualBounds,
@@ -60,7 +130,14 @@ internal sealed class HotkeyCommandExecutor(IWindowInspector inspector, IMonitor
         }
 
         var walls = CommandPlanner.SelectMonitor(bounds, areas).WorkArea;
-        motion.Request(new(handle, window.VisualBounds, bounds, walls, options.ToFeelPreset(),
+        // enabled と Request は待機集合のロックの外で呼ぶ。
+        // この確認と Request の間に終了した場合も、MotionEngine が破棄後の要求を捨てる。
+        if (!enabled() || Volatile.Read(ref _stopped))
+        {
+            return;
+        }
+
+        motion.Request(new(window.Handle, window.VisualBounds, bounds, walls, options.ToFeelPreset(),
             Resize: bounds.Width != window.VisualBounds.Width || bounds.Height != window.VisualBounds.Height));
     }
 }

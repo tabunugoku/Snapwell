@@ -13,6 +13,61 @@ namespace Snapwell.App.Tests.Lifecycle;
 public sealed class ResidentRuntimeTests
 {
     [Fact]
+    public async Task DisposeDoesNotWaitForBlockedRestoreAndReturningRestoreCannotRequestMotion()
+    {
+        var inspector = new FakeInspector();
+        inspector.Window = inspector.Window with { IsMaximized = true };
+        var monitors = new FakeMonitors();
+        var motion = new FakeMotion();
+        using var position = new BlockingPosition(inspector);
+        var drag = new DragSnapController(inspector, monitors, motion, () => new(), _ => { }, 999);
+        var hotkeys = new HotkeyCommandExecutor(inspector, monitors, motion, position, () => new(),
+            () => true, () => { }, 999);
+        using var runtime = new ResidentRuntime(drag, hotkeys, motion, [], _ => { });
+        try
+        {
+            await Task.Run(() => runtime.Handle(new KeyChord((int)WindowCommand.LeftHalf)))
+                .WaitAsync(TimeSpan.FromSeconds(1));
+            Assert.True(position.Entered.Wait(5000));
+            await Task.Run(runtime.Dispose).WaitAsync(TimeSpan.FromSeconds(1));
+            position.Continue.Set();
+            Assert.True(position.Worker!.Join(TimeSpan.FromSeconds(5)));
+            Assert.Equal(1, motion.DisposeCalls);
+            Assert.Empty(motion.Requests);
+        }
+        finally
+        {
+            position.Continue.Set();
+        }
+    }
+
+    private sealed class BlockingPosition(FakeInspector inspector) : IWindowPositionApi, IDisposable
+    {
+        internal ManualResetEventSlim Entered { get; } = new(false);
+        internal ManualResetEventSlim Continue { get; } = new(false);
+        internal Thread? Worker;
+        public bool Restore(nint handle)
+        {
+            Worker = Thread.CurrentThread;
+            Entered.Set();
+            Continue.Wait();
+            inspector.Window = inspector.Window with { IsMaximized = false };
+            return true;
+        }
+
+        public bool SetBounds(nint handle, PixelRect bounds, bool positionOnly) => throw new NotSupportedException();
+        public bool ApplyBatch(IReadOnlyList<NativeWindowPlacement> placements) => throw new NotSupportedException();
+        public void Dispose()
+        {
+            Continue.Set();
+            if (Worker is { IsThreadPoolThread: false } thread)
+            {
+                thread.Join(TimeSpan.FromSeconds(5));
+            }
+        }
+    }
+
+    [Fact]
     public void PauseKeepsOnlyTheResumeChord()
     {
         var fixture = new Fixture();
