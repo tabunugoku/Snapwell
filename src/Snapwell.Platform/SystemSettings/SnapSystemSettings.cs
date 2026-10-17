@@ -17,6 +17,18 @@ public interface ISnapSystemSettings
 /// <summary>レジストリを変更せず現在のセッションのスナップだけを制御する。</summary>
 public sealed class Win32SnapSystemSettings : ISnapSystemSettings
 {
+    private readonly Func<uint, uint, nint, uint, bool> _systemParametersInfo;
+
+    /// <summary>標準スナップの変更に Win32 API を使う。</summary>
+    public Win32SnapSystemSettings() : this(InvokeSystemParametersInfo)
+    {
+    }
+
+    internal Win32SnapSystemSettings(Func<uint, uint, nint, uint, bool> systemParametersInfo)
+    {
+        _systemParametersInfo = systemParametersInfo;
+    }
+
     /// <summary>SPI_GETWINARRANGING で現在の値を取得する。</summary>
     public unsafe bool TryGetEnabled(out bool enabled)
     {
@@ -28,11 +40,18 @@ public sealed class Win32SnapSystemSettings : ISnapSystemSettings
     }
 
     /// <summary>SPI_SETWINARRANGING でセッション内の値だけを変更する。</summary>
-    public unsafe bool TrySetEnabled(bool enabled)
+    public bool TrySetEnabled(bool enabled)
     {
         // UPDATEINIFILE を付けないのでサインインし直せば戻る。設定アプリの表示とはずれる。
-        // このアクションは BOOL へのポインターではなく、pvParam 自体に TRUE/FALSE を渡す。
-        return PInvoke.SystemParametersInfo(SYSTEM_PARAMETERS_INFO_ACTION.SPI_SETWINARRANGING,
-            0, (void*)(enabled ? 1 : 0), SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS.SPIF_SENDCHANGE);
+        // 文書の指定は pvParam 自体の TRUE/FALSE だが、ARM64 の Windows 11 26200 で一度だけ、
+        // uiParam を参照しているように見える挙動を確認した。ほかのビルドは実機未確認。
+        // どちらにも対応するため、BOOL へのポインターではなく同じ 0/1 を両方へ渡す。
+        var value = enabled ? 1u : 0u;
+        return _systemParametersInfo((uint)SYSTEM_PARAMETERS_INFO_ACTION.SPI_SETWINARRANGING,
+            value, (nint)value, (uint)SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS.SPIF_SENDCHANGE);
     }
+
+    private static unsafe bool InvokeSystemParametersInfo(uint action, uint uiParam, nint pvParam, uint flags) =>
+        PInvoke.SystemParametersInfo((SYSTEM_PARAMETERS_INFO_ACTION)action, uiParam, (void*)pvParam,
+            (SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS)flags);
 }
