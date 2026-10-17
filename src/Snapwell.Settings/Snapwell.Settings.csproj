@@ -1,0 +1,45 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- 設定画面。常駐する本体 (Snapwell.exe) を軽く保つため、別の exe にする。
+       パッケージ化しない WinUI 3 で、Windows App SDK はアプリに同梱する (自己完結)。出荷は NativeAOT で x64 と ARM64 -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows10.0.22621.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.22000.0</TargetPlatformMinVersion>
+    <RootNamespace>Snapwell.Settings</RootNamespace>
+    <AssemblyName>Snapwell.Settings</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <UseWinUI>true</UseWinUI>
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <EnableMsixTooling>true</EnableMsixTooling>
+    <IsAotCompatible>true</IsAotCompatible>
+    <PublishAot>true</PublishAot>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <!-- 自己完結の Windows App SDK はアーキテクチャが要り、AnyCPU ではビルドが止まる。
+       RID なし (ソリューション全体の開発・テスト用ビルド) では x64 としてコンパイルだけ確かめる。出荷物は -r で作る -->
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' == ''">
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <_SnapwellDefaultedRuntime>true</_SnapwellDefaultedRuntime>
+  </PropertyGroup>
+
+  <!-- 上の補いのまま publish すると、ARM64 のつもりでも黙って x64 ができる。出荷物は -r を必ず付けさせる -->
+  <Target Name="RequireExplicitRuntimeForPublish" BeforeTargets="PrepareForPublish"
+          Condition="'$(_SnapwellDefaultedRuntime)' == 'true'">
+    <Error Text="Snapwell.Settings の publish には -r win-x64 か -r win-arm64 を付ける。" />
+  </Target>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK.WinUI" Version="2.3.9" />
+    <!-- WinUI 2.3.9 の依存 (2.1.8) は NuGet に無く 2.1.9 に解決される。NU1603 を避けるため明示する -->
+    <PackageReference Include="Microsoft.WindowsAppSDK.InteractiveExperiences" Version="2.1.9" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2270" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Snapwell.Core\Snapwell.Core.csproj" />
+  </ItemGroup>
+
+</Project>
