@@ -544,7 +544,7 @@
             <!-- 未実装の行は中立色のタグで示し、要検証などの状態表示と区別する。 -->
             <Style x:Key="SnapwellPendingTagStyle" TargetType="Border">
                 <Setter Property="Background" Value="{ThemeResource SnapwellSurface2Brush}" />
-                <Setter Property="CornerRadius" Value="9999" />
+                <Setter Property="CornerRadius" Value="9.4" />
                 <Setter Property="Padding" Value="8,1" />
                 <Setter Property="HorizontalAlignment" Value="Left" />
                 <Setter Property="VerticalAlignment" Value="Center" />

@@ -503,7 +503,7 @@
                         BorderBrush="{ThemeResource SnapwellBorderBrush}">
                         <Border
                             Background="{ThemeResource SnapwellRedBackgroundBrush}"
-                            CornerRadius="9999"
+                            CornerRadius="9.4"
                             Padding="8,1"
                             HorizontalAlignment="Left"
                             VerticalAlignment="Center">
@@ -699,7 +699,7 @@
                 </Grid.ColumnDefinitions>
                 <Border
                     Background="{ThemeResource SnapwellRedBackgroundBrush}"
-                    CornerRadius="9999"
+                    CornerRadius="9.4"
                     Padding="8,1"
                     HorizontalAlignment="Left"
                     VerticalAlignment="Center">

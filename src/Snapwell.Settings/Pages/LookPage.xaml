@@ -82,7 +82,7 @@
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                             <Border
                                 Background="{ThemeResource SnapwellYellowBackgroundBrush}"
-                                CornerRadius="9999"
+                                CornerRadius="9.4"
                                 Padding="8,1"
                                 HorizontalAlignment="Left"
                                 VerticalAlignment="Center">
