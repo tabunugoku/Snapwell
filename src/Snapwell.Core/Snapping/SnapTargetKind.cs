@@ -35,4 +35,16 @@ public enum SnapTargetKind
 
     /// <summary>現在のサイズで左下の隅。</summary>
     CornerBottomLeft,
+
+    /// <summary>隣のウィンドウの左側に置く。</summary>
+    AdjacentLeft,
+
+    /// <summary>隣のウィンドウの右側に置く。</summary>
+    AdjacentRight,
+
+    /// <summary>隣のウィンドウの上側に置く。</summary>
+    AdjacentTop,
+
+    /// <summary>隣のウィンドウの下側に置く。</summary>
+    AdjacentBottom,
 }
