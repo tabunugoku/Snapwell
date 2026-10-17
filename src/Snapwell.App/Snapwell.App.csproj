@@ -11,6 +11,7 @@
     <PublishAot>true</PublishAot>
     <InvariantGlobalization>true</InvariantGlobalization>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ApplicationIcon>..\..\assets\icons\snapwell.ico</ApplicationIcon>
   </PropertyGroup>
 
   <!-- RID なし (テストの AnyCPU ビルド) では、アーキテクチャ別の API (NOTIFYICONDATAW など) を x64 の配置で生成する。

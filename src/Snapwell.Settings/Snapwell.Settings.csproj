@@ -16,6 +16,7 @@
     <IsAotCompatible>true</IsAotCompatible>
     <PublishAot>true</PublishAot>
     <InvariantGlobalization>true</InvariantGlobalization>
+    <ApplicationIcon>..\..\assets\icons\snapwell.ico</ApplicationIcon>
   </PropertyGroup>
 
   <!-- 自己完結の Windows App SDK はアーキテクチャが要り、AnyCPU ではビルドが止まる。
@@ -36,6 +37,11 @@
     <!-- WinUI 2.3.9 の依存 (2.1.8) は NuGet に無く 2.1.9 に解決される。NU1603 を避けるため明示する -->
     <PackageReference Include="Microsoft.WindowsAppSDK.InteractiveExperiences" Version="2.1.9" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2270" />
+  </ItemGroup>
+
+  <!-- AppWindow.SetIcon はファイルのパスを取るため、.ico を exe の隣に置く (publish にも入る) -->
+  <ItemGroup>
+    <Content Include="..\..\assets\icons\snapwell.ico" Link="snapwell.ico" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
