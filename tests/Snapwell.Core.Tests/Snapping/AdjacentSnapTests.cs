@@ -185,9 +185,38 @@ public sealed class AdjacentSnapTests
         Assert.Equal(new PixelRect(600, 450, 100, 100), result.Target);
     }
 
+    /// <summary>画面端の余白を侵す位置は、四辺とも拡大率を掛けた余白で除外する。</summary>
+    [Theory]
+    [InlineData(1, 5, 450, 100, 400)]
+    [InlineData(1.5, 5, 450, 100, 400)]
+    [InlineData(1, 895, 450, 700, 400)]
+    [InlineData(1.5, 895, 450, 700, 400)]
+    [InlineData(1, 450, 5, 400, 100)]
+    [InlineData(1.5, 450, 5, 400, 100)]
+    [InlineData(1, 450, 895, 400, 700)]
+    [InlineData(1.5, 450, 895, 400, 700)]
+    public void CandidatesInsideScreenEdgeMarginAreRejected(double scale, int x, int y, int neighborX, int neighborY)
+    {
+        var result = Resolve(new(x, y, 100, 100), [new(neighborX, neighborY, 200, 200)], scale: scale, edge: 8);
+        Assert.NotNull(result);
+        Assert.DoesNotContain(result!.Value.Kind, new[]
+        {
+            SnapTargetKind.AdjacentLeft, SnapTargetKind.AdjacentRight, SnapTargetKind.AdjacentTop,
+            SnapTargetKind.AdjacentBottom,
+        });
+    }
+
+    /// <summary>余白の内側に収まる候補は、余白があっても吸着する。</summary>
+    [Fact]
+    public void CandidateOutsideMarginStillSnaps()
+    {
+        var result = Resolve(new(612, 450, 100, 100), [new(400, 400, 200, 200)], gap: 8, edge: 8);
+        Assert.Equal(SnapTargetKind.AdjacentRight, result!.Value.Kind);
+    }
+
     private static SnapResult? Resolve(PixelRect predicted, IReadOnlyList<PixelRect>? neighbors, int gap = 0,
         double scale = 1, bool canResize = true, SnapMode mode = SnapMode.Zones, Vec2? pointer = null,
-        PixelRect? area = null) => SnapResolver.Resolve(
+        PixelRect? area = null, int edge = 0) => SnapResolver.Resolve(
             new(predicted.X - 50, predicted.Y, predicted.Width, predicted.Height), new(200, 0), _feel,
-            mode, new Spacing(gap, 0), [new("main", area ?? _area, scale)], canResize, pointer, neighbors);
+            mode, new Spacing(gap, edge), [new("main", area ?? _area, scale)], canResize, pointer, neighbors);
 }
