@@ -13,7 +13,7 @@ argument-hint: <作業の内容>
 
 1. `docs/DESIGN.md` の該当の節と、関係するコードを読み、作る場所・直す場所を特定する（プロジェクト、ファイル、型、メソッドまで）。分からないところは「推測」と書く。実機で確かめた事実と推測を分ける。
 2. 作業の置き場所を決める:
-   - 独立した作業なら、origin/main から `codex/<短い名前>` の worktree を作る（`git worktree add ../Snapwell-wt/<短い名前> -b codex/<短い名前> origin/main`）。そこで `dotnet restore -r win-x64` と `dotnet restore -r win-arm64` をしておく（サンドボックスの中では NuGet に届かないため）。
+   - 独立した作業なら、origin/main から `codex/<短い名前>` の worktree を作る（`git worktree add ../Snapwell-wt/<短い名前> -b codex/<短い名前> origin/main`）。そこで `dotnet restore` をしておく（`-r` は付けない。サンドボックスの中では NuGet に届かないため）。
    - まだ main にマージしていない作業の続きなら、そのブランチの worktree を使う。
 3. 項目ごとに、触ってよいファイルを決める。項目の間で同じファイルを触らないように分ける（コミット計画を自動で当てるため）。`.csproj` やソリューションのように複数の項目が触りがちなファイルは、最初の項目にまとめる。
 4. 下のひな形でプロンプトを書き、スクラッチパッドに `prompt-<短い名前>.md` として保存する。地の文は日本語。項目は A, B, C... と英字で番号を振る（1 項目 1 コミット）。文書の項目は `DOC` とする。
@@ -30,8 +30,8 @@ argument-hint: <作業の内容>
 - コミットと push はしない (.git はサンドボックスで書けない)。Opus が、最後の応答のコミット計画のとおりにコミットする。
 - パッケージの復元は済んでいる。ネットワークは使えないので、ビルドとテストは --no-restore を付けて実行する。新しい NuGet パッケージは足さない (必要なら notes に書く)。
 - 各項目のあとで次を実行し、通ること:
-  - dotnet build -c Release -r win-x64 --no-restore
-  - dotnet build -c Release -r win-arm64 --no-restore
+  - dotnet build src/Snapwell.Core/Snapwell.Core.csproj -c Release -r win-x64 --no-restore
+  - dotnet build src/Snapwell.Core/Snapwell.Core.csproj -c Release -r win-arm64 --no-restore
   - dotnet test --no-restore
   - dotnet format --verify-no-changes --no-restore
 - main へのマージ、タグ、リリース、バージョン変更はしない。x86 や AnyCPU のビルド対象を足さない。DLL インジェクション・非公開 API を使わない。
