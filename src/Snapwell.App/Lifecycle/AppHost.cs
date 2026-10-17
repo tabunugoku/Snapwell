@@ -150,7 +150,12 @@ internal sealed class AppHost
             _tray.Show(State());
             if (_watcher is not null)
             {
-                Cleanup(_watcher.Start);
+                Cleanup(() =>
+                {
+                    _watcher.Start();
+                    // 最初の読み込みから監視開始までの保存も取り込む。
+                    _tray.Post(() => ReloadSettings(reportUnreadable: false));
+                });
             }
             if (_hooksStarted)
             {
@@ -171,7 +176,9 @@ internal sealed class AppHost
         }
     }
 
-    internal void ReloadSettings()
+    internal void ReloadSettings() => ReloadSettings(reportUnreadable: true);
+
+    private void ReloadSettings(bool reportUnreadable)
     {
         lock (_gate)
         {
@@ -193,7 +200,11 @@ internal sealed class AppHost
 
             if (loaded is null)
             {
-                ReportReloadFailure(new IOException("設定を再読み込みできない。次の変更で再試行する。"));
+                // 初回起動では設定ファイルがまだない場合があるため、監視通知時だけ失敗を知らせる。
+                if (reportUnreadable)
+                {
+                    ReportReloadFailure(new IOException("設定を再読み込みできない。次の変更で再試行する。"));
+                }
                 return;
             }
 
@@ -240,9 +251,10 @@ internal sealed class AppHost
                 return;
             }
 
+            // 初期状態での配送を防ぐため、有効状態の確定後に公開する。
+            replacement.SetEnabled(_enabled && _hooksStarted);
             Volatile.Write(ref _runtime, replacement);
             _portable = settings;
-            replacement.SetEnabled(_enabled && _hooksStarted);
             _reloadStatus = null;
             _tray.Update(State());
         }
