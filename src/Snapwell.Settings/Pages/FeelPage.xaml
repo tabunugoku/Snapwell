@@ -247,7 +247,16 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="磁石の強さ" Style="{StaticResource SnapwellRowTitleStyle}" />
+                            <Grid ColumnSpacing="6" HorizontalAlignment="Left">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="磁石の強さ" Style="{StaticResource SnapwellRowTitleStyle}" />
+                                <Border Grid.Column="1" Style="{StaticResource SnapwellPendingTagStyle}">
+                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellPendingTagTextStyle}" />
+                                </Border>
+                            </Grid>
                             <TextBlock Text="区画の近くで吸い寄せる力" Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
                         <TextBlock
@@ -264,7 +273,16 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="吸着半径" Style="{StaticResource SnapwellRowTitleStyle}" />
+                            <Grid ColumnSpacing="6" HorizontalAlignment="Left">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="吸着半径" Style="{StaticResource SnapwellRowTitleStyle}" />
+                                <Border Grid.Column="1" Style="{StaticResource SnapwellPendingTagStyle}">
+                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellPendingTagTextStyle}" />
+                                </Border>
+                            </Grid>
                             <TextBlock Text="この距離に入ると吸着します" Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
                         <TextBlock

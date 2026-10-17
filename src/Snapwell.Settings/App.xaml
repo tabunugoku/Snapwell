@@ -39,6 +39,14 @@
                     <SolidColorBrush x:Key="SnapwellYellowTextBrush" Color="#FF956400" />
                     <SolidColorBrush x:Key="SnapwellSkeletonBrush" Color="#FFEFEEEB" />
 
+                    <!-- 無効時もモックアップの中立色を使い、輪郭と文字を残す。 -->
+                    <StaticResource x:Key="ButtonBackgroundDisabled" ResourceKey="SnapwellSurface2Brush" />
+                    <StaticResource x:Key="ButtonForegroundDisabled" ResourceKey="SnapwellMutedBrush" />
+                    <StaticResource x:Key="ButtonBorderBrushDisabled" ResourceKey="SnapwellBorderBrush" />
+                    <StaticResource x:Key="ComboBoxBackgroundDisabled" ResourceKey="SnapwellSurface2Brush" />
+                    <StaticResource x:Key="ComboBoxForegroundDisabled" ResourceKey="SnapwellMutedBrush" />
+                    <StaticResource x:Key="ComboBoxBorderBrushDisabled" ResourceKey="SnapwellBorderBrush" />
+
                     <!-- 標準コントロールのテーマ色をモックアップのトークンに合わせる -->
                     <SolidColorBrush x:Key="ButtonBackground" Color="#FFFFFFFF" />
                     <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#FFF9F9F8" />
@@ -151,6 +159,14 @@
                     <SolidColorBrush x:Key="SnapwellYellowTextBrush" Color="#FFE8C46A" />
                     <SolidColorBrush x:Key="SnapwellSkeletonBrush" Color="#FF2D2D2B" />
 
+                    <!-- 無効時もモックアップの中立色を使い、輪郭と文字を残す。 -->
+                    <StaticResource x:Key="ButtonBackgroundDisabled" ResourceKey="SnapwellSurface2Brush" />
+                    <StaticResource x:Key="ButtonForegroundDisabled" ResourceKey="SnapwellMutedBrush" />
+                    <StaticResource x:Key="ButtonBorderBrushDisabled" ResourceKey="SnapwellBorderBrush" />
+                    <StaticResource x:Key="ComboBoxBackgroundDisabled" ResourceKey="SnapwellSurface2Brush" />
+                    <StaticResource x:Key="ComboBoxForegroundDisabled" ResourceKey="SnapwellMutedBrush" />
+                    <StaticResource x:Key="ComboBoxBorderBrushDisabled" ResourceKey="SnapwellBorderBrush" />
+
                     <SolidColorBrush x:Key="ButtonBackground" Color="#FF202020" />
                     <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#FF252524" />
                     <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#FF252524" />
@@ -259,6 +275,14 @@
                     <SolidColorBrush x:Key="SnapwellYellowBackgroundBrush" Color="#47956400" />
                     <SolidColorBrush x:Key="SnapwellYellowTextBrush" Color="#FFE8C46A" />
                     <SolidColorBrush x:Key="SnapwellSkeletonBrush" Color="#FF2D2D2B" />
+
+                    <!-- 無効時もモックアップの中立色を使い、輪郭と文字を残す。 -->
+                    <StaticResource x:Key="ButtonBackgroundDisabled" ResourceKey="SnapwellSurface2Brush" />
+                    <StaticResource x:Key="ButtonForegroundDisabled" ResourceKey="SnapwellMutedBrush" />
+                    <StaticResource x:Key="ButtonBorderBrushDisabled" ResourceKey="SnapwellBorderBrush" />
+                    <StaticResource x:Key="ComboBoxBackgroundDisabled" ResourceKey="SnapwellSurface2Brush" />
+                    <StaticResource x:Key="ComboBoxForegroundDisabled" ResourceKey="SnapwellMutedBrush" />
+                    <StaticResource x:Key="ComboBoxBorderBrushDisabled" ResourceKey="SnapwellBorderBrush" />
 
                     <SolidColorBrush x:Key="ButtonBackground" Color="#FF202020" />
                     <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#FF252524" />
@@ -426,6 +450,33 @@
                 <Setter Property="TextWrapping" Value="Wrap" />
             </Style>
 
+            <!-- 未実装の行は中立色のタグで示し、要検証などの状態表示と区別する。 -->
+            <Style x:Key="SnapwellPendingTagStyle" TargetType="Border">
+                <Setter Property="Background" Value="{ThemeResource SnapwellSurface2Brush}" />
+                <Setter Property="CornerRadius" Value="9999" />
+                <Setter Property="Padding" Value="8,1" />
+                <Setter Property="HorizontalAlignment" Value="Left" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+            </Style>
+
+            <Style x:Key="SnapwellPendingTagTextStyle" TargetType="TextBlock">
+                <Setter Property="FontFamily" Value="{StaticResource SnapwellUiFontFamily}" />
+                <Setter Property="FontSize" Value="10.5" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="CharacterSpacing" Value="50" />
+                <Setter Property="LineHeight" Value="16.8" />
+                <Setter Property="Foreground" Value="{ThemeResource SnapwellMutedBrush}" />
+            </Style>
+
+            <!-- デモ専用。操作不可でもモックアップのスイッチの形を読み取れる薄さにする。 -->
+            <Style x:Key="SnapwellDemoSwitchStyle" TargetType="ToggleSwitch">
+                <Setter Property="Opacity" Value="0.65" />
+            </Style>
+
+            <Style x:Key="SnapwellDemoSelectStyle" TargetType="ComboBox">
+                <Setter Property="Opacity" Value="0.85" />
+            </Style>
+
             <Style x:Key="SnapwellButtonStyle" TargetType="Button">
                 <Setter Property="FontFamily" Value="{StaticResource SnapwellUiFontFamily}" />
                 <Setter Property="FontSize" Value="14" />
@@ -435,6 +486,11 @@
                 <Setter Property="BorderThickness" Value="1" />
                 <Setter Property="CornerRadius" Value="6" />
                 <Setter Property="Padding" Value="14,7" />
+            </Style>
+
+            <Style x:Key="SnapwellDemoButtonStyle" TargetType="Button"
+                   BasedOn="{StaticResource SnapwellButtonStyle}">
+                <Setter Property="Opacity" Value="0.85" />
             </Style>
 
             <Style x:Key="SnapwellPrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource AccentButtonStyle}">

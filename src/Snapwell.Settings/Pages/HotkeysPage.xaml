@@ -5,7 +5,8 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:Snapwell.Settings.Pages">
     <Page.Resources>
-        <Style x:Key="DemoSwitchStyle" TargetType="ToggleSwitch">
+        <Style x:Key="DemoSwitchStyle" TargetType="ToggleSwitch"
+               BasedOn="{StaticResource SnapwellDemoSwitchStyle}">
             <Setter Property="MinWidth" Value="0" />
             <Setter Property="Width" Value="40" />
             <Setter Property="Height" Value="20" />
@@ -86,12 +87,98 @@
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
         <StackPanel Padding="32,28,32,40" HorizontalAlignment="Stretch">
             <TextBlock Text="ホットキー" Style="{StaticResource SnapwellPageTitleStyle}" />
-            <TextBlock Text="クリックして新しいキーを押すと変更できます。ほかのアプリと重なるキーには印が付きます。"
+            <TextBlock Text="割り当ての一覧です。同じキーを複数の操作に割り当てている行には「重複」と表示します。"
                        Style="{StaticResource SnapwellLeadTextStyle}" />
             <InfoBar x:Name="ConflictNotice" Severity="Warning" IsClosable="False"
                      Message="キーが重複しています。「既定に戻す」か、重複しない設定ファイルを取り込んでください。" />
 
+            <Border Style="{StaticResource SnapwellRowsBorderStyle}">
+                <StackPanel>
+                    <Grid Padding="12,8" ColumnSpacing="16"
+                          BorderBrush="{ThemeResource SnapwellBorderBrush}" BorderThickness="0,0,0,1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="2*" />
+                            <ColumnDefinition Width="3*" />
+                            <ColumnDefinition Width="64" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="操作" FontSize="12" FontWeight="Medium"
+                                   Foreground="{ThemeResource SnapwellMutedBrush}" />
+                        <TextBlock Grid.Column="1" Text="キー" FontSize="12" FontWeight="Medium"
+                                   Foreground="{ThemeResource SnapwellMutedBrush}" />
+                    </Grid>
+                    <ListView x:Name="HotkeyList" SelectionMode="None" IsItemClickEnabled="False"
+                              HorizontalContentAlignment="Stretch">
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="ListViewItem">
+                                <Setter Property="Padding" Value="0" />
+                                <Setter Property="Margin" Value="0" />
+                                <Setter Property="MinHeight" Value="0" />
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            </Style>
+                        </ListView.ItemContainerStyle>
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="local:HotkeyRow">
+                                <Grid Padding="12,10" ColumnSpacing="16" HorizontalAlignment="Stretch"
+                                      BorderBrush="{ThemeResource SnapwellBorderBrush}" BorderThickness="0,0,0,1">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="2*" />
+                                        <ColumnDefinition Width="3*" />
+                                        <ColumnDefinition Width="64" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{x:Bind Name}" FontSize="13" LineHeight="20.8"
+                                               Foreground="{ThemeResource SnapwellTextBrush}"
+                                               TextWrapping="Wrap" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4"
+                                                VerticalAlignment="Center">
+                                        <Border Style="{StaticResource KbdBorderStyle}">
+                                            <TextBlock Text="{x:Bind Key1}" Style="{StaticResource KbdTextStyle}" />
+                                        </Border>
+                                        <Border Style="{StaticResource KbdBorderStyle}"
+                                                Visibility="{x:Bind Key2Visibility}">
+                                            <TextBlock Text="{x:Bind Key2}" Style="{StaticResource KbdTextStyle}" />
+                                        </Border>
+                                        <Border Style="{StaticResource KbdBorderStyle}"
+                                                Visibility="{x:Bind Key3Visibility}">
+                                            <TextBlock Text="{x:Bind Key3}" Style="{StaticResource KbdTextStyle}" />
+                                        </Border>
+                                        <Border Style="{StaticResource KbdBorderStyle}"
+                                                Visibility="{x:Bind Key4Visibility}">
+                                            <TextBlock Text="{x:Bind Key4}" Style="{StaticResource KbdTextStyle}" />
+                                        </Border>
+                                        <Border Style="{StaticResource KbdBorderStyle}"
+                                                Visibility="{x:Bind Key5Visibility}">
+                                            <TextBlock Text="{x:Bind Key5}" Style="{StaticResource KbdTextStyle}" />
+                                        </Border>
+                                    </StackPanel>
+                                    <Border Grid.Column="2" Visibility="{x:Bind ConflictVisibility}"
+                                            Background="{ThemeResource SnapwellRedBackgroundBrush}"
+                                            CornerRadius="999" Padding="8,1" HorizontalAlignment="Right"
+                                            VerticalAlignment="Center">
+                                        <TextBlock Text="重複" FontSize="10.5" FontWeight="SemiBold"
+                                                   CharacterSpacing="50"
+                                                   Foreground="{ThemeResource SnapwellRedTextBrush}" />
+                                    </Border>
+                                </Grid>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </StackPanel>
+            </Border>
+            <TextBlock Text="ほかのアプリとの競合は、この画面では確認できません。" Style="{StaticResource SnapwellHintTextStyle}" Margin="0,10,0,12"/>
+            <Button x:Name="ResetButton" Content="既定に戻す" Style="{StaticResource SnapwellButtonStyle}"
+                Click="Reset_Click" />
+
             <!-- デモ状態 (未実装) -->
+            <Grid Margin="0,22,0,8" ColumnSpacing="6" HorizontalAlignment="Left">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="デモ (準備中)" Style="{StaticResource SnapwellGroupTitleStyle}" Margin="0" />
+                <Border Grid.Column="1" Style="{StaticResource SnapwellPendingTagStyle}">
+                    <TextBlock Text="準備中" Style="{StaticResource SnapwellPendingTagTextStyle}" />
+                </Border>
+            </Grid>
             <Border Style="{StaticResource SnapwellRowsBorderStyle}">
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -671,7 +758,7 @@
                         Foreground="{ThemeResource SnapwellRedTextBrush}" />
                 </Border>
                 <TextBlock
-                    Text="サンプルの表示です。ほかのアプリが同じキーを登録しているときに出ます。"
+                    Text="重複表示のデモです。ほかのアプリとの競合は、この画面では確認できません。"
                     Style="{StaticResource SnapwellHintTextStyle}"
                     Grid.Column="1"
                     VerticalAlignment="Center" />
@@ -696,7 +783,7 @@
                                 Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <ToggleSwitch
+                            <ToggleSwitch IsEnabled="False"
                                 Style="{StaticResource DemoSwitchStyle}"
                                 IsOn="True"
                                 AutomationProperties.Name="Win 矢印" />
@@ -706,85 +793,6 @@
             </Border>
             <!-- デモ状態 (未実装) ここまで -->
 
-            <Expander Header="現在の割り当て" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Margin="0,22,0,0">
-                <StackPanel>
-                    <Border Style="{StaticResource SnapwellRowsBorderStyle}">
-                        <StackPanel>
-                            <Grid Padding="12,8" ColumnSpacing="16"
-                                  BorderBrush="{ThemeResource SnapwellBorderBrush}" BorderThickness="0,0,0,1">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="2*" />
-                                    <ColumnDefinition Width="3*" />
-                                    <ColumnDefinition Width="64" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="操作" FontSize="12" FontWeight="Medium"
-                                           Foreground="{ThemeResource SnapwellMutedBrush}" />
-                                <TextBlock Grid.Column="1" Text="キー" FontSize="12" FontWeight="Medium"
-                                           Foreground="{ThemeResource SnapwellMutedBrush}" />
-                            </Grid>
-                            <ListView x:Name="HotkeyList" SelectionMode="None" IsItemClickEnabled="False"
-                                      HorizontalContentAlignment="Stretch">
-                                <ListView.ItemContainerStyle>
-                                    <Style TargetType="ListViewItem">
-                                        <Setter Property="Padding" Value="0" />
-                                        <Setter Property="Margin" Value="0" />
-                                        <Setter Property="MinHeight" Value="0" />
-                                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                                    </Style>
-                                </ListView.ItemContainerStyle>
-                                <ListView.ItemTemplate>
-                                    <DataTemplate x:DataType="local:HotkeyRow">
-                                        <Grid Padding="12,10" ColumnSpacing="16" HorizontalAlignment="Stretch"
-                                              BorderBrush="{ThemeResource SnapwellBorderBrush}" BorderThickness="0,0,0,1">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="2*" />
-                                                <ColumnDefinition Width="3*" />
-                                                <ColumnDefinition Width="64" />
-                                            </Grid.ColumnDefinitions>
-                                            <TextBlock Text="{x:Bind Name}" FontSize="13" LineHeight="20.8"
-                                                       Foreground="{ThemeResource SnapwellTextBrush}"
-                                                       TextWrapping="Wrap" VerticalAlignment="Center" />
-                                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4"
-                                                        VerticalAlignment="Center">
-                                                <Border Style="{StaticResource KbdBorderStyle}">
-                                                    <TextBlock Text="{x:Bind Key1}" Style="{StaticResource KbdTextStyle}" />
-                                                </Border>
-                                                <Border Style="{StaticResource KbdBorderStyle}"
-                                                        Visibility="{x:Bind Key2Visibility}">
-                                                    <TextBlock Text="{x:Bind Key2}" Style="{StaticResource KbdTextStyle}" />
-                                                </Border>
-                                                <Border Style="{StaticResource KbdBorderStyle}"
-                                                        Visibility="{x:Bind Key3Visibility}">
-                                                    <TextBlock Text="{x:Bind Key3}" Style="{StaticResource KbdTextStyle}" />
-                                                </Border>
-                                                <Border Style="{StaticResource KbdBorderStyle}"
-                                                        Visibility="{x:Bind Key4Visibility}">
-                                                    <TextBlock Text="{x:Bind Key4}" Style="{StaticResource KbdTextStyle}" />
-                                                </Border>
-                                                <Border Style="{StaticResource KbdBorderStyle}"
-                                                        Visibility="{x:Bind Key5Visibility}">
-                                                    <TextBlock Text="{x:Bind Key5}" Style="{StaticResource KbdTextStyle}" />
-                                                </Border>
-                                            </StackPanel>
-                                            <Border Grid.Column="2" Visibility="{x:Bind ConflictVisibility}"
-                                                    Background="{ThemeResource SnapwellRedBackgroundBrush}"
-                                                    CornerRadius="999" Padding="8,1" HorizontalAlignment="Right"
-                                                    VerticalAlignment="Center">
-                                                <TextBlock Text="重複" FontSize="10.5" FontWeight="SemiBold"
-                                                           CharacterSpacing="50"
-                                                           Foreground="{ThemeResource SnapwellRedTextBrush}" />
-                                            </Border>
-                                        </Grid>
-                                    </DataTemplate>
-                                </ListView.ItemTemplate>
-                            </ListView>
-                        </StackPanel>
-                    </Border>
-                    <TextBlock Text="キーを押して変更する機能は、今後追加します。ほかのアプリとの競合は、この画面では確認できません。" Style="{StaticResource SnapwellHintTextStyle}" Margin="0,10,0,12"/>
-                    <Button x:Name="ResetButton" Content="既定に戻す" Style="{StaticResource SnapwellButtonStyle}"
-                        Click="Reset_Click" />
-                </StackPanel>
-            </Expander>
         </StackPanel>
     </ScrollViewer>
 </Page>

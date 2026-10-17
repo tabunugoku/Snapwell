@@ -6,7 +6,16 @@
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
         <StackPanel Padding="32,28,32,40" HorizontalAlignment="Stretch">
             <!-- デモ状態 (未実装) -->
-            <TextBlock Text="アプリごとのルール" Style="{StaticResource SnapwellPageTitleStyle}" />
+            <Grid ColumnSpacing="6" HorizontalAlignment="Left">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="アプリごとのルール" Style="{StaticResource SnapwellPageTitleStyle}" />
+                <Border Grid.Column="1" Style="{StaticResource SnapwellPendingTagStyle}">
+                    <TextBlock Text="準備中" Style="{StaticResource SnapwellPendingTagTextStyle}" />
+                </Border>
+            </Grid>
             <TextBlock Text="特定のアプリを対象から外したり、位置だけを動かすようにしたりできます。" Style="{StaticResource SnapwellLeadTextStyle}" />
             <Border Style="{StaticResource SnapwellRowsBorderStyle}">
                 <Grid>
@@ -274,8 +283,8 @@
                 </Grid>
             </Border>
             <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,12,0,0">
-                <Button Content="ルールを追加" Style="{StaticResource SnapwellButtonStyle}" />
-                <Button Content="ウィンドウを選んで追加" Style="{StaticResource SnapwellButtonStyle}" />
+                <Button IsEnabled="False" Content="ルールを追加" Style="{StaticResource SnapwellDemoButtonStyle}" />
+                <Button IsEnabled="False" Content="ウィンドウを選んで追加" Style="{StaticResource SnapwellDemoButtonStyle}" />
             </StackPanel>
             <!-- デモ状態 (未実装) ここまで -->
         </StackPanel>
