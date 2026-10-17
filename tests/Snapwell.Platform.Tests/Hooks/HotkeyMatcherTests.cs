@@ -1,0 +1,182 @@
+using Snapwell.Platform.Hooks;
+
+namespace Snapwell.Platform.Tests.Hooks;
+
+/// <summary>低レベルフックで使う純粋なキー状態の判定を確認する。</summary>
+public sealed class HotkeyMatcherTests
+{
+    /// <summary>左・右・汎用 Ctrl のいずれも Alt と合わせて判定する。</summary>
+    [Theory]
+    [InlineData(0x11u)]
+    [InlineData(0xA2u)]
+    [InlineData(0xA3u)]
+    public void CtrlAltSpaceRequiresBothModifiers(uint control)
+    {
+        var matcher = CreateMatcher();
+        matcher.ProcessKey(control, true);
+        Assert.False(matcher.ProcessKey(0x20, true).Matched);
+        matcher.ProcessKey(0xA4, true);
+        Assert.Equal(new HotkeyMatch(true, 42, true), matcher.ProcessKey(0x20, true));
+        Assert.Equal(new HotkeyMatch(false, 0, true), matcher.ProcessKey(0x20, false));
+        matcher.ProcessKey(control, false);
+        Assert.False(matcher.ProcessKey(0x20, true).Matched);
+    }
+
+    /// <summary>左右を同時に押したときは片方の解放だけで修飾状態を失わない。</summary>
+    [Fact]
+    public void ReleasingOneSidePreservesOtherModifierAndResetClearsState()
+    {
+        var matcher = CreateMatcher();
+        matcher.ProcessKey(0xA2, true);
+        matcher.ProcessKey(0xA3, true);
+        matcher.ProcessKey(0xA5, true);
+        matcher.ProcessKey(0xA2, false);
+        Assert.True(matcher.ProcessKey(0x20, true).Matched);
+        matcher.ProcessKey(0x20, false);
+        matcher.ProcessKey(0xA5, false);
+        Assert.False(matcher.ProcessKey(0x20, true).Matched);
+        matcher.ProcessKey(0xA5, true);
+        matcher.Reset();
+        Assert.False(matcher.ProcessKey(0x20, true).Matched);
+    }
+
+    /// <summary>Shift と左右 Win も修飾キーとして区別し、余分な修飾キーでは一致しない。</summary>
+    [Theory]
+    [InlineData(0xA0u, KeyModifiers.Shift)]
+    [InlineData(0xA1u, KeyModifiers.Shift)]
+    [InlineData(0x5Bu, KeyModifiers.Win)]
+    [InlineData(0x5Cu, KeyModifiers.Win)]
+    public void ShiftAndWinAreMatchedExactly(uint key, KeyModifiers modifier)
+    {
+        var matcher = new HotkeyMatcher();
+        matcher.SetBindings([new(1, modifier, 0x41, false)]);
+        matcher.ProcessKey(key, true);
+        Assert.Equal(new HotkeyMatch(true, 1, false), matcher.ProcessKey(0x41, true));
+        matcher.ProcessKey(0xA2, true);
+        Assert.False(matcher.ProcessKey(0x41, true).Matched);
+    }
+
+    /// <summary>設定元の配列の変更を入力スレッドへ漏らさず、キー解放まで握りつぶす。</summary>
+    [Fact]
+    public void SnapshotIsCopiedAndSuppressedKeyUpSurvivesReplacement()
+    {
+        var bindings = new[] { new HotkeyBinding(1, KeyModifiers.None, 0x41) };
+        var matcher = new HotkeyMatcher();
+        matcher.SetBindings(bindings);
+        bindings[0] = new(2, KeyModifiers.None, 0x42);
+        Assert.Equal(1, matcher.ProcessKey(0x41, true).Id);
+        matcher.SetBindings([]);
+        Assert.True(matcher.ProcessKey(0x41, true).Suppress);
+        Assert.True(matcher.ProcessKey(0x41, false).Suppress);
+        Assert.False(matcher.ProcessKey(0x41, false).Suppress);
+    }
+
+    /// <summary>差し替えは別スレッド、キー状態は単一スレッドという契約を確認する。</summary>
+    [Fact]
+    public async Task ConcurrentSnapshotReplacementDoesNotInterruptMatching()
+    {
+        var matcher = CreateMatcher();
+        var updating = Task.Run(() =>
+        {
+            for (var index = 0; index < 10000; index++)
+            {
+                matcher.SetBindings([new(index, KeyModifiers.Control | KeyModifiers.Alt, 0x20)]);
+            }
+        });
+        matcher.ProcessKey(0xA2, true);
+        matcher.ProcessKey(0xA4, true);
+        for (var index = 0; index < 10000; index++)
+        {
+            Assert.True(matcher.ProcessKey(0x20, true).Matched);
+            matcher.ProcessKey(0x20, false);
+        }
+
+        await updating;
+    }
+
+    /// <summary>入力判定の定常経路でマネージド割り当てをしない。</summary>
+    [Fact]
+    public void MatchingDoesNotAllocate()
+    {
+        var matcher = CreateMatcher();
+        matcher.ProcessKey(0xA2, true);
+        matcher.ProcessKey(0xA4, true);
+        for (var index = 0; index < 100; index++)
+        {
+            matcher.ProcessKey(0x20, true);
+            matcher.ProcessKey(0x20, false);
+        }
+
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        for (var index = 0; index < 1000; index++)
+        {
+            matcher.ProcessKey(0x20, true);
+            matcher.ProcessKey(0x20, false);
+        }
+
+        Assert.Equal(before, GC.GetAllocatedBytesForCurrentThread());
+    }
+
+    /// <summary>容量を超えた場合は古いイベントを捨て、順序を保つ。</summary>
+    [Fact]
+    public void CallbackBufferDropsOldestAndKeepsOrder()
+    {
+        var buffer = new HookEventBuffer(2);
+        buffer.Write(new RawHookEvent(RawHookKind.Key, Detail: 1));
+        buffer.Write(new RawHookEvent(RawHookKind.Key, Detail: 2));
+        buffer.Write(new RawHookEvent(RawHookKind.Key, Detail: 3));
+        Assert.True(buffer.TryRead(out var first));
+        Assert.Equal(2, first.Detail);
+        Assert.True(buffer.TryRead(out var second));
+        Assert.Equal(3, second.Detail);
+        Assert.False(buffer.TryRead(out _));
+    }
+
+    /// <summary>上書きと読み取りが競合しても構造体の途中の値を配送しない。</summary>
+    [Fact]
+    public async Task CallbackBufferPreservesWholeEventsDuringConcurrentOverwrite()
+    {
+        var buffer = new HookEventBuffer(8);
+        var producer = Task.Run(() =>
+        {
+            for (var index = 1; index <= 100000; index++)
+            {
+                buffer.Write(new RawHookEvent(RawHookKind.MouseMove, index, index, -index,
+                    (uint)index, index));
+            }
+        });
+        var last = 0;
+        while (true)
+        {
+            if (buffer.TryRead(out var value))
+            {
+                Assert.True(value.Detail > last);
+                Assert.Equal(value.Detail, value.X);
+                Assert.Equal(-value.Detail, value.Y);
+                Assert.Equal((nint)value.Detail, value.Handle);
+                Assert.Equal((uint)value.Detail, value.Time);
+                last = value.Detail;
+            }
+            else if (producer.IsCompleted)
+            {
+                break;
+            }
+        }
+
+        await producer;
+        // 完了が見える直前の最後の書き込みも確認する。
+        while (buffer.TryRead(out var remaining))
+        {
+            last = remaining.Detail;
+        }
+
+        Assert.Equal(100000, last);
+    }
+
+    private static HotkeyMatcher CreateMatcher()
+    {
+        var matcher = new HotkeyMatcher();
+        matcher.SetBindings([new(42, KeyModifiers.Control | KeyModifiers.Alt, 0x20)]);
+        return matcher;
+    }
+}
