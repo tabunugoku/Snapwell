@@ -18,6 +18,13 @@ public sealed partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        // タイトルバーのアイコン。exe の隣に置いた .ico を使い、無ければ既定のまま (設定画面は動く)。
+        var icon = Path.Combine(AppContext.BaseDirectory, "snapwell.ico");
+        if (File.Exists(icon))
+        {
+            AppWindow.SetIcon(icon);
+        }
+
         _session.Changed += Session_Changed;
         AppWindow.Closing += AppWindow_Closing;
         LoadNotice.Message = _session.LoadMessage ?? "";
