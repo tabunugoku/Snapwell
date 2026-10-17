@@ -3,16 +3,19 @@ using Snapwell.Core.Commands;
 using Snapwell.Core.Geometry;
 using Snapwell.Core.Layout;
 using Snapwell.Core.Settings;
+using Snapwell.Core.Snapping;
 using Snapwell.Platform.Hooks;
 using Snapwell.Platform.Monitors;
 using Snapwell.Platform.Windows;
+using Windows.Win32;
 
 namespace Snapwell.App.Hotkeys;
 
 /// <summary>キー操作から前面ウィンドウの配置を計画する。</summary>
 internal sealed class HotkeyCommandExecutor(IWindowInspector inspector, IMonitorSource monitors,
     IMotionEngine motion, IWindowPositionApi positionApi, Func<PortableSettings> settings,
-    Func<bool> enabled, Action toggleEnabled, uint ownProcessId, Action? openLauncher = null)
+    Func<bool> enabled, Action toggleEnabled, uint ownProcessId, Action? openLauncher = null,
+    Func<Vec2?>? cursorPosition = null)
 {
     private readonly object _gate = new();
     private readonly HashSet<nint> _restoring = [];
@@ -57,11 +60,48 @@ internal sealed class HotkeyCommandExecutor(IWindowInspector inspector, IMonitor
             return;
         }
 
+        if (command == WindowCommand.ArrangeAllMonitors)
+        {
+            var areas = monitors.GetMonitors().Select(monitor => monitor.ToMonitorArea()).ToArray();
+            var windows = GetArrangementWindows();
+            foreach (var monitor in areas)
+            {
+                Arrange(ArrangeLayout.Grid, areas, monitor, windows);
+            }
+
+            return;
+        }
+
         Execute(command, inspector.GetForegroundWindow());
     }
 
     internal void Place(nint handle, PixelRect target, PixelRect workArea) =>
         Execute(default, handle, target, workArea);
+
+    /// <summary>前面ウィンドウに依存せず、カーソルがあるモニターをグリッドで整列する。</summary>
+    internal void ArrangeCurrentMonitor()
+    {
+        if (Volatile.Read(ref _stopped) || !enabled())
+        {
+            return;
+        }
+
+        var point = cursorPosition is null ? GetCursorPosition() : cursorPosition();
+        var monitorInfos = monitors.GetMonitors();
+        var areas = monitorInfos.Select(monitor => monitor.ToMonitorArea()).ToArray();
+        if (point is not { } cursor || areas.Length == 0)
+        {
+            return;
+        }
+
+        // タスクバー上でも、作業領域への距離よりカーソルを含むモニター全体の領域を優先する。
+        var targetMonitor = monitorInfos.FirstOrDefault(monitor => monitor.Bounds.Contains(cursor))?.ToMonitorArea()
+            ?? CommandPlanner.SelectMonitor(new((int)cursor.X, (int)cursor.Y, 0, 0), areas);
+        Arrange(ArrangeLayout.Grid, areas, targetMonitor, GetArrangementWindows());
+    }
+
+    private static Vec2? GetCursorPosition() =>
+        PInvoke.GetCursorPos(out var point) ? new(point.X, point.Y) : null;
 
     private static bool TryGetArrangeLayout(WindowCommand command, out ArrangeLayout layout)
     {
@@ -106,9 +146,13 @@ internal sealed class HotkeyCommandExecutor(IWindowInspector inspector, IMonitor
         }
 
         var targetMonitor = CommandPlanner.SelectMonitor(foreground.VisualBounds, areas);
+        Arrange(layout, areas, targetMonitor, GetArrangementWindows(), foregroundHandle);
+    }
+
+    private IReadOnlyList<WindowSnapshot> GetArrangementWindows()
+    {
         var windows = new List<WindowSnapshot>();
         var seen = new HashSet<nint>();
-        int? mainIndex = null;
         foreach (var handle in inspector.GetTopLevelWindows())
         {
             if (handle == 0 || !seen.Add(handle) || !inspector.TryInspect(handle, out var window))
@@ -118,30 +162,32 @@ internal sealed class HotkeyCommandExecutor(IWindowInspector inspector, IMonitor
 
             // クロークされた別仮想デスクトップのウィンドウや最小化・ポップアップ・所有されたダイアログは除外する。
             var kind = WindowClassifier.Classify(window, ownProcessId);
-            if (kind is not (WindowKind.Normal or WindowKind.FixedSize) ||
-                inspector.GetOwner(handle) != 0 ||
-                CommandPlanner.SelectMonitor(window.VisualBounds, areas) != targetMonitor)
+            if (kind is not (WindowKind.Normal or WindowKind.FixedSize) || inspector.GetOwner(handle) != 0)
             {
                 continue;
-            }
-
-            if (handle == foregroundHandle)
-            {
-                mainIndex = windows.Count;
             }
 
             windows.Add(window);
         }
 
-        if (windows.Count == 0)
+        return windows;
+    }
+
+    private void Arrange(ArrangeLayout layout, IReadOnlyList<MonitorArea> areas, MonitorArea targetMonitor,
+        IReadOnlyList<WindowSnapshot> candidates, nint? mainHandle = null)
+    {
+        var windows = candidates.Where(window =>
+            CommandPlanner.SelectMonitor(window.VisualBounds, areas) == targetMonitor).ToArray();
+        if (windows.Length == 0)
         {
             return;
         }
 
         var current = windows.Select(window => window.VisualBounds).ToArray();
+        var mainIndex = mainHandle is { } handle ? Array.FindIndex(windows, window => window.Handle == handle) : -1;
         var order = WindowArrangement.Order(layout, current, mainIndex);
         var physicalSpacing = settings().ToSpacing().ToPhysical(targetMonitor.Scale);
-        var targets = WindowArrangement.Arrange(layout, targetMonitor.WorkArea, physicalSpacing, windows.Count);
+        var targets = WindowArrangement.Arrange(layout, targetMonitor.WorkArea, physicalSpacing, windows.Length);
         if (targets is null)
         {
             return;

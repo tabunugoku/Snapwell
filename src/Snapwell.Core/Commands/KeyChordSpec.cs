@@ -43,6 +43,10 @@ public static class DefaultHotkeys
             [WindowCommand.ToggleEnabled] = new(plain, 0x13),
             [WindowCommand.OpenLauncher] = new(plain, 0x20),
             [WindowCommand.ArrangeGrid] = new(plain, 0x41),
+            [WindowCommand.ArrangeColumns] = new(shifted, 0x48),
+            [WindowCommand.ArrangeRows] = new(shifted, 0x56),
+            [WindowCommand.ArrangeMainAndStack] = new(shifted, 0x4D),
+            [WindowCommand.ArrangeAllMonitors] = new(shifted, 0x41),
         };
     }
 }

@@ -10,9 +10,32 @@ public enum TrayIconKind
     Attention,
 }
 
+/// <summary>トレイメニューの表示と選択可否。</summary>
+internal sealed record TrayMenuItem(uint Id, string Text, bool Enabled = true, bool Checked = false);
+
 /// <summary>状態・タスクバーの明暗・DPI からトレイのアイコンを選ぶ判断。Win32 に触れない。</summary>
 internal static class TrayIconPolicy
 {
+    /// <summary>設定の直後に整列を置き、一時停止中の整列を無効にする。</summary>
+    public static IReadOnlyList<TrayMenuItem> MenuItems(TrayState state)
+    {
+        var items = new List<TrayMenuItem>
+        {
+            new(5, "設定を開く"),
+            new(6, "現在のモニターを整列", state.Enabled),
+            new(1, state.Enabled ? "一時停止" : "再開"),
+            new(2, "Windows 標準のスナップを止める", Checked: state.DisableStandardSnap),
+            new(3, "標準の動作に戻す"),
+        };
+        if (state.Status is { } status)
+        {
+            items.Add(new(0, status, Enabled: false));
+        }
+
+        items.Add(new(4, "終了"));
+        return items;
+    }
+
     /// <summary>注意 (Status あり) を最優先し、次に一時停止中、それ以外は有効。</summary>
     public static TrayIconKind KindOf(TrayState state) =>
         state.Status is not null ? TrayIconKind.Attention

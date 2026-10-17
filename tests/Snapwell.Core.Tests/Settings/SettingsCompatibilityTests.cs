@@ -12,7 +12,7 @@ public sealed class SettingsCompatibilityTests : IDisposable
     public SettingsCompatibilityTests() => Directory.CreateDirectory(_directory);
 
     [Fact]
-    public void EmptyObjectsPreserveEveryDefaultAndSavingUsesSchemaTwo()
+    public void EmptyObjectsPreserveEveryDefaultAndSavingUsesCurrentSchema()
     {
         File.WriteAllText(SettingsPath, "{}");
         var store = SettingsStores.Portable(SettingsPath);
@@ -30,12 +30,12 @@ public sealed class SettingsCompatibilityTests : IDisposable
     }
 
     [Theory]
-    [InlineData("{\"Hotkeys\":{}}", true, 2)]
-    [InlineData("{\"SchemaVersion\":1,\"Hotkeys\":{}}", true, 2)]
-    [InlineData("{\"SchemaVersion\":2,\"Hotkeys\":{}}", false, 1)]
-    [InlineData("{\"SchemaVersion\":1,\"Hotkeys\":{\"LeftHalf\":{\"Modifiers\":\"Control, Alt\",\"VirtualKey\":32}}}", false, 2)]
-    [InlineData("{\"SchemaVersion\":1,\"Hotkeys\":null}", true, 18)]
-    [InlineData("{\"SchemaVersion\":2,\"Hotkeys\":null}", true, 18)]
+    [InlineData("{\"Hotkeys\":{}}", true, 6)]
+    [InlineData("{\"SchemaVersion\":1,\"Hotkeys\":{}}", true, 6)]
+    [InlineData("{\"SchemaVersion\":2,\"Hotkeys\":{}}", false, 5)]
+    [InlineData("{\"SchemaVersion\":1,\"Hotkeys\":{\"LeftHalf\":{\"Modifiers\":\"Control, Alt\",\"VirtualKey\":32}}}", false, 6)]
+    [InlineData("{\"SchemaVersion\":1,\"Hotkeys\":null}", true, 22)]
+    [InlineData("{\"SchemaVersion\":2,\"Hotkeys\":null}", true, 22)]
     public void StoreAndImportMigrateOnlyOlderFilesWithoutCreatingConflicts(string json, bool launcher, int count)
     {
         File.WriteAllText(SettingsPath, json);
@@ -74,14 +74,15 @@ public sealed class SettingsCompatibilityTests : IDisposable
 
         store.Save(stored);
         using var document = JsonDocument.Parse(File.ReadAllText(SettingsPath));
-        Assert.Equal(3, document.RootElement.GetProperty("SchemaVersion").GetInt32());
+        Assert.Equal(4, document.RootElement.GetProperty("SchemaVersion").GetInt32());
     }
 
     [Theory]
     [InlineData(1, false, false)]
     [InlineData(2, false, true)]
     [InlineData(3, false, true)]
-    [InlineData(4, true, true)]
+    [InlineData(4, false, true)]
+    [InlineData(5, true, true)]
     [InlineData(999999999999, true, true)]
     public void FutureVersionsUseEachStoresCurrentVersion(long version, bool portableFuture, bool deviceFuture)
     {

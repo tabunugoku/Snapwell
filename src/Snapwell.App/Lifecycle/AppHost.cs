@@ -62,6 +62,7 @@ internal sealed class AppHost
         tray.ToggleRequested += ToggleEnabled;
         tray.StandardSnapRequested += ToggleStandardSnap;
         tray.RestoreRequested += RestoreStandardBehavior;
+        tray.ArrangeRequested += ArrangeCurrentMonitor;
         tray.ExitRequested += Shutdown;
         tray.SessionEnding += Shutdown;
     }
@@ -267,6 +268,20 @@ internal sealed class AppHost
         _tray.Update(State());
     }
 
+    /// <summary>設定の再読込で交換された現在の Runtime に整列を渡す。</summary>
+    internal void ArrangeCurrentMonitor()
+    {
+        lock (_gate)
+        {
+            if (!CanOperate() || !_enabled || !_hooksStarted)
+            {
+                return;
+            }
+
+            _runtime?.ArrangeCurrentMonitor();
+        }
+    }
+
     internal void ToggleEnabled()
     {
         lock (_gate)
@@ -392,6 +407,7 @@ internal sealed class AppHost
 
     private void ShutdownCore()
     {
+        _tray.ArrangeRequested -= ArrangeCurrentMonitor;
         if (_watcher is not null)
         {
             _watcher.Changed -= OnSettingsChanged;
