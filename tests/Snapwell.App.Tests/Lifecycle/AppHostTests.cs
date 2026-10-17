@@ -15,6 +15,57 @@ namespace Snapwell.App.Tests.Lifecycle;
 
 public sealed class AppHostTests
 {
+    /// <summary>トレイから一度だけ整列し、再読込後は交換済みの Runtime だけに配送する。</summary>
+    [Fact]
+    public void TrayArrangementUsesCurrentRuntimeOnceAcrossReloadsAndDetachesOnShutdown()
+    {
+        using var fixture = new Fixture();
+        fixture.Tray.RequestArrange();
+        Assert.Equal(0, fixture.Runtime.Arrangements);
+        Assert.True(fixture.Host.Start());
+        Assert.Equal(1, fixture.Tray.ArrangementSubscriptions);
+        fixture.Tray.RequestArrange();
+        Assert.Equal(1, fixture.Runtime.Arrangements);
+
+        for (var i = 0; i < 2; i++)
+        {
+            fixture.Portable.ReloadResult = new(new() { Gap = 20 + i });
+            fixture.Host.ReloadSettings();
+            var current = Assert.IsType<FakeRuntime>(fixture.Created[^1]);
+            Assert.Equal(1, fixture.Tray.ArrangementSubscriptions);
+            fixture.Tray.RequestArrange();
+            Assert.Equal(1, current.Arrangements);
+            Assert.All(fixture.Created.Cast<FakeRuntime>(), runtime => Assert.Equal(1, runtime.Arrangements));
+        }
+
+        fixture.Host.Shutdown();
+        Assert.Equal(0, fixture.Tray.ArrangementSubscriptions);
+        fixture.Tray.RequestArrange();
+        fixture.Host.ArrangeCurrentMonitor();
+        Assert.All(fixture.Created.Cast<FakeRuntime>(), runtime => Assert.Equal(1, runtime.Arrangements));
+        Assert.Empty(fixture.Log.Errors);
+    }
+
+    /// <summary>一時停止やフック開始失敗では整列を配送せず、再開した場合だけ通す。</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void TrayArrangementIsIgnoredWhenPausedOrHooksUnavailable(bool hookFailure)
+    {
+        using var fixture = new Fixture();
+        fixture.Hooks.Starts = !hookFailure;
+        Assert.True(fixture.Host.Start());
+        if (!hookFailure) { fixture.Host.ToggleEnabled(); }
+        fixture.Tray.RequestArrange();
+        Assert.Equal(0, fixture.Runtime.Arrangements);
+        if (!hookFailure)
+        {
+            fixture.Host.ToggleEnabled();
+            fixture.Tray.RequestArrange();
+            Assert.Equal(1, fixture.Runtime.Arrangements);
+        }
+    }
+
     [Fact]
     public void StartupFollowsRecoverySettingsHooksDisableTrayOrder()
     {
@@ -834,6 +885,8 @@ public sealed class AppHostTests
         public event Action? ToggleRequested;
         public event Action? StandardSnapRequested;
         public event Action? RestoreRequested;
+        public event Action? ArrangeRequested;
+        internal int ArrangementSubscriptions => ArrangeRequested?.GetInvocationList().Length ?? 0;
         public event Action? ExitRequested;
         public event Action? SessionEnding;
         internal TrayState? State;
@@ -855,6 +908,7 @@ public sealed class AppHostTests
         internal void RequestToggle() => ToggleRequested?.Invoke();
         internal void RequestStandardSnap() => StandardSnapRequested?.Invoke();
         internal void RequestRestore() => RestoreRequested?.Invoke();
+        internal void RequestArrange() => ArrangeRequested?.Invoke();
         internal void RequestExit() => ExitRequested?.Invoke();
         internal void EndSession() => SessionEnding?.Invoke();
     }
@@ -882,6 +936,7 @@ public sealed class AppHostTests
         internal bool Enabled;
         internal int Cancels;
         internal int Disposals;
+        internal int Arrangements;
         internal ManualResetEventSlim? BlockDispose;
         internal Action? OnDispose;
         internal Action<bool>? OnSetEnabled;
@@ -904,6 +959,7 @@ public sealed class AppHostTests
             Events.Enqueue(value);
         }
         public void CancelAll() => Cancels++;
+        public void ArrangeCurrentMonitor() => Arrangements++;
         public void Dispose()
         {
             Disposals++;
