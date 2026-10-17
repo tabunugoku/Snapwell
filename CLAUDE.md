@@ -5,7 +5,7 @@ Windows 11 用のウィンドウマネージャー。画面のグリッド分割
 設計は `docs/DESIGN.md`。最初に読むこと。競合調査は `reports/competitive-analysis.md`（ローカルだけにあり、Git には入れない）。
 
 ## 現在のタスク
-基本設計とモックアップ（`docs/mockups/snapwell.html`。`.claude/launch.json` の `mockups` で表示する）まで完了。コードはまだ無い。次は技術検証（`docs/DESIGN.md` §15）と、Core の物理モデル・グリッド計算の実装。
+基本設計、モックアップ（`docs/mockups/snapwell.html`。`.claude/launch.json` の `mockups` で表示する）、技術検証（`docs/SPIKES.md`）、Core（物理モデル・グリッド・吸着先の選択）、Platform（モニター・ウィンドウの移動・角丸・標準スナップ・フック）まで完了。いまは App の常駐部分（トレイ、起動と終了の手順、ドラッグの吸着、ホットキー）。そのあとオーバーレイ（ランチャー、区画のプレビュー）と設定画面（WinUI 3）を別の PR で作る。
 
 ## 守ること
 - **x64 と ARM64 のネイティブだけ**: ビルド対象は `win-x64` と `win-arm64`。x86（`win-x86`）や AnyCPU の成果物は作らない。どの変更も両方の RID でビルドが通ること。ソリューションの `Any CPU` 構成は開発とテストのためだけに残す（x86・x64 の構成は置かない）。出荷する成果物は必ず `-r win-x64` / `-r win-arm64` で作る
@@ -39,11 +39,12 @@ Codex と Claude Code のどちらが書いても、同じ見た目にそろえ�
 - **コメントは日本語**: 新しく書くコメントは日本語の常体（短い体言止めまたは「〜する」）。識別子・API 名はそのまま
 - **コメントの中身**: 「なぜそうするか」「前提・制約・落とし穴」を書く。Win32 や DWM の挙動への推測は「実機未確認」と書く。公開する型とメソッドには 1 行の `/// <summary>` を書く
 - **無駄を足さない**: 使われないコード、コメントアウトした古いコード、「念のため」の分岐を残さない。既存のコードの整形し直しは、機能の変更と同じコミットに入れない
-- **確認**: push の前に次を通す。ソリューションは RID を付けてビルドできない（NETSDK1134）ので、RID ごとのビルドは出荷するプロジェクト（いまは Core を参照する `src/Snapwell.Platform`、App ができたら `src/Snapwell.App`）に対して行う
-  - `dotnet build src/Snapwell.Platform/Snapwell.Platform.csproj -c Release -r win-x64 --no-restore`
-  - `dotnet build src/Snapwell.Platform/Snapwell.Platform.csproj -c Release -r win-arm64 --no-restore`
+- **確認**: push の前に次を通す。ソリューションは RID を付けてビルドできない（NETSDK1134）ので、RID ごとのビルドは出荷するプロジェクト（`src/Snapwell.App`）に対して行う
+  - `dotnet build src/Snapwell.App/Snapwell.App.csproj -c Release -r win-x64 --no-restore`
+  - `dotnet build src/Snapwell.App/Snapwell.App.csproj -c Release -r win-arm64 --no-restore`
   - `dotnet test --no-restore`
   - `dotnet format --verify-no-changes --no-restore`
+- **NativeAOT の publish**: `dotnet build -r` では AOT のコンパイルは走らない。出荷物は `dotnet publish src/Snapwell.App/Snapwell.App.csproj -c Release -r win-x64`（と `win-arm64`）で作る。Visual Studio の C++ ツール（x64 と ARM64 の両方）が要る。Git Bash からは `ProgramFiles(x86)` が渡らず `vswhere.exe` が見つからないので、PowerShell から、`${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer` を PATH に足して実行する（このPCで両 RID とも確認済み）
 
 ## 進め方
 - 1 項目 1 コミット。各コミットでビルド（両 RID）とテストが通る状態を保つ。main へのマージは、ユーザーが指示したときだけ
@@ -54,9 +55,9 @@ Codex と Claude Code のどちらが書いても、同じ見た目にそろえ�
 Codex もこのファイルを読む（`run-codex-exec.sh` が `project_doc_fallback_filenames` で渡す）。
 
 - **役割**: Claude Code（Opus 5.5）が統括する。設計、モックアップ、Codex へのプロンプト、レビュー、品質の確認、コミット、リリースを受け持つ。Codex（`gpt-6.1-sol`）は実装を受け持ち、渡されたプロンプトの範囲だけを変える
-- **人の手を介さない**: Codex への指示は Codex CLI（`codex exec`）で渡し、承認を求めない設定（`approval_policy="never"`、サンドボックスは `workspace-write`）で最後まで動かす。ユーザーへの確認が要るのは、main へのマージ、リリース、「守ること」の例外だけ
+- **人の手を介さない**: Codex への指示は Codex CLI（`codex exec`）で渡し、承認を求めない設定（`approval_policy="never"`、サンドボックスは `workspace-write`）で最後まで動かす。ユーザーへの確認が要るのは、main へのマージ、リリース、「守ること」の例外、Codex が使えないときの進め方だけ
 - **料金**: Claude と ChatGPT のサブスクの範囲で動かす。`ANTHROPIC_API_KEY`・`OPENAI_API_KEY` は使わない。Codex は ChatGPT のログイン（`codex login`）で動かす
-- **Codex が使えないとき**: ChatGPT の利用制限などで Codex が動かないときは、Opus が同じプロンプトの範囲で実装してよい。そのときはコミットのメッセージに書かず、PR の説明に「Codex の制限のため Opus が実装」と書く
+- **Codex が使えないとき**: ChatGPT の利用制限などで Codex が動かないときは、自動で Opus の実装に切り替えない。ユーザーに、いったん開発を止めて制限のリセットを待つか、Opus で実装を続けるかを確認する（制限のリセットを待つほうがよい場合があるため）。確認するときは、止まった作業、制限が解ける時刻（Codex の出力にあれば）、残りの項目を示す。Opus で続けると決まったときは、同じプロンプトの範囲で実装し、コミットのメッセージには書かず、PR の説明に「Codex の制限のため Opus が実装」と書く
 - **流れ**:
   1. 要件の確認（`docs/DESIGN.md`、必要ならモックアップ）
   2. `git worktree add ../Snapwell-wt/<名前> -b codex/<名前> origin/main` で作業のフォルダを作り、そこで `dotnet restore` をしておく（`Directory.Build.props` の `RuntimeIdentifiers` で x64 と ARM64 の両方を復元する。`-r` を付けると片方だけになるので付けない。Codex のサンドボックスはネットワークが止められ、NuGet から取れないため）
