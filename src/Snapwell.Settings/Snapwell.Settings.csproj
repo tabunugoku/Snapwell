@@ -22,7 +22,14 @@
        RID なし (ソリューション全体の開発・テスト用ビルド) では x64 としてコンパイルだけ確かめる。出荷物は -r で作る -->
   <PropertyGroup Condition="'$(RuntimeIdentifier)' == ''">
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <_SnapwellDefaultedRuntime>true</_SnapwellDefaultedRuntime>
   </PropertyGroup>
+
+  <!-- 上の補いのまま publish すると、ARM64 のつもりでも黙って x64 ができる。出荷物は -r を必ず付けさせる -->
+  <Target Name="RequireExplicitRuntimeForPublish" BeforeTargets="PrepareForPublish"
+          Condition="'$(_SnapwellDefaultedRuntime)' == 'true'">
+    <Error Text="Snapwell.Settings の publish には -r win-x64 か -r win-arm64 を付ける。" />
+  </Target>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.WindowsAppSDK.WinUI" Version="2.3.9" />
