@@ -4,6 +4,7 @@ using Snapwell.App.Tests.Motion;
 using Snapwell.Core.Commands;
 using Snapwell.Core.Geometry;
 using Snapwell.Core.Layout;
+using Snapwell.Core.Overlay;
 using Snapwell.Core.Settings;
 using Snapwell.Platform.Hooks;
 using Snapwell.Platform.Monitors;
@@ -216,6 +217,126 @@ public sealed class LauncherControllerTests
             }
         }));
         Assert.True(fixture.Launcher.Selection!.WorkArea.Contains(fixture.Launcher.Selection.Bounds));
+    }
+
+    /// <summary>プリセットは範囲を選ぶだけで、Enter を押すまで移動しない。</summary>
+    [Theory]
+    [InlineData(0, 0, 0, 4, 8)]
+    [InlineData(1, 4, 0, 4, 8)]
+    [InlineData(2, 0, 0, 4, 4)]
+    [InlineData(6, 2, 1, 4, 6)]
+    [InlineData(7, 0, 0, 8, 8)]
+    public void PresetClickSelectsRangeWithoutPlacing(int index, int column, int row, int columns, int rows)
+    {
+        using var fixture = new Fixture();
+        fixture.Launcher.Open();
+        var point = fixture.Launcher.PanelLayout!.Presets[index].Bounds.Center;
+        fixture.Presenter.Raise(new(OverlayPointerKind.Down, point));
+        fixture.Presenter.Raise(new(OverlayPointerKind.Up, point));
+        Assert.Equal(new ZoneRange(column, row, columns, rows), fixture.Launcher.Selection!.Range);
+        Assert.Empty(fixture.Placements);
+        fixture.Key(LauncherInput.Accept);
+        Assert.Single(fixture.Placements);
+    }
+
+    /// <summary>無効な三分割とパネルの余白は選択も開閉状態も変えない。</summary>
+    [Fact]
+    public void DisabledPresetAndPanelPaddingDoNotSelectOrClose()
+    {
+        using var fixture = new Fixture();
+        fixture.Launcher.Open();
+        var selection = fixture.Launcher.Selection;
+        var panel = fixture.Launcher.PanelLayout!;
+        fixture.Presenter.Raise(new(OverlayPointerKind.Down, panel.Presets[3].Bounds.Center));
+        fixture.Presenter.Raise(new(OverlayPointerKind.Down, new(panel.Panel.X + 2, panel.Panel.Y + 15)));
+        Assert.Same(selection, fixture.Launcher.Selection);
+        Assert.True(fixture.Launcher.IsOpen);
+        Assert.Empty(fixture.Placements);
+    }
+
+    /// <summary>候補をクリックすると選択の物理範囲に近い新区画へ移り、三分割が有効になる。</summary>
+    [Theory]
+    [InlineData(1, 12, 6)]
+    [InlineData(2, 6, 4)]
+    public void PlanClickChangesGridAndKeepsSelectionWithinBounds(int option, int columns, int rows)
+    {
+        using var fixture = new Fixture();
+        fixture.Launcher.Open();
+        fixture.Presenter.Raise(new(OverlayPointerKind.Down, fixture.Launcher.PanelLayout!.Presets[1].Bounds.Center));
+        var previousBounds = fixture.Launcher.Selection!.Bounds;
+        fixture.Presenter.Raise(new(OverlayPointerKind.Down, fixture.Launcher.PanelLayout.Plan.Center));
+        Assert.Equal(3, fixture.Launcher.PanelLayout!.Options.Count);
+        fixture.Presenter.Raise(new(OverlayPointerKind.Down, fixture.Launcher.PanelLayout.Options[option].Center));
+        var selection = fixture.Launcher.Selection!;
+        Assert.Equal(new GridPlan(columns, rows), selection.Grid.Plan);
+        Assert.True(selection.WorkArea.Contains(selection.Bounds));
+        Assert.Equal(selection.Grid.SnapToGrid(previousBounds), selection.Bounds);
+        Assert.Empty(fixture.Launcher.PanelLayout!.Options);
+        fixture.Presenter.Raise(new(OverlayPointerKind.Down, fixture.Launcher.PanelLayout.Presets[3].Bounds.Center));
+        Assert.Equal(new ZoneRange(0, 0, columns / 3, rows), fixture.Launcher.Selection!.Range);
+        Assert.Empty(fixture.Placements);
+    }
+
+    /// <summary>メニュー表示中の右クリックと Esc も移動せず閉じる。</summary>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void RightClickAndEscapeCloseOpenPlanMenu(bool rightClick)
+    {
+        using var fixture = new Fixture();
+        fixture.Launcher.Open();
+        fixture.Presenter.Raise(new(OverlayPointerKind.Down, fixture.Launcher.PanelLayout!.Plan.Center));
+        if (rightClick)
+        {
+            fixture.Presenter.Raise(new(OverlayPointerKind.RightDown, fixture.Launcher.PanelLayout!.Panel.Center));
+        }
+        else
+        {
+            fixture.Key(LauncherInput.Cancel);
+        }
+
+        Assert.False(fixture.Launcher.IsOpen);
+        Assert.Null(fixture.Launcher.PanelLayout);
+        Assert.Empty(fixture.Placements);
+    }
+
+    /// <summary>消えた対象へのプリセットや分割案の操作は表示を閉じる。</summary>
+    [Fact]
+    public void MissingTargetDuringPanelClickClosesWithoutPlacement()
+    {
+        using var fixture = new Fixture();
+        fixture.Launcher.Open();
+        var point = fixture.Launcher.PanelLayout!.Presets[0].Bounds.Center;
+        fixture.Inspector.Exists = false;
+        fixture.Presenter.Raise(new(OverlayPointerKind.Down, point));
+        Assert.False(fixture.Launcher.IsOpen);
+        Assert.Empty(fixture.Placements);
+    }
+
+    /// <summary>描画を配送する時点では GDI を呼ばず、対象名は短い一行にする。</summary>
+    [Fact]
+    public void QueuedPanelCapturesBoundedWindowTitleAndDefersPainting()
+    {
+        using var fixture = new Fixture();
+        fixture.Inspector.Window = fixture.Inspector.Window with { Title = new string('例', 1000) + "\n" };
+        fixture.Launcher.Open();
+        var title = Assert.Single(fixture.Launcher.PanelLayout!.Text, text => text.Size == 12.5);
+        Assert.Equal(512, title.Value.Length);
+        Assert.Single(fixture.Presenter.Requests);
+        Assert.Empty(fixture.Placements);
+    }
+
+    /// <summary>描画完了が遅れても、閉じたパネルの当たり判定を復活させない。</summary>
+    [Fact]
+    public void LatePaintingDoesNotRestoreClosedPanelHitTests()
+    {
+        using var fixture = new Fixture();
+        fixture.Launcher.Open();
+        var paint = fixture.Presenter.Requests[0].Paint;
+        fixture.Launcher.Close();
+        paint();
+        Assert.Null(fixture.Launcher.PanelLayout);
+        Assert.False(fixture.Launcher.IsOpen);
     }
 
     private sealed class Fixture : IDisposable

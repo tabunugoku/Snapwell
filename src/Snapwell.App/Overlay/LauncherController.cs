@@ -26,6 +26,11 @@ internal sealed class LauncherController : IDisposable
     private readonly uint _ownProcessId;
     private readonly Func<OverlayTheme> _theme;
     private double _scale = 1;
+    private PhysicalSpacing _spacing;
+    private string _targetTitle = "";
+    private LauncherPanelLayout? _panelLayout;
+    private bool _planMenuOpen;
+    private long _drawRevision;
     private ZoneSelection? _selection;
     private nint _target;
     private bool _mouseSelecting;
@@ -62,6 +67,11 @@ internal sealed class LauncherController : IDisposable
         get { lock (_gate) { return _selection; } }
     }
 
+    internal LauncherPanelLayout? PanelLayout
+    {
+        get { lock (_gate) { return _panelLayout; } }
+    }
+
     internal void Open() => Open(_inspector.GetForegroundWindow());
 
     /// <summary>指定したウィンドウを対象に区画を選ぶ。</summary>
@@ -90,7 +100,8 @@ internal sealed class LauncherController : IDisposable
             var options = _settings();
             try
             {
-                _selection = new(monitor.WorkArea, options.ToGridPlan(), options.ToSpacing().ToPhysical(monitor.Scale));
+                _spacing = options.ToSpacing().ToPhysical(monitor.Scale);
+                _selection = new(monitor.WorkArea, options.ToGridPlan(), _spacing);
             }
             catch (ArgumentException)
             {
@@ -99,6 +110,7 @@ internal sealed class LauncherController : IDisposable
             }
 
             _target = handle;
+            _targetTitle = DisplayTitle(window.Title);
             _scale = monitor.Scale;
             _mouseSelecting = false;
             _applyBindings(_launcherBindings);
@@ -248,12 +260,63 @@ internal sealed class LauncherController : IDisposable
 
             var selection = _selection!;
             var cell = selection.HitTest(pointer.Position);
-            if (pointer.Kind == OverlayPointerKind.RightDown ||
-                (pointer.Kind == OverlayPointerKind.Down && cell is null))
+            if (pointer.Kind == OverlayPointerKind.RightDown)
             {
                 CloseCore();
+                return;
             }
-            else if (pointer.Kind == OverlayPointerKind.Down && cell is { } start)
+
+            var panel = _panelLayout!;
+            if (pointer.Kind == OverlayPointerKind.Down)
+            {
+                _mouseSelecting = false;
+                if (panel.HitOption(pointer.Position) is { } option)
+                {
+                    ChangePlan(LauncherPanelLayout.Plans[option]);
+                    return;
+                }
+
+                if (panel.HitPlan(pointer.Position))
+                {
+                    _planMenuOpen = !_planMenuOpen;
+                    _panelLayout = null;
+                    Draw();
+                    return;
+                }
+
+                if (_planMenuOpen)
+                {
+                    _planMenuOpen = false;
+                    _panelLayout = null;
+                    Draw();
+                    return;
+                }
+
+                if (panel.HitPreset(pointer.Position) is { } preset)
+                {
+                    if (LauncherPreset.All[preset].RangeFor(selection.Grid.Plan) is { } range)
+                    {
+                        _selection = selection.Select(new(range.Column, range.Row),
+                            new(range.Column + range.Columns - 1, range.Row + range.Rows - 1));
+                        Draw();
+                    }
+
+                    return;
+                }
+
+                if (panel.Panel.Contains(pointer.Position))
+                {
+                    return;
+                }
+
+                if (cell is null)
+                {
+                    CloseCore();
+                    return;
+                }
+            }
+
+            if (pointer.Kind == OverlayPointerKind.Down && cell is { } start)
             {
                 _selection = selection.Select(start, start);
                 _mouseSelecting = true;
@@ -261,6 +324,13 @@ internal sealed class LauncherController : IDisposable
             }
             else if (_mouseSelecting && pointer.Kind is OverlayPointerKind.Move or OverlayPointerKind.Up)
             {
+                if (panel.Panel.Contains(pointer.Position) ||
+                    panel.Options.Any(rect => rect.Contains(pointer.Position)))
+                {
+                    _mouseSelecting = pointer.Kind != OverlayPointerKind.Up;
+                    return;
+                }
+
                 // capture 中の領域外は最寄りの端に留める。
                 var area = selection.WorkArea;
                 cell ??= selection.HitTest(new(Math.Clamp(pointer.Position.X, area.X, area.Right - 1),
@@ -270,6 +340,27 @@ internal sealed class LauncherController : IDisposable
                 Draw();
             }
         }
+    }
+
+    private void ChangePlan(GridPlan plan)
+    {
+        var old = _selection!;
+        try
+        {
+            var selection = new ZoneSelection(old.WorkArea, plan, _spacing);
+            var snapped = selection.Grid.SnapToGrid(old.Bounds);
+            var anchor = selection.HitTest(new(snapped.X, snapped.Y))!.Value;
+            var cursor = selection.HitTest(new(snapped.Right - 1, snapped.Bottom - 1))!.Value;
+            _selection = selection.Select(anchor, cursor);
+        }
+        catch (ArgumentException)
+        {
+            // 分割数と間隔が収まらない候補では、現在のグリッドを保つ。
+        }
+
+        _planMenuOpen = false;
+        _panelLayout = null;
+        Draw();
     }
 
     private bool ValidateTargetCore()
@@ -286,6 +377,7 @@ internal sealed class LauncherController : IDisposable
             return false;
         }
 
+        _targetTitle = DisplayTitle(window.Title);
         return true;
     }
 
@@ -293,7 +385,22 @@ internal sealed class LauncherController : IDisposable
     {
         var selection = _selection!;
         var scale = _scale;
-        _presenter.Request(selection.WorkArea, () => OverlayPainter.Launcher(selection, _theme(), scale));
+        var title = _targetTitle;
+        var menuOpen = _planMenuOpen;
+        var revision = ++_drawRevision;
+        _panelLayout ??= LauncherPanelLayout.Create(selection, scale, title, menuOpen);
+        _presenter.Request(selection.WorkArea, () =>
+            LauncherPanelRenderer.Paint(selection, title, scale, menuOpen, _theme(), layout =>
+            {
+                lock (_gate)
+                {
+                    // 閉じた後や新しい要求の後に完了した描画で、当たり判定を巻き戻さない。
+                    if (_selection is not null && revision == _drawRevision)
+                    {
+                        _panelLayout = layout;
+                    }
+                }
+            }));
     }
 
     private void CloseCore()
@@ -305,6 +412,10 @@ internal sealed class LauncherController : IDisposable
 
         _selection = null;
         _target = 0;
+        _targetTitle = "";
+        _panelLayout = null;
+        _planMenuOpen = false;
+        _drawRevision++;
         _mouseSelecting = false;
         _presenter.Hide();
         ApplyCurrentBindings();
@@ -312,4 +423,7 @@ internal sealed class LauncherController : IDisposable
 
     private void ApplyCurrentBindings() =>
         _applyBindings(_selection is not null ? _launcherBindings : _enabled ? _normalBindings : _pausedBindings);
+
+    private static string DisplayTitle(string title) =>
+        string.Concat(title.Take(512).Select(character => char.IsControl(character) ? ' ' : character));
 }
