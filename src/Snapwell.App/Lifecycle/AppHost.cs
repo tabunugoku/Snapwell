@@ -21,9 +21,12 @@ internal sealed class AppHost
     private readonly IAppLog _log;
     private readonly Action _restoreCorners;
     private readonly RuntimeFactory _createRuntime;
+    private readonly ISettingsWatcher? _watcher;
     private readonly CancellationTokenSource _deliveryStop = new();
     private readonly ManualResetEventSlim _shutdownDone = new(false);
     private IAppRuntime? _runtime;
+    // 本体は settings.json を読むだけで、書き込むのは設定画面だけ。
+    private PortableSettings _portable = new();
     private DeviceState _device = new();
     private bool _ownsInstance;
     private bool _hooksStarted;
@@ -35,10 +38,11 @@ internal sealed class AppHost
     private int _shutdownThread;
     private bool _needsFinalRestore;
     private string? _status;
+    private string? _reloadStatus;
 
     internal AppHost(ISingleInstance instance, ISnapGuard guard, ISettingsStore<PortableSettings> portableStore,
         ISettingsStore<DeviceState> deviceStore, IHookService hooks, ITrayService tray, IConsentPrompt consent,
-        IAppLog log, Action restoreCorners, RuntimeFactory createRuntime)
+        IAppLog log, Action restoreCorners, RuntimeFactory createRuntime, ISettingsWatcher? watcher = null)
     {
         _instance = instance;
         _guard = guard;
@@ -50,6 +54,11 @@ internal sealed class AppHost
         _log = log;
         _restoreCorners = restoreCorners;
         _createRuntime = createRuntime;
+        _watcher = watcher;
+        if (_watcher is not null)
+        {
+            _watcher.Changed += OnSettingsChanged;
+        }
         tray.ToggleRequested += ToggleEnabled;
         tray.StandardSnapRequested += ToggleStandardSnap;
         tray.RestoreRequested += RestoreStandardBehavior;
@@ -90,6 +99,7 @@ internal sealed class AppHost
             }
 
             var portable = _portableStore.Load();
+            _portable = SettingsTransfer.Normalize(portable.Value);
             var device = _deviceStore.Load();
             _device = device.Value;
             _deviceReadOnly = device.IsReadOnly;
@@ -100,7 +110,14 @@ internal sealed class AppHost
             }
             else if (!_startupRecoveryFailed && (portable.IsReadOnly || device.IsReadOnly))
             {
-                _status = "新しい版の設定を保護しています";
+                if (device.IsReadOnly)
+                {
+                    _status = "新しい版の設定を保護しています";
+                }
+                else
+                {
+                    _reloadStatus = "新しい版の設定を保護しています";
+                }
             }
 
             // Toggle はトレイのスレッドへ渡し、入力配送では保存や同意の待機を行わない。
@@ -131,6 +148,15 @@ internal sealed class AppHost
             _runtime.SetEnabled(_enabled && _hooksStarted);
             DisableIfRequested();
             _tray.Show(State());
+            if (_watcher is not null)
+            {
+                Cleanup(() =>
+                {
+                    _watcher.Start();
+                    // 最初の読み込みから監視開始までの保存も取り込む。
+                    _tray.Post(() => ReloadSettings(reportUnreadable: false));
+                });
+            }
             if (_hooksStarted)
             {
                 _ = Task.Run(DeliverAsync);
@@ -141,6 +167,105 @@ internal sealed class AppHost
     }
 
     internal void RunMessageLoop() => _tray.RunMessageLoop();
+
+    private void OnSettingsChanged()
+    {
+        if (Volatile.Read(ref _shutdown) == 0)
+        {
+            Cleanup(() => _tray.Post(ReloadSettings));
+        }
+    }
+
+    internal void ReloadSettings() => ReloadSettings(reportUnreadable: true);
+
+    private void ReloadSettings(bool reportUnreadable)
+    {
+        lock (_gate)
+        {
+            if (!CanOperate())
+            {
+                return;
+            }
+
+            SettingsLoadResult<PortableSettings>? loaded;
+            try
+            {
+                loaded = _portableStore.TryReload();
+            }
+            catch (Exception exception)
+            {
+                ReportReloadFailure(exception);
+                return;
+            }
+
+            if (loaded is null)
+            {
+                // 初回起動では設定ファイルがまだない場合があるため、監視通知時だけ失敗を知らせる。
+                if (reportUnreadable)
+                {
+                    ReportReloadFailure(new IOException("設定を再読み込みできない。次の変更で再試行する。"));
+                }
+                return;
+            }
+
+            if (loaded.IsReadOnly)
+            {
+                _reloadStatus = "新しい版の設定を保護しています";
+                _tray.Update(State());
+                return;
+            }
+
+            var settings = SettingsTransfer.Normalize(loaded.Value);
+            if (SettingsTransfer.GetDifferences(_portable, settings).Count == 0)
+            {
+                _reloadStatus = null;
+                _tray.Update(State());
+                return;
+            }
+
+            IAppRuntime replacement;
+            try
+            {
+                replacement = _createRuntime(settings, () => Enabled, () => _tray.Post(ToggleEnabled));
+            }
+            catch (Exception exception)
+            {
+                ReportReloadFailure(exception);
+                return;
+            }
+
+            if (Volatile.Read(ref _shutdown) != 0)
+            {
+                Cleanup(replacement.Dispose);
+                return;
+            }
+
+            // 両コンストラクターは割り当てを入れない。古い Dispose の解除が終わってから新しい方を有効にする。
+            var previous = Volatile.Read(ref _runtime)!;
+            Cleanup(() => previous.SetEnabled(false));
+            Cleanup(previous.CancelAll);
+            Cleanup(previous.Dispose);
+            if (Volatile.Read(ref _shutdown) != 0)
+            {
+                Cleanup(replacement.Dispose);
+                return;
+            }
+
+            // 初期状態での配送を防ぐため、有効状態の確定後に公開する。
+            replacement.SetEnabled(_enabled && _hooksStarted);
+            Volatile.Write(ref _runtime, replacement);
+            _portable = settings;
+            _reloadStatus = null;
+            _tray.Update(State());
+        }
+    }
+
+    private void ReportReloadFailure(Exception exception)
+    {
+        Log(exception);
+        _reloadStatus = "設定を反映できませんでした。前の設定を使用しています";
+        _tray.Update(State());
+    }
 
     internal void ToggleEnabled()
     {
@@ -267,6 +392,12 @@ internal sealed class AppHost
 
     private void ShutdownCore()
     {
+        if (_watcher is not null)
+        {
+            _watcher.Changed -= OnSettingsChanged;
+            Cleanup(_watcher.Dispose);
+        }
+
         // OS 設定は、ほかのスレッドが _gate を持ったまま固まっていても戻せるよう、ロックの外で最初に戻す。
         var restored = Volatile.Read(ref _ownsInstance);
         if (restored)
@@ -341,7 +472,7 @@ internal sealed class AppHost
                     break;
                 }
 
-                _runtime!.Handle(value);
+                Volatile.Read(ref _runtime)!.Handle(value);
             }
         }
         catch (OperationCanceledException) when (_deliveryStop.IsCancellationRequested)
@@ -399,7 +530,8 @@ internal sealed class AppHost
         Log(new IOException(SnapRestoreFailureStatus, exception));
     }
 
-    private TrayState State() => new(_enabled, _device.DisableStandardSnap, _status);
+    private TrayState State() => new(_enabled, _device.DisableStandardSnap,
+        _status is null ? _reloadStatus : _reloadStatus is null ? _status : $"{_status} / {_reloadStatus}");
 
     private void SaveDevice()
     {

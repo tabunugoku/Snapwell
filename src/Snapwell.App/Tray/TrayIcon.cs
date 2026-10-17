@@ -10,7 +10,7 @@ using Windows.Win32.UI.WindowsAndMessaging;
 namespace Snapwell.App.Tray;
 
 /// <summary>TaskbarCreated を受信できる、隠したトップレベルウィンドウのトレイ。</summary>
-internal sealed unsafe class TrayIcon(IAppLog log) : ITrayService
+internal sealed unsafe class TrayIcon(IAppLog log, ISettingsLauncher? settings = null) : ITrayService
 {
     private const uint CallbackMessage = 0x8001;
     private const uint InvokeMessage = 0x8002;
@@ -18,11 +18,13 @@ internal sealed unsafe class TrayIcon(IAppLog log) : ITrayService
     private const uint WmClose = 0x0010;
     private const uint WmContextMenu = 0x007B;
     private const uint WmRButtonUp = 0x0205;
+    private const uint WmLButtonDblClk = 0x0203;
     private const string ClassName = "Snapwell.TrayHost";
     [ThreadStatic]
     private static TrayIcon? _current;
     private readonly object _gate = new();
     private readonly ConcurrentQueue<Action> _posted = new();
+    private readonly ISettingsLauncher _settings = settings ?? new SettingsLauncher(log);
     private HWND _window;
     private HINSTANCE _module;
     private uint _taskbarCreated;
@@ -185,6 +187,7 @@ internal sealed unsafe class TrayIcon(IAppLog log) : ITrayService
         try
         {
             var state = Volatile.Read(ref _state);
+            AppendItem(menu, MENU_ITEM_FLAGS.MF_STRING, 5, "設定を開く");
             AppendItem(menu, MENU_ITEM_FLAGS.MF_STRING, 1, state.Enabled ? "一時停止" : "再開");
             AppendItem(menu, MENU_ITEM_FLAGS.MF_STRING |
                 (state.DisableStandardSnap ? MENU_ITEM_FLAGS.MF_CHECKED : 0), 2, "Windows 標準のスナップを止める");
@@ -208,6 +211,7 @@ internal sealed unsafe class TrayIcon(IAppLog log) : ITrayService
                 case 2: StandardSnapRequested?.Invoke(); break;
                 case 3: RestoreRequested?.Invoke(); break;
                 case 4: ExitRequested?.Invoke(); break;
+                case 5: _settings.Open(); break;
             }
         }
         finally
@@ -238,6 +242,9 @@ internal sealed unsafe class TrayIcon(IAppLog log) : ITrayService
 
         switch (message)
         {
+            case CallbackMessage when (uint)lParam.Value == WmLButtonDblClk:
+                _settings.Open();
+                return default;
             case CallbackMessage when (uint)lParam.Value is WmRButtonUp or WmContextMenu:
                 ShowMenu();
                 return default;

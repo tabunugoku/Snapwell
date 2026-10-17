@@ -5,6 +5,16 @@ namespace Snapwell.Core.Tests.Commands;
 public sealed class HotkeyCatalogTests
 {
     [Fact]
+    public void EveryCommandHasADisplayNameIncludingOpenLauncher()
+    {
+        Assert.Equal("ランチャーを開く", HotkeyCatalog.GetDisplayName(WindowCommand.OpenLauncher));
+        foreach (var command in Enum.GetValues<WindowCommand>())
+        {
+            Assert.NotEqual(command.ToString(), HotkeyCatalog.GetDisplayName(command));
+        }
+    }
+
+    [Fact]
     public void DefaultsHaveNoConflicts() => Assert.Empty(HotkeyCatalog.FindConflicts(DefaultHotkeys.Create()));
 
     [Fact]
