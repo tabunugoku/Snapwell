@@ -172,6 +172,23 @@ public sealed class SettingsTransferTests : IDisposable
     }
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void FutureExportIsRejectedBeforeReplacingOrCreatingTemporaryFiles(bool holdReadHandle)
+    {
+        var path = Path.Combine(_directory, "future.json");
+        var original = System.Text.Encoding.UTF8.GetBytes("{\"SchemaVersion\":2,\"Future\":\"保持する\"}\r\n");
+        File.WriteAllBytes(path, original);
+        // 削除共有を許さず、置換前に版を確認していることを確かめる。
+        using var reader = holdReadHandle ? File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read) : null;
+
+        Assert.Throws<InvalidOperationException>(() => SettingsTransfer.Export(path, new()));
+
+        Assert.Equal(original, File.ReadAllBytes(path));
+        Assert.Equal(path, Assert.Single(Directory.GetFiles(_directory)));
+    }
+
+    [Theory]
     [InlineData("")]
     [InlineData("{")]
     [InlineData("null")]
