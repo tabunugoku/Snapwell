@@ -23,7 +23,14 @@ public sealed class SettingsStore<T>(string path, JsonTypeInfo<T> typeInfo, Func
 {
     private readonly object _gate = new();
     private readonly string _path = Path.GetFullPath(path);
+    private readonly Action? _beforeReplace;
     private bool _readOnly;
+
+    internal SettingsStore(string path, JsonTypeInfo<T> typeInfo, Func<T> defaults, Func<T, T> normalize,
+        Action beforeReplace) : this(path, typeInfo, defaults, normalize)
+    {
+        _beforeReplace = beforeReplace;
+    }
 
     /// <summary>未来の版を先に検出し、壊れたファイルだけを隔離する。</summary>
     public SettingsLoadResult<T> Load()
@@ -78,6 +85,7 @@ public sealed class SettingsStore<T>(string path, JsonTypeInfo<T> typeInfo, Func
 
             Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
             var temporaryPath = _path + "." + Guid.NewGuid().ToString("N") + ".tmp";
+            var backupPath = _path + "." + Guid.NewGuid().ToString("N") + ".bak";
             try
             {
                 using (var stream = new FileStream(temporaryPath, FileMode.CreateNew, FileAccess.Write,
@@ -87,13 +95,45 @@ public sealed class SettingsStore<T>(string path, JsonTypeInfo<T> typeInfo, Func
                     stream.Flush(flushToDisk: true);
                 }
 
-                File.Move(temporaryPath, _path, overwrite: true);
+                var exists = File.Exists(_path);
+                _beforeReplace?.Invoke();
+                if (exists)
+                {
+                    File.Replace(temporaryPath, _path, backupPath);
+                    var future = false;
+                    try
+                    {
+                        using var stream = File.OpenRead(backupPath);
+                        using var document = JsonDocument.Parse(stream);
+                        future = IsFuture(document.RootElement);
+                    }
+                    catch (JsonException)
+                    {
+                        // 壊れた JSON は未来の版と判定せず、今回保存した設定を残す。
+                    }
+
+                    if (future)
+                    {
+                        File.Replace(backupPath, _path, null);
+                        _readOnly = true;
+                        throw new InvalidOperationException("新しい版の設定は上書きできない。");
+                    }
+                }
+                else
+                {
+                    File.Move(temporaryPath, _path, overwrite: false);
+                }
             }
             finally
             {
                 if (File.Exists(temporaryPath))
                 {
                     File.Delete(temporaryPath);
+                }
+
+                if (File.Exists(backupPath))
+                {
+                    File.Delete(backupPath);
                 }
             }
         }

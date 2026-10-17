@@ -1,4 +1,7 @@
+using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using Snapwell.App.Hotkeys;
+using Snapwell.App.Motion;
 using Snapwell.App.Tests.Motion;
 using Snapwell.Core.Commands;
 using Snapwell.Core.Geometry;
@@ -81,11 +84,156 @@ public sealed class HotkeyTests
     [Fact]
     public void MaximizedWindowUsesReinspectedNormalBounds()
     {
-        var fixture = new Fixture();
-        fixture.Inspector.Window = fixture.Inspector.Window with { IsMaximized = true };
+        using var fixture = new BlockingRestoreFixture();
         fixture.Executor.Handle(new((int)WindowCommand.LeftHalf));
-        Assert.Equal(1, fixture.Position.RestoreCalls);
-        Assert.Equal(new PixelRect(100, 100, 400, 300), Assert.Single(fixture.Motion.Requests).Current);
+        fixture.CompleteRestore();
+        Assert.Equal(1, fixture.RestoreCalls);
+        Assert.Equal(new PixelRect(100, 100, 400, 300), Assert.Single(fixture.Requests).Current);
+    }
+
+    [Fact]
+    public async Task BlockedRestoreReturnsPromptlyAndAllowsOtherWindowsAndToggleWhileDroppingDuplicates()
+    {
+        using var fixture = new BlockingRestoreFixture();
+        await Task.Run(() => fixture.Executor.Handle(new((int)WindowCommand.LeftHalf)))
+            .WaitAsync(TimeSpan.FromSeconds(1));
+        Assert.True(fixture.Entered.Wait(5000));
+        Assert.True(fixture.RestoreThread!.IsBackground);
+        Assert.StartsWith("Snapwell restore ", fixture.RestoreThread.Name);
+        fixture.Executor.Handle(new((int)WindowCommand.RightHalf));
+        fixture.Executor.Handle(new((int)WindowCommand.ToggleEnabled));
+        Assert.Equal(1, fixture.Toggles);
+        fixture.Foreground = 2;
+        fixture.Executor.Handle(new((int)WindowCommand.LeftHalf));
+        Assert.Equal((nint)2, Assert.Single(fixture.Requests).Handle);
+        fixture.CompleteRestore();
+        Assert.Equal(1, fixture.RestoreCalls);
+        Assert.Single(fixture.Requests, request => request.Handle == 1);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task StopOrDisableWhileRestoringPreventsLateRequest(bool stop)
+    {
+        using var fixture = new BlockingRestoreFixture();
+        fixture.Executor.Handle(new((int)WindowCommand.LeftHalf));
+        Assert.True(fixture.Entered.Wait(5000));
+        await Task.Run(() =>
+        {
+            if (stop)
+            {
+                fixture.Executor.Stop();
+            }
+            else
+            {
+                Volatile.Write(ref fixture.Enabled, false);
+            }
+        }).WaitAsync(TimeSpan.FromSeconds(1));
+        fixture.CompleteRestore();
+        Assert.Empty(fixture.Requests);
+    }
+
+    [Theory]
+    [InlineData("missing")]
+    [InlineData("maximized")]
+    [InlineData("excluded")]
+    [InlineData("failed")]
+    [InlineData("throwing")]
+    [InlineData("settings")]
+    public void FailedRestorationOrReinspectionDoesNotRequestAndWorkerExceptionsStayContained(string failure)
+    {
+        using var fixture = new BlockingRestoreFixture { Failure = failure };
+        fixture.Executor.Handle(new((int)WindowCommand.LeftHalf));
+        fixture.CompleteRestore();
+        Assert.Empty(fixture.Requests);
+        fixture.Failure = "";
+        fixture.Foreground = 2;
+        fixture.Executor.Handle(new((int)WindowCommand.LeftHalf));
+        Assert.Equal((nint)2, Assert.Single(fixture.Requests).Handle);
+    }
+
+    [Fact]
+    public void CompletedRestoreReleasesWindowForSubsequentCommands()
+    {
+        using var fixture = new BlockingRestoreFixture();
+        fixture.Executor.Handle(new((int)WindowCommand.LeftHalf));
+        fixture.CompleteRestore();
+        fixture.Executor.Handle(new((int)WindowCommand.RightHalf));
+        Assert.Equal(2, fixture.Requests.Count);
+        Assert.Equal(1, fixture.RestoreCalls);
+    }
+
+    private sealed class BlockingRestoreFixture : IWindowInspector, IWindowPositionApi, IMotionEngine, IDisposable
+    {
+        private readonly ManualResetEventSlim _continue = new(false);
+        private readonly WindowSnapshot _normal = new FakeInspector().Window;
+        private int _restored;
+        internal ManualResetEventSlim Entered { get; } = new(false);
+        internal ConcurrentQueue<MotionRequest> Requests { get; } = new();
+        internal HotkeyCommandExecutor Executor { get; }
+        internal Thread? RestoreThread;
+        internal nint Foreground = 1;
+        internal bool Enabled = true;
+        internal int Toggles;
+        internal int RestoreCalls;
+        internal string Failure = "";
+
+        internal BlockingRestoreFixture() => Executor = new(this, new FakeMonitors(), this, this,
+            () => Failure == "settings" ? throw new InvalidOperationException() : new(),
+            () => Volatile.Read(ref Enabled), () => Toggles++, 999);
+
+        public bool TryInspect(nint handle, [NotNullWhen(true)] out WindowSnapshot? snapshot)
+        {
+            var restored = Volatile.Read(ref _restored) != 0;
+            snapshot = handle == 1 && restored && Failure == "missing" ? null : _normal with
+            {
+                Handle = handle,
+                IsMaximized = handle == 1 && (!restored || Failure == "maximized"),
+                IsCloaked = handle == 1 && restored && Failure == "excluded",
+            };
+            return snapshot is not null;
+        }
+
+        public nint GetForegroundWindow() => Foreground;
+        public nint GetRootWindowAt(int x, int y) => Foreground;
+        public bool Restore(nint handle)
+        {
+            Interlocked.Increment(ref RestoreCalls);
+            RestoreThread = Thread.CurrentThread;
+            Entered.Set();
+            _continue.Wait();
+            Interlocked.Exchange(ref _restored, 1);
+            if (Failure == "throwing")
+            {
+                throw new InvalidOperationException();
+            }
+
+            return Failure != "failed";
+        }
+
+        internal void CompleteRestore()
+        {
+            Assert.True(Entered.Wait(5000));
+            _continue.Set();
+            Assert.True(RestoreThread!.Join(TimeSpan.FromSeconds(5)));
+        }
+
+        public void Request(MotionRequest request) => Requests.Enqueue(request);
+        public bool IsMoving(nint handle) => false;
+        public void Cancel(nint handle) { }
+        public void CancelAll() { }
+        public bool SetBounds(nint handle, PixelRect bounds, bool positionOnly) => throw new NotSupportedException();
+        public bool ApplyBatch(IReadOnlyList<NativeWindowPlacement> placements) => throw new NotSupportedException();
+        public void Dispose()
+        {
+            Executor.Stop();
+            _continue.Set();
+            if (RestoreThread is { IsThreadPoolThread: false } thread)
+            {
+                thread.Join(TimeSpan.FromSeconds(5));
+            }
+        }
     }
 
     [Fact]

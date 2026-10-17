@@ -242,12 +242,12 @@ public sealed class HookThread : IDisposable
         }
     }
 
-    private void Publish(RawHookEvent raw)
+    internal void Publish(RawHookEvent raw)
     {
         HookEvent value = raw.Kind switch
         {
             RawHookKind.MoveStart => new MoveSizeStarted(raw.Handle),
-            RawHookKind.MoveEnd => new MoveSizeEnded(raw.Handle),
+            RawHookKind.MoveEnd => new MoveSizeEnded(raw.Handle, raw.Time),
             RawHookKind.Foreground => new ForegroundChanged(raw.Handle),
             RawHookKind.MouseButton => new MouseButton((MouseButtonKind)raw.Detail, raw.IsDown, raw.X, raw.Y, raw.Time),
             RawHookKind.MouseMove => new MouseMoved(raw.X, raw.Y, raw.Time),
@@ -278,7 +278,7 @@ public sealed class HookThread : IDisposable
             PInvoke.EVENT_SYSTEM_MOVESIZEEND => RawHookKind.MoveEnd,
             _ => RawHookKind.Foreground,
         };
-        owner.Enqueue(new RawHookEvent(kind, (nint)window.Value));
+        owner.Enqueue(new RawHookEvent(kind, (nint)window.Value, Time: time));
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
