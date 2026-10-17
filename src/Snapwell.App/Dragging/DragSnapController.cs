@@ -1,4 +1,6 @@
 using Snapwell.App.Motion;
+using Snapwell.App.Overlay;
+using Snapwell.Core.Geometry;
 using Snapwell.Core.Settings;
 using Snapwell.Core.Snapping;
 using Snapwell.Platform.Hooks;
@@ -10,15 +12,25 @@ namespace Snapwell.App.Dragging;
 /// <summary>システムのドラッグ終了から投げの速度を求め、Core の吸着先へ移動を要求する。</summary>
 internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSource monitors,
     IMotionEngine motion, Func<PortableSettings> settings, Action<bool> trackMouse, uint ownProcessId,
-    Func<uint>? tickCount = null)
+    Func<uint>? tickCount = null, IZonePreview? preview = null, Func<Vec2>? cursorPosition = null)
 {
+    // 120 Hz の全イベントで予測せず、16 px または約二フレームごとに更新する。
+    private const double PredictionDistance = 16;
+    private const double PredictionInterval = 0.032;
     private readonly object _gate = new();
+    private readonly IZonePreview _preview = preview ?? NullZonePreview.Instance;
     private readonly Func<uint> _tickCount = tickCount ?? (() => unchecked((uint)Environment.TickCount64));
     private bool _enabled = true;
     private nint _tracked;
     private VelocityTracker? _velocity;
     private uint _lastTime;
     private double _seconds;
+    private PixelRect _startBounds;
+    private Vec2? _pointer;
+    private Vec2? _dragOrigin;
+    private Vec2? _lastPredictionPosition;
+    private double _lastPredictionTime;
+    private bool _canResize;
 
     internal bool Enabled
     {
@@ -63,13 +75,22 @@ internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSou
                     motion.Cancel(start.Handle);
                     StopTracking();
                     _tracked = start.Handle;
+                    _startBounds = window.VisualBounds;
+                    _canResize = WindowClassifier.CanResize(window, ownProcessId);
+                    _dragOrigin = cursorPosition?.Invoke() ?? _pointer;
+                    _lastPredictionPosition = null;
                     _velocity = new();
                     _lastTime = _tickCount();
                     _seconds = 0;
                     trackMouse(true);
                     break;
                 case MouseMoved move when _velocity is not null:
-                    _velocity.AddSample(new(move.X, move.Y), Time(move.TimeMs));
+                    var point = new Vec2(move.X, move.Y);
+                    var seconds = Time(move.TimeMs);
+                    _dragOrigin ??= point;
+                    _pointer = point;
+                    _velocity.AddSample(point, seconds);
+                    UpdatePreview(point, seconds);
                     break;
                 case MoveSizeEnded end when _velocity is not null && end.Handle == _tracked:
                     // dwmsEventTime と MSLLHOOKSTRUCT.time は同じ GetTickCount の時計とみなす。実機未確認。
@@ -95,6 +116,7 @@ internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSou
 
                     break;
                 case MouseButton { IsDown: true } button:
+                    _pointer = new(button.X, button.Y);
                     var handle = inspector.GetRootWindowAt(button.X, button.Y);
                     if (motion.IsMoving(handle))
                     {
@@ -103,6 +125,39 @@ internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSou
 
                     break;
             }
+        }
+    }
+
+    private void UpdatePreview(Vec2 point, double seconds)
+    {
+        var options = settings();
+        if (!options.ShowZonePreview)
+        {
+            _preview.Hide();
+            return;
+        }
+
+        if (_lastPredictionPosition is { } last && (point - last).Length < PredictionDistance &&
+            seconds - _lastPredictionTime < PredictionInterval)
+        {
+            return;
+        }
+
+        _lastPredictionPosition = point;
+        _lastPredictionTime = seconds;
+        var offset = point - _dragOrigin!.Value;
+        var current = new PixelRect(checked(_startBounds.X + (int)offset.X),
+            checked(_startBounds.Y + (int)offset.Y), _startBounds.Width, _startBounds.Height);
+        var areas = monitors.GetMonitors().Select(monitor => monitor.ToMonitorArea()).ToArray();
+        var result = SnapResolver.Resolve(current, _velocity!.Release(seconds), options.ToFeelPreset(),
+            options.SnapMode, options.ToSpacing(), areas, _canResize);
+        if (result is { } snap)
+        {
+            _preview.Show(snap.Target);
+        }
+        else
+        {
+            _preview.Hide();
         }
     }
 
@@ -121,6 +176,7 @@ internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSou
 
     private void StopTracking()
     {
+        _preview.Hide();
         if (_velocity is not null)
         {
             trackMouse(false);
@@ -128,5 +184,7 @@ internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSou
 
         _tracked = 0;
         _velocity = null;
+        _dragOrigin = null;
+        _lastPredictionPosition = null;
     }
 }

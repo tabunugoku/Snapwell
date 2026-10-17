@@ -8,6 +8,20 @@ public sealed class SettingsStoreTests : IDisposable
 
     public SettingsStoreTests() => Directory.CreateDirectory(_directory);
 
+    /// <summary>追加前の設定はプレビュー有効になり、明示した無効は正規化と保存を通して保つ。</summary>
+    [Fact]
+    public void ZonePreviewDefaultsForOldFilesAndRoundTripsFalse()
+    {
+        var path = Path.Combine(_directory, "preview.json");
+        File.WriteAllText(path, "{\"SchemaVersion\":1}");
+        var store = SettingsStores.Portable(path);
+        Assert.True(store.Load().Value.ShowZonePreview);
+        store.Save(new() { ShowZonePreview = false });
+        var loaded = store.Load().Value;
+        Assert.False(loaded.ShowZonePreview);
+        Assert.Equal(1, loaded.SchemaVersion);
+    }
+
     [Fact]
     public void FutureSchemaArrivingBeforeReplacementIsRestoredByteForByteAndMakesStoreReadOnly()
     {
