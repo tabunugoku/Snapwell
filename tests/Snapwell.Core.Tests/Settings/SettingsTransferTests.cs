@@ -62,6 +62,9 @@ public sealed class SettingsTransferTests : IDisposable
             Feel = "Bouncy",
             SnapMode = SnapMode.Corners,
             ReduceMotion = true,
+            ShowZonePreview = false,
+            LongPressMilliseconds = 800,
+            LongPressDistance = 12,
             Hotkeys = [],
         };
         var result = ReadExport(imported, current);
@@ -69,6 +72,16 @@ public sealed class SettingsTransferTests : IDisposable
             difference.Key.Field == SettingsField.SnapMode);
         Assert.Equal("区画", modeDifference.CurrentValue);
         Assert.Equal("四隅", modeDifference.ImportedValue);
+        var holdDifference = Assert.Single(result.Differences, difference =>
+            difference.Key.Field == SettingsField.LongPressMilliseconds);
+        Assert.Equal("長押しの時間", holdDifference.Name);
+        Assert.Equal("450 ms", holdDifference.CurrentValue);
+        Assert.Equal("800 ms", holdDifference.ImportedValue);
+        var distanceDifference = Assert.Single(result.Differences, difference =>
+            difference.Key.Field == SettingsField.LongPressDistance);
+        Assert.Equal("長押し中に動いてよい距離", distanceDifference.Name);
+        Assert.Equal("6 px", distanceDifference.CurrentValue);
+        Assert.Equal("12 px", distanceDifference.ImportedValue);
         foreach (var difference in result.Differences)
         {
             var applied = SettingsTransfer.Apply(current, result, [difference.Key]);
@@ -88,6 +101,10 @@ public sealed class SettingsTransferTests : IDisposable
     [InlineData("")]
     [InlineData("null")]
     [InlineData("[]")]
+    [InlineData("{\"LongPressMilliseconds\":\"450\"}")]
+    [InlineData("{\"LongPressMilliseconds\":null}")]
+    [InlineData("{\"LongPressDistance\":\"6\"}")]
+    [InlineData("{\"LongPressDistance\":null}")]
     [InlineData("{\"SchemaVersion\":4,\"Feel\":{\"future\":true}}")]
     [InlineData("{\"SchemaVersion\":999999999999,\"Feel\":\"Airy\"}")]
     public void InvalidOrFutureFilesAreRejectedWithoutChangingAnything(string json)
