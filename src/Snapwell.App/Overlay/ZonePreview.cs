@@ -13,7 +13,8 @@ internal interface IZonePreview
 }
 
 /// <summary>プレビューを一つのモニターの作業領域に切り詰めて描く。</summary>
-internal sealed class ZonePreview(IOverlayPresenter presenter, IMonitorSource monitors) : IZonePreview
+internal sealed class ZonePreview(IOverlayPresenter presenter, IMonitorSource monitors,
+    Func<OverlayTheme>? theme = null) : IZonePreview
 {
     public void Show(PixelRect target)
     {
@@ -24,8 +25,10 @@ internal sealed class ZonePreview(IOverlayPresenter presenter, IMonitorSource mo
             return;
         }
 
-        var area = CommandPlanner.SelectMonitor(target, areas).WorkArea;
-        presenter.Request(area, () => OverlayPainter.Preview(area, target));
+        var monitor = CommandPlanner.SelectMonitor(target, areas);
+        var area = monitor.WorkArea;
+        presenter.Request(area, () => OverlayPainter.Preview(area, target,
+            (theme ?? OverlayThemeSource.Read)(), monitor.Scale));
     }
 
     public void Hide() => presenter.Hide();
