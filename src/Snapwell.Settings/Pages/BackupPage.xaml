@@ -25,6 +25,7 @@
                                             <Setter
                                                 Target="SwitchTrack.BorderBrush"
                                                 Value="{ThemeResource SnapwellInkBrush}" />
+                                            <Setter Target="SwitchTrack.BorderThickness" Value="0" />
                                             <Setter
                                                 Target="SwitchKnob.Fill"
                                                 Value="{ThemeResource SnapwellInkTextBrush}" />
