@@ -1,4 +1,4 @@
-
+﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
@@ -12,6 +12,12 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Snapwell.Platform", "src\Snapwell.Platform\Snapwell.Platform.csproj", "{8D8A1FA8-ADFD-4AA2-8BBF-C0839E235C99}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Snapwell.Platform.Tests", "tests\Snapwell.Platform.Tests\Snapwell.Platform.Tests.csproj", "{9BFB9259-E8DC-4446-A01B-018BAF3394E1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Snapwell.App", "src\Snapwell.App\Snapwell.App.csproj", "{F801BDB4-95F7-4FF8-8BF7-36B460FD3FF9}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Snapwell.App.Tests", "tests\Snapwell.App.Tests\Snapwell.App.Tests.csproj", "{1CC984A4-4196-4286-BDE4-2D5E6684B4E4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -35,6 +41,14 @@ Global
 		{9BFB9259-E8DC-4446-A01B-018BAF3394E1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9BFB9259-E8DC-4446-A01B-018BAF3394E1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9BFB9259-E8DC-4446-A01B-018BAF3394E1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F801BDB4-95F7-4FF8-8BF7-36B460FD3FF9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F801BDB4-95F7-4FF8-8BF7-36B460FD3FF9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F801BDB4-95F7-4FF8-8BF7-36B460FD3FF9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F801BDB4-95F7-4FF8-8BF7-36B460FD3FF9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1CC984A4-4196-4286-BDE4-2D5E6684B4E4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1CC984A4-4196-4286-BDE4-2D5E6684B4E4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1CC984A4-4196-4286-BDE4-2D5E6684B4E4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1CC984A4-4196-4286-BDE4-2D5E6684B4E4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -44,5 +58,7 @@ Global
 		{764CEBDB-9D70-4110-8D02-0CA481C1E77F} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{8D8A1FA8-ADFD-4AA2-8BBF-C0839E235C99} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{9BFB9259-E8DC-4446-A01B-018BAF3394E1} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{F801BDB4-95F7-4FF8-8BF7-36B460FD3FF9} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{1CC984A4-4196-4286-BDE4-2D5E6684B4E4} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 EndGlobal
