@@ -14,7 +14,7 @@ internal interface ISingleInstance
 /// <summary>OS 設定の退避と復旧の境界。</summary>
 internal interface ISnapGuard
 {
-    void RecoverOnStartup();
+    bool RecoverOnStartup();
     bool Disable();
     bool Restore();
 }

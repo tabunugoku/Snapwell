@@ -5,6 +5,8 @@ namespace Snapwell.App.Lifecycle;
 /// <summary>常駐プロセスの起動順序と、全経路で共通の復元手順。</summary>
 internal sealed class AppHost
 {
+    private const string SnapRestoreFailureStatus = "Windows 標準のスナップを復元できませんでした。再起動時に再試行します";
+
     // 未処理の例外のハンドラーやセッションの終了を無限に止めないための上限。
     private static readonly TimeSpan _shutdownWait = TimeSpan.FromSeconds(2);
 
@@ -25,6 +27,7 @@ internal sealed class AppHost
     private DeviceState _device = new();
     private bool _ownsInstance;
     private bool _hooksStarted;
+    private bool _startupRecoveryFailed;
     private bool _deviceReadOnly;
     private bool _started;
     private bool _enabled;
@@ -72,17 +75,30 @@ internal sealed class AppHost
             }
 
             _started = true;
-            _guard.RecoverOnStartup();
+            try
+            {
+                _startupRecoveryFailed = !_guard.RecoverOnStartup();
+                if (_startupRecoveryFailed)
+                {
+                    ReportSnapRestoreFailure();
+                }
+            }
+            catch (Exception exception)
+            {
+                _startupRecoveryFailed = true;
+                ReportSnapRestoreFailure(exception);
+            }
+
             var portable = _portableStore.Load();
             var device = _deviceStore.Load();
             _device = device.Value;
             _deviceReadOnly = device.IsReadOnly;
             _enabled = _device.Enabled;
-            if (portable.ResetToDefaults || device.ResetToDefaults)
+            if (!_startupRecoveryFailed && (portable.ResetToDefaults || device.ResetToDefaults))
             {
                 _status = "壊れた設定を退避し、既定値で起動しました";
             }
-            else if (portable.IsReadOnly || device.IsReadOnly)
+            else if (!_startupRecoveryFailed && (portable.IsReadOnly || device.IsReadOnly))
             {
                 _status = "新しい版の設定を保護しています";
             }
@@ -101,7 +117,11 @@ internal sealed class AppHost
 
             if (!_hooksStarted)
             {
-                _status = "入力フックを開始できません。Windows 標準のスナップを使用します";
+                if (!_startupRecoveryFailed)
+                {
+                    _status = "入力フックを開始できません。Windows 標準のスナップを使用します";
+                }
+
                 if (_hooks.Failure is { } failure)
                 {
                     Log(failure);
@@ -341,7 +361,8 @@ internal sealed class AppHost
         {
             try
             {
-                if (!_guard.Disable())
+                // 復旧失敗後も停止は試みるが、未復旧の診断を優先する。
+                if (!_guard.Disable() && !_startupRecoveryFailed)
                 {
                     _status = "Windows 標準のスナップを停止できませんでした";
                 }
@@ -354,7 +375,11 @@ internal sealed class AppHost
             }
             catch (Exception exception)
             {
-                _status = "Windows 標準のスナップを停止できませんでした";
+                if (!_startupRecoveryFailed)
+                {
+                    _status = "Windows 標準のスナップを停止できませんでした";
+                }
+
                 Log(exception);
             }
         }
@@ -364,9 +389,14 @@ internal sealed class AppHost
     {
         if (!_guard.Restore())
         {
-            _status = "Windows 標準のスナップを復元できませんでした。再起動時に再試行します";
-            Log(new IOException(_status));
+            ReportSnapRestoreFailure();
         }
+    }
+
+    private void ReportSnapRestoreFailure(Exception? exception = null)
+    {
+        _status = SnapRestoreFailureStatus;
+        Log(new IOException(SnapRestoreFailureStatus, exception));
     }
 
     private TrayState State() => new(_enabled, _device.DisableStandardSnap, _status);

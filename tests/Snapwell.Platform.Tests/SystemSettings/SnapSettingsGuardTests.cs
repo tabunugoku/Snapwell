@@ -45,7 +45,7 @@ public sealed class SnapSettingsGuardTests : IDisposable
         Assert.Equal(0, api.SetCount);
     }
 
-    /// <summary>別のインスタンスによる起動時復元と、ファイルのない起動を区別する。</summary>
+    /// <summary>別のインスタンスで復元し、再度の起動では設定を書き直さない。</summary>
     [Fact]
     public void StartupRecoversPersistedStateOnlyOnce()
     {
@@ -55,7 +55,23 @@ public sealed class SnapSettingsGuardTests : IDisposable
         var restarted = new SnapSettingsGuard(api, path);
         Assert.True(restarted.RecoverOnStartup());
         Assert.True(api.Enabled);
-        Assert.False(restarted.RecoverOnStartup());
+        var calls = api.SetCount;
+        Assert.True(restarted.RecoverOnStartup());
+        Assert.Equal(calls, api.SetCount);
+    }
+
+    /// <summary>退避ファイルがない通常起動は、設定を変更せず成功とする。</summary>
+    [Fact]
+    public void StartupWithoutPersistedStateSucceedsWithoutWritingSettings()
+    {
+        var api = new FakeSettings { Enabled = false };
+        var path = Path.Combine(_directory, "state.json");
+        var guard = new SnapSettingsGuard(api, path);
+
+        Assert.True(guard.RecoverOnStartup());
+        Assert.False(api.Enabled);
+        Assert.Equal(0, api.SetCount);
+        Assert.False(File.Exists(path));
     }
 
     /// <summary>破損後の再起動と再無効化を経ても、最後は有効に復元する。</summary>
