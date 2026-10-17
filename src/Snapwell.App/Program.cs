@@ -50,9 +50,13 @@ internal static class Program
                 var previewSurface = new OverlaySession(interactive: false);
                 var launcherSurface = new OverlaySession(interactive: true);
                 var preview = new ZonePreview(previewSurface, monitors);
+                var tracking = new MouseTrackingVotes(value => hooks.MouseTrackingEnabled = value);
                 var drag = new DragSnapController(inspector, monitors, motion, () => settings,
-                    value => hooks.MouseTrackingEnabled = value, (uint)Environment.ProcessId,
+                    tracking.SetDrag, (uint)Environment.ProcessId,
                     preview: preview, cursorPosition: CursorPosition);
+                var longPress = new LongPressDetector(inspector, monitors, Win32CaptionHitTest.IsCaption,
+                    () => PInvoke.GetCursorPos(out var point) ? new Vec2(point.X, point.Y) : null,
+                    tracking.SetLongPress);
                 LauncherController? launcher = null;
                 var hotkeys = new HotkeyCommandExecutor(inspector, monitors, motion, position, () => settings,
                     enabled, toggle, (uint)Environment.ProcessId, () => launcher?.Open());
@@ -63,7 +67,7 @@ internal static class Program
                     {
                         previewSurface.SetEnabled(value);
                         launcherSurface.SetEnabled(value);
-                    }, [previewSurface, launcherSurface]);
+                    }, [previewSurface, launcherSurface], longPress);
             }, new SettingsWatcher(SettingsStores.PortablePath()));
         UnhandledExceptionEventHandler unhandled = (_, args) => host.HandleUnhandledException(
             args.ExceptionObject as Exception ?? new InvalidOperationException("未処理の例外。"));

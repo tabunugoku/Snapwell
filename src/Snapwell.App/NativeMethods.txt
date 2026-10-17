@@ -42,3 +42,7 @@ CreateIconFromResourceEx
 DestroyIcon
 GetDpiForWindow
 GetSystemMetricsForDpi
+SendMessageTimeout
+WM_NCHITTEST
+HTCAPTION
+SEND_MESSAGE_TIMEOUT_FLAGS
