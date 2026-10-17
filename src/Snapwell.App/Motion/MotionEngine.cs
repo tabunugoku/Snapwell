@@ -4,7 +4,7 @@ using Snapwell.Platform.Windows;
 
 namespace Snapwell.App.Motion;
 
-/// <summary>全ウィンドウの物理演算と適用を一つの専用スレッドで直列化する。</summary>
+/// <summary>全ウィンドウの物理演算を一つの専用スレッドで進め、適用はロックの外で行う。</summary>
 internal sealed class MotionEngine : IMotionEngine
 {
     private sealed class Entry(WindowBody body, bool resize, double now)
@@ -77,7 +77,7 @@ internal sealed class MotionEngine : IMotionEngine
     {
         lock (_gate)
         {
-            // 適用も同じロック内に置き、戻った後に取り消したフレームが適用される競合を防ぐ。
+            // 次の適用の前に同じエントリーかを確かめるので、外した時点で以降のフレームは適用されない。
             _entries.Remove(handle);
         }
     }
@@ -99,15 +99,19 @@ internal sealed class MotionEngine : IMotionEngine
                 return;
             }
 
+            // 適用中の呼び出しはロックの外にあるので、ここでは待たない。
             _disposed = true;
             _entries.Clear();
             _stop.Cancel();
             Monitor.PulseAll(_gate);
         }
 
-        // DwmFlush 自体にはキャンセルがないため、セッション終了時は待機を区切る。実機未確認。
+        // DwmFlush と同期の SetWindowPos には取り消しがないため、待機を区切る。実機未確認。
         // _disposed により、待機が後から戻っても新しいフレームは適用しない。
-        _thread.Join(TimeSpan.FromMilliseconds(250));
+        if (_thread.Join(TimeSpan.FromMilliseconds(250)))
+        {
+            _stop.Dispose();
+        }
     }
 
     private void Run()
@@ -116,6 +120,8 @@ internal sealed class MotionEngine : IMotionEngine
         {
             while (true)
             {
+                Application[] applications;
+                bool reduceMotion;
                 lock (_gate)
                 {
                     while (!_disposed && _entries.Count == 0)
@@ -128,64 +134,120 @@ internal sealed class MotionEngine : IMotionEngine
                         return;
                     }
 
+                    reduceMotion = ReadReduceMotion();
                     // 削減時は合成フレームを待たず、一度だけ最終矩形を適用する。
-                    if (_preference.ReduceMotion)
+                    applications = reduceMotion
+                        ? [.. _entries.Select(pair => new Application(pair.Key, pair.Value, ApplyKind.Bounds,
+                            pair.Value.Body.Target.ToPixelRect(), true))]
+                        : [];
+                }
+
+                if (!reduceMotion)
+                {
+                    _pacer.Wait(_stop.Token);
+                    lock (_gate)
                     {
-                        foreach (var (handle, entry) in _entries)
+                        if (_disposed)
                         {
-                            _mover.SetVisualBounds(handle, entry.Body.Target.ToPixelRect());
+                            return;
                         }
 
-                        _entries.Clear();
-                        continue;
+                        applications = PlanFrame(_clock.Seconds);
                     }
                 }
 
-                _pacer.Wait(_stop.Token);
-                lock (_gate)
+                foreach (var application in applications)
                 {
-                    if (_disposed)
-                    {
-                        return;
-                    }
-
-                    var now = _clock.Seconds;
-                    foreach (var (handle, entry) in _entries.ToArray())
-                    {
-                        var settled = Simulator.Advance(entry.Body, Math.Max(0, now - entry.LastFrame));
-                        entry.LastFrame = now;
-                        var state = entry.Body.State.ToPixelRect();
-                        if (settled)
-                        {
-                            if (entry.Resize)
-                            {
-                                // 最小サイズなどで返った実矩形が異なっても、再適用を繰り返さない。
-                                _mover.SetVisualBounds(handle, entry.Body.Target.ToPixelRect());
-                            }
-                            else
-                            {
-                                _mover.MoveVisual(handle, state.X, state.Y);
-                            }
-
-                            _entries.Remove(handle);
-                        }
-                        else if (!_mover.MoveVisual(handle, state.X, state.Y))
-                        {
-                            _entries.Remove(handle);
-                        }
-                    }
+                    Apply(application);
                 }
             }
         }
         catch (OperationCanceledException) when (_stop.IsCancellationRequested)
         {
         }
-        finally
+    }
+
+    private Application[] PlanFrame(double now)
+    {
+        var applications = new Application[_entries.Count];
+        var index = 0;
+        foreach (var (handle, entry) in _entries)
         {
-            lock (_gate)
+            var settled = Simulator.Advance(entry.Body, Math.Max(0, now - entry.LastFrame));
+            entry.LastFrame = now;
+            var state = entry.Body.State.ToPixelRect();
+            // 最小サイズなどで返った実矩形が異なっても、再適用を繰り返さない。
+            applications[index++] = settled && entry.Resize
+                ? new(handle, entry, ApplyKind.Bounds, entry.Body.Target.ToPixelRect(), true)
+                : new(handle, entry, ApplyKind.Position, state, settled);
+        }
+
+        return applications;
+    }
+
+    private void Apply(Application application)
+    {
+        // 同期の SetWindowPos は応答しないウィンドウで返らないことがあるため、ロックの外で呼ぶ。
+        // 確認から呼び出しまでの間に来た Cancel だけは、その 1 回の適用を止められない。
+        lock (_gate)
+        {
+            if (_disposed || !IsCurrent(application))
             {
-                _stop.Dispose();
+                return;
+            }
+        }
+
+        bool applied;
+        try
+        {
+            if (application.Kind == ApplyKind.Bounds)
+            {
+                // サイズの適用は常に最後の 1 回。失敗しても再試行せずに外す。
+                _mover.SetVisualBounds(application.Handle, application.Bounds);
+                applied = true;
+            }
+            else
+            {
+                applied = _mover.MoveVisual(application.Handle, application.Bounds.X, application.Bounds.Y);
+            }
+        }
+        catch (Exception)
+        {
+            // 閉じたウィンドウなどで投げても、ほかのウィンドウの移動を止めない。そのウィンドウだけ外す。
+            applied = false;
+        }
+
+        lock (_gate)
+        {
+            if ((application.Final || !applied) && IsCurrent(application))
+            {
+                _entries.Remove(application.Handle);
             }
         }
     }
+
+    private bool IsCurrent(Application application) =>
+        _entries.TryGetValue(application.Handle, out var entry) && ReferenceEquals(entry, application.Entry);
+
+    private bool ReadReduceMotion()
+    {
+        try
+        {
+            return _preference.ReduceMotion;
+        }
+        catch (Exception)
+        {
+            // 設定を読めないときは物理で動かす。動きを止める理由にしない。
+            return false;
+        }
+    }
+
+    private enum ApplyKind
+    {
+        Position,
+        Bounds,
+    }
+
+    private readonly record struct Application(nint Handle, Entry Entry, ApplyKind Kind, PixelRect Bounds,
+        bool Final);
 }
