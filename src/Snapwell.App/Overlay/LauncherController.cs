@@ -24,6 +24,8 @@ internal sealed class LauncherController : IDisposable
     private readonly IReadOnlyList<HotkeyBinding> _pausedBindings;
     private readonly IReadOnlyList<HotkeyBinding> _launcherBindings;
     private readonly uint _ownProcessId;
+    private readonly Func<OverlayTheme> _theme;
+    private double _scale = 1;
     private ZoneSelection? _selection;
     private nint _target;
     private bool _mouseSelecting;
@@ -33,7 +35,7 @@ internal sealed class LauncherController : IDisposable
     internal LauncherController(IWindowInspector inspector, IMonitorSource monitors, Func<PortableSettings> settings,
         IOverlayPresenter presenter, Action<nint, PixelRect, PixelRect> place,
         Action<IReadOnlyList<HotkeyBinding>> applyBindings, IReadOnlyList<HotkeyBinding> normalBindings,
-        uint ownProcessId)
+        uint ownProcessId, Func<OverlayTheme>? theme = null)
     {
         _inspector = inspector;
         _monitors = monitors;
@@ -45,6 +47,7 @@ internal sealed class LauncherController : IDisposable
         _pausedBindings = HotkeyBindingsBuilder.Paused(normalBindings);
         _launcherBindings = HotkeyBindingsBuilder.Launcher(normalBindings);
         _ownProcessId = ownProcessId;
+        _theme = theme ?? OverlayThemeSource.Read;
         presenter.Pointer += HandlePointer;
         presenter.Faulted += Close;
     }
@@ -96,6 +99,7 @@ internal sealed class LauncherController : IDisposable
             }
 
             _target = handle;
+            _scale = monitor.Scale;
             _mouseSelecting = false;
             _applyBindings(_launcherBindings);
             Draw();
@@ -288,7 +292,8 @@ internal sealed class LauncherController : IDisposable
     private void Draw()
     {
         var selection = _selection!;
-        _presenter.Request(selection.WorkArea, () => OverlayPainter.Launcher(selection));
+        var scale = _scale;
+        _presenter.Request(selection.WorkArea, () => OverlayPainter.Launcher(selection, _theme(), scale));
     }
 
     private void CloseCore()

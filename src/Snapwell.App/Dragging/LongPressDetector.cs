@@ -31,6 +31,8 @@ internal sealed class LongPressDetector(IWindowInspector inspector, IMonitorSour
     private bool _disposed;
 
     internal event Action<LongPressCandidate>? CandidateReady;
+    internal event Action<LongPressCandidate, int>? HoldStarted;
+    internal event Action? HoldEnded;
 
     internal bool HasOpenedLauncher
     {
@@ -104,6 +106,7 @@ internal sealed class LongPressDetector(IWindowInspector inspector, IMonitorSour
                         var candidate = new LongPressCandidate(handle, new(button.X, button.Y),
                             _generation, movementLogicalPixels * monitor.Scale);
                         _press = candidate;
+                        HoldStarted?.Invoke(candidate, holdMilliseconds);
                         trackMouse(true);
                         _timer = (schedule ?? Schedule)(TimeSpan.FromMilliseconds(holdMilliseconds),
                             () => Elapsed(candidate));
@@ -197,6 +200,7 @@ internal sealed class LongPressDetector(IWindowInspector inspector, IMonitorSour
             }
 
             _elapsed = true;
+            HoldEnded?.Invoke();
             _timer?.Dispose();
             _timer = null;
         }
@@ -225,6 +229,7 @@ internal sealed class LongPressDetector(IWindowInspector inspector, IMonitorSour
 
     private void ResetPress()
     {
+        HoldEnded?.Invoke();
         _generation++;
         _timer?.Dispose();
         _timer = null;
