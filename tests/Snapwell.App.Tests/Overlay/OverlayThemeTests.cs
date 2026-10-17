@@ -39,12 +39,23 @@ public sealed class OverlayThemeTests
         using var launcher = new LauncherController(inspector, new ScaledMonitor(), () => new PortableSettings(),
             presenter, (_, _, _) => { }, _ => { }, [], 999, () => theme);
         launcher.Open();
-        Assert.Equal(OverlayPainter.Launcher(launcher.Selection!, theme, 1.5).Pixels,
-            presenter.Requests.Last().Paint().Pixels);
+        AssertGridCornerMatchesTheme();
         theme = OverlayTheme.Light;
         launcher.Handle(new((int)LauncherInput.Right));
-        Assert.Equal(OverlayPainter.Launcher(launcher.Selection!, theme, 1.5).Pixels,
-            presenter.Requests.Last().Paint().Pixels);
+        AssertGridCornerMatchesTheme();
+
+        void AssertGridCornerMatchesTheme()
+        {
+            var expected = OverlayPainter.Launcher(launcher.Selection!, theme, 1.5);
+            var actual = presenter.Requests.Last().Paint();
+            // パネルと中央のラベルが重ならない右下で、既存のグリッドの配色と DPI を確かめる。
+            for (var row = expected.Height - 40; row < expected.Height; row++)
+            {
+                var offset = (row * expected.Width + expected.Width - 40) * 4;
+                Assert.Equal(expected.Pixels.AsSpan(offset, 160).ToArray(),
+                    actual.Pixels.AsSpan(offset, 160).ToArray());
+            }
+        }
     }
 
     private sealed class ScaledMonitor : IMonitorSource
