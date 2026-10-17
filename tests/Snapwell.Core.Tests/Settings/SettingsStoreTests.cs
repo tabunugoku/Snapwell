@@ -19,7 +19,7 @@ public sealed class SettingsStoreTests : IDisposable
         store.Save(new() { ShowZonePreview = false });
         var loaded = store.Load().Value;
         Assert.False(loaded.ShowZonePreview);
-        Assert.Equal(1, loaded.SchemaVersion);
+        Assert.Equal(2, loaded.SchemaVersion);
     }
 
     [Fact]
@@ -28,7 +28,7 @@ public sealed class SettingsStoreTests : IDisposable
         var path = Path.Combine(_directory, "settings.json");
         File.WriteAllText(path, "{\"SchemaVersion\":1}");
         byte[] future = [0xEF, 0xBB, 0xBF, .. System.Text.Encoding.UTF8.GetBytes(
-            "{\"SchemaVersion\":2,\"FutureData\": [1, 2]}\r\n")];
+            "{\"SchemaVersion\":3,\"FutureData\": [1, 2]}\r\n")];
         var store = StoreWithCallback(path, () => File.WriteAllBytes(path, future));
         Assert.Throws<InvalidOperationException>(() => store.Save(new()));
         Assert.Equal(future, File.ReadAllBytes(path));
@@ -77,7 +77,8 @@ public sealed class SettingsStoreTests : IDisposable
     }
 
     private static SettingsStore<PortableSettings> StoreWithCallback(string path, Action beforeReplace) =>
-        new(path, SettingsJsonContext.Default.PortableSettings, () => new(), value => value.Normalize(), beforeReplace);
+        new(path, SettingsJsonContext.Default.PortableSettings, () => new(), value => value.Normalize(),
+            beforeReplace, PortableSettings.CurrentSchemaVersion);
 
     private void AssertNoTemporaryFiles()
     {
@@ -121,7 +122,7 @@ public sealed class SettingsStoreTests : IDisposable
     public void FutureSchemaRemainsUntouchedAndRejectsSave()
     {
         var path = Path.Combine(_directory, "settings.json");
-        const string json = "{\"SchemaVersion\":2,\"Feel\":{\"future\":true}}";
+        const string json = "{\"SchemaVersion\":3,\"Feel\":{\"future\":true}}";
         File.WriteAllText(path, json);
         var store = SettingsStores.Portable(path);
         Assert.True(store.Load().IsReadOnly);

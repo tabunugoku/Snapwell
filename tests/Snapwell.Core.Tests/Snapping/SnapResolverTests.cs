@@ -57,6 +57,249 @@ public sealed class SnapResolverTests
         Assert.Equal(expected, result!.Value.Kind);
     }
 
+    /// <summary>上端に付いた背の高いウィンドウでも、カーソルが上端なら上の四分割に入る。</summary>
+    [Theory]
+    [InlineData(-2000, SnapTargetKind.TopLeft)]
+    [InlineData(2000, SnapTargetKind.TopRight)]
+    public void PointerNearTopSelectsQuarterForTallWindow(double vx, SnapTargetKind expected)
+    {
+        var area = new PixelRect(0, 0, 1000, 1000);
+        var result = SnapResolver.Resolve(new(400, 0, 200, 800), new(vx, 0), FeelPreset.Airy,
+            SnapMode.Zones, _spacing, [new("main", area, 1)], pointer: new(5, 5))!.Value;
+        Assert.Equal(expected, result.Kind);
+        Assert.Equal(ZoneRect(expected, area, _spacing.ToPhysical(1)), result.Target);
+    }
+
+    /// <summary>上にあるタイトルバーの横投げは半分にし、端に押し付けたカーソルだけ四分割にする。</summary>
+    [Theory]
+    [InlineData(100, SnapTargetKind.RightHalf)]
+    [InlineData(0, SnapTargetKind.TopRight)]
+    public void HorizontalThrowNearTopRequiresPointerAtEdge(double pointerY, SnapTargetKind expected)
+    {
+        var area = new PixelRect(0, 0, 1920, 1040);
+        var result = SnapResolver.Resolve(new(1000, 80, 600, 800), new(500, 0), FeelPreset.Airy,
+            SnapMode.Zones, _spacing, [new("main", area, 1)], pointer: new(1300, pointerY))!.Value;
+        Assert.Equal(expected, result.Kind);
+        Assert.Equal(ZoneRect(expected, area, _spacing.ToPhysical(1)), result.Target);
+    }
+
+    /// <summary>予測中心が右モニターに入っても、元のモニター上のカーソルで上の行を選ばない。</summary>
+    [Fact]
+    public void PointerOnSourceMonitorDoesNotSelectDestinationRow()
+    {
+        var destination = new PixelRect(1920, 200, 1920, 1040);
+        MonitorArea[] monitors = [new("main", new(0, 0, 1920, 1040), 1), new("right", destination, 1)];
+        var result = SnapResolver.Resolve(new(1500, 120, 400, 800), new(2000, 0), FeelPreset.Airy,
+            SnapMode.Zones, _spacing, monitors, pointer: new(1700, 140))!.Value;
+        Assert.Equal("right", result.MonitorId);
+        Assert.Equal(SnapTargetKind.LeftHalf, result.Kind);
+        Assert.Equal(ZoneRect(SnapTargetKind.LeftHalf, destination, _spacing.ToPhysical(1)), result.Target);
+    }
+
+    /// <summary>上下に並ぶ別モニター内のカーソルは外側の帯に入っても対象の行を選ばない。</summary>
+    [Theory]
+    [InlineData(980, 0, 1000, "lower")]
+    [InlineData(1020, -4000, 1060, "upper")]
+    [InlineData(1020, -4000, 1040, "upper")]
+    public void PointerOnVerticallyAdjacentMonitorDoesNotSelectDestinationRow(int windowY, double vy,
+        double pointerY, string expectedMonitor)
+    {
+        MonitorArea[] monitors =
+        [
+            new("upper", new(0, 0, 1920, 1040), 1),
+            new("lower", new(0, 1040, 1920, 1040), 1),
+        ];
+        var result = SnapResolver.Resolve(new(1000, windowY, 600, 800), new(500, vy), FeelPreset.Airy,
+            SnapMode.Zones, _spacing, monitors, pointer: new(1300, pointerY))!.Value;
+        var area = monitors.Single(monitor => monitor.Id == expectedMonitor).WorkArea;
+        Assert.Equal(expectedMonitor, result.MonitorId);
+        Assert.Equal(SnapTargetKind.RightHalf, result.Kind);
+        Assert.Equal(ZoneRect(SnapTargetKind.RightHalf, area, _spacing.ToPhysical(1)), result.Target);
+    }
+
+    /// <summary>上下に隣接していても対象モニター内の端の帯は四分割を選ぶ。</summary>
+    [Theory]
+    [InlineData(980, 0, 1040, "lower", SnapTargetKind.TopRight)]
+    [InlineData(980, 0, 1041, "lower", SnapTargetKind.TopRight)]
+    [InlineData(980, 0, 1051, "lower", SnapTargetKind.TopRight)]
+    [InlineData(980, 0, 1052, "lower", SnapTargetKind.TopRight)]
+    [InlineData(980, 0, 1053, "lower", SnapTargetKind.RightHalf)]
+    [InlineData(1020, -4000, 1027, "upper", SnapTargetKind.RightHalf)]
+    [InlineData(1020, -4000, 1028, "upper", SnapTargetKind.BottomRight)]
+    [InlineData(1020, -4000, 1029, "upper", SnapTargetKind.BottomRight)]
+    [InlineData(1020, -4000, 1038, "upper", SnapTargetKind.BottomRight)]
+    [InlineData(1020, -4000, 1039, "upper", SnapTargetKind.BottomRight)]
+    public void PointerInsideVerticallyAdjacentMonitorBandsPreservesRow(int windowY, double vy,
+        double pointerY, string expectedMonitor, SnapTargetKind expected)
+    {
+        MonitorArea[] monitors =
+        [
+            new("upper", new(0, 0, 1920, 1040), 1),
+            new("lower", new(0, 1040, 1920, 1040), 1),
+        ];
+        var result = SnapResolver.Resolve(new(1000, windowY, 600, 800), new(500, vy), FeelPreset.Airy,
+            SnapMode.Zones, _spacing, monitors, pointer: new(1300, pointerY))!.Value;
+        var area = monitors.Single(monitor => monitor.Id == expectedMonitor).WorkArea;
+        Assert.Equal(expectedMonitor, result.MonitorId);
+        Assert.Equal(expected, result.Kind);
+        Assert.Equal(ZoneRect(expected, area, _spacing.ToPhysical(1)), result.Target);
+    }
+
+    /// <summary>別モニターの作業領域がないタスクバー上は外側の帯として使う。</summary>
+    [Theory]
+    [InlineData(1040)]
+    [InlineData(1060)]
+    [InlineData(1144)]
+    public void PointerOnSingleMonitorTaskbarPreservesQuarter(double pointerY)
+    {
+        var area = new PixelRect(0, 0, 1920, 1040);
+        var result = SnapResolver.Resolve(new(1000, 1020, 600, 800), new(500, -4000), FeelPreset.Airy,
+            SnapMode.Zones, _spacing, [new("upper", area, 1)], pointer: new(1300, pointerY))!.Value;
+        Assert.Equal("upper", result.MonitorId);
+        Assert.Equal(SnapTargetKind.BottomRight, result.Kind);
+        Assert.Equal(ZoneRect(SnapTargetKind.BottomRight, area, _spacing.ToPhysical(1)), result.Target);
+    }
+
+    /// <summary>カーソルが無い場合と中央にある場合は従来の半分を維持する。</summary>
+    [Theory]
+    [InlineData(-2000, null, SnapTargetKind.LeftHalf)]
+    [InlineData(2000, null, SnapTargetKind.RightHalf)]
+    [InlineData(-2000, 500.0, SnapTargetKind.LeftHalf)]
+    [InlineData(2000, 500.0, SnapTargetKind.RightHalf)]
+    public void MissingOrMiddlePointerPreservesHalf(double vx, double? pointerY, SnapTargetKind expected)
+    {
+        Vec2? pointer = pointerY is { } y ? new(5, y) : null;
+        var result = SnapResolver.Resolve(new(400, 0, 200, 800), new(vx, 0), FeelPreset.Airy,
+            SnapMode.Zones, default, [new("main", new(0, 0, 1000, 1000), 1)], pointer: pointer);
+        Assert.Equal(expected, result!.Value.Kind);
+    }
+
+    /// <summary>カーソルが下端付近やタスクバー上にあれば横投げでも下の四分割に入る。</summary>
+    [Theory]
+    [InlineData(-2000, 995, SnapTargetKind.BottomLeft)]
+    [InlineData(2000, 995, SnapTargetKind.BottomRight)]
+    [InlineData(-2000, 1040, SnapTargetKind.BottomLeft)]
+    [InlineData(2000, 1040, SnapTargetKind.BottomRight)]
+    public void PointerNearOrBelowBottomSelectsQuarter(double vx, double pointerY, SnapTargetKind expected)
+    {
+        var result = SnapResolver.Resolve(new(400, 0, 200, 800), new(vx, 0), FeelPreset.Airy,
+            SnapMode.Zones, default, [new("main", new(0, 0, 1000, 1000), 1)], pointer: new(5, pointerY));
+        Assert.Equal(expected, result!.Value.Kind);
+    }
+
+    /// <summary>内側は論理十二ピクセルまでを端とみなし、対象モニターの拡大率で換算する。</summary>
+    [Theory]
+    [InlineData(1, 12, SnapTargetKind.TopLeft)]
+    [InlineData(1, 13, SnapTargetKind.LeftHalf)]
+    [InlineData(1.5, 18, SnapTargetKind.TopLeft)]
+    [InlineData(1.5, 19, SnapTargetKind.LeftHalf)]
+    [InlineData(1, 988, SnapTargetKind.BottomLeft)]
+    [InlineData(1, 987, SnapTargetKind.LeftHalf)]
+    [InlineData(1.5, 982, SnapTargetKind.BottomLeft)]
+    [InlineData(1.5, 981, SnapTargetKind.LeftHalf)]
+    public void PointerInsideBandsUseScaledLogicalWidth(double scale, double pointerY, SnapTargetKind expected)
+    {
+        var result = SnapResolver.Resolve(new(400, 0, 200, 800), new(-2000, 0), FeelPreset.Airy,
+            SnapMode.Zones, default, [new("main", new(0, 0, 1000, 1000), scale)], pointer: new(995, pointerY));
+        Assert.Equal(expected, result!.Value.Kind);
+    }
+
+    /// <summary>タスクバー上を含む外側の帯は高さの十パーセントまでに限り、拡大率で広げない。</summary>
+    [Theory]
+    [InlineData(-101, SnapTargetKind.LeftHalf)]
+    [InlineData(-100, SnapTargetKind.TopLeft)]
+    [InlineData(-1, SnapTargetKind.TopLeft)]
+    [InlineData(0, SnapTargetKind.TopLeft)]
+    [InlineData(1000, SnapTargetKind.BottomLeft)]
+    [InlineData(1001, SnapTargetKind.BottomLeft)]
+    [InlineData(1100, SnapTargetKind.BottomLeft)]
+    [InlineData(1101, SnapTargetKind.LeftHalf)]
+    public void PointerOutsideBandsIncludeOnlyTenPercent(double pointerY, SnapTargetKind expected)
+    {
+        var result = SnapResolver.Resolve(new(400, 0, 200, 800), new(-2000, 0), FeelPreset.Airy,
+            SnapMode.Zones, default, [new("main", new(0, 0, 1000, 1000), 1.5)], pointer: new(995, pointerY));
+        Assert.Equal(expected, result!.Value.Kind);
+    }
+
+    /// <summary>上端と下端のカーソルも作業領域の左端を含み、右端を含まない範囲だけで使う。</summary>
+    [Theory]
+    [InlineData(99, 200, SnapTargetKind.LeftHalf)]
+    [InlineData(100, 200, SnapTargetKind.TopLeft)]
+    [InlineData(1099, 200, SnapTargetKind.TopLeft)]
+    [InlineData(1100, 200, SnapTargetKind.LeftHalf)]
+    [InlineData(99, 1200, SnapTargetKind.LeftHalf)]
+    [InlineData(100, 1200, SnapTargetKind.BottomLeft)]
+    [InlineData(1099, 1200, SnapTargetKind.BottomLeft)]
+    [InlineData(1100, 1200, SnapTargetKind.LeftHalf)]
+    public void PointerBandsRequireXWithinSelectedWorkArea(double pointerX, double pointerY, SnapTargetKind expected)
+    {
+        var result = SnapResolver.Resolve(new(500, 200, 200, 800), new(-2000, 0), FeelPreset.Airy,
+            SnapMode.Zones, default, [new("main", new(100, 200, 1000, 1000), 1)], pointer: new(pointerX, pointerY));
+        Assert.Equal(expected, result!.Value.Kind);
+    }
+
+    /// <summary>端の帯を外れたカーソルは予測中心による上下の四分割を妨げない。</summary>
+    [Theory]
+    [InlineData(-1000, 5, 500, SnapTargetKind.TopLeft)]
+    [InlineData(1000, 5, 500, SnapTargetKind.BottomLeft)]
+    [InlineData(-1000, 5, 1101, SnapTargetKind.TopLeft)]
+    [InlineData(1000, 5, -101, SnapTargetKind.BottomLeft)]
+    [InlineData(-1000, 1000, 1000, SnapTargetKind.TopLeft)]
+    [InlineData(1000, -1, 0, SnapTargetKind.BottomLeft)]
+    public void OutsidePointerBandsPreservePredictedQuarter(double vy, double pointerX, double pointerY,
+        SnapTargetKind expected)
+    {
+        var result = SnapResolver.Resolve(new(100, 400, 200, 200), new(-1000, vy), FeelPreset.Airy,
+            SnapMode.Zones, default, [new("main", new(0, 0, 1000, 1000), 1)], pointer: new(pointerX, pointerY));
+        Assert.Equal(expected, result!.Value.Kind);
+    }
+
+    /// <summary>カーソルが上の帯でも上中央への強い投げは最大化を優先する。</summary>
+    [Fact]
+    public void MaximizeTakesPriorityOverPointerBand()
+    {
+        var result = SnapResolver.Resolve(new(1080, 100, 400, 800), new(0, -3000), FeelPreset.Airy,
+            SnapMode.Zones, _spacing, _monitors, pointer: new(5, 5));
+        Assert.Equal(SnapTargetKind.Maximize, result!.Value.Kind);
+    }
+
+    /// <summary>帯は選択先の原点・高さ・拡大率で決まり、カーソルはモニターや左右を選ばない。</summary>
+    [Theory]
+    [InlineData(-301, SnapTargetKind.RightHalf)]
+    [InlineData(-300, SnapTargetKind.TopRight)]
+    [InlineData(-176, SnapTargetKind.TopRight)]
+    [InlineData(-175, SnapTargetKind.RightHalf)]
+    [InlineData(775, SnapTargetKind.RightHalf)]
+    [InlineData(776, SnapTargetKind.BottomRight)]
+    [InlineData(900, SnapTargetKind.BottomRight)]
+    [InlineData(901, SnapTargetKind.RightHalf)]
+    public void PointerBandsUseSelectedMonitor(double pointerY, SnapTargetKind expected)
+    {
+        var destination = new PixelRect(-1920, -200, 1920, 1000);
+        MonitorArea[] monitors = [new("main", _area, 1), new("destination", destination, 2)];
+        var result = SnapResolver.Resolve(new(100, 100, 400, 200), new(-2000, 0), FeelPreset.Airy,
+            SnapMode.Zones, _spacing, monitors, pointer: new(-1915, pointerY))!.Value;
+        Assert.Equal("destination", result.MonitorId);
+        Assert.Equal(expected, result.Kind);
+        Assert.Equal(ZoneRect(expected, destination, _spacing.ToPhysical(2)), result.Target);
+    }
+
+    /// <summary>四隅モードはカーソルが反対の端にあっても予測点だけで選ぶ。</summary>
+    [Theory]
+    [InlineData(-5000, -5000, 1440)]
+    [InlineData(5000, -5000, 1440)]
+    [InlineData(-5000, 5000, 0)]
+    [InlineData(5000, 5000, 0)]
+    public void PointerDoesNotChangeCorners(double vx, double vy, double pointerY)
+    {
+        var current = new PixelRect(1080, 570, 400, 300);
+        var expected = SnapResolver.Resolve(current, new(vx, vy), FeelPreset.Airy,
+            SnapMode.Corners, _spacing, _monitors);
+        var actual = SnapResolver.Resolve(current, new(vx, vy), FeelPreset.Airy,
+            SnapMode.Corners, _spacing, _monitors, pointer: new(5, pointerY));
+        Assert.Equal(expected, actual);
+    }
+
     /// <summary>上方への投げでも横の中央帯を外れれば最大化しない。</summary>
     [Fact]
     public void UpwardThrowOutsideMiddleHorizontalBandDoesNotMaximize()

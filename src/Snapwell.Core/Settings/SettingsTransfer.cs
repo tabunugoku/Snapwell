@@ -8,7 +8,7 @@ namespace Snapwell.Core.Settings;
 /// <summary>選んで取り込める設定の種類。</summary>
 public enum SettingsField
 {
-    Grid, Gap, Edge, Feel, SnapMode, ReduceMotion, Hotkey,
+    Grid, Gap, Edge, Feel, SnapMode, ReduceMotion, ShowZonePreview, Hotkey,
 }
 
 /// <summary>ホットキーはコマンドごと、それ以外は項目ごとに識別する。</summary>
@@ -111,7 +111,8 @@ public static class SettingsTransfer
                 return Failure("新しい版の設定のため、取り込めません。Snapwell を更新してください。");
             }
 
-            var imported = root.Deserialize(SettingsJsonContext.Default.PortableSettings)?.Normalize();
+            var value = root.Deserialize(SettingsJsonContext.Default.PortableSettings);
+            var imported = value is null ? null : SettingsSchema.Migrate(value, SettingsSchema.ReadVersion(root));
             if (imported is null)
             {
                 return Failure("設定が空のため、取り込めません。");
@@ -151,6 +152,7 @@ public static class SettingsTransfer
                 SettingsField.Feel => value with { Feel = imported.Feel },
                 SettingsField.SnapMode => value with { SnapMode = imported.SnapMode },
                 SettingsField.ReduceMotion => value with { ReduceMotion = imported.ReduceMotion },
+                SettingsField.ShowZonePreview => value with { ShowZonePreview = imported.ShowZonePreview },
                 _ => value,
             };
             if (key.Field == SettingsField.Hotkey && key.Command is { } command)
@@ -171,9 +173,8 @@ public static class SettingsTransfer
 
     private static SettingsImportResult Failure(string error) => new(null, [], error);
 
-    private static bool IsFuture(JsonElement root) => root.ValueKind == JsonValueKind.Object &&
-        root.TryGetProperty("SchemaVersion", out var version) && version.ValueKind == JsonValueKind.Number &&
-        version.TryGetDecimal(out var number) && number > 1;
+    private static bool IsFuture(JsonElement root) =>
+        SettingsSchema.ReadVersion(root) > PortableSettings.CurrentSchemaVersion;
 
     private static IReadOnlyList<SettingsDifference> Compare(PortableSettings current, PortableSettings imported)
     {
@@ -186,6 +187,8 @@ public static class SettingsTransfer
         Add(SettingsField.SnapMode, "吸着の方式", ModeName(current.SnapMode), ModeName(imported.SnapMode));
         Add(SettingsField.ReduceMotion, "動きを減らす", current.ReduceMotion ? "オン" : "オフ",
             imported.ReduceMotion ? "オン" : "オフ");
+        Add(SettingsField.ShowZonePreview, "区画のプレビュー", current.ShowZonePreview ? "オン" : "オフ",
+            imported.ShowZonePreview ? "オン" : "オフ");
         foreach (var command in current.Hotkeys.Keys.Union(imported.Hotkeys.Keys).OrderBy(HotkeyCatalog.GetDisplayOrder))
         {
             current.Hotkeys.TryGetValue(command, out var before);

@@ -4,6 +4,13 @@ using Snapwell.Platform.Hooks;
 
 namespace Snapwell.App.Lifecycle;
 
+/// <summary>設定の変更を間引いて通知する監視の境界。</summary>
+internal interface ISettingsWatcher : IDisposable
+{
+    event Action? Changed;
+    void Start();
+}
+
 /// <summary>同じユーザーの二重起動を防ぐ境界。</summary>
 internal interface ISingleInstance
 {
