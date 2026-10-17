@@ -39,6 +39,14 @@
                     <SolidColorBrush x:Key="SnapwellYellowTextBrush" Color="#FF956400" />
                     <SolidColorBrush x:Key="SnapwellSkeletonBrush" Color="#FFEFEEEB" />
 
+                    <!-- 無効時もモックアップの中立色を使い、輪郭と文字を残す。 -->
+                    <StaticResource x:Key="ButtonBackgroundDisabled" ResourceKey="SnapwellSurface2Brush" />
+                    <StaticResource x:Key="ButtonForegroundDisabled" ResourceKey="SnapwellMutedBrush" />
+                    <StaticResource x:Key="ButtonBorderBrushDisabled" ResourceKey="SnapwellBorderBrush" />
+                    <StaticResource x:Key="ComboBoxBackgroundDisabled" ResourceKey="SnapwellSurface2Brush" />
+                    <StaticResource x:Key="ComboBoxForegroundDisabled" ResourceKey="SnapwellMutedBrush" />
+                    <StaticResource x:Key="ComboBoxBorderBrushDisabled" ResourceKey="SnapwellBorderBrush" />
+
                     <!-- 標準コントロールのテーマ色をモックアップのトークンに合わせる -->
                     <SolidColorBrush x:Key="ButtonBackground" Color="#FFFFFFFF" />
                     <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#FFF9F9F8" />
@@ -151,6 +159,14 @@
                     <SolidColorBrush x:Key="SnapwellYellowTextBrush" Color="#FFE8C46A" />
                     <SolidColorBrush x:Key="SnapwellSkeletonBrush" Color="#FF2D2D2B" />
 
+                    <!-- 無効時もモックアップの中立色を使い、輪郭と文字を残す。 -->
+                    <StaticResource x:Key="ButtonBackgroundDisabled" ResourceKey="SnapwellSurface2Brush" />
+                    <StaticResource x:Key="ButtonForegroundDisabled" ResourceKey="SnapwellMutedBrush" />
+                    <StaticResource x:Key="ButtonBorderBrushDisabled" ResourceKey="SnapwellBorderBrush" />
+                    <StaticResource x:Key="ComboBoxBackgroundDisabled" ResourceKey="SnapwellSurface2Brush" />
+                    <StaticResource x:Key="ComboBoxForegroundDisabled" ResourceKey="SnapwellMutedBrush" />
+                    <StaticResource x:Key="ComboBoxBorderBrushDisabled" ResourceKey="SnapwellBorderBrush" />
+
                     <SolidColorBrush x:Key="ButtonBackground" Color="#FF202020" />
                     <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#FF252524" />
                     <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#FF252524" />
@@ -259,6 +275,14 @@
                     <SolidColorBrush x:Key="SnapwellYellowBackgroundBrush" Color="#47956400" />
                     <SolidColorBrush x:Key="SnapwellYellowTextBrush" Color="#FFE8C46A" />
                     <SolidColorBrush x:Key="SnapwellSkeletonBrush" Color="#FF2D2D2B" />
+
+                    <!-- 無効時もモックアップの中立色を使い、輪郭と文字を残す。 -->
+                    <StaticResource x:Key="ButtonBackgroundDisabled" ResourceKey="SnapwellSurface2Brush" />
+                    <StaticResource x:Key="ButtonForegroundDisabled" ResourceKey="SnapwellMutedBrush" />
+                    <StaticResource x:Key="ButtonBorderBrushDisabled" ResourceKey="SnapwellBorderBrush" />
+                    <StaticResource x:Key="ComboBoxBackgroundDisabled" ResourceKey="SnapwellSurface2Brush" />
+                    <StaticResource x:Key="ComboBoxForegroundDisabled" ResourceKey="SnapwellMutedBrush" />
+                    <StaticResource x:Key="ComboBoxBorderBrushDisabled" ResourceKey="SnapwellBorderBrush" />
 
                     <SolidColorBrush x:Key="ButtonBackground" Color="#FF202020" />
                     <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#FF252524" />
@@ -426,6 +450,82 @@
                 <Setter Property="TextWrapping" Value="Wrap" />
             </Style>
 
+            <!-- 未実装の行は中立色のタグで示し、要検証などの状態表示と区別する。 -->
+            <Style x:Key="SnapwellPendingTagStyle" TargetType="Border">
+                <Setter Property="Background" Value="{ThemeResource SnapwellSurface2Brush}" />
+                <Setter Property="CornerRadius" Value="9999" />
+                <Setter Property="Padding" Value="8,1" />
+                <Setter Property="HorizontalAlignment" Value="Left" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+            </Style>
+
+            <Style x:Key="SnapwellPendingTagTextStyle" TargetType="TextBlock">
+                <Setter Property="FontFamily" Value="{StaticResource SnapwellUiFontFamily}" />
+                <Setter Property="FontSize" Value="10.5" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="CharacterSpacing" Value="50" />
+                <Setter Property="LineHeight" Value="16.8" />
+                <Setter Property="Foreground" Value="{ThemeResource SnapwellMutedBrush}" />
+            </Style>
+
+            <!-- デモ専用。操作不可でもモックアップのスイッチの形を読み取れる薄さにする。 -->
+            <Style x:Key="SnapwellDemoSwitchStyle" TargetType="ToggleSwitch">
+                <Setter Property="Opacity" Value="0.65" />
+            </Style>
+
+            <!-- モックアップの .switch (40×20、つまみ 12 px、輪郭の二重線なし)。実設定のスイッチにも全ページで適用する。 -->
+            <Style TargetType="ToggleSwitch">
+                <Setter Property="MinWidth" Value="0" />
+                <Setter Property="Width" Value="40" />
+                <Setter Property="Height" Value="20" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+                <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="ToggleSwitch">
+                                <Grid Width="40" Height="20" Background="Transparent">
+                                    <VisualStateManager.VisualStateGroups>
+                                        <VisualStateGroup x:Name="ToggleStates">
+                                            <VisualState x:Name="Off" />
+                                            <VisualState x:Name="On">
+                                                <VisualState.Setters>
+                                                    <Setter
+                                                        Target="SwitchTrack.Background"
+                                                        Value="{ThemeResource SnapwellInkBrush}" />
+                                                    <Setter
+                                                        Target="SwitchTrack.BorderBrush"
+                                                        Value="{ThemeResource SnapwellInkBrush}" />
+                                                    <Setter Target="SwitchTrack.BorderThickness" Value="0" />
+                                                    <Setter
+                                                        Target="SwitchKnob.Fill"
+                                                        Value="{ThemeResource SnapwellInkTextBrush}" />
+                                                    <Setter Target="SwitchKnob.Margin" Value="23,0,0,0" />
+                                                </VisualState.Setters>
+                                            </VisualState>
+                                        </VisualStateGroup>
+                                    </VisualStateManager.VisualStateGroups>
+                                    <Border
+                                        x:Name="SwitchTrack"
+                                        CornerRadius="9999"
+                                        BorderThickness="1"
+                                        BorderBrush="{ThemeResource SnapwellMutedBrush}" />
+                                    <Ellipse
+                                        x:Name="SwitchKnob"
+                                        Width="12"
+                                        Height="12"
+                                        Margin="3,0,0,0"
+                                        HorizontalAlignment="Left"
+                                        VerticalAlignment="Center"
+                                        Fill="{ThemeResource SnapwellMutedBrush}" />
+                                </Grid>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+            </Style>
+
+            <Style x:Key="SnapwellDemoSelectStyle" TargetType="ComboBox">
+                <Setter Property="Opacity" Value="0.85" />
+            </Style>
+
             <Style x:Key="SnapwellButtonStyle" TargetType="Button">
                 <Setter Property="FontFamily" Value="{StaticResource SnapwellUiFontFamily}" />
                 <Setter Property="FontSize" Value="14" />
@@ -435,6 +535,11 @@
                 <Setter Property="BorderThickness" Value="1" />
                 <Setter Property="CornerRadius" Value="6" />
                 <Setter Property="Padding" Value="14,7" />
+            </Style>
+
+            <Style x:Key="SnapwellDemoButtonStyle" TargetType="Button"
+                   BasedOn="{StaticResource SnapwellButtonStyle}">
+                <Setter Property="Opacity" Value="0.85" />
             </Style>
 
             <Style x:Key="SnapwellPrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource AccentButtonStyle}">
