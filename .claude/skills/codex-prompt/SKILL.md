@@ -32,8 +32,8 @@ argument-hint: <作業の内容>
 - 各項目のあとで次を実行し、通ること:
   - dotnet build src/Snapwell.Core/Snapwell.Core.csproj -c Release -r win-x64 --no-restore
   - dotnet build src/Snapwell.Core/Snapwell.Core.csproj -c Release -r win-arm64 --no-restore
-  - dotnet test --no-restore
-  - dotnet format --verify-no-changes --no-restore
+  - dotnet test --no-restore (サンドボックスでは名前付きパイプが使えず止まることがある。止まったら not_run にして notes に書く。Opus がローカルで実行する)
+  - dotnet format --verify-no-changes --no-restore (同上)
 - main へのマージ、タグ、リリース、バージョン変更はしない。x86 や AnyCPU のビルド対象を足さない。DLL インジェクション・非公開 API を使わない。
 - 触ってよいファイル:
   - A: <ファイル> と、そのテスト

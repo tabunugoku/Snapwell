@@ -70,5 +70,5 @@ Codex もこのファイルを読む（`run-codex-exec.sh` が `project_doc_fall
 - **コミットと push は Opus が行う**: Codex のサンドボックスでは `.git` が書けず、ネットワークも止められている。プロンプトには「コミットと push はしない」と書く。サンドボックスは緩めない
 - **並行**: 互いに触るファイルが重ならない作業だけを並べる。最大 2 つから始める。作業ごとに別の worktree とブランチにする。完了の通知を受けてから次へ進む
 - **後片付け**: `run-codex-exec.sh` は、終わったあとに worktree を参照するプロセスの数（`leftover=`）を出す。0 でなければ、その worktree を参照するプロセスだけを止める（dotnet のビルドサーバー `VBCSCompiler` や `MSBuild` が残りやすい）
-- **初回に確かめること**: MXC サンドボックスの中で `dotnet build` と `dotnet test` が動くか（PostShelf では esbuild と vitest で確認済みだが、dotnet は未確認）。動かなければ、ビルドとテストは Opus がローカルで行い、Codex のプロンプトでは `checks` を `not_run` にさせる
+- **サンドボックスでの dotnet**（core-foundation で確認）: MXC サンドボックスの中では `dotnet build` は通るが、`dotnet test` と `dotnet format` は止まる（名前付きパイプへの接続が拒否される）。Codex にはビルドまでを確かめさせ、テストと format は Opus がローカルで実行する。プロンプトでは test と format を `not_run` にしてよいと書く
 - **Windows の注意**: Git Bash から `cmd.exe /d /c` などを渡すと、MSYS が `/d` をパスに変える。`codex sandbox` で試すときは PowerShell から呼ぶ
