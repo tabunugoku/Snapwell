@@ -2,6 +2,7 @@ using Snapwell.App.Dragging;
 using Snapwell.App.Overlay;
 using Snapwell.App.Tests.Motion;
 using Snapwell.Core.Geometry;
+using Snapwell.Core.Settings;
 using Snapwell.Platform.Hooks;
 
 namespace Snapwell.App.Tests.Dragging;
@@ -161,6 +162,107 @@ public sealed class DragSnapControllerTests
         Assert.Empty(fixture.Motion.Requests);
     }
 
+    /// <summary>開始時に一度だけ取得し、元の一覧が変わってもプレビューと離した先を一致させる。</summary>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void DragUsesOneFrozenSnapshotForPreviewAndRelease(bool showPreview)
+    {
+        var calls = new List<nint>();
+        var neighbors = new List<PixelRect> { new(400, 400, 200, 200) };
+        var fixture = new Fixture(() => new(50, 450), handle =>
+        {
+            calls.Add(handle);
+            return neighbors;
+        });
+        fixture.Settings.ShowZonePreview = showPreview;
+        fixture.Inspector.Window = fixture.Inspector.Window with { VisualBounds = new(450, 450, 100, 100) };
+        fixture.Controller.Handle(new MoveSizeStarted(1));
+        neighbors.Clear();
+        for (uint time = 0; time <= 80; time += 20)
+        {
+            fixture.Controller.Handle(new MouseMoved(50 + (int)time / 2, 450, time));
+        }
+
+        var expected = new PixelRect(608, 450, 100, 100);
+        if (showPreview)
+        {
+            Assert.NotEmpty(fixture.Preview.Shown);
+            Assert.Equal(expected, fixture.Preview.Shown.Last());
+        }
+        else
+        {
+            Assert.Empty(fixture.Preview.Shown);
+        }
+
+        fixture.Inspector.Window = fixture.Inspector.Window with { VisualBounds = new(490, 450, 100, 100) };
+        fixture.Controller.Handle(new MoveSizeEnded(1, 80));
+        Assert.Equal(new nint[] { 1 }, calls);
+        var request = Assert.Single(fixture.Motion.Requests);
+        Assert.Equal(expected, request.Target);
+        Assert.False(request.Resize);
+    }
+
+    /// <summary>次のドラッグでは前の隣接一覧を捨て、新しい対象の一覧を使う。</summary>
+    [Fact]
+    public void NewDragReplacesPreviousNeighbors()
+    {
+        var calls = new List<nint>();
+        var fixture = new Fixture(neighbors: handle =>
+        {
+            calls.Add(handle);
+            return handle == 1 ? [new(400, 400, 200, 200)] : [];
+        });
+        fixture.Inspector.Window = fixture.Inspector.Window with { VisualBounds = new(490, 450, 100, 100) };
+        fixture.Controller.Handle(new MoveSizeStarted(1));
+        fixture.Inspector.Window = fixture.Inspector.Window with { Handle = 2 };
+        fixture.Controller.Handle(new MoveSizeStarted(2));
+        fixture.Controller.Handle(new MouseMoved(50, 450, 0));
+        fixture.Controller.Handle(new MouseMoved(70, 450, 40));
+        fixture.Controller.Handle(new MoveSizeEnded(1, 40));
+        Assert.Empty(fixture.Motion.Requests);
+        fixture.Controller.Handle(new MoveSizeEnded(2, 40));
+        var request = Assert.Single(fixture.Motion.Requests);
+        Assert.True(request.Resize);
+        Assert.Equal(new nint[] { 1, 2 }, calls);
+    }
+
+    /// <summary>無効化中のイベントは一覧を取得せず、再開後のドラッグは新しい一覧を取る。</summary>
+    [Fact]
+    public void DisablingClearsSnapshotAndIgnoresFurtherDragEvents()
+    {
+        var calls = 0;
+        var fixture = new Fixture(neighbors: _ =>
+        {
+            calls++;
+            return [new(400, 400, 200, 200)];
+        });
+        fixture.Controller.Handle(new MoveSizeStarted(1));
+        fixture.Controller.Enabled = false;
+        fixture.Controller.Handle(new MouseMoved(100, 100, 40));
+        fixture.Controller.Handle(new MoveSizeEnded(1, 40));
+        fixture.Controller.Handle(new MoveSizeStarted(1));
+        Assert.Equal(1, calls);
+        Assert.Empty(fixture.Motion.Requests);
+        fixture.Controller.Enabled = true;
+        fixture.Controller.Handle(new MoveSizeStarted(1));
+        Assert.Equal(2, calls);
+    }
+
+    /// <summary>新しいドラッグが対象外でも以前の追跡を続けない。</summary>
+    [Fact]
+    public void RejectedNewDragClearsPreviousTracking()
+    {
+        var fixture = new Fixture(neighbors: _ => [new(400, 400, 200, 200)]);
+        fixture.Controller.Handle(new MoveSizeStarted(1));
+        fixture.Controller.Handle(new MoveSizeStarted(2));
+        fixture.Controller.Handle(new MouseMoved(0, 0, 0));
+        fixture.Controller.Handle(new MouseMoved(100, 0, 40));
+        fixture.Controller.Handle(new MoveSizeEnded(1, 40));
+        Assert.Empty(fixture.Motion.Requests);
+        Assert.Equal(new[] { true, false }, fixture.Tracking);
+    }
+
     private sealed class Fixture
     {
         internal uint Now;
@@ -168,9 +270,11 @@ public sealed class DragSnapControllerTests
         internal FakeMotion Motion { get; } = new();
         internal RecordingPreview Preview { get; } = new();
         internal List<bool> Tracking { get; } = [];
+        internal PortableSettings Settings { get; } = new();
         internal DragSnapController Controller { get; }
-        internal Fixture(Func<Vec2>? cursorPosition = null) => Controller = new(Inspector, new FakeMonitors(), Motion,
-            () => new(), Tracking.Add, 999, () => Now, Preview, cursorPosition);
+        internal Fixture(Func<Vec2>? cursorPosition = null, Func<nint, IReadOnlyList<PixelRect>>? neighbors = null) =>
+            Controller = new(Inspector, new FakeMonitors(), Motion,
+                () => Settings, Tracking.Add, 999, () => Now, Preview, cursorPosition, neighbors);
 
         internal void Throw(int distance)
         {
