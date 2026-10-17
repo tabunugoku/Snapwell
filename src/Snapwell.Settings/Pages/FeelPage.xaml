@@ -2,7 +2,8 @@
 <Page
     x:Class="Snapwell.Settings.Pages.FeelPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:Snapwell.Settings.Controls">
     <Page.Resources>
         <Style x:Key="DemoSwitchStyle" TargetType="ToggleSwitch"
                BasedOn="{StaticResource SnapwellDemoSwitchStyle}" />
@@ -199,8 +200,8 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="磁石の強さ" Style="{StaticResource SnapwellRowTitleStyle}" />
-                                <Border Grid.Column="1" Style="{StaticResource SnapwellPendingTagStyle}">
-                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellPendingTagTextStyle}" />
+                                <Border Grid.Column="1" Style="{StaticResource SnapwellTagPendingStyle}">
+                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellTagPendingTextStyle}" />
                                 </Border>
                             </Grid>
                             <TextBlock Text="区画の近くで吸い寄せる力" Style="{StaticResource SnapwellRowDescriptionStyle}" />
@@ -225,8 +226,8 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="吸着半径" Style="{StaticResource SnapwellRowTitleStyle}" />
-                                <Border Grid.Column="1" Style="{StaticResource SnapwellPendingTagStyle}">
-                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellPendingTagTextStyle}" />
+                                <Border Grid.Column="1" Style="{StaticResource SnapwellTagPendingStyle}">
+                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellTagPendingTextStyle}" />
                                 </Border>
                             </Grid>
                             <TextBlock Text="この距離に入ると吸着します" Style="{StaticResource SnapwellRowDescriptionStyle}" />
