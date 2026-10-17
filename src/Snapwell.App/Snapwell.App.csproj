@@ -11,6 +11,7 @@
     <PublishAot>true</PublishAot>
     <InvariantGlobalization>true</InvariantGlobalization>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ApplicationIcon>..\..\assets\icons\snapwell.ico</ApplicationIcon>
   </PropertyGroup>
 
   <!-- RID なし (テストの AnyCPU ビルド) では、アーキテクチャ別の API (NOTIFYICONDATAW など) を x64 の配置で生成する。
@@ -24,6 +25,11 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+  </ItemGroup>
+
+  <!-- トレイのアイコンは exe に埋め込み、TrayIconSet が実行時に状態・テーマ・DPI で選ぶ。名前は TrayIconPolicy.ResourceName と対応する -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\assets\icons\tray-*.ico" LogicalName="tray/%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>
