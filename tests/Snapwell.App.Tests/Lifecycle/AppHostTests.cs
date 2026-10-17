@@ -367,6 +367,33 @@ public sealed class AppHostTests
         Assert.Contains("mutex.release", fixture.Calls);
     }
 
+    /// <summary>停止結果が偽でも OS の変更有無を断定せず、確認失敗として表示する。</summary>
+    [Fact]
+    public void DisableReturningFalseShowsUnconfirmedStopStatus()
+    {
+        using var fixture = new Fixture(new() { DisableStandardSnap = true, StandardSnapConsentGiven = true });
+        fixture.Guard.DisableSucceeds = false;
+
+        Assert.True(fixture.Host.Start());
+
+        Assert.Equal("Windows 標準のスナップの停止を確認できませんでした", fixture.Tray.State?.Status);
+        Assert.Contains("disable", fixture.Calls);
+    }
+
+    /// <summary>停止中の例外では、停止失敗の表示と元の例外の記録を保つ。</summary>
+    [Fact]
+    public void DisableThrowingKeepsStopFailureStatusAndLogsException()
+    {
+        using var fixture = new Fixture(new() { DisableStandardSnap = true, StandardSnapConsentGiven = true });
+        var exception = new IOException("disable");
+        fixture.Guard.DisableException = exception;
+
+        Assert.True(fixture.Host.Start());
+
+        Assert.Equal("Windows 標準のスナップを停止できませんでした", fixture.Tray.State?.Status);
+        Assert.Same(exception, Assert.Single(fixture.Log.Errors));
+    }
+
     private sealed class Fixture : IDisposable
     {
         internal ConcurrentQueue<string> Calls { get; } = new();

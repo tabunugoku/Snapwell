@@ -364,7 +364,7 @@ internal sealed class AppHost
                 // 復旧失敗後も停止は試みるが、未復旧の診断を優先する。
                 if (!_guard.Disable() && !_startupRecoveryFailed)
                 {
-                    _status = "Windows 標準のスナップを停止できませんでした";
+                    _status = "Windows 標準のスナップの停止を確認できませんでした";
                 }
 
                 if (Volatile.Read(ref _shutdown) != 0)
