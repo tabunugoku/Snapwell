@@ -38,3 +38,7 @@ GetCapture
 BI_COMPRESSION
 AC_SRC_OVER
 AC_SRC_ALPHA
+CreateIconFromResourceEx
+DestroyIcon
+GetDpiForWindow
+GetSystemMetricsForDpi

@@ -27,6 +27,11 @@
     </PackageReference>
   </ItemGroup>
 
+  <!-- トレイのアイコンは exe に埋め込み、TrayIconSet が実行時に状態・テーマ・DPI で選ぶ。名前は TrayIconPolicy.ResourceName と対応する -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\assets\icons\tray-*.ico" LogicalName="tray/%(Filename)%(Extension)" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\Snapwell.Platform\Snapwell.Platform.csproj" />
   </ItemGroup>
