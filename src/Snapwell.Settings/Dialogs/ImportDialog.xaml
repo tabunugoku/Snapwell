@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ContentDialog
+    x:Class="Snapwell.Settings.Dialogs.ImportDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Snapwell.Settings.Dialogs"
+    Title="取り込む設定の確認"
+    PrimaryButtonText="全体を置き換える"
+    SecondaryButtonText="選んだ項目だけ"
+    CloseButtonText="取り消す"
+    DefaultButton="Close"
+    IsSecondaryButtonEnabled="False">
+    <StackPanel Spacing="16">
+        <TextBlock Text="今の設定との違いです。一部だけ取り込む場合は、項目を選んでください。"
+                   TextWrapping="Wrap" />
+        <ListView x:Name="DifferenceList" SelectionMode="Multiple" IsMultiSelectCheckBoxEnabled="True"
+                  SelectionChanged="Difference_SelectionChanged" MaxHeight="360" MinHeight="100"
+                  HorizontalContentAlignment="Stretch">
+            <ListView.ItemTemplate>
+                <DataTemplate x:DataType="local:ImportDifferenceRow">
+                    <StackPanel Spacing="4" Padding="4,8">
+                        <TextBlock Text="{x:Bind Name}" TextWrapping="Wrap" FontWeight="SemiBold" />
+                        <TextBlock Text="{x:Bind Change}" TextWrapping="Wrap"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+        <TextBlock Text="取り込むだけでは保存されません。画面下の「保存」で確定します。"
+                   TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+    </StackPanel>
+</ContentDialog>
