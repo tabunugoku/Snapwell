@@ -1,4 +1,3 @@
-using System.Runtime.InteropServices;
 using Microsoft.UI.Xaml.Controls;
 using Snapwell.Core.Settings;
 using Snapwell.Settings.Dialogs;
@@ -31,9 +30,9 @@ public sealed partial class BackupPage
         {
             await action();
         }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or
-            InvalidOperationException or COMException or NotSupportedException or ArgumentException)
+        catch (Exception)
         {
+            // async の Click ハンドラーでは例外が表に出ずに消えるため、ここで最後に受けて利用者へ知らせる。
             ShowNotice("ファイルの操作を完了できませんでした。ファイルの場所とアクセス権を確認してください。",
                 InfoBarSeverity.Error);
         }
@@ -52,7 +51,8 @@ public sealed partial class BackupPage
             SuggestedStartLocation = PickerLocationId.DocumentsLibrary,
             SuggestedFileName = "Snapwell-settings",
         };
-        picker.FileTypeChoices.Add("JSON ファイル", [".json"]);
+        // NativeAOT ではコレクション式の List に CCW が作られず InvalidCastException になる（実機確認済み）。
+        picker.FileTypeChoices.Add("JSON ファイル", new List<string> { ".json" });
         picker.DefaultFileExtension = ".json";
         WinRT.Interop.InitializeWithWindow.Initialize(picker, owner);
         var file = await picker.PickSaveFileAsync();
