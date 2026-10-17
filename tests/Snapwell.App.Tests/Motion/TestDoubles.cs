@@ -66,6 +66,7 @@ internal sealed class FakeMover : IWindowMover
     internal nint ThrowingHandle;
     internal ManualResetEventSlim? Block;
     internal ManualResetEventSlim Entered { get; } = new(false);
+    internal Func<PixelRect, PixelRect?>? SetBoundsResult;
     public bool MoveVisual(nint handle, int x, int y)
     {
         Moves.Enqueue((handle, x, y));
@@ -82,7 +83,7 @@ internal sealed class FakeMover : IWindowMover
     public PixelRect? SetVisualBounds(nint handle, PixelRect visualBounds)
     {
         Bounds.Enqueue((handle, visualBounds));
-        return visualBounds;
+        return SetBoundsResult is null ? visualBounds : SetBoundsResult(visualBounds);
     }
 
     public bool ApplyBatch(IReadOnlyList<WindowPlacement> placements) => throw new NotSupportedException();
