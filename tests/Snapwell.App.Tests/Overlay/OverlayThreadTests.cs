@@ -9,6 +9,74 @@ namespace Snapwell.App.Tests.Overlay;
 /// <summary>ネイティブ API を使わず、要求の集約と終了の上限を検証する。</summary>
 public sealed class OverlayThreadTests
 {
+    /// <summary>作成・計算・描画・片付けの失敗を、ロックを持たずに一度だけ通知する。</summary>
+    [Theory]
+    [InlineData("factory")]
+    [InlineData("paint")]
+    [InlineData("show")]
+    [InlineData("dispose")]
+    public void FailureNotifiesOutsideThreadLock(string failure)
+    {
+        using var release = new ManualResetEventSlim(false);
+        using var notified = new ManualResetEventSlim(false);
+        var fake = new FakeOverlay { ThrowOnShow = failure == "show", ThrowOnDispose = failure == "dispose" };
+        using var overlay = new OverlayThread(() =>
+        {
+            release.Wait();
+            if (failure == "factory")
+            {
+                throw new InvalidOperationException();
+            }
+
+            return (fake, fake);
+        });
+        var notifications = 0;
+        var lockReleased = false;
+        overlay.Faulted += () =>
+        {
+            lockReleased = Task.Run(overlay.Hide).Wait(1000);
+            Interlocked.Increment(ref notifications);
+            notified.Set();
+        };
+        try
+        {
+            overlay.Request(new(0, 0, 1, 1), () => failure == "paint" ?
+                throw new InvalidOperationException() : OverlayPainter.Create(1, 1));
+            release.Set();
+            if (failure == "dispose")
+            {
+                Assert.True(fake.Drawn.Wait(2000));
+                overlay.Dispose();
+            }
+
+            Assert.True(notified.Wait(2000));
+            Assert.True(overlay.IsFaulted);
+            Assert.True(lockReleased);
+            overlay.Dispose();
+            Assert.Equal(1, notifications);
+        }
+        finally
+        {
+            release.Set();
+        }
+    }
+
+    /// <summary>通常の停止を描画の失敗として通知しない。</summary>
+    [Fact]
+    public void NormalDisposeDoesNotNotifyFailure()
+    {
+        var fake = new FakeOverlay();
+        var faults = 0;
+        using var overlay = new OverlayThread(() => (fake, fake));
+        overlay.Faulted += () => Interlocked.Increment(ref faults);
+        overlay.Show(new(0, 0, 1, 1), OverlayPainter.Create(1, 1));
+        Assert.True(fake.Drawn.Wait(2000));
+        overlay.Dispose();
+        Assert.True(fake.Disposed.Wait(2000));
+        Assert.False(overlay.IsFaulted);
+        Assert.Equal(0, faults);
+    }
+
     /// <summary>待機中の十個の要求は最後の一個だけを表示する。</summary>
     [Fact]
     public void PendingRequestsCoalesceToLast()
@@ -116,11 +184,18 @@ public sealed class OverlayThreadTests
         internal ManualResetEventSlim Hidden { get; } = new(false);
         internal ManualResetEventSlim Disposed { get; } = new(false);
         internal ManualResetEventSlim? Block { get; init; }
+        internal bool ThrowOnShow { get; init; }
+        internal bool ThrowOnDispose { get; init; }
         public event Action<OverlayPointer>? Pointer { add { } remove { } }
         public void Show(PixelRect bounds, OverlayFrame frame)
         {
             Entered.Set();
             Block?.Wait();
+            if (ThrowOnShow)
+            {
+                throw new InvalidOperationException();
+            }
+
             Shown.Enqueue(bounds);
             Drawn.Set();
         }
@@ -135,6 +210,13 @@ public sealed class OverlayThreadTests
             }
         }
 
-        public void Dispose() => Disposed.Set();
+        public void Dispose()
+        {
+            Disposed.Set();
+            if (ThrowOnDispose)
+            {
+                throw new InvalidOperationException();
+            }
+        }
     }
 }

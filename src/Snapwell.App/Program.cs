@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Snapwell.App.Dragging;
 using Snapwell.App.Hotkeys;
 using Snapwell.App.Lifecycle;
@@ -102,14 +103,24 @@ internal static class Program
 internal sealed class OverlaySession(bool interactive, Func<bool, OverlayThread>? createThread = null) : IOverlayPresenter
 {
     private readonly object _gate = new();
+    // 壊れた描画環境で STA の作成を繰り返さない。3 回失敗したら最後の失敗から 10 秒待つ。
+    // 描画環境の回復を待つ時間であり、アニメーションとは無関係。
+    private const int MaxFailures = 3;
+    private static readonly TimeSpan _failureCooldown = TimeSpan.FromSeconds(10);
     private OverlayThread? _thread;
+    private Action? _onFaulted;
+    private long _lastFailure;
+    private int _failures;
     private bool _enabled = true;
     private bool _disposed;
 
     public event Action<OverlayPointer>? Pointer;
+    public event Action? Faulted;
 
     public void Request(PixelRect bounds, Func<OverlayFrame> paint)
     {
+        var faulted = false;
+        OverlayThread? stopped = null;
         lock (_gate)
         {
             if (_disposed || !_enabled)
@@ -117,13 +128,54 @@ internal sealed class OverlaySession(bool interactive, Func<bool, OverlayThread>
                 return;
             }
 
-            if (_thread is null)
+            ResetExpiredFailures();
+            if (_thread?.IsFaulted == true)
             {
-                _thread = createThread?.Invoke(interactive) ?? new(interactive);
-                _thread.Pointer += ForwardPointer;
+                Detach();
+                RecordFailure();
+                faulted = true;
             }
 
-            _thread.Request(bounds, paint);
+            if (_failures < MaxFailures)
+            {
+                try
+                {
+                    if (_thread is null)
+                    {
+                        var thread = createThread?.Invoke(interactive) ?? new(interactive);
+                        _thread = thread;
+                        _onFaulted = () => HandleFault(thread);
+                        thread.Pointer += ForwardPointer;
+                        thread.Faulted += _onFaulted;
+                        // コンストラクター直後の失敗は購読より先に通知済みの場合がある。
+                        if (thread.IsFaulted)
+                        {
+                            Detach();
+                            RecordFailure();
+                            faulted = true;
+                        }
+                    }
+
+                    _thread?.Request(bounds, paint);
+                }
+                catch (Exception)
+                {
+                    stopped = Detach();
+                    RecordFailure();
+                    faulted = true;
+                }
+            }
+            else
+            {
+                faulted = true;
+            }
+        }
+
+        stopped?.Dispose();
+        // Launcher のロックから Request が来るため、このロックを持って外へ通知しない。
+        if (faulted)
+        {
+            Faulted?.Invoke();
         }
     }
 
@@ -175,9 +227,43 @@ internal sealed class OverlaySession(bool interactive, Func<bool, OverlayThread>
         if (stopped is not null)
         {
             stopped.Pointer -= ForwardPointer;
+            stopped.Faulted -= _onFaulted;
         }
 
+        _onFaulted = null;
         return stopped;
+    }
+
+    private void HandleFault(OverlayThread thread)
+    {
+        lock (_gate)
+        {
+            if (!ReferenceEquals(_thread, thread))
+            {
+                return;
+            }
+
+            Detach();
+            RecordFailure();
+        }
+
+        // 終了済みのスレッドを手放してから、Launcher のロックへ入る。
+        Faulted?.Invoke();
+    }
+
+    private void ResetExpiredFailures()
+    {
+        if (_failures > 0 && Stopwatch.GetElapsedTime(_lastFailure) >= _failureCooldown)
+        {
+            _failures = 0;
+        }
+    }
+
+    private void RecordFailure()
+    {
+        ResetExpiredFailures();
+        _failures++;
+        _lastFailure = Stopwatch.GetTimestamp();
     }
 
     private void ForwardPointer(OverlayPointer pointer)
