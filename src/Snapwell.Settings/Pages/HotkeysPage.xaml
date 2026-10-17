@@ -10,24 +10,25 @@
             <Setter Property="BorderBrush" Value="{ThemeResource SnapwellBorderStrongBrush}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="4" />
-            <Setter Property="Padding" Value="6,1" />
+            <Setter Property="Padding" Value="6,0" />
             <Setter Property="MinWidth" Value="22" />
             <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
         <Style x:Key="KbdTextStyle" TargetType="TextBlock">
             <Setter Property="FontFamily" Value="{StaticResource SnapwellMonoFontFamily}" />
             <Setter Property="FontSize" Value="11.5" />
+            <Setter Property="LineHeight" Value="20" />
             <Setter Property="Foreground" Value="{ThemeResource SnapwellTextBrush}" />
             <Setter Property="HorizontalAlignment" Value="Center" />
             <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
     </Page.Resources>
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Padding="32,16,32,40" MaxWidth="820" HorizontalAlignment="Stretch">
+        <StackPanel Padding="32,28,32,40" HorizontalAlignment="Stretch">
             <TextBlock Text="ホットキー" Style="{StaticResource SnapwellPageTitleStyle}" />
-            <TextBlock Text="割り当ての一覧です。同じキーを複数の操作に割り当てている行には「重複」と表示します。"
+            <TextBlock Text="クリックして新しいキーを押すと変更できます。ほかのアプリと重なるキーには印が付きます。"
                        Style="{StaticResource SnapwellLeadTextStyle}" />
-            <InfoBar x:Name="ConflictNotice" Severity="Warning" IsClosable="False" Margin="0,0,0,12"
+            <InfoBar x:Name="ConflictNotice" Severity="Warning" IsClosable="False"
                      Message="キーが重複しています。「既定に戻す」か、重複しない設定ファイルを取り込んでください。" />
             <Border Style="{StaticResource SnapwellRowsBorderStyle}">
                 <StackPanel>
@@ -62,7 +63,7 @@
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="64" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Text="{x:Bind Name}" FontSize="13"
+                                    <TextBlock Text="{x:Bind Name}" FontSize="13" LineHeight="20.8"
                                                Foreground="{ThemeResource SnapwellTextBrush}"
                                                TextWrapping="Wrap" VerticalAlignment="Center" />
                                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4"
@@ -89,9 +90,10 @@
                                     </StackPanel>
                                     <Border Grid.Column="2" Visibility="{x:Bind ConflictVisibility}"
                                             Background="{ThemeResource SnapwellRedBackgroundBrush}"
-                                            CornerRadius="10" Padding="8,2" HorizontalAlignment="Right"
+                                            CornerRadius="999" Padding="8,1" HorizontalAlignment="Right"
                                             VerticalAlignment="Center">
                                         <TextBlock Text="重複" FontSize="10.5" FontWeight="SemiBold"
+                                                   CharacterSpacing="50"
                                                    Foreground="{ThemeResource SnapwellRedTextBrush}" />
                                     </Border>
                                 </Grid>
