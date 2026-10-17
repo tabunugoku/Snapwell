@@ -1,5 +1,6 @@
 using Snapwell.Core.Commands;
 using Snapwell.Core.Geometry;
+using Snapwell.Core.Settings;
 using Snapwell.Platform.Hooks;
 using Snapwell.Platform.Monitors;
 using Snapwell.Platform.Windows;
@@ -12,7 +13,8 @@ internal sealed record LongPressCandidate(nint Handle, Vec2 Position, long Gener
 /// <summary>左ボタンの長押しと、その押下から通常のドラッグへの切り替えを判定する。</summary>
 internal sealed class LongPressDetector(IWindowInspector inspector, IMonitorSource monitors,
     Func<nint, Vec2, bool> isCaption, Func<Vec2?> cursorPosition, Action<bool> trackMouse,
-    Func<TimeSpan, Action, IDisposable>? schedule = null) : IDisposable
+    Func<TimeSpan, Action, IDisposable>? schedule = null,
+    Func<PortableSettings>? settings = null) : IDisposable
 {
     // クリックと区別しつつ操作を待たせすぎない判定時間。アニメーションの継続時間ではない。
     internal const int HoldMilliseconds = 450;
@@ -90,12 +92,20 @@ internal sealed class LongPressDetector(IWindowInspector inspector, IMonitorSour
                     var areas = monitors.GetMonitors().Select(monitor => monitor.ToMonitorArea()).ToArray();
                     if (handle != 0 && areas.Length > 0 && inspector.TryInspect(handle, out var window))
                     {
+                        var current = settings?.Invoke();
+                        var holdMilliseconds = current?.LongPressMilliseconds is >= 150 and <= 2000
+                            ? current.LongPressMilliseconds
+                            : HoldMilliseconds;
+                        var movementLogicalPixels = current is { LongPressDistance: var distance } &&
+                            double.IsFinite(distance) && distance is >= 2 and <= 32
+                            ? distance
+                            : MovementLogicalPixels;
                         var monitor = CommandPlanner.SelectMonitor(window.VisualBounds, areas);
                         var candidate = new LongPressCandidate(handle, new(button.X, button.Y),
-                            _generation, MovementLogicalPixels * monitor.Scale);
+                            _generation, movementLogicalPixels * monitor.Scale);
                         _press = candidate;
                         trackMouse(true);
-                        _timer = (schedule ?? Schedule)(TimeSpan.FromMilliseconds(HoldMilliseconds),
+                        _timer = (schedule ?? Schedule)(TimeSpan.FromMilliseconds(holdMilliseconds),
                             () => Elapsed(candidate));
                     }
                 }
