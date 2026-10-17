@@ -12,6 +12,7 @@ Windows 11 用のウィンドウマネージャー。画面のグリッド分割
 - **DLL インジェクションをしない**: フックは `SetWinEventHook(WINEVENT_OUTOFCONTEXT)`、`WH_KEYBOARD_LL`、`WH_MOUSE_LL` だけ。`SetWindowsHookEx` のグローバルな in-context フック、`CreateRemoteThread`、他プロセスのメモリの読み書きは使わない（対象のアプリのアーキテクチャに左右されないため）
 - **非公開 API を使わない**: 仮想デスクトップの非公開 COM（`IVirtualDesktopManagerInternal` など）、文書化されていないエクスポートや序数での呼び出しは使わない。使うしかない場合は、先にユーザーに確認する
 - **OS の設定を変えたら必ず戻す**: 標準スナップの停止などで OS の設定を変えるときは、変更前の値を状態ファイルに退避し、無効化・終了・異常終了後の起動のどれでも復元する。変えてよい設定は `docs/DESIGN.md` §8 にあるものだけ
+- **例外: サインイン時の自動起動**（ユーザーが認めた例外）: `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` への登録だけは、自動で起動するための設定なので、終了しても消さない。登録するのは利用者が設定画面でオンにしたときだけで、オフにしたら消す（`docs/DESIGN.md` §11）。開発中のビルドで登録するのは試験のためだけで、ユーザーの指示があったときに限る。試験が終わったら必ず登録を消し、消したことを確かめる。テストでは偽のレジストリを使い、実際のレジストリに書かない
 - **アニメーションは物理モデルから**: 移動の動きは質量・剛性・減衰から計算する。継続時間（ms）やイージング曲線を固定値で書かない（feel と同じ方針。`docs/DESIGN.md` §5）
 - **フックのコールバックはすぐ返す**: 低レベルフックの中で重い処理・同期の待ち・ウィンドウの移動をしない。処理は別のスレッドに渡す（遅いと OS にフックを外されるため）
 - **座標は物理ピクセル**: プロセスは Per-Monitor DPI Aware v2。ウィンドウの見た目の矩形は `DWMWA_EXTENDED_FRAME_BOUNDS` で取り、見えない枠を補正する
@@ -22,7 +23,8 @@ Windows 11 用のウィンドウマネージャー。画面のグリッド分割
 ## フォルダの構成（予定）
 - `src/Snapwell.Core/`: 物理モデル、グリッドと間隔の計算、整列、設定のモデル。Win32 に依存しない（単体テストの対象）
 - `src/Snapwell.Platform/`: Win32 との接続。フック、ウィンドウの列挙と移動、モニター、DWM、標準スナップの制御、スタートアップ
-- `src/Snapwell.App/`: トレイ常駐、オーバーレイ（ランチャー、区画のプレビュー）、設定画面（WinUI 3）
+- `src/Snapwell.App/`: トレイ常駐、オーバーレイ（ランチャー、区画のプレビュー）
+- `src/Snapwell.Settings/`: 設定画面（WinUI 3、パッケージ化しない別の exe。Windows App SDK は自己完結で同梱）。Win32 と同じく、テストする判断は Core に置く
 - `tests/Snapwell.Core.Tests/`: Core の単体テスト（xUnit）
 - `docs/`: 設計（`DESIGN.md`）、モックアップ（`mockups/`）、実機での確認（`MANUAL_TEST.md`）
 
@@ -42,6 +44,7 @@ Codex と Claude Code のどちらが書いても、同じ見た目にそろえ�
 - **確認**: push の前に次を通す。ソリューションは RID を付けてビルドできない（NETSDK1134）ので、RID ごとのビルドは出荷するプロジェクト（`src/Snapwell.App`）に対して行う
   - `dotnet build src/Snapwell.App/Snapwell.App.csproj -c Release -r win-x64 --no-restore`
   - `dotnet build src/Snapwell.App/Snapwell.App.csproj -c Release -r win-arm64 --no-restore`
+  - 設定画面 (`src/Snapwell.Settings`、WinUI 3) も同じく両 RID で: `dotnet build src/Snapwell.Settings/Snapwell.Settings.csproj -c Release -r win-x64 --no-restore`（と `win-arm64`）
   - `dotnet test --no-restore`
   - `dotnet format --verify-no-changes --no-restore`
 - **NativeAOT の publish**: `dotnet build -r` では AOT のコンパイルは走らない。出荷物は `dotnet publish src/Snapwell.App/Snapwell.App.csproj -c Release -r win-x64`（と `win-arm64`）で作る。Visual Studio の C++ ツール（x64 と ARM64 の両方）が要る。Git Bash からは `ProgramFiles(x86)` が渡らず `vswhere.exe` が見つからないので、PowerShell から、`${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer` を PATH に足して実行する（このPCで両 RID とも確認済み）
