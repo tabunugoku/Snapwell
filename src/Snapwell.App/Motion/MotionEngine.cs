@@ -12,6 +12,7 @@ internal sealed class MotionEngine : IMotionEngine
         internal WindowBody Body = body;
         internal bool Resize = resize;
         internal double LastFrame = now;
+        internal long Version;
     }
 
     private readonly object _gate = new();
@@ -54,6 +55,8 @@ internal sealed class MotionEngine : IMotionEngine
                 }
 
                 entry.Resize = request.Resize;
+                // 同じ Entry を再利用する要求も、適用待ちのフレームと区別する。
+                entry.Version++;
             }
             else
             {
@@ -138,7 +141,8 @@ internal sealed class MotionEngine : IMotionEngine
                     // 削減時は合成フレームを待たず、一度だけ最終矩形を適用する。
                     applications = reduceMotion
                         ? [.. _entries.Select(pair => new Application(pair.Key, pair.Value, ApplyKind.Bounds,
-                            pair.Value.Body.Target.ToPixelRect(), true))]
+                            pair.Value.Body.Target.ToPixelRect(), pair.Value.Body.Walls.ToPixelRect(),
+                            pair.Value.Version, true))]
                         : [];
                 }
 
@@ -178,8 +182,9 @@ internal sealed class MotionEngine : IMotionEngine
             var state = entry.Body.State.ToPixelRect();
             // 最小サイズなどで返った実矩形が異なっても、再適用を繰り返さない。
             applications[index++] = settled && entry.Resize
-                ? new(handle, entry, ApplyKind.Bounds, entry.Body.Target.ToPixelRect(), true)
-                : new(handle, entry, ApplyKind.Position, state, settled);
+                ? new(handle, entry, ApplyKind.Bounds, entry.Body.Target.ToPixelRect(),
+                    entry.Body.Walls.ToPixelRect(), entry.Version, true)
+                : new(handle, entry, ApplyKind.Position, state, entry.Body.Walls.ToPixelRect(), entry.Version, settled);
         }
 
         return applications;
@@ -203,7 +208,25 @@ internal sealed class MotionEngine : IMotionEngine
             if (application.Kind == ApplyKind.Bounds)
             {
                 // サイズの適用は常に最後の 1 回。失敗しても再試行せずに外す。
-                _mover.SetVisualBounds(application.Handle, application.Bounds);
+                var actual = _mover.SetVisualBounds(application.Handle, application.Bounds);
+                if (actual is { } bounds && !application.Walls.Contains(bounds))
+                {
+                    var walls = application.Walls;
+                    var x = bounds.Width >= walls.Width
+                        ? walls.X : Math.Clamp(bounds.X, walls.X, walls.Right - bounds.Width);
+                    var y = bounds.Height >= walls.Height
+                        ? walls.Y : Math.Clamp(bounds.Y, walls.Y, walls.Bottom - bounds.Height);
+                    lock (_gate)
+                    {
+                        if (_disposed || !IsCurrent(application))
+                        {
+                            return;
+                        }
+                    }
+
+                    _mover.MoveVisual(application.Handle, x, y);
+                }
+
                 applied = true;
             }
             else
@@ -227,7 +250,8 @@ internal sealed class MotionEngine : IMotionEngine
     }
 
     private bool IsCurrent(Application application) =>
-        _entries.TryGetValue(application.Handle, out var entry) && ReferenceEquals(entry, application.Entry);
+        _entries.TryGetValue(application.Handle, out var entry) && ReferenceEquals(entry, application.Entry)
+        && entry.Version == application.Version;
 
     private bool ReadReduceMotion()
     {
@@ -249,5 +273,5 @@ internal sealed class MotionEngine : IMotionEngine
     }
 
     private readonly record struct Application(nint Handle, Entry Entry, ApplyKind Kind, PixelRect Bounds,
-        bool Final);
+        PixelRect Walls, long Version, bool Final);
 }

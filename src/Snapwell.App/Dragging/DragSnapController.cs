@@ -72,7 +72,8 @@ internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSou
                     _velocity.AddSample(new(move.X, move.Y), Time(move.TimeMs));
                     break;
                 case MoveSizeEnded end when _velocity is not null && end.Handle == _tracked:
-                    var velocity = _velocity.Release(Time(_tickCount()));
+                    // dwmsEventTime と MSLLHOOKSTRUCT.time は同じ GetTickCount の時計とみなす。実機未確認。
+                    var velocity = _velocity.Release(Time(end.TimeMs));
                     StopTracking();
                     if (!inspector.TryInspect(end.Handle, out var current) || current.IsMaximized ||
                         WindowClassifier.Classify(current, ownProcessId) == WindowKind.Excluded)

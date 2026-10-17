@@ -1,10 +1,140 @@
 using Snapwell.App.Motion;
+using Snapwell.Core.Geometry;
 using Snapwell.Core.Physics;
 
 namespace Snapwell.App.Tests.Motion;
 
 public sealed class MotionEngineTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void MinimumSizeOverflowIsCorrectedOnceInBothMotionModes(bool reduceMotion)
+    {
+        using var frames = new ControlledFrames();
+        var actual = new PixelRect(-100, -50, 500, 400);
+        var mover = new FakeMover();
+        var movesBeforeResize = 0;
+        mover.SetBoundsResult = _ =>
+        {
+            movesBeforeResize = mover.Moves.Count;
+            return actual;
+        };
+        using var engine = new MotionEngine(frames, frames, mover, new FakePreference(reduceMotion));
+        var request = Request(1) with
+        {
+            Current = new(-900, -700, 400, 300),
+            Target = new(-200, -100, 100, 50),
+            Walls = new(-1000, -800, 1000, 800),
+        };
+        engine.Request(request);
+        frames.Advance(600);
+        WaitUntil(() => !engine.IsMoving(1));
+        var correction = mover.Moves.Last();
+        Assert.Equal(-500, correction.X);
+        Assert.Equal(-400, correction.Y);
+        Assert.True(correction.X + actual.Width <= request.Walls.Right);
+        Assert.True(correction.Y + actual.Height <= request.Walls.Bottom);
+        Assert.Equal(movesBeforeResize + 1, mover.Moves.Count);
+        var moves = mover.Moves.Count;
+        frames.Advance(10);
+        engine.Dispose();
+        Assert.Equal(moves, mover.Moves.Count);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ContainedOrMissingBoundsDoNotCauseCorrection(bool missing)
+    {
+        using var frames = new ControlledFrames();
+        var mover = new FakeMover { SetBoundsResult = bounds => missing ? null : bounds };
+        using var engine = new MotionEngine(frames, frames, mover, new FakePreference(true));
+        engine.Request(Request(1));
+        WaitUntil(() => !engine.IsMoving(1));
+        Assert.Empty(mover.Moves);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void BoundsLargerThanWallsAlignWithTheirTopLeft(bool alreadyAligned)
+    {
+        using var frames = new ControlledFrames();
+        var mover = new FakeMover
+        {
+            SetBoundsResult = _ => alreadyAligned ? new(-1920, -1040, 3000, 2000) : new(100, 100, 3000, 2000),
+        };
+        using var engine = new MotionEngine(frames, frames, mover, new FakePreference(true));
+        engine.Request(Request(1) with { Walls = new(-1920, -1040, 1920, 1040) });
+        WaitUntil(() => !engine.IsMoving(1));
+        var correction = Assert.Single(mover.Moves);
+        Assert.Equal(-1920, correction.X);
+        Assert.Equal(-1040, correction.Y);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CancellationOrRetargetDuringBoundsApplicationSkipsStaleCorrection(bool retarget)
+    {
+        using var frames = new ControlledFrames();
+        var mover = new FakeMover();
+        using var engine = new MotionEngine(frames, frames, mover, new FakePreference(true));
+        using var changed = new ManualResetEventSlim();
+        mover.SetBoundsResult = _ =>
+        {
+            mover.SetBoundsResult = bounds => bounds;
+            if (retarget)
+            {
+                engine.Request(Request(1) with { Target = new(20, 20, 500, 400) });
+            }
+            else
+            {
+                engine.Cancel(1);
+            }
+
+            changed.Set();
+            return new(1800, 900, 500, 400);
+        };
+        engine.Request(Request(1));
+        Assert.True(changed.Wait(5000));
+        WaitUntil(() => !engine.IsMoving(1));
+        Assert.Empty(mover.Moves);
+        Assert.Equal(retarget ? 2 : 1, mover.Bounds.Count);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void FailedOrThrowingCorrectionIsNotRetried(bool throws)
+    {
+        using var frames = new ControlledFrames();
+        var mover = new FakeMover
+        {
+            SetBoundsResult = _ => new(1800, 900, 500, 400),
+            FailingHandle = throws ? 0 : 1,
+            ThrowingHandle = throws ? 1 : 0,
+        };
+        using var engine = new MotionEngine(frames, frames, mover, new FakePreference(true));
+        engine.Request(Request(1));
+        WaitUntil(() => !engine.IsMoving(1));
+        Assert.Single(mover.Moves);
+        Assert.Single(mover.Bounds);
+    }
+
+    [Fact]
+    public void RequestsAfterDisposalAreDiscarded()
+    {
+        using var frames = new ControlledFrames();
+        var mover = new FakeMover();
+        using var engine = new MotionEngine(frames, frames, mover, new FakePreference(true));
+        engine.Dispose();
+        engine.Request(Request(1));
+        Assert.False(engine.IsMoving(1));
+        Assert.Empty(mover.Bounds);
+    }
+
     [Fact]
     public void ThrowSettlesAndResizesOnlyOnceThenStopsPacing()
     {

@@ -84,15 +84,39 @@ public static class CommandPlanner
     private static double Distance(Vec2 point, PixelRect area) =>
         (new Vec2(Math.Clamp(point.X, area.X, area.Right), Math.Clamp(point.Y, area.Y, area.Bottom)) - point).Length;
 
-    private static PixelRect Transfer(PixelRect current, MonitorArea source, MonitorArea destination,
+    private static PixelRect? Transfer(PixelRect current, MonitorArea source, MonitorArea destination,
         Spacing spacing, bool canResize)
     {
-        var area = destination.WorkArea;
+        var sourceEdge = spacing.ToPhysical(source.Scale).Edge;
         var edge = spacing.ToPhysical(destination.Scale).Edge;
-        var width = canResize ? Math.Min(current.Width, Math.Max(0, area.Width - 2 * edge)) : current.Width;
-        var height = canResize ? Math.Min(current.Height, Math.Max(0, area.Height - 2 * edge)) : current.Height;
-        var x = area.X + (current.X - (double)source.WorkArea.X) / Math.Max(1, source.WorkArea.Width) * area.Width;
-        var y = area.Y + (current.Y - (double)source.WorkArea.Y) / Math.Max(1, source.WorkArea.Height) * area.Height;
+        var sourceWidth = source.WorkArea.Width - 2 * sourceEdge;
+        var sourceHeight = source.WorkArea.Height - 2 * sourceEdge;
+        var destinationWidth = destination.WorkArea.Width - 2 * edge;
+        var destinationHeight = destination.WorkArea.Height - 2 * edge;
+        if (sourceWidth <= 0 || sourceHeight <= 0 || destinationWidth <= 0 || destinationHeight <= 0)
+        {
+            return null;
+        }
+
+        var width = canResize ? Math.Min(current.Width, destinationWidth) : current.Width;
+        var height = canResize ? Math.Min(current.Height, destinationHeight) : current.Height;
+        if (source == destination)
+        {
+            // 一台だけの場合は従来どおり、作業領域全体へ位置を収める。
+            return Contain(new(current.X, current.Y, width, height), destination.WorkArea);
+        }
+
+        var sourceArea = new PixelRect(source.WorkArea.X + sourceEdge, source.WorkArea.Y + sourceEdge,
+            sourceWidth, sourceHeight);
+        var area = new PixelRect(destination.WorkArea.X + edge, destination.WorkArea.Y + edge,
+            destinationWidth, destinationHeight);
+        if (!canResize && (width > area.Width || height > area.Height))
+        {
+            return new(area.X, area.Y, width, height);
+        }
+
+        var x = area.X + (current.X - (double)sourceArea.X) / sourceArea.Width * area.Width;
+        var y = area.Y + (current.Y - (double)sourceArea.Y) / sourceArea.Height * area.Height;
         return Contain(new((int)Math.Round(x), (int)Math.Round(y), width, height), area);
     }
 

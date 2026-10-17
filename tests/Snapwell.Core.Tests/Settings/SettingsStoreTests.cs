@@ -9,6 +9,69 @@ public sealed class SettingsStoreTests : IDisposable
     public SettingsStoreTests() => Directory.CreateDirectory(_directory);
 
     [Fact]
+    public void FutureSchemaArrivingBeforeReplacementIsRestoredByteForByteAndMakesStoreReadOnly()
+    {
+        var path = Path.Combine(_directory, "settings.json");
+        File.WriteAllText(path, "{\"SchemaVersion\":1}");
+        byte[] future = [0xEF, 0xBB, 0xBF, .. System.Text.Encoding.UTF8.GetBytes(
+            "{\"SchemaVersion\":2,\"FutureData\": [1, 2]}\r\n")];
+        var store = StoreWithCallback(path, () => File.WriteAllBytes(path, future));
+        Assert.Throws<InvalidOperationException>(() => store.Save(new()));
+        Assert.Equal(future, File.ReadAllBytes(path));
+        Assert.Throws<InvalidOperationException>(() => store.Save(new()));
+        Assert.Equal(future, File.ReadAllBytes(path));
+        AssertNoTemporaryFiles();
+    }
+
+    [Fact]
+    public void FileCreatedBeforeInitialMoveIsNeverOverwritten()
+    {
+        var path = Path.Combine(_directory, "settings.json");
+        const string competing = "{\"SchemaVersion\":2,\"Competing\":true}";
+        var store = StoreWithCallback(path, () => File.WriteAllText(path, competing));
+        Assert.Throws<IOException>(() => store.Save(new()));
+        Assert.Equal(competing, File.ReadAllText(path));
+        AssertNoTemporaryFiles();
+    }
+
+    [Fact]
+    public void BrokenJsonArrivingBeforeReplacementDoesNotPreventSuccessfulSave()
+    {
+        var path = Path.Combine(_directory, "settings.json");
+        File.WriteAllText(path, "{\"SchemaVersion\":1}");
+        var store = StoreWithCallback(path, () => File.WriteAllText(path, "{"));
+        store.Save(new() { Gap = 17 });
+        Assert.Equal(17, store.Load().Value.Gap);
+        AssertNoTemporaryFiles();
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SavingNewOrExistingFileRoundTripsAndCleansTemporaryFiles(bool exists)
+    {
+        var path = Path.Combine(_directory, "settings.json");
+        if (exists)
+        {
+            File.WriteAllText(path, "{\"SchemaVersion\":1}");
+        }
+
+        var store = SettingsStores.Portable(path);
+        store.Save(new() { Gap = 19 });
+        Assert.Equal(19, store.Load().Value.Gap);
+        AssertNoTemporaryFiles();
+    }
+
+    private static SettingsStore<PortableSettings> StoreWithCallback(string path, Action beforeReplace) =>
+        new(path, SettingsJsonContext.Default.PortableSettings, () => new(), value => value.Normalize(), beforeReplace);
+
+    private void AssertNoTemporaryFiles()
+    {
+        Assert.Empty(Directory.GetFiles(_directory, "*.tmp"));
+        Assert.Empty(Directory.GetFiles(_directory, "*.bak"));
+    }
+
+    [Fact]
     public void RoundTripIncludesHotkeysAsStrings()
     {
         var path = Path.Combine(_directory, "settings.json");
