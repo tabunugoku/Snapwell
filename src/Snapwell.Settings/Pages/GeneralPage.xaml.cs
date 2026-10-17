@@ -28,6 +28,7 @@ public sealed partial class GeneralPage : Page
         {
             AutoStartToggle.IsEnabled = false;
             RegistrationStatus.Text = "Snapwell.exe が同じフォルダーに無いため、自動起動を設定できません";
+            RegistrationStatus.Visibility = Visibility.Visible;
             return;
         }
 
@@ -52,6 +53,9 @@ public sealed partial class GeneralPage : Page
             RegistrationStatus.Text = _lastState == AutoStartState.Elsewhere
                 ? "別の場所の Snapwell が登録されています。オフにしてからオンにすると、このフォルダーの Snapwell に置き換えます"
                 : "";
+            RegistrationStatus.Visibility = RegistrationStatus.Text.Length > 0
+                ? Visibility.Visible
+                : Visibility.Collapsed;
         }
         finally
         {

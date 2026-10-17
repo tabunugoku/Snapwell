@@ -45,6 +45,7 @@ public sealed partial class MainWindow : Window
         var workArea = DisplayArea.GetFromWindowId(AppWindow.Id, DisplayAreaFallback.Primary).WorkArea;
         AppWindow.Resize(new SizeInt32(Math.Min((int)(1060 * scale), workArea.Width),
             Math.Min((int)(780 * scale), workArea.Height)));
+        MinimumWindowSize.Apply(WinRT.Interop.WindowNative.GetWindowHandle(this), 900, 560);
     }
 
     private void Navigation_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
