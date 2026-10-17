@@ -6,6 +6,27 @@ namespace Snapwell.App.Tests.Dragging;
 
 public sealed class DragSnapControllerTests
 {
+    [Theory]
+    [InlineData(100u, 0u)]
+    [InlineData(95u, 0u)]
+    [InlineData(100u, 4294967280u)]
+    public void DelayedEndUsesEventTimeAndPreservesThrowVelocity(uint endTime, uint startTime)
+    {
+        var fixture = new Fixture { Now = startTime };
+        fixture.Controller.Handle(new MoveSizeStarted(1));
+        for (uint elapsed = 0; elapsed <= 100; elapsed += 20)
+        {
+            fixture.Controller.Handle(new MouseMoved((int)elapsed * 5, 0, unchecked(startTime + elapsed)));
+        }
+
+        fixture.Now = unchecked(startTime + 160);
+        fixture.Controller.Handle(new MoveSizeEnded(2, unchecked(startTime + endTime)));
+        Assert.Empty(fixture.Motion.Requests);
+        fixture.Controller.Handle(new MoveSizeEnded(1, unchecked(startTime + endTime)));
+        Assert.True(Assert.Single(fixture.Motion.Requests).Velocity.X > 150);
+        Assert.Equal(new[] { true, false }, fixture.Tracking);
+    }
+
     [Fact]
     public void FastThrowTracksMouseAndRequestsResolvedTarget()
     {
@@ -44,7 +65,7 @@ public sealed class DragSnapControllerTests
         var fixture = new Fixture();
         fixture.Controller.Handle(new MoveSizeStarted(1));
         fixture.Controller.Enabled = false;
-        fixture.Controller.Handle(new MoveSizeEnded(1));
+        fixture.Controller.Handle(new MoveSizeEnded(1, fixture.Now));
         Assert.Equal(new[] { true, false }, fixture.Tracking);
         Assert.Empty(fixture.Motion.Requests);
     }
@@ -74,13 +95,13 @@ public sealed class DragSnapControllerTests
     public void UntrackedEndAndStaleReleaseDoNotSnap()
     {
         var fixture = new Fixture();
-        fixture.Controller.Handle(new MoveSizeEnded(1));
+        fixture.Controller.Handle(new MoveSizeEnded(1, fixture.Now));
         fixture.Controller.Handle(new MoveSizeStarted(1));
         fixture.Controller.Handle(new MouseMoved(0, 0, 0));
         fixture.Now = 20;
         fixture.Controller.Handle(new MouseMoved(100, 0, fixture.Now));
         fixture.Now = 100;
-        fixture.Controller.Handle(new MoveSizeEnded(1));
+        fixture.Controller.Handle(new MoveSizeEnded(1, fixture.Now));
         Assert.Empty(fixture.Motion.Requests);
     }
 
@@ -100,7 +121,7 @@ public sealed class DragSnapControllerTests
             Controller.Handle(new MouseMoved(0, 0, Now));
             Now = unchecked(Now + 40);
             Controller.Handle(new MouseMoved(distance, 0, Now));
-            Controller.Handle(new MoveSizeEnded(1));
+            Controller.Handle(new MoveSizeEnded(1, Now));
         }
     }
 }
