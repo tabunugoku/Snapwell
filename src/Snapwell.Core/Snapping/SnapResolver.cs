@@ -48,7 +48,7 @@ public static class SnapResolver
             : SelectZone(current, predicted, center, monitor, physicalSpacing, canResize, pointerBand);
         if (mode == SnapMode.Zones && selection.Kind != SnapTargetKind.Maximize && pointerBand is null &&
             neighbors is { Count: > 0 } &&
-            SelectAdjacent(current, predicted, monitor, physicalSpacing.Gap, neighbors) is { } adjacent)
+            SelectAdjacent(current, predicted, monitor, physicalSpacing, neighbors) is { } adjacent)
         {
             selection = adjacent;
         }
@@ -178,9 +178,12 @@ public static class SnapResolver
     }
 
     private static (PixelRect Target, SnapTargetKind Kind)? SelectAdjacent(PixelRect current, Vec2 predicted,
-        MonitorArea monitor, int gap, IReadOnlyList<PixelRect> neighbors)
+        MonitorArea monitor, PhysicalSpacing spacing, IReadOnlyList<PixelRect> neighbors)
     {
         var area = monitor.WorkArea;
+        var gap = spacing.Gap;
+        // 画面端の余白 e を侵す位置には置かない。
+        var edge = spacing.Edge;
         var bestDistance = double.PositiveInfinity;
         var bestPriority = int.MaxValue;
         (PixelRect Target, SnapTargetKind Kind)? best = null;
@@ -211,7 +214,8 @@ public static class SnapResolver
             var distance = Math.Abs(x - predicted.X) + Math.Abs(y - predicted.Y);
             if (distance > AdjacentDistance * monitor.Scale || distance > bestDistance ||
                 (distance == bestDistance && priority >= bestPriority) ||
-                x < area.X || x + current.Width > area.Right || y < area.Y || y + current.Height > area.Bottom)
+                x < area.X + edge || x + current.Width > area.Right - edge || y < area.Y + edge ||
+                y + current.Height > area.Bottom - edge)
             {
                 return;
             }
