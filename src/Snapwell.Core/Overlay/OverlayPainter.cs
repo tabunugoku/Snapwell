@@ -7,7 +7,28 @@ namespace Snapwell.Core.Overlay;
 public readonly record struct OverlayColor(byte Red, byte Green, byte Blue, byte Alpha);
 
 /// <summary>上から下の行順の premultiplied BGRA 画素。</summary>
-public sealed record OverlayFrame(int Width, int Height, byte[] Pixels);
+public sealed record OverlayFrame(int Width, int Height, byte[] Pixels)
+{
+    // 半透明の描画をまとめても、整数の丸め順を元の描画と一致させる。
+    internal Dictionary<int, List<OverlayPixelBlend>>? Blends { get; init; }
+
+    /// <summary>描画関数が書き込める領域。null は全面。</summary>
+    internal PixelRect? Clip { get; init; }
+
+    /// <summary>前回の版から変更した領域。null は全面。</summary>
+    public IReadOnlyList<PixelRect>? DirtyRegions { get; set; }
+
+    /// <summary>変更前の画素の版。</summary>
+    public long BaseRevision { get; set; }
+
+    /// <summary>現在の画素の版。</summary>
+    public long Revision { get; set; }
+}
+
+internal readonly record struct OverlayPixelBlend(byte Blue, byte Green, byte Red, byte Alpha);
+
+/// <summary>静的なパネルの画素と物理画面座標。</summary>
+public sealed record LauncherPanelLayer(PixelRect Bounds, OverlayFrame Frame);
 
 /// <summary>アプリの明暗の配色。</summary>
 public enum OverlayTheme { Light, Dark }
@@ -45,10 +66,11 @@ public static class OverlayPainter
     /// <summary>矩形を配列の範囲に切り詰め、premultiplied の source-over で塗る。</summary>
     public static void Fill(OverlayFrame frame, PixelRect rect, OverlayColor color)
     {
-        var left = Math.Max(0, rect.X);
-        var top = Math.Max(0, rect.Y);
-        var right = Math.Min(frame.Width, rect.Right);
-        var bottom = Math.Min(frame.Height, rect.Bottom);
+        var clip = frame.Clip ?? new(0, 0, frame.Width, frame.Height);
+        var left = Math.Max(clip.X, rect.X);
+        var top = Math.Max(clip.Y, rect.Y);
+        var right = Math.Min(clip.Right, rect.Right);
+        var bottom = Math.Min(clip.Bottom, rect.Bottom);
         var blue = Premultiply(color.Blue, color.Alpha);
         var green = Premultiply(color.Green, color.Alpha);
         var red = Premultiply(color.Red, color.Alpha);
@@ -57,10 +79,7 @@ public static class OverlayPainter
             for (var x = left; x < right; x++)
             {
                 var index = (y * frame.Width + x) * 4;
-                frame.Pixels[index] = Blend(blue, frame.Pixels[index], color.Alpha);
-                frame.Pixels[index + 1] = Blend(green, frame.Pixels[index + 1], color.Alpha);
-                frame.Pixels[index + 2] = Blend(red, frame.Pixels[index + 2], color.Alpha);
-                frame.Pixels[index + 3] = Blend(color.Alpha, frame.Pixels[index + 3], color.Alpha);
+                BlendPixel(frame, index, new(blue, green, red, color.Alpha));
             }
         }
     }
@@ -103,6 +122,14 @@ public static class OverlayPainter
         ValidateScale(scale);
         var area = selection.WorkArea;
         var frame = Create(area.Width, area.Height);
+        PaintLauncher(frame, selection, theme, scale);
+        return frame;
+    }
+
+    /// <summary>既存の画素へ、クリップ領域の背景と区画だけを描く。</summary>
+    public static void PaintLauncher(OverlayFrame frame, ZoneSelection selection, OverlayTheme theme, double scale)
+    {
+        var area = selection.WorkArea;
         var palette = OverlayPalette.For(theme);
         // alpha が零の領域はレイヤードウィンドウの入力を通すため、背景全体を薄く塗る。
         Fill(frame, new(0, 0, area.Width, area.Height), palette.Dim);
@@ -111,6 +138,11 @@ public static class OverlayPainter
             for (var column = 0; column < selection.Grid.Plan.Columns; column++)
             {
                 var rect = Local(selection.Grid.CellRect(column, row), area);
+                if (frame.Clip is { } clip && !clip.Intersects(rect))
+                {
+                    continue;
+                }
+
                 var range = selection.Range;
                 var selected = column >= range.Column && column < range.Column + range.Columns &&
                     row >= range.Row && row < range.Row + range.Rows;
@@ -125,8 +157,6 @@ public static class OverlayPainter
                 }
             }
         }
-
-        return frame;
     }
 
     /// <summary>角の被覆率から alpha を求め、論理半径の角丸矩形を塗る。</summary>
@@ -143,9 +173,60 @@ public static class OverlayPainter
         OverlayTheme theme = OverlayTheme.Light, double scale = 1,
         Action<OverlayFrame, PixelRect, LauncherText>? drawText = null)
     {
+        SelectionLabel(frame, selection.WorkArea, layout, theme, scale, drawText);
+        PaintPanelContents(frame, selection.WorkArea, layout, theme, scale, drawText);
+    }
+
+    /// <summary>選択にだけ依存する中央のラベルを描く。</summary>
+    public static void SelectionLabel(OverlayFrame frame, PixelRect area, LauncherPanelLayout layout,
+        OverlayTheme theme, double scale, Action<OverlayFrame, PixelRect, LauncherText>? drawText = null)
+    {
+        var palette = OverlayPalette.For(theme);
+        var rect = Local(layout.SelectionLabel, area);
+        FillRounded(frame, rect, palette.Surface, 6, scale);
+        StrokeRounded(frame, rect, palette.Border, 6, 1, scale);
+        drawText?.Invoke(frame, area, layout.Text[0]);
+    }
+
+    /// <summary>選択ラベルを独立した小さい画素列へ描く。</summary>
+    public static LauncherPanelLayer CreateSelectionLabelLayer(LauncherPanelLayout layout,
+        OverlayTheme theme, double scale, Action<OverlayFrame, PixelRect, LauncherText>? drawText = null)
+    {
+        var area = layout.SelectionLabel;
+        var frame = Create(area.Width, area.Height) with { Blends = [] };
+        SelectionLabel(frame, area, layout, theme, scale, drawText);
+        return new(area, frame);
+    }
+
+    /// <summary>影と候補を含む静的パネルを、必要な寸法の画素列へ描く。</summary>
+    public static LauncherPanelLayer CreatePanelLayer(PixelRect workArea, LauncherPanelLayout layout,
+        OverlayTheme theme, double scale, Action<OverlayFrame, PixelRect, LauncherText>? drawText = null,
+        LauncherPanelLayer? shadow = null)
+    {
+        if (layout.Panel.Height == 0)
+        {
+            return new(new(workArea.X, workArea.Y, 1, 1), Create(1, 1));
+        }
+
+        // 三回のボックスぼかしの半径の和と下向きの影を含める。
+        var padding = (int)Math.Ceiling(48 * scale);
+        var left = Math.Max(workArea.X, layout.Panel.X - padding);
+        var top = Math.Max(workArea.Y, layout.Panel.Y - padding);
+        var right = Math.Min(workArea.Right, layout.Panel.Right + padding);
+        var bottom = Math.Min(workArea.Bottom, Math.Max(layout.Panel.Bottom + padding + (int)Math.Ceiling(8 * scale),
+            layout.Options.Select(option => option.Bottom).DefaultIfEmpty(0).Max()));
+        var bounds = new PixelRect(left, top, right - left, bottom - top);
+        var layer = Create(bounds.Width, bounds.Height) with { Blends = [] };
+        PaintPanelContents(layer, bounds, layout, theme, scale, drawText, shadow);
+        return new(bounds, layer);
+    }
+
+    private static void PaintPanelContents(OverlayFrame frame, PixelRect area, LauncherPanelLayout layout,
+        OverlayTheme theme, double scale, Action<OverlayFrame, PixelRect, LauncherText>? drawText,
+        LauncherPanelLayer? shadow = null)
+    {
         ValidateScale(scale);
         var palette = OverlayPalette.For(theme);
-        var area = selection.WorkArea;
         void Box(PixelRect bounds, double radius, OverlayColor fill, OverlayColor border)
         {
             var rect = Local(bounds, area);
@@ -153,9 +234,12 @@ public static class OverlayPainter
             StrokeRounded(frame, rect, border, radius, 1, scale);
         }
 
-        Box(layout.SelectionLabel, 6, palette.Surface, palette.Border);
-        drawText?.Invoke(frame, area, layout.Text[0]);
-        PaintPanelShadow(frame, Local(layout.Panel, area), scale);
+        var panel = Local(layout.Panel, area);
+        if (panel.Width > 0 && panel.Height > 0)
+        {
+            shadow ??= CreatePanelShadow(panel.Width, panel.Height, scale);
+            Composite(frame, shadow.Frame, panel.X + shadow.Bounds.X, panel.Y + shadow.Bounds.Y);
+        }
         Box(layout.Panel, 12, palette.Surface, palette.Border);
         FillRounded(frame, Local(layout.Tag, area), palette.BlueBackground, 9999, scale);
         Box(layout.Plan, 6, palette.Surface, palette.Border);
@@ -179,15 +263,12 @@ public static class OverlayPainter
             var full = new PixelRect(0, 0, rect.Width, rect.Height);
             FillRounded(layer, full, palette.Surface2, 6, scale);
             StrokeRounded(layer, full, palette.Border, 6, 1, scale);
-            var icon = Local(button.Icon, new(button.Bounds.X, button.Bounds.Y, rect.Width, rect.Height));
-            PaintRounded(layer, icon.X + .5 * scale, icon.Y + .5 * scale, 17 * scale, 11 * scale,
+            var icon = button.IconBorder;
+            PaintRounded(layer, icon.X - button.Bounds.X, icon.Y - button.Bounds.Y, icon.Width, icon.Height,
                 1.5 * scale, palette.Muted, Math.Max(1, scale), centered: true);
-            var preset = LauncherPreset.All[button.Index];
-            var on = new PixelRect(icon.X + (int)Math.Round((1.5 + preset.X0 * 15) * scale),
-                icon.Y + (int)Math.Round((1.5 + preset.Y0 * 9) * scale),
-                Math.Max(1, (int)Math.Round((preset.X1 - preset.X0) * 15 * scale)),
-                Math.Max(1, (int)Math.Round((preset.Y1 - preset.Y0) * 9 * scale)));
-            FillRounded(layer, on, palette.Muted, .5, scale);
+            var on = button.IconFill;
+            PaintRounded(layer, on.X - button.Bounds.X, on.Y - button.Bounds.Y, on.Width, on.Height,
+                .5 * scale, palette.Muted);
             drawText?.Invoke(layer, button.Bounds, layout.Text.First(text => button.Bounds.Contains(text.Bounds)));
             Composite(frame, layer, rect.X, rect.Y, button.Enabled ? 1 : .4);
         }
@@ -213,13 +294,12 @@ public static class OverlayPainter
         }
     }
 
-    private static void PaintPanelShadow(OverlayFrame frame, PixelRect panel, double scale)
+    /// <summary>サイズと拡大率だけに依存する影を、パネルの左上からの相対位置で作る。</summary>
+    public static LauncherPanelLayer CreatePanelShadow(int width, int height, double scale)
     {
-        if (panel.Width == 0 || panel.Height == 0)
-        {
-            return;
-        }
-
+        ValidateScale(scale);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(width);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height);
         // CSS の blur 28 px は標準偏差 14 px。三回のボックスぼかしで Gaussian を近似する。
         var sigma = 14 * scale;
         var lower = (int)Math.Floor(Math.Sqrt(4 * sigma * sigma + 1));
@@ -228,8 +308,8 @@ public static class OverlayPainter
         var count = (int)Math.Round((12 * sigma * sigma - 3 * lower * lower - 12 * lower - 9) / (-4 * lower - 4));
         var radii = Enumerable.Range(0, 3).Select(index => ((index < count ? lower : upper) - 1) / 2).ToArray();
         var padding = radii.Sum();
-        var shadow = Create(panel.Width + 2 * padding, panel.Height + 2 * padding);
-        FillRounded(shadow, new(padding, padding, panel.Width, panel.Height), new(0, 0, 0, 255), 12, scale);
+        var shadow = Create(width + 2 * padding, height + 2 * padding);
+        FillRounded(shadow, new(padding, padding, width, height), new(0, 0, 0, 255), 12, scale);
         var values = new double[shadow.Width * shadow.Height];
         var scratch = new double[values.Length];
         for (var index = 0; index < values.Length; index++)
@@ -248,7 +328,7 @@ public static class OverlayPainter
             shadow.Pixels[index * 4 + 3] = (byte)Math.Round(values[index] * .05);
         }
 
-        Composite(frame, shadow, panel.X - padding, panel.Y - padding + (int)Math.Round(8 * scale));
+        return new(new(-padding, -padding + (int)Math.Round(8 * scale), shadow.Width, shadow.Height), shadow);
     }
 
     private static void Blur(double[] source, double[] destination, int width, int height, int radius, bool horizontal)
@@ -289,18 +369,27 @@ public static class OverlayPainter
             throw new ArgumentOutOfRangeException(nameof(opacity));
         }
 
-        for (var y = Math.Max(0, -top); y < Math.Min(source.Height, destination.Height - top); y++)
+        var clip = destination.Clip ?? new(0, 0, destination.Width, destination.Height);
+        for (var y = Math.Max(clip.Y - top, 0); y < Math.Min(source.Height, clip.Bottom - top); y++)
         {
-            for (var x = Math.Max(0, -left); x < Math.Min(source.Width, destination.Width - left); x++)
+            for (var x = Math.Max(clip.X - left, 0); x < Math.Min(source.Width, clip.Right - left); x++)
             {
                 var from = (y * source.Width + x) * 4;
                 var to = ((top + y) * destination.Width + left + x) * 4;
-                var alpha = (byte)Math.Round(source.Pixels[from + 3] * opacity);
-                for (var channel = 0; channel < 4; channel++)
+                if (opacity == 1 && source.Blends is { } blends && blends.TryGetValue(from, out var operations))
                 {
-                    destination.Pixels[to + channel] = Blend((byte)Math.Round(source.Pixels[from + channel] * opacity),
-                        destination.Pixels[to + channel], alpha);
+                    foreach (var operation in operations)
+                    {
+                        BlendPixel(destination, to, operation);
+                    }
+
+                    continue;
                 }
+
+                var alpha = (byte)Math.Round(source.Pixels[from + 3] * opacity);
+                BlendPixel(destination, to, new((byte)Math.Round(source.Pixels[from] * opacity),
+                    (byte)Math.Round(source.Pixels[from + 1] * opacity),
+                    (byte)Math.Round(source.Pixels[from + 2] * opacity), alpha));
             }
         }
     }
@@ -329,18 +418,27 @@ public static class OverlayPainter
 
         radius = Math.Clamp(radius, 0, Math.Min(width, height) / 2);
         var expansion = centered ? thickness!.Value / 2 : 0;
-        var right = Math.Min(frame.Width, Math.Ceiling(left + width + expansion));
-        var bottom = Math.Min(frame.Height, Math.Ceiling(top + height + expansion));
-        for (var y = Math.Max(0, (int)Math.Floor(top - expansion)); y < bottom; y++)
+        var clip = frame.Clip ?? new(0, 0, frame.Width, frame.Height);
+        var right = Math.Min(clip.Right, Math.Ceiling(left + width + expansion));
+        var bottom = Math.Min(clip.Bottom, Math.Ceiling(top + height + expansion));
+        for (var y = Math.Max(clip.Y, (int)Math.Floor(top - expansion)); y < bottom; y++)
         {
-            for (var x = Math.Max(0, (int)Math.Floor(left - expansion)); x < right; x++)
+            for (var x = Math.Max(clip.X, (int)Math.Floor(left - expansion)); x < right; x++)
             {
                 var px = x + 0.5 - left;
                 var py = y + 0.5 - top;
-                var distance = RoundedDistance(px, py, width, height, radius);
+                // 中央の矩形では丸い角の距離を求める必要がない。被覆率の式は同じに保つ。
+                var distance = px >= radius && px <= width - radius && py >= radius && py <= height - radius
+                    ? Math.Max(Math.Abs(px - width / 2) - width / 2, Math.Abs(py - height / 2) - height / 2)
+                    : RoundedDistance(px, py, width, height, radius);
                 var coverage = Math.Clamp(0.5 + expansion - distance, 0, 1);
                 if (thickness is { } stroke)
                 {
+                    if (!centered && distance <= -stroke - .5)
+                    {
+                        continue;
+                    }
+
                     coverage = centered
                         ? Math.Clamp(stroke / 2 + 0.5 - Math.Abs(distance), 0, 1)
                         : Math.Clamp(coverage - InnerCoverage(px, py, width, height, radius, stroke), 0, 1);
@@ -356,12 +454,41 @@ public static class OverlayPainter
                 {
                     var alpha = (byte)Math.Round(color.Alpha * coverage);
                     var index = (y * frame.Width + x) * 4;
-                    frame.Pixels[index] = Blend(Premultiply(color.Blue, alpha), frame.Pixels[index], alpha);
-                    frame.Pixels[index + 1] = Blend(Premultiply(color.Green, alpha), frame.Pixels[index + 1], alpha);
-                    frame.Pixels[index + 2] = Blend(Premultiply(color.Red, alpha), frame.Pixels[index + 2], alpha);
-                    frame.Pixels[index + 3] = Blend(alpha, frame.Pixels[index + 3], alpha);
+                    BlendPixel(frame, index, new(Premultiply(color.Blue, alpha), Premultiply(color.Green, alpha),
+                        Premultiply(color.Red, alpha), alpha));
                 }
             }
+        }
+    }
+
+    private static void BlendPixel(OverlayFrame frame, int index, OverlayPixelBlend source)
+    {
+        if (frame.Blends is { } blends && source.Alpha > 0)
+        {
+            RecordBlend(frame, blends, index, source);
+        }
+
+        frame.Pixels[index] = Blend(source.Blue, frame.Pixels[index], source.Alpha);
+        frame.Pixels[index + 1] = Blend(source.Green, frame.Pixels[index + 1], source.Alpha);
+        frame.Pixels[index + 2] = Blend(source.Red, frame.Pixels[index + 2], source.Alpha);
+        frame.Pixels[index + 3] = Blend(source.Alpha, frame.Pixels[index + 3], source.Alpha);
+    }
+
+    private static void RecordBlend(OverlayFrame frame, Dictionary<int, List<OverlayPixelBlend>> blends,
+        int index, OverlayPixelBlend source)
+    {
+        if (source.Alpha == 255)
+        {
+            blends.Remove(index);
+        }
+        else if (blends.TryGetValue(index, out var operations))
+        {
+            operations.Add(source);
+        }
+        else if (frame.Pixels[index + 3] is > 0 and < 255)
+        {
+            blends[index] = [new(frame.Pixels[index], frame.Pixels[index + 1], frame.Pixels[index + 2],
+                frame.Pixels[index + 3]), source];
         }
     }
 

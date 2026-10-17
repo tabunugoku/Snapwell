@@ -170,6 +170,82 @@ public sealed class OverlayThreadTests
         }
     }
 
+    /// <summary>描画中に届いた移動は最新の一件だけを配送して描く。</summary>
+    [Fact]
+    public void MovesDuringPaintingUseLatestPositionOnly()
+    {
+        using var entered = new ManualResetEventSlim(false);
+        using var release = new ManualResetEventSlim(false);
+        var fake = new FakeOverlay();
+        using var overlay = new OverlayThread(() => (fake, fake));
+        var positions = new ConcurrentQueue<Vec2>();
+        overlay.Pointer += pointer =>
+        {
+            positions.Enqueue(pointer.Position);
+            overlay.Request(new((int)pointer.Position.X, 0, 1, 1), () => OverlayPainter.Create(1, 1));
+        };
+        try
+        {
+            overlay.Request(new(0, 0, 1, 1), () =>
+            {
+                entered.Set();
+                release.Wait();
+                return OverlayPainter.Create(1, 1);
+            });
+            Assert.True(entered.Wait(2000));
+            for (var index = 0; index < 100; index++)
+            {
+                fake.Raise(new(OverlayPointerKind.Move, new(index, 0)));
+            }
+
+            release.Set();
+            Assert.True(fake.Drawn.Wait(2000));
+            Assert.Equal(new Vec2(99, 0), Assert.Single(positions));
+            Assert.Equal(new PixelRect(99, 0, 1, 1), Assert.Single(fake.Shown));
+        }
+        finally
+        {
+            release.Set();
+        }
+    }
+
+    /// <summary>移動の集約で押下や解放の順序を変えない。</summary>
+    [Fact]
+    public void CoalescedMoveDoesNotOvertakeButtonUp()
+    {
+        using var entered = new ManualResetEventSlim(false);
+        using var release = new ManualResetEventSlim(false);
+        var fake = new FakeOverlay();
+        using var overlay = new OverlayThread(() => (fake, fake));
+        var kinds = new List<OverlayPointerKind>();
+        var positions = new List<Vec2>();
+        overlay.Pointer += pointer =>
+        {
+            kinds.Add(pointer.Kind);
+            positions.Add(pointer.Position);
+        };
+        try
+        {
+            overlay.Request(new(0, 0, 1, 1), () =>
+            {
+                entered.Set();
+                release.Wait();
+                return OverlayPainter.Create(1, 1);
+            });
+            Assert.True(entered.Wait(2000));
+            fake.Raise(new(OverlayPointerKind.Down, new(0, 0)));
+            fake.Raise(new(OverlayPointerKind.Move, new(1, 0)));
+            fake.Raise(new(OverlayPointerKind.Move, new(2, 0)));
+            fake.Raise(new(OverlayPointerKind.Up, new(3, 0)));
+            Assert.Equal(new[] { OverlayPointerKind.Down, OverlayPointerKind.Move, OverlayPointerKind.Up }, kinds);
+            Assert.Equal(new Vec2[] { new(0, 0), new(2, 0), new(3, 0) }, positions);
+        }
+        finally
+        {
+            release.Set();
+        }
+    }
+
     /// <summary>クライアント座標は負のモニター原点にも加算する。</summary>
     [Fact]
     public void CoordinatesIncludeNegativeScreenOrigin() =>
@@ -186,7 +262,8 @@ public sealed class OverlayThreadTests
         internal ManualResetEventSlim? Block { get; init; }
         internal bool ThrowOnShow { get; init; }
         internal bool ThrowOnDispose { get; init; }
-        public event Action<OverlayPointer>? Pointer { add { } remove { } }
+        public event Action<OverlayPointer>? Pointer;
+        internal void Raise(OverlayPointer pointer) => Pointer?.Invoke(pointer);
         public void Show(PixelRect bounds, OverlayFrame frame)
         {
             Entered.Set();

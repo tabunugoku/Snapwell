@@ -321,7 +321,8 @@ public sealed class LauncherControllerTests
         fixture.Inspector.Window = fixture.Inspector.Window with { Title = new string('例', 1000) + "\n" };
         fixture.Launcher.Open();
         var title = Assert.Single(fixture.Launcher.PanelLayout!.Text, text => text.Size == 12.5);
-        Assert.Equal(512, title.Value.Length);
+        Assert.EndsWith("…", title.Value);
+        Assert.True(title.Value.Length < 512);
         Assert.Single(fixture.Presenter.Requests);
         Assert.Empty(fixture.Placements);
     }
