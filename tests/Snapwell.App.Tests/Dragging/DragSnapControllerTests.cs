@@ -83,6 +83,17 @@ public sealed class DragSnapControllerTests
         Assert.Equal(2, fixture.Motion.Canceled.Count);
     }
 
+    /// <summary>自分のプロセスのオーバーレイはドラッグの追跡対象にしない。</summary>
+    [Fact]
+    public void OwnProcessOverlayIsExcluded()
+    {
+        var fixture = new Fixture();
+        fixture.Inspector.Window = fixture.Inspector.Window with { ProcessId = 999 };
+        fixture.Controller.Handle(new MoveSizeStarted(1));
+        Assert.Empty(fixture.Tracking);
+        Assert.Empty(fixture.Motion.Canceled);
+    }
+
     [Fact]
     public void TimestampWrapPreservesPositiveVelocity()
     {

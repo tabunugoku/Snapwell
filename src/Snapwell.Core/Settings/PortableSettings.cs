@@ -18,6 +18,9 @@ public sealed record PortableSettings
     public double Gap { get; init; } = 8;
     public double Edge { get; init; } = 8;
     public bool ReduceMotion { get; init; }
+    // JSON のソース生成は、ファイルに無い init のプロパティを初期値でなく既定値 (false) にする。
+    // 古い設定ファイルでも true になるよう、この値だけは set にする。
+    public bool ShowZonePreview { get; set; } = true;
     public Dictionary<WindowCommand, KeyChordSpec> Hotkeys { get; init; } = DefaultHotkeys.Create();
 
     /// <summary>物理モデルのプリセットを返す。</summary>
@@ -52,6 +55,7 @@ public sealed record PortableSettings
                 Grid?.Rows is >= 1 and <= 64 ? Grid.Rows : 8),
             Gap = double.IsFinite(Gap) && Gap is >= 0 and <= 200 ? Gap : defaults.Gap,
             Edge = double.IsFinite(Edge) && Edge is >= 0 and <= 200 ? Edge : defaults.Edge,
+            ShowZonePreview = ShowZonePreview,
             Hotkeys = hotkeys,
         };
     }

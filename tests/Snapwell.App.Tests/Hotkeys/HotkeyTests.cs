@@ -13,6 +13,44 @@ namespace Snapwell.App.Tests.Hotkeys;
 
 public sealed class HotkeyTests
 {
+    /// <summary>ランチャーは配置コマンドとして実行せず、専用の呼び出しへ渡す。</summary>
+    [Fact]
+    public void OpenLauncherInvokesCallbackWithoutMovingWindow()
+    {
+        var calls = 0;
+        var motion = new FakeMotion();
+        var inspector = new FakeInspector();
+        var executor = new HotkeyCommandExecutor(inspector, new FakeMonitors(), motion, new FakePosition(inspector),
+            () => new(), () => true, () => { }, 999, () => calls++);
+        executor.Handle(new((int)WindowCommand.OpenLauncher));
+        Assert.Equal(1, calls);
+        Assert.Empty(motion.Requests);
+    }
+
+    /// <summary>ランチャーの範囲も固定サイズを保ち、位置だけを変更する。</summary>
+    [Fact]
+    public void SelectedRangePreservesFixedWindowSize()
+    {
+        var fixture = new Fixture();
+        fixture.Inspector.Window = fixture.Inspector.Window with { Style = 0 };
+        fixture.Executor.Place(1, new(100, 100, 800, 600), new(0, 0, 1920, 1040));
+        var request = Assert.Single(fixture.Motion.Requests);
+        Assert.Equal(new PixelRect(300, 250, 400, 300), request.Target);
+        Assert.False(request.Resize);
+    }
+
+    /// <summary>ランチャーの対象は最大化を解除してから、選んだ矩形へ移動する。</summary>
+    [Fact]
+    public void SelectedRangeUsesSharedMaximizedRestoration()
+    {
+        using var fixture = new BlockingRestoreFixture();
+        var target = new PixelRect(8, 8, 948, 512);
+        fixture.Executor.Place(1, target, new(0, 0, 1920, 1040));
+        fixture.CompleteRestore();
+        Assert.Equal(target, Assert.Single(fixture.Requests).Target);
+        Assert.Equal(1, fixture.RestoreCalls);
+    }
+
     [Fact]
     public void DefaultsUseNoWindowsModifierAndSuppressChords()
     {

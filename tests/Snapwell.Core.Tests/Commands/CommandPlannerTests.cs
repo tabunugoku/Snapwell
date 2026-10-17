@@ -7,6 +7,18 @@ namespace Snapwell.Core.Tests.Commands;
 
 public sealed class CommandPlannerTests
 {
+    /// <summary>既存の ID を保ち、ランチャーの既定キーを重複なく追加する。</summary>
+    [Fact]
+    public void LauncherDefaultHotkeyIsUniqueAndAppended()
+    {
+        var hotkeys = DefaultHotkeys.Create();
+        Assert.Equal(new KeyChordSpec(ChordModifiers.Control | ChordModifiers.Alt, 0x20),
+            hotkeys[WindowCommand.OpenLauncher]);
+        Assert.Equal(hotkeys.Count, hotkeys.Values.Distinct().Count());
+        Assert.Equal(19, (int)WindowCommand.ToggleEnabled);
+        Assert.Equal(20, (int)WindowCommand.OpenLauncher);
+    }
+
     private static readonly MonitorArea[] _monitors = [new("main", new(0, 0, 1920, 1040), 1)];
     private static readonly PixelRect _current = new(100, 100, 400, 300);
 
