@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using Snapwell.App.Hotkeys;
 using Snapwell.App.Motion;
@@ -195,6 +196,171 @@ public sealed class ArrangeTests
         Assert.All(fixture.Motion.Requests, request => Assert.Equal(leftWorkArea, request.Walls));
     }
 
+    /// <summary>各モニターの作業領域と DPI で整列し、前面の有無に左右されず中心順で並べる。</summary>
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    public void ArrangeAllMonitorsKeepsEveryWindowOnItsOwnMonitor(int foreground)
+    {
+        var fixture = CreateTwoMonitorFixture();
+        fixture.Inspector.Foreground = foreground;
+        fixture.AddWindow(5, new(-1700, 100, 300, 200), cloaked: true);
+        fixture.AddWindow(6, new(100, 100, 300, 200), owner: 3);
+        fixture.AddWindow(7, new(100, 100, 300, 200), style: PopupStyle);
+
+        fixture.Executor.Handle(new((int)WindowCommand.ArrangeAllMonitors));
+
+        Assert.Equal(4, fixture.Motion.Requests.Count);
+        Assert.Equal([2, 1, 4, 3], fixture.Motion.Requests.Select(request => request.Handle));
+        for (var monitorIndex = 0; monitorIndex < 2; monitorIndex++)
+        {
+            var monitor = fixture.Monitors.Items[monitorIndex];
+            var spacing = fixture.Settings.ToSpacing().ToPhysical(monitor.ToMonitorArea().Scale);
+            var expected = WindowArrangement.Arrange(ArrangeLayout.Grid, monitor.WorkArea, spacing, 2)!;
+            for (var i = 0; i < 2; i++)
+            {
+                var request = fixture.Motion.Requests[monitorIndex * 2 + i];
+                Assert.Equal(expected[i], request.Target);
+                Assert.Equal(monitor.WorkArea, request.Walls);
+                Assert.True(monitor.WorkArea.Contains(request.Target));
+            }
+        }
+    }
+
+    /// <summary>Snapwell が前面でも、カーソルのモニターだけを整列する。</summary>
+    [Theory]
+    [InlineData(-1800, 2, 1)]
+    [InlineData(100, 4, 3)]
+    public void ArrangeCurrentMonitorUsesCursorAndIgnoresOwnForeground(int cursorX, int first, int second)
+    {
+        var fixture = CreateTwoMonitorFixture();
+        fixture.Cursor = new(cursorX, 100);
+        fixture.AddWindow(9, new(200, 100, 300, 200), processId: OwnProcessId);
+        fixture.Inspector.Foreground = 9;
+
+        fixture.Executor.ArrangeCurrentMonitor();
+
+        Assert.Equal([first, second], fixture.Motion.Requests.Select(request => request.Handle));
+        var workArea = fixture.Monitors.Items[cursorX < 0 ? 0 : 1].WorkArea;
+        Assert.All(fixture.Motion.Requests, request => Assert.True(workArea.Contains(request.Target)));
+    }
+
+    /// <summary>タスクバー上のカーソルは、近い別モニターの作業領域に属するものと扱わない。</summary>
+    [Fact]
+    public void CursorOverTaskbarUsesContainingMonitorRatherThanNearestWorkArea()
+    {
+        var fixture = CreateTwoMonitorFixture();
+        fixture.Monitors.Items =
+        [
+            fixture.Monitors.Items[0] with { WorkArea = new(-1920, -200, 1840, 1040) },
+            fixture.Monitors.Items[1],
+        ];
+        fixture.Cursor = new(-1, 100);
+
+        fixture.Executor.ArrangeCurrentMonitor();
+
+        Assert.Equal([2, 1], fixture.Motion.Requests.Select(request => request.Handle));
+    }
+
+    /// <summary>一時停止・停止後・対象なしでは、どちらの入口も移動を要求しない。</summary>
+    [Theory]
+    [InlineData("disabled")]
+    [InlineData("stopped")]
+    [InlineData("empty")]
+    [InlineData("no-monitors")]
+    public void MonitorArrangementDoesNothingWhenUnavailable(string mode)
+    {
+        var fixture = CreateTwoMonitorFixture();
+        if (mode == "disabled") { fixture.Enabled = false; }
+        if (mode == "stopped") { fixture.Executor.Stop(); }
+        if (mode == "empty") { fixture.Inspector.Windows.Clear(); }
+        if (mode == "no-monitors") { fixture.Monitors.Items = []; }
+
+        fixture.Executor.Handle(new((int)WindowCommand.ArrangeAllMonitors));
+        fixture.Executor.ArrangeCurrentMonitor();
+
+        Assert.Empty(fixture.Motion.Requests);
+    }
+
+    /// <summary>カーソル取得失敗時に別のモニターを誤って整列しない。</summary>
+    [Fact]
+    public void ArrangeCurrentMonitorSkipsFailedCursorRead()
+    {
+        var fixture = CreateTwoMonitorFixture();
+        fixture.Cursor = null;
+        fixture.Executor.ArrangeCurrentMonitor();
+        Assert.Empty(fixture.Motion.Requests);
+    }
+
+    /// <summary>空のモニターを飛ばし、サイズ固定と途中で閉じたウィンドウも従来どおり扱う。</summary>
+    [Fact]
+    public void ArrangeAllMonitorsSkipsEmptyMonitorAndClosedWindowsAndPreservesFixedSize()
+    {
+        var fixture = new ArrangeFixture();
+        fixture.Monitors.Items =
+        [
+            new("empty", new(-1920, 0, 1920, 1040), new(-1920, 0, 1920, 1040), 144, 144, false),
+            new("main", new(0, 0, 1920, 1040), new(0, 0, 1920, 1040), 96, 96, true),
+        ];
+        fixture.AddWindow(1, new(100, 100, 300, 200), style: 0);
+        fixture.AddWindow(2, new(500, 100, 300, 200));
+        fixture.Inspector.CloseAfterFirstInspect.Add(2);
+
+        fixture.Executor.Handle(new((int)WindowCommand.ArrangeAllMonitors));
+
+        var request = Assert.Single(fixture.Motion.Requests);
+        Assert.Equal((nint)1, request.Handle);
+        Assert.False(request.Resize);
+        Assert.Equal(300, request.Target.Width);
+        Assert.Equal(200, request.Target.Height);
+        Assert.True(fixture.Monitors.Items[1].WorkArea.Contains(request.Target));
+    }
+
+    /// <summary>最大化を解除して取り直した矩形から、元のモニターの区画へ配置する。</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void MonitorArrangementRestoresMaximizedWindowBeforeRequest(bool currentMonitor)
+    {
+        var fixture = CreateTwoMonitorFixture();
+        var window = fixture.Inspector.Windows[1];
+        fixture.Inspector.Windows[1] = window with { IsMaximized = true };
+        fixture.Cursor = new(-1800, 100);
+        using var requested = new ManualResetEventSlim();
+        fixture.Position.OnRestore = handle =>
+        {
+            Assert.Equal((nint)1, handle);
+            fixture.Inspector.Windows[handle] = window;
+        };
+        fixture.Motion.OnRequest = request =>
+        {
+            if (request.Handle == 1) { requested.Set(); }
+        };
+
+        if (currentMonitor) { fixture.Executor.ArrangeCurrentMonitor(); }
+        else { fixture.Executor.Handle(new((int)WindowCommand.ArrangeAllMonitors)); }
+
+        Assert.True(requested.Wait(TimeSpan.FromSeconds(5)));
+        var restored = Assert.Single(fixture.Motion.Requests, request => request.Handle == 1);
+        Assert.Equal(window.VisualBounds, restored.Current);
+        Assert.True(fixture.Monitors.Items[0].WorkArea.Contains(restored.Target));
+    }
+
+    private static ArrangeFixture CreateTwoMonitorFixture()
+    {
+        var fixture = new ArrangeFixture();
+        fixture.Monitors.Items =
+        [
+            new("left", new(-1920, -200, 1920, 1040), new(-1920, -200, 1920, 1040), 144, 144, false),
+            new("main", new(0, 0, 1920, 1040), new(0, 0, 1920, 1040), 96, 96, true),
+        ];
+        fixture.AddWindow(1, new(-800, 300, 300, 200));
+        fixture.AddWindow(2, new(-1700, 0, 300, 200));
+        fixture.AddWindow(3, new(800, 500, 300, 200));
+        fixture.AddWindow(4, new(100, 100, 300, 200));
+        return fixture;
+    }
+
     private sealed class ArrangeFixture
     {
         internal ArrangeInspector Inspector { get; } = new();
@@ -203,11 +369,12 @@ public sealed class ArrangeTests
         internal ArrangePosition Position { get; } = new();
         internal PortableSettings Settings { get; set; } = new();
         internal bool Enabled { get; set; } = true;
+        internal Vec2? Cursor { get; set; } = new(100, 100);
         internal HotkeyCommandExecutor Executor { get; }
 
         internal ArrangeFixture() =>
             Executor = new(Inspector, Monitors, Motion, Position, () => Settings, () => Enabled, () => { },
-                OwnProcessId);
+                OwnProcessId, cursorPosition: () => Cursor);
 
         internal void AddWindow(
             nint handle,
@@ -227,7 +394,7 @@ public sealed class ArrangeTests
 
     private sealed class ArrangeInspector : IWindowInspector
     {
-        internal Dictionary<nint, WindowSnapshot> Windows { get; } = [];
+        internal ConcurrentDictionary<nint, WindowSnapshot> Windows { get; } = new();
         internal Dictionary<nint, nint> Owners { get; } = [];
         internal List<nint> TopLevelHandles { get; } = [];
         internal HashSet<nint> CloseAfterFirstInspect { get; } = [];
@@ -261,8 +428,14 @@ public sealed class ArrangeTests
 
     private sealed class ArrangeMotion : IMotionEngine
     {
-        internal List<MotionRequest> Requests { get; } = [];
-        public void Request(MotionRequest request) => Requests.Add(request);
+        private readonly ConcurrentQueue<MotionRequest> _requests = new();
+        internal IReadOnlyList<MotionRequest> Requests => _requests.ToArray();
+        internal Action<MotionRequest>? OnRequest { get; set; }
+        public void Request(MotionRequest request)
+        {
+            _requests.Enqueue(request);
+            OnRequest?.Invoke(request);
+        }
         public bool IsMoving(nint handle) => false;
         public void Cancel(nint handle) { }
         public void CancelAll() { }
@@ -271,7 +444,12 @@ public sealed class ArrangeTests
 
     private sealed class ArrangePosition : IWindowPositionApi
     {
-        public bool Restore(nint handle) => true;
+        internal Action<nint>? OnRestore { get; set; }
+        public bool Restore(nint handle)
+        {
+            OnRestore?.Invoke(handle);
+            return true;
+        }
         public bool SetBounds(nint handle, PixelRect bounds, bool positionOnly) => true;
         public bool ApplyBatch(IReadOnlyList<NativeWindowPlacement> placements) => true;
     }

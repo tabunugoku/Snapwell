@@ -13,6 +13,7 @@ public sealed class HotkeyCatalogTests
         Assert.Equal("現在のモニターを縦一列に整列", HotkeyCatalog.GetDisplayName(WindowCommand.ArrangeRows));
         Assert.Equal("現在のモニターをメインとスタックで整列",
             HotkeyCatalog.GetDisplayName(WindowCommand.ArrangeMainAndStack));
+        Assert.Equal("全モニターを整列 (グリッド)", HotkeyCatalog.GetDisplayName(WindowCommand.ArrangeAllMonitors));
         foreach (var command in Enum.GetValues<WindowCommand>())
         {
             Assert.NotEqual(command.ToString(), HotkeyCatalog.GetDisplayName(command));
@@ -21,6 +22,20 @@ public sealed class HotkeyCatalogTests
 
     [Fact]
     public void DefaultsHaveNoConflicts() => Assert.Empty(HotkeyCatalog.FindConflicts(DefaultHotkeys.Create()));
+
+    [Theory]
+    [InlineData(WindowCommand.ArrangeColumns, 0x48u)]
+    [InlineData(WindowCommand.ArrangeRows, 0x56u)]
+    [InlineData(WindowCommand.ArrangeMainAndStack, 0x4Du)]
+    [InlineData(WindowCommand.ArrangeAllMonitors, 0x41u)]
+    public void ArrangementDefaultsUseControlAltShiftAndHaveDisplayNames(WindowCommand command, uint key)
+    {
+        var defaults = DefaultHotkeys.Create();
+        Assert.Equal(new(ChordModifiers.Control | ChordModifiers.Alt | ChordModifiers.Shift, key), defaults[command]);
+        Assert.Empty(HotkeyCatalog.FindConflicts(defaults));
+        Assert.False(string.IsNullOrWhiteSpace(HotkeyCatalog.GetDisplayName(command)));
+        Assert.Equal(WindowCommand.ArrangeAllMonitors, Enum.GetValues<WindowCommand>()[^1]);
+    }
 
     [Fact]
     public void ConflictContainsEveryCommandInDisplayOrder()

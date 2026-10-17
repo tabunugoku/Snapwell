@@ -40,6 +40,7 @@ internal sealed unsafe class TrayIcon(IAppLog log, ISettingsLauncher? settings =
     public event Action? ToggleRequested;
     public event Action? StandardSnapRequested;
     public event Action? RestoreRequested;
+    public event Action? ArrangeRequested;
     public event Action? ExitRequested;
     public event Action? SessionEnding;
 
@@ -235,17 +236,14 @@ internal sealed unsafe class TrayIcon(IAppLog log, ISettingsLauncher? settings =
         try
         {
             var state = Volatile.Read(ref _state);
-            AppendItem(menu, MENU_ITEM_FLAGS.MF_STRING, 5, "設定を開く");
-            AppendItem(menu, MENU_ITEM_FLAGS.MF_STRING, 1, state.Enabled ? "一時停止" : "再開");
-            AppendItem(menu, MENU_ITEM_FLAGS.MF_STRING |
-                (state.DisableStandardSnap ? MENU_ITEM_FLAGS.MF_CHECKED : 0), 2, "Windows 標準のスナップを止める");
-            AppendItem(menu, MENU_ITEM_FLAGS.MF_STRING, 3, "標準の動作に戻す");
-            if (state.Status is { } status)
+            foreach (var item in TrayIconPolicy.MenuItems(state))
             {
-                AppendItem(menu, MENU_ITEM_FLAGS.MF_STRING | MENU_ITEM_FLAGS.MF_GRAYED, 0, status);
+                var flags = MENU_ITEM_FLAGS.MF_STRING |
+                    (item.Enabled ? 0 : MENU_ITEM_FLAGS.MF_GRAYED) |
+                    (item.Checked ? MENU_ITEM_FLAGS.MF_CHECKED : 0);
+                AppendItem(menu, flags, item.Id, item.Text);
             }
 
-            AppendItem(menu, MENU_ITEM_FLAGS.MF_STRING, 4, "終了");
             PInvoke.GetCursorPos(out var point);
             PInvoke.SetForegroundWindow(_window);
             var command = (uint)PInvoke.TrackPopupMenu(menu,
@@ -253,18 +251,30 @@ internal sealed unsafe class TrayIcon(IAppLog log, ISettingsLauncher? settings =
                 point.X, point.Y, 0, _window, null).Value;
             // メニューを確実に閉じるため、所有ウィンドウに無害なメッセージを返す。実機未確認。
             PInvoke.PostMessage(_window, 0, default, default);
-            switch (command)
-            {
-                case 1: ToggleRequested?.Invoke(); break;
-                case 2: StandardSnapRequested?.Invoke(); break;
-                case 3: RestoreRequested?.Invoke(); break;
-                case 4: ExitRequested?.Invoke(); break;
-                case 5: _settings.Open(); break;
-            }
+            SelectMenuItem(command);
         }
         finally
         {
             PInvoke.DestroyMenu(menu);
+        }
+    }
+
+    /// <summary>メニュー表示後の一時停止や終了も確認してから選択を配送する。</summary>
+    internal void SelectMenuItem(uint command)
+    {
+        if (Volatile.Read(ref _removed))
+        {
+            return;
+        }
+
+        switch (command)
+        {
+            case 1: ToggleRequested?.Invoke(); break;
+            case 2: StandardSnapRequested?.Invoke(); break;
+            case 3: RestoreRequested?.Invoke(); break;
+            case 4: ExitRequested?.Invoke(); break;
+            case 5: _settings.Open(); break;
+            case 6 when Volatile.Read(ref _state).Enabled: ArrangeRequested?.Invoke(); break;
         }
     }
 

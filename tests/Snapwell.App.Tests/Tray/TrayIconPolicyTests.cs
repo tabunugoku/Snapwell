@@ -5,6 +5,20 @@ namespace Snapwell.App.Tests.Tray;
 
 public sealed class TrayIconPolicyTests
 {
+    /// <summary>整列は設定の直後に置き、一時停止中だけ選択できなくする。</summary>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ArrangementMenuFollowsSettingsAndIsEnabledOnlyWhenActive(bool enabled)
+    {
+        var items = TrayIconPolicy.MenuItems(new(enabled, true, "状態"));
+        Assert.Equal([5u, 6u, 1u, 2u, 3u, 0u, 4u], items.Select(item => item.Id));
+        Assert.Equal("設定を開く", items[0].Text);
+        Assert.Equal(new TrayMenuItem(6, "現在のモニターを整列", enabled), items[1]);
+        Assert.True(items[3].Checked);
+        Assert.False(items[5].Enabled);
+    }
+
     [Fact]
     public void EnabledWithoutStatusIsActive() =>
         Assert.Equal(TrayIconKind.Active, TrayIconPolicy.KindOf(new TrayState(true, false)));
