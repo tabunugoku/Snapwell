@@ -56,6 +56,7 @@ internal sealed class ResidentRuntime(DragSnapController drag, HotkeyCommandExec
             }
 
             _disposed = true;
+            hotkeys.Stop();
             drag.Enabled = false;
             motion.Dispose();
         }
