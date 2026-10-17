@@ -22,6 +22,54 @@ public sealed class SettingsStoreTests : IDisposable
         Assert.Equal(PortableSettings.CurrentSchemaVersion, loaded.SchemaVersion);
     }
 
+    /// <summary>版 3 の既存ファイルでも長押し設定は既定値になり、読み取り専用にならず往復できる。</summary>
+    [Fact]
+    public void LongPressSettingsDefaultForVersion3FilesAndRoundTrip()
+    {
+        var defaults = new PortableSettings();
+        Assert.Equal(450, defaults.LongPressMilliseconds);
+        Assert.Equal(6, defaults.LongPressDistance);
+
+        var path = Path.Combine(_directory, "longpress.json");
+        File.WriteAllText(path, "{\"SchemaVersion\":3}");
+        var store = SettingsStores.Portable(path);
+        var initial = store.Load();
+        Assert.False(initial.IsReadOnly);
+        Assert.False(initial.ResetToDefaults);
+        Assert.Equal(450, initial.Value.LongPressMilliseconds);
+        Assert.Equal(6, initial.Value.LongPressDistance);
+
+        store.Save(new() { LongPressMilliseconds = 800, LongPressDistance = 12 });
+        var loaded = store.Load();
+        Assert.False(loaded.IsReadOnly);
+        Assert.Equal(800, loaded.Value.LongPressMilliseconds);
+        Assert.Equal(12, loaded.Value.LongPressDistance);
+    }
+
+    /// <summary>長押しの時間と距離は境界値を保ち、範囲外と非有限値を既定値へ戻す。</summary>
+    [Theory]
+    [InlineData(150, 2, 150, 2)]
+    [InlineData(2000, 32, 2000, 32)]
+    [InlineData(100, 0.5, 450, 6)]
+    [InlineData(5000, 100, 450, 6)]
+    [InlineData(-10, -3, 450, 6)]
+    [InlineData(149, 1.9, 450, 6)]
+    [InlineData(2001, 32.1, 450, 6)]
+    [InlineData(600, double.NaN, 600, 6)]
+    [InlineData(600, double.PositiveInfinity, 600, 6)]
+    [InlineData(600, double.NegativeInfinity, 600, 6)]
+    public void LongPressSettingsNormalizeBoundsAndOutOfRangeValues(
+        int milliseconds, double distance, int expectedMilliseconds, double expectedDistance)
+    {
+        var normalized = SettingsTransfer.Normalize(new()
+        {
+            LongPressMilliseconds = milliseconds,
+            LongPressDistance = distance,
+        });
+        Assert.Equal(expectedMilliseconds, normalized.LongPressMilliseconds);
+        Assert.Equal(expectedDistance, normalized.LongPressDistance);
+    }
+
     [Fact]
     public void FutureSchemaArrivingBeforeReplacementIsRestoredByteForByteAndMakesStoreReadOnly()
     {
