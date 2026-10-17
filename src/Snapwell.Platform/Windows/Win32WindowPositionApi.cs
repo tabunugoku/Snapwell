@@ -15,7 +15,8 @@ public sealed class Win32WindowPositionApi : IWindowPositionApi
     public bool Restore(nint handle)
     {
         var window = new HWND(handle);
-        PInvoke.ShowWindow(window, SHOW_WINDOW_CMD.SW_RESTORE);
+        // 最大化・最小化から通常の大きさと位置に戻し、アクティブにしない。実機未確認。
+        PInvoke.ShowWindow(window, SHOW_WINDOW_CMD.SW_SHOWNOACTIVATE);
         return PInvoke.IsWindow(window) && !PInvoke.IsZoomed(window) && !PInvoke.IsIconic(window);
     }
 

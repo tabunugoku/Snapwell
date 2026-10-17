@@ -8,6 +8,11 @@ public sealed class HotkeyCatalogTests
     public void EveryCommandHasADisplayNameIncludingOpenLauncher()
     {
         Assert.Equal("ランチャーを開く", HotkeyCatalog.GetDisplayName(WindowCommand.OpenLauncher));
+        Assert.Equal("現在のモニターを整列 (グリッド)", HotkeyCatalog.GetDisplayName(WindowCommand.ArrangeGrid));
+        Assert.Equal("現在のモニターを横一列に整列", HotkeyCatalog.GetDisplayName(WindowCommand.ArrangeColumns));
+        Assert.Equal("現在のモニターを縦一列に整列", HotkeyCatalog.GetDisplayName(WindowCommand.ArrangeRows));
+        Assert.Equal("現在のモニターをメインとスタックで整列",
+            HotkeyCatalog.GetDisplayName(WindowCommand.ArrangeMainAndStack));
         foreach (var command in Enum.GetValues<WindowCommand>())
         {
             Assert.NotEqual(command.ToString(), HotkeyCatalog.GetDisplayName(command));
