@@ -5,6 +5,9 @@ namespace Snapwell.App.Lifecycle;
 /// <summary>常駐プロセスの起動順序と、全経路で共通の復元手順。</summary>
 internal sealed class AppHost
 {
+    // 未処理の例外のハンドラーやセッションの終了を無限に止めないための上限。
+    private static readonly TimeSpan _shutdownWait = TimeSpan.FromSeconds(2);
+
     private readonly object _gate = new();
     private readonly ISingleInstance _instance;
     private readonly ISnapGuard _guard;
@@ -17,6 +20,7 @@ internal sealed class AppHost
     private readonly Action _restoreCorners;
     private readonly RuntimeFactory _createRuntime;
     private readonly CancellationTokenSource _deliveryStop = new();
+    private readonly ManualResetEventSlim _shutdownDone = new(false);
     private IAppRuntime? _runtime;
     private DeviceState _device = new();
     private bool _ownsInstance;
@@ -25,6 +29,8 @@ internal sealed class AppHost
     private bool _started;
     private bool _enabled;
     private int _shutdown;
+    private int _shutdownThread;
+    private bool _needsFinalRestore;
     private string? _status;
 
     internal AppHost(ISingleInstance instance, ISnapGuard guard, ISettingsStore<PortableSettings> portableStore,
@@ -127,14 +133,16 @@ internal sealed class AppHost
 
             _enabled = !_enabled;
             _device = _device with { Enabled = _enabled };
-            _runtime!.SetEnabled(_enabled && _hooksStarted);
             if (!_enabled)
             {
+                // 移動の取り消しが固まっても、OS 設定は先に戻しておく。
                 RestoreSnap();
+                _runtime!.SetEnabled(false);
                 _runtime.CancelAll();
             }
             else
             {
+                _runtime!.SetEnabled(_hooksStarted);
                 DisableIfRequested();
             }
 
@@ -214,16 +222,56 @@ internal sealed class AppHost
 
     internal void Shutdown()
     {
-        if (Interlocked.Exchange(ref _shutdown, 1) != 0)
+        if (Interlocked.CompareExchange(ref _shutdown, 1, 0) != 0)
         {
+            // 未処理の例外のハンドラーが先に返るとプロセスが終わるため、1 回目の完了を待つ。
+            // 同じスレッドからの再入は待たない (待つと自分を待つことになる)。
+            if (Volatile.Read(ref _shutdownThread) != Environment.CurrentManagedThreadId)
+            {
+                WaitForShutdown();
+            }
+
             return;
         }
 
-        lock (_gate)
+        Volatile.Write(ref _shutdownThread, Environment.CurrentManagedThreadId);
+        try
         {
+            ShutdownCore();
+        }
+        finally
+        {
+            _shutdownDone.Set();
+        }
+    }
+
+    private void ShutdownCore()
+    {
+        // OS 設定は、ほかのスレッドが _gate を持ったまま固まっていても戻せるよう、ロックの外で最初に戻す。
+        var restored = Volatile.Read(ref _ownsInstance);
+        if (restored)
+        {
+            RestoreOsSettings();
+        }
+
+        var locked = false;
+        try
+        {
+            // ロックが取れなくても、残りの後始末は続ける。
+            Monitor.TryEnter(_gate, _shutdownWait, ref locked);
             if (!_ownsInstance)
             {
                 return;
+            }
+
+            if (!restored)
+            {
+                RestoreOsSettings();
+            }
+            else if (_needsFinalRestore)
+            {
+                // 早めの復元のあとに、起動中の Disable が終わった場合だけ戻し直す。
+                Cleanup(RestoreSnap);
             }
 
             _enabled = false;
@@ -232,11 +280,33 @@ internal sealed class AppHost
             // 配送タスク自身からの終了でも待ち合わせを作らない。Runtime が処理と停止を直列化する。
             Cleanup(() => _runtime?.Dispose());
             Cleanup(_hooks.Stop);
-            Cleanup(RestoreSnap);
-            Cleanup(_restoreCorners);
             Cleanup(_tray.Remove);
             Cleanup(_instance.Release);
             _ownsInstance = false;
+        }
+        finally
+        {
+            if (locked)
+            {
+                Monitor.Exit(_gate);
+            }
+        }
+    }
+
+    private void RestoreOsSettings()
+    {
+        Cleanup(RestoreSnap);
+        Cleanup(_restoreCorners);
+    }
+
+    private void WaitForShutdown()
+    {
+        try
+        {
+            _shutdownDone.Wait(_shutdownWait);
+        }
+        catch (ObjectDisposedException)
+        {
         }
     }
 
@@ -274,6 +344,12 @@ internal sealed class AppHost
                 if (!_guard.Disable())
                 {
                     _status = "Windows 標準のスナップを停止できませんでした";
+                }
+
+                if (Volatile.Read(ref _shutdown) != 0)
+                {
+                    // 終了がロックの外で先に復元していた場合に備え、ロックの中で戻し直してもらう。
+                    _needsFinalRestore = true;
                 }
             }
             catch (Exception exception)

@@ -83,8 +83,11 @@ public sealed class AppHostTests
         fixture.Host.Shutdown();
         Assert.Equal(1, fixture.Calls.Count(call => call == "restore"));
         Assert.Equal(1, fixture.Calls.Count(call => call == "corners"));
-        Assert.Equal(new[] { "motion.stop", "hooks.stop", "restore", "corners", "tray.remove", "mutex.release" },
-            fixture.Calls.SkipWhile(call => call != "motion.stop").ToArray());
+        Assert.Equal(new[]
+            {
+                "restore", "corners", "runtime.disable", "motion.stop", "hooks.stop", "tray.remove", "mutex.release",
+            },
+            fixture.Calls.SkipWhile(call => call != "restore").ToArray());
     }
 
     [Fact]
@@ -109,6 +112,8 @@ public sealed class AppHostTests
         Assert.False(fixture.Host.Enabled);
         Assert.False(fixture.Device.Value.Enabled);
         Assert.Contains("restore", fixture.Calls);
+        var calls = fixture.Calls.ToList();
+        Assert.True(calls.IndexOf("restore") < calls.IndexOf("runtime.disable"));
         Assert.Equal(1, fixture.Runtime.Cancels);
         fixture.Host.ToggleEnabled();
         Assert.True(fixture.Host.Enabled);
@@ -215,6 +220,61 @@ public sealed class AppHostTests
         Assert.Equal(new MoveSizeStarted(42), Assert.Single(fixture.Runtime.Events));
     }
 
+    [Fact]
+    public async Task BlockedRuntimeDisposeStillRestoresOsSettings()
+    {
+        using var block = new ManualResetEventSlim(false);
+        using var fixture = new Fixture();
+        fixture.Host.Start();
+        fixture.Runtime.BlockDispose = block;
+        var shutdown = Task.Run(fixture.Host.Shutdown);
+        Assert.True(SpinWait.SpinUntil(() => fixture.Calls.Contains("corners"), 1000));
+        Assert.Contains("restore", fixture.Calls);
+        block.Set();
+        await shutdown.WaitAsync(TimeSpan.FromSeconds(5));
+    }
+
+    [Fact]
+    public async Task ShutdownRestoresWhileAnotherThreadHoldsTheHostLock()
+    {
+        using var block = new ManualResetEventSlim(false);
+        using var fixture = new Fixture(new() { Enabled = false });
+        fixture.Host.Start();
+        fixture.Device.BlockSave = block;
+        var resume = Task.Run(fixture.Host.ToggleEnabled);
+        Assert.True(SpinWait.SpinUntil(() => fixture.Device.SaveEntered, 1000));
+        var shutdown = Task.Run(fixture.Host.Shutdown);
+        Assert.True(SpinWait.SpinUntil(() => fixture.Calls.Contains("restore") && fixture.Calls.Contains("corners"),
+            1000));
+        block.Set();
+        await Task.WhenAll(resume, shutdown).WaitAsync(TimeSpan.FromSeconds(5));
+    }
+
+    [Fact]
+    public async Task SecondShutdownWaitsUntilFirstCompletes()
+    {
+        using var fixture = new Fixture();
+        fixture.Host.Start();
+        fixture.Hooks.StopDelay = TimeSpan.FromMilliseconds(300);
+        var first = Task.Run(fixture.Host.Shutdown);
+        Assert.True(SpinWait.SpinUntil(() => fixture.Calls.Contains("hooks.stop"), 1000));
+        await Task.Run(() => fixture.Host.HandleUnhandledException(new Exception("test")));
+        Assert.Contains("mutex.release", fixture.Calls);
+        await first.WaitAsync(TimeSpan.FromSeconds(5));
+    }
+
+    [Fact]
+    public async Task ReentrantShutdownFromCleanupDoesNotWait()
+    {
+        using var fixture = new Fixture();
+        fixture.Host.Start();
+        fixture.Runtime.OnDispose = fixture.Host.Shutdown;
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        await Task.Run(fixture.Host.Shutdown).WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.True(watch.Elapsed < TimeSpan.FromSeconds(1.5));
+        Assert.Contains("mutex.release", fixture.Calls);
+    }
+
     private sealed class Fixture : IDisposable
     {
         internal ConcurrentQueue<string> Calls { get; } = new();
@@ -262,8 +322,16 @@ public sealed class AppHostTests
         internal T Value = value;
         internal int Saves;
         internal bool ReadOnly;
+        internal ManualResetEventSlim? BlockSave;
+        internal volatile bool SaveEntered;
         public SettingsLoadResult<T> Load() { calls.Enqueue(name); return new(Value, IsReadOnly: ReadOnly); }
-        public void Save(T updated) { Value = updated; Saves++; }
+        public void Save(T updated)
+        {
+            SaveEntered = true;
+            BlockSave?.Wait();
+            Value = updated;
+            Saves++;
+        }
     }
 
     private sealed class FakeHooks(ConcurrentQueue<string> calls) : IHookService
@@ -272,6 +340,7 @@ public sealed class AppHostTests
         internal bool Starts = true;
         internal bool ThrowOnStart;
         internal bool ThrowOnStop;
+        internal TimeSpan StopDelay;
         public bool Start()
         {
             calls.Enqueue("hooks.start");
@@ -282,6 +351,7 @@ public sealed class AppHostTests
         public void Stop()
         {
             calls.Enqueue("hooks.stop");
+            Thread.Sleep(StopDelay);
             if (ThrowOnStop) { throw new IOException("stop"); }
         }
 
@@ -332,10 +402,25 @@ public sealed class AppHostTests
     {
         internal bool Enabled;
         internal int Cancels;
+        internal ManualResetEventSlim? BlockDispose;
+        internal Action? OnDispose;
         internal ConcurrentQueue<HookEvent> Events { get; } = new();
-        public void SetEnabled(bool enabled) => Enabled = enabled;
+        public void SetEnabled(bool enabled)
+        {
+            Enabled = enabled;
+            if (!enabled)
+            {
+                calls.Enqueue("runtime.disable");
+            }
+        }
+
         public void Handle(HookEvent value) => Events.Enqueue(value);
         public void CancelAll() => Cancels++;
-        public void Dispose() => calls.Enqueue("motion.stop");
+        public void Dispose()
+        {
+            calls.Enqueue("motion.stop");
+            BlockDispose?.Wait();
+            OnDispose?.Invoke();
+        }
     }
 }
