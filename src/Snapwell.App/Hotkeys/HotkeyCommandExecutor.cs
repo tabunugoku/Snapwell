@@ -1,6 +1,7 @@
 using Snapwell.App.Motion;
 using Snapwell.Core.Commands;
 using Snapwell.Core.Geometry;
+using Snapwell.Core.Layout;
 using Snapwell.Core.Settings;
 using Snapwell.Platform.Hooks;
 using Snapwell.Platform.Monitors;
@@ -50,11 +51,106 @@ internal sealed class HotkeyCommandExecutor(IWindowInspector inspector, IMonitor
             return;
         }
 
+        if (TryGetArrangeLayout(command, out var layout))
+        {
+            Arrange(layout);
+            return;
+        }
+
         Execute(command, inspector.GetForegroundWindow());
     }
 
     internal void Place(nint handle, PixelRect target, PixelRect workArea) =>
         Execute(default, handle, target, workArea);
+
+    private static bool TryGetArrangeLayout(WindowCommand command, out ArrangeLayout layout)
+    {
+        switch (command)
+        {
+            case WindowCommand.ArrangeGrid:
+                layout = ArrangeLayout.Grid;
+                return true;
+            case WindowCommand.ArrangeColumns:
+                layout = ArrangeLayout.Columns;
+                return true;
+            case WindowCommand.ArrangeRows:
+                layout = ArrangeLayout.Rows;
+                return true;
+            case WindowCommand.ArrangeMainAndStack:
+                layout = ArrangeLayout.MainAndStack;
+                return true;
+            default:
+                layout = default;
+                return false;
+        }
+    }
+
+    private void Arrange(ArrangeLayout layout)
+    {
+        if (Volatile.Read(ref _stopped) || !enabled())
+        {
+            return;
+        }
+
+        var foregroundHandle = inspector.GetForegroundWindow();
+        if (foregroundHandle == 0 || !inspector.TryInspect(foregroundHandle, out var foreground) ||
+            WindowClassifier.Classify(foreground, ownProcessId) == WindowKind.Excluded)
+        {
+            return;
+        }
+
+        var areas = monitors.GetMonitors().Select(monitor => monitor.ToMonitorArea()).ToArray();
+        if (areas.Length == 0)
+        {
+            return;
+        }
+
+        var targetMonitor = CommandPlanner.SelectMonitor(foreground.VisualBounds, areas);
+        var windows = new List<WindowSnapshot>();
+        var seen = new HashSet<nint>();
+        int? mainIndex = null;
+        foreach (var handle in inspector.GetTopLevelWindows())
+        {
+            if (handle == 0 || !seen.Add(handle) || !inspector.TryInspect(handle, out var window))
+            {
+                continue;
+            }
+
+            // クロークされた別仮想デスクトップのウィンドウや最小化・ポップアップは除外する。
+            var kind = WindowClassifier.Classify(window, ownProcessId);
+            if (kind is not (WindowKind.Normal or WindowKind.FixedSize) ||
+                CommandPlanner.SelectMonitor(window.VisualBounds, areas) != targetMonitor)
+            {
+                continue;
+            }
+
+            if (handle == foregroundHandle)
+            {
+                mainIndex = windows.Count;
+            }
+
+            windows.Add(window);
+        }
+
+        if (windows.Count == 0)
+        {
+            return;
+        }
+
+        var current = windows.Select(window => window.VisualBounds).ToArray();
+        var order = WindowArrangement.Order(layout, current, mainIndex);
+        var physicalSpacing = settings().ToSpacing().ToPhysical(targetMonitor.Scale);
+        var targets = WindowArrangement.Arrange(layout, targetMonitor.WorkArea, physicalSpacing, windows.Count);
+        if (targets is null)
+        {
+            return;
+        }
+
+        for (var i = 0; i < order.Count; i++)
+        {
+            Place(windows[order[i]].Handle, targets[i], targetMonitor.WorkArea);
+        }
+    }
 
     private void Execute(WindowCommand command, nint handle, PixelRect? selected = null, PixelRect? area = null)
     {
