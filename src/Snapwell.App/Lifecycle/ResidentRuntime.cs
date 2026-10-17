@@ -8,16 +8,45 @@ using Snapwell.Platform.Hooks;
 namespace Snapwell.App.Lifecycle;
 
 /// <summary>配送中の入力と停止を直列化し、停止後に移動要求が残ることを防ぐ。</summary>
-internal sealed class ResidentRuntime(DragSnapController drag, HotkeyCommandExecutor hotkeys,
-    IMotionEngine motion, IReadOnlyList<HotkeyBinding> bindings,
-    Action<IReadOnlyList<HotkeyBinding>> applyBindings, LauncherController? launcher = null,
-    IZonePreview? preview = null, Action<bool>? setOverlayEnabled = null,
-    IReadOnlyList<IDisposable>? overlays = null) : IAppRuntime
+internal sealed class ResidentRuntime : IAppRuntime
 {
     private readonly object _gate = new();
-    private readonly IReadOnlyList<HotkeyBinding> _paused = HotkeyBindingsBuilder.Paused(bindings);
+    private readonly DragSnapController _drag;
+    private readonly HotkeyCommandExecutor _hotkeys;
+    private readonly IMotionEngine _motion;
+    private readonly IReadOnlyList<HotkeyBinding> _bindings;
+    private readonly IReadOnlyList<HotkeyBinding> _paused;
+    private readonly Action<IReadOnlyList<HotkeyBinding>> _applyBindings;
+    private readonly LauncherController? _launcher;
+    private readonly IZonePreview? _preview;
+    private readonly Action<bool>? _setOverlayEnabled;
+    private readonly IReadOnlyList<IDisposable>? _overlays;
+    private readonly LongPressDetector? _longPress;
     private bool _disposed;
     private bool _enabled = true;
+
+    internal ResidentRuntime(DragSnapController drag, HotkeyCommandExecutor hotkeys,
+        IMotionEngine motion, IReadOnlyList<HotkeyBinding> bindings,
+        Action<IReadOnlyList<HotkeyBinding>> applyBindings, LauncherController? launcher = null,
+        IZonePreview? preview = null, Action<bool>? setOverlayEnabled = null,
+        IReadOnlyList<IDisposable>? overlays = null, LongPressDetector? longPress = null)
+    {
+        _drag = drag;
+        _hotkeys = hotkeys;
+        _motion = motion;
+        _bindings = bindings;
+        _paused = HotkeyBindingsBuilder.Paused(bindings);
+        _applyBindings = applyBindings;
+        _launcher = launcher;
+        _preview = preview;
+        _setOverlayEnabled = setOverlayEnabled;
+        _overlays = overlays;
+        _longPress = longPress;
+        if (_longPress is not null)
+        {
+            _longPress.CandidateReady += HandleLongPress;
+        }
+    }
 
     public void SetEnabled(bool enabled)
     {
@@ -29,18 +58,19 @@ internal sealed class ResidentRuntime(DragSnapController drag, HotkeyCommandExec
             }
 
             _enabled = enabled;
-            launcher?.SetEnabled(enabled);
-            drag.Enabled = enabled && launcher?.IsOpen != true;
+            _launcher?.SetEnabled(enabled);
+            _drag.Enabled = enabled && _launcher?.IsOpen != true;
             if (!enabled)
             {
-                preview?.Hide();
+                _longPress?.Cancel();
+                _preview?.Hide();
             }
 
-            setOverlayEnabled?.Invoke(enabled);
+            _setOverlayEnabled?.Invoke(enabled);
             // 一時停止中にキーを握りつぶすと、ほかのアプリの操作を奪う。再開のキーだけを残す。
-            if (launcher is null)
+            if (_launcher is null)
             {
-                applyBindings(enabled ? bindings : _paused);
+                _applyBindings(enabled ? _bindings : _paused);
             }
         }
     }
@@ -54,49 +84,117 @@ internal sealed class ResidentRuntime(DragSnapController drag, HotkeyCommandExec
                 return;
             }
 
-            launcher?.ValidateTarget();
+            _launcher?.ValidateTarget();
+            if (_launcher?.IsOpen != true && _longPress?.HasOpenedLauncher == true)
+            {
+                // 描画失敗やオーバーレイ側の操作で閉じた表示の所有権を、次の表示へ持ち越さない。
+                _longPress.CancelLauncher();
+            }
+
+            // 終了の処理で記録を消す前に判定し、その終了通知自体もドラッグへ渡さない。
+            var consumeMoveSize = value switch
+            {
+                MoveSizeStarted start => _longPress?.OwnsMoveSizeFor(start.Handle) == true,
+                MoveSizeEnded end => _longPress?.OwnsMoveSizeFor(end.Handle) == true,
+                _ => false
+            };
+            if (_longPress?.Handle(value, _enabled && _launcher is { IsOpen: false }) == true)
+            {
+                _launcher?.Close();
+            }
+
             if (value is KeyChord chord)
             {
                 if (chord.Id == (int)WindowCommand.ToggleEnabled)
                 {
-                    launcher?.Close();
+                    _longPress?.Cancel();
+                    _launcher?.Close();
                 }
 
-                if (launcher?.Handle(chord) != true &&
-                    ((_enabled && launcher?.IsOpen != true) || chord.Id == (int)WindowCommand.ToggleEnabled))
+                // 移動ループ中の押下と配置を競合させず、解放まではランチャーの抑止割り当てを保つ。
+                var suppressAccept = chord.Id == (int)LauncherInput.Accept && _longPress?.IsHoldingLauncher == true;
+                if (!suppressAccept && _launcher?.Handle(chord) != true &&
+                    ((_enabled && _launcher?.IsOpen != true) || chord.Id == (int)WindowCommand.ToggleEnabled))
                 {
-                    hotkeys.Handle(chord);
+                    _hotkeys.Handle(chord);
                 }
             }
             else
             {
                 if (value is MouseButton button)
                 {
-                    launcher?.HandleGlobalPointer(button);
+                    _launcher?.HandleGlobalPointer(button);
                 }
-                else if (value is MoveSizeStarted)
+                else if (value is MoveSizeStarted start && !consumeMoveSize &&
+                    _longPress?.OwnsLauncherFor(start.Handle) != true)
                 {
                     // 別のドラッグへ操作を返し、ランチャーとプレビューを同時に表示しない。
-                    launcher?.Close();
+                    _launcher?.Close();
                 }
                 else if (value is ForegroundChanged foreground)
                 {
-                    launcher?.HandleForegroundChanged(foreground);
+                    _launcher?.HandleForegroundChanged(foreground);
                 }
 
-                drag.Enabled = _enabled && launcher?.IsOpen != true;
-                drag.Handle(value);
+                _drag.Enabled = _enabled && _launcher?.IsOpen != true;
+                if (!consumeMoveSize)
+                {
+                    _drag.Handle(value);
+                }
             }
 
-            drag.Enabled = _enabled && launcher?.IsOpen != true;
-            if (launcher?.IsOpen == true)
+            _drag.Enabled = _enabled && _launcher?.IsOpen != true;
+            if (_launcher?.IsOpen == true)
             {
-                preview?.Hide();
+                if (_longPress?.HasOpenedLauncher != true)
+                {
+                    _longPress?.CancelLauncher();
+                }
+
+                _preview?.Hide();
+            }
+            else if (_longPress?.HasOpenedLauncher == true)
+            {
+                _longPress.CancelLauncher();
             }
         }
     }
 
-    public void CancelAll() => motion.CancelAll();
+    private void HandleLongPress(LongPressCandidate candidate)
+    {
+        lock (_gate)
+        {
+            if (_disposed || !_enabled || _launcher is null || _launcher.IsOpen)
+            {
+                return;
+            }
+        }
+
+        // 応答しない対象への SendMessageTimeout 中も、解放・一時停止・終了を配送する。
+        if (_longPress!.CheckTarget(candidate))
+        {
+            lock (_gate)
+            {
+                if (_disposed || !_enabled || _launcher!.IsOpen || !_longPress.TryActivate(candidate))
+                {
+                    return;
+                }
+
+                _launcher.Open(candidate.Handle);
+                if (_launcher.IsOpen)
+                {
+                    _drag.Enabled = false;
+                    _preview?.Hide();
+                }
+                else
+                {
+                    _longPress.Cancel();
+                }
+            }
+        }
+    }
+
+    public void CancelAll() => _motion.CancelAll();
 
     public void Dispose()
     {
@@ -108,23 +206,29 @@ internal sealed class ResidentRuntime(DragSnapController drag, HotkeyCommandExec
             }
 
             _disposed = true;
-            hotkeys.Stop();
-            applyBindings([]);
-            launcher?.Dispose();
-            drag.Enabled = false;
-            preview?.Hide();
-            // Close による割り当ての復帰も解除してから、描画と移動のスレッドを止める。
-            applyBindings([]);
-            setOverlayEnabled?.Invoke(false);
-            if (overlays is not null)
+            if (_longPress is not null)
             {
-                foreach (var overlay in overlays)
+                _longPress.CandidateReady -= HandleLongPress;
+                _longPress.Dispose();
+            }
+
+            _hotkeys.Stop();
+            _applyBindings([]);
+            _launcher?.Dispose();
+            _drag.Enabled = false;
+            _preview?.Hide();
+            // Close による割り当ての復帰も解除してから、描画と移動のスレッドを止める。
+            _applyBindings([]);
+            _setOverlayEnabled?.Invoke(false);
+            if (_overlays is not null)
+            {
+                foreach (var overlay in _overlays)
                 {
                     overlay.Dispose();
                 }
             }
 
-            motion.Dispose();
+            _motion.Dispose();
         }
     }
 }
