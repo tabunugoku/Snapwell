@@ -25,6 +25,7 @@ public partial class App : Application
         _instance = SingleInstance.TryAcquire(sid);
         if (_instance is null)
         {
+            SettingsWindowActivator.Activate(sid);
             Exit();
             return;
         }
