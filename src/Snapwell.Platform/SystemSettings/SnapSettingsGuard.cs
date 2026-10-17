@@ -23,15 +23,22 @@ public sealed class SnapSettingsGuard
     {
         lock (_gate)
         {
-            if (File.Exists(_statePath))
+            var hasState = File.Exists(_statePath);
+            if (hasState)
             {
-                // 最初の値を上書きしない。破損していれば変更せず復旧の判断を呼び出し元へ返す。
+                // 正常な退避値は上書きせず、破損時だけ既定値へ戻して保存し直す。
                 if (!TryReadState(out _))
                 {
-                    return false;
+                    if (!RestoreDefaultAndQuarantine())
+                    {
+                        return false;
+                    }
+
+                    hasState = false;
                 }
             }
-            else
+
+            if (!hasState)
             {
                 if (!_settings.TryGetEnabled(out var enabled))
                 {
@@ -71,12 +78,38 @@ public sealed class SnapSettingsGuard
             return true;
         }
 
-        if (!TryReadState(out var state) || !_settings.TrySetEnabled(state!.DragSnapEnabled))
+        if (!TryReadState(out var state))
+        {
+            return RestoreDefaultAndQuarantine();
+        }
+
+        if (!_settings.TrySetEnabled(state!.DragSnapEnabled))
         {
             return false;
         }
 
         File.Delete(_statePath);
+        return true;
+    }
+
+    private bool RestoreDefaultAndQuarantine()
+    {
+        // 元の値は不明なので無効のまま固定されることを避け、OS の既定値である有効へ戻す。
+        // 元々無効だった利用者も有効になるが、復元不能な無効化を残さないことを優先する。
+        // ダウングレード時の未来の版も読めない状態として扱い、同じ既定値へ戻す。
+        if (!_settings.TrySetEnabled(true))
+        {
+            return false;
+        }
+
+        // 復元成功後だけ隔離する。移動に失敗しても元のファイルを残し、再試行できるようにする。
+        var brokenPath = _statePath + ".broken";
+        if (File.Exists(brokenPath))
+        {
+            brokenPath += "." + Guid.NewGuid().ToString("N");
+        }
+
+        File.Move(_statePath, brokenPath);
         return true;
     }
 
@@ -121,14 +154,6 @@ public sealed class SnapSettingsGuard
         }
         catch (JsonException)
         {
-            // 壊れた値から OS 設定を推測しない。既存の破損資料も残す。
-            var brokenPath = _statePath + ".broken";
-            if (File.Exists(brokenPath))
-            {
-                brokenPath += "." + Guid.NewGuid().ToString("N");
-            }
-
-            File.Move(_statePath, brokenPath);
             state = null;
             return false;
         }
