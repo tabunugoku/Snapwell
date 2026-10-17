@@ -103,10 +103,10 @@ public sealed partial class MainWindow : Window
             "general" => new GeneralPage(_session),
             "feel" => new FeelPage(_session),
             "hotkeys" => new HotkeysPage(_session),
-            "rules" => new PlaceholderPage("アプリのルール"),
-            "os" => new PlaceholderPage("標準機能"),
+            "rules" => new RulesPage(),
+            "os" => new OsPage(),
             "backup" => new BackupPage(_session, WinRT.Interop.WindowNative.GetWindowHandle(this)),
-            "look" => new PlaceholderPage("外観"),
+            "look" => new LookPage(),
             _ => new GridPage(_session),
         };
     }
