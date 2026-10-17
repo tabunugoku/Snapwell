@@ -1,24 +1,24 @@
 ---
 name: codex-prompt
-description: Codex に渡す Snapwell の実装プロンプトを作る。引数は作業の内容（実装する機能、不具合の症状など）。
+description: 実装役 (Codex または Gemini) に渡す Snapwell の実装プロンプトを作る。引数は作業の内容（実装する機能、不具合の症状など）。
 disable-model-invocation: true
 argument-hint: <作業の内容>
 ---
 
-# Codex に渡すプロンプトを作る
+# 実装役に渡すプロンプトを作る
 
 作業の内容: `$ARGUMENTS`
 
 ## 手順
 
 1. `docs/DESIGN.md` の該当の節と、関係するコードを読み、作る場所・直す場所を特定する（プロジェクト、ファイル、型、メソッドまで）。分からないところは「推測」と書く。実機で確かめた事実と推測を分ける。
-2. 作業の置き場所を決める:
-   - 独立した作業なら、origin/main から `codex/<短い名前>` の worktree を作る（`git worktree add ../Snapwell-wt/<短い名前> -b codex/<短い名前> origin/main`）。そこで `dotnet restore` をしておく（`-r` は付けない。サンドボックスの中では NuGet に届かないため）。
+2. 実装役 (Codex か Gemini) とモデルを、CLAUDE.md の「実装役の選び方」で決める。作業の置き場所を決める:
+   - 独立した作業なら、origin/main から `<codex か gemini>/<短い名前>` の worktree を作る（`git worktree add ../Snapwell-wt/<短い名前> -b <codex か gemini>/<短い名前> origin/main`）。そこで `dotnet restore` をしておく（`-r` は付けない。サンドボックスの中では NuGet に届かないため）。
    - まだ main にマージしていない作業の続きなら、そのブランチの worktree を使う。
 3. 項目ごとに、触ってよいファイルを決める。項目の間で同じファイルを触らないように分ける（コミット計画を自動で当てるため）。`.csproj` やソリューションのように複数の項目が触りがちなファイルは、最初の項目にまとめる。
 4. 下のひな形でプロンプトを書き、スクラッチパッドに `prompt-<短い名前>.md` として保存する。地の文は日本語。項目は A, B, C... と英字で番号を振る（1 項目 1 コミット）。文書の項目は `DOC` とする。
 5. 受け入れ条件は、テストで確かめられる形で書く（「〜のとき、〜が 1 回だけ」「区画の合計幅が作業領域と一致する」など）。Win32 に依存する部分は、Core 側にインターフェースを挟んでテストできる形にさせる。競合・境界の観点には、DPI の違うモニター、負の座標のモニター、最小サイズより小さい区画、移動中のつかみ直し、フックのコールバックの遅延など、レビューで指摘されそうな場面を先に書く。
-6. プロンプトを見せずに Codex に渡してよい（人の手を介さない運用）。`.claude/codex/run-codex-exec.sh <worktree> <プロンプト> <出力フォルダ>` を Bash の `run_in_background` で起動する。その後の流れは CLAUDE.md の「Codex との分担」に従う。
+6. プロンプトを見せずに実装役に渡してよい（人の手を介さない運用）。Codex なら `.claude/codex/run-codex-exec.sh <worktree> <プロンプト> <出力フォルダ>`、Gemini なら `.claude/codex/run-agy-exec.sh <worktree> <プロンプト> <出力フォルダ> [モデル]` を Bash の `run_in_background` で起動する（Gemini には `agy-preamble.md` が自動で前に付く）。その後の流れは CLAUDE.md の「実装役（Codex・Gemini）との分担」に従う。
 
 ## ひな形
 
@@ -26,13 +26,13 @@ argument-hint: <作業の内容>
 <作業の 1 行の説明>。CLAUDE.md の「守ること」に従うこと。
 
 【共通】
-- いまの作業フォルダは worktree で、origin/main (<コミット>) から作ったブランチ codex/xxx にいる。ブランチは作り直さない。
-- コミットと push はしない (.git はサンドボックスで書けない)。Opus が、最後の応答のコミット計画のとおりにコミットする。
+- いまの作業フォルダは worktree で、origin/main (<コミット>) から作ったブランチ <codex か gemini>/xxx にいる。ブランチは作り直さない。
+- コミットと push はしない (Codex は .git をサンドボックスで書けず、Gemini は git のコマンドを許されていない)。Opus が、最後の応答のコミット計画のとおりにコミットする。
 - パッケージの復元は済んでいる。ネットワークは使えないので、ビルドとテストは --no-restore を付けて実行する。新しい NuGet パッケージは足さない (必要なら notes に書く)。
 - 各項目のあとで次を実行し、通ること:
   - dotnet build src/Snapwell.Platform/Snapwell.Platform.csproj -c Release -r win-x64 --no-restore
   - dotnet build src/Snapwell.Platform/Snapwell.Platform.csproj -c Release -r win-arm64 --no-restore
-  - dotnet test --no-restore (サンドボックスでは名前付きパイプが使えず止まることがある。止まったら not_run にして notes に書く。Opus がローカルで実行する)
+  - dotnet test --no-restore (サンドボックスでは名前付きパイプが使えず止まることがある。止まったら not_run にして notes に書く。Opus がローカルで実行する。Gemini には実行させず not_run にさせる)
   - dotnet format --verify-no-changes --no-restore (同上)
 - main へのマージ、タグ、リリース、バージョン変更はしない。x86 や AnyCPU のビルド対象を足さない。DLL インジェクション・非公開 API を使わない。
 - 触ってよいファイル:
