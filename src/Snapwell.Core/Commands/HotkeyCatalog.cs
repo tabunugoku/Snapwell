@@ -81,6 +81,10 @@ public static class HotkeyCatalog
         WindowCommand.PreviousMonitor => "前のモニターへ",
         WindowCommand.ToggleEnabled => "一時停止・再開",
         WindowCommand.OpenLauncher => "ランチャーを開く",
+        WindowCommand.ArrangeGrid => "現在のモニターを整列 (グリッド)",
+        WindowCommand.ArrangeColumns => "現在のモニターを横一列に整列",
+        WindowCommand.ArrangeRows => "現在のモニターを縦一列に整列",
+        WindowCommand.ArrangeMainAndStack => "現在のモニターをメインとスタックで整列",
         _ => command.ToString(),
     };
 
