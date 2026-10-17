@@ -30,8 +30,8 @@ argument-hint: <作業の内容>
 - コミットと push はしない (.git はサンドボックスで書けない)。Opus が、最後の応答のコミット計画のとおりにコミットする。
 - パッケージの復元は済んでいる。ネットワークは使えないので、ビルドとテストは --no-restore を付けて実行する。新しい NuGet パッケージは足さない (必要なら notes に書く)。
 - 各項目のあとで次を実行し、通ること:
-  - dotnet build src/Snapwell.Core/Snapwell.Core.csproj -c Release -r win-x64 --no-restore
-  - dotnet build src/Snapwell.Core/Snapwell.Core.csproj -c Release -r win-arm64 --no-restore
+  - dotnet build src/Snapwell.Platform/Snapwell.Platform.csproj -c Release -r win-x64 --no-restore
+  - dotnet build src/Snapwell.Platform/Snapwell.Platform.csproj -c Release -r win-arm64 --no-restore
   - dotnet test --no-restore (サンドボックスでは名前付きパイプが使えず止まることがある。止まったら not_run にして notes に書く。Opus がローカルで実行する)
   - dotnet format --verify-no-changes --no-restore (同上)
 - main へのマージ、タグ、リリース、バージョン変更はしない。x86 や AnyCPU のビルド対象を足さない。DLL インジェクション・非公開 API を使わない。
