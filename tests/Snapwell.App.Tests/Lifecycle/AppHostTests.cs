@@ -15,6 +15,98 @@ public sealed class AppHostTests
         Assert.True(fixture.Host.Start());
         Assert.Equal(new[] { "mutex", "recover", "portable", "device", "hooks.start", "disable", "tray.show" },
             fixture.Calls.ToArray());
+        Assert.Null(fixture.Tray.State?.Status);
+        Assert.Empty(fixture.Log.Errors);
+    }
+
+    /// <summary>起動時の復旧失敗を表示・記録し、終了時には復元を再試行する。</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void StartupRecoveryFailureShowsDiagnosticLogsOnceAndContinues(bool throws)
+    {
+        using var fixture = new Fixture();
+        fixture.Guard.RecoverSucceeds = false;
+        var cause = throws ? new IOException("recover") : null;
+        fixture.Guard.RecoverException = cause;
+
+        Assert.True(fixture.Host.Start());
+
+        const string Status = "Windows 標準のスナップを復元できませんでした。再起動時に再試行します";
+        Assert.Equal(Status, fixture.Tray.State?.Status);
+        var error = Assert.IsType<IOException>(Assert.Single(fixture.Log.Errors));
+        Assert.Equal(Status, error.Message);
+        Assert.Same(cause, error.InnerException);
+        Assert.Equal(new[] { "mutex", "recover", "portable", "device", "hooks.start", "tray.show" },
+            fixture.Calls.ToArray());
+        fixture.Host.Shutdown();
+        Assert.Contains("restore", fixture.Calls);
+    }
+
+    /// <summary>フックの開始失敗で、標準スナップが復旧済みと誤解させない。</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void StartupRecoveryFailureTakesPriorityOverHookFailure(bool throws)
+    {
+        using var fixture = new Fixture(new() { DisableStandardSnap = true, StandardSnapConsentGiven = true });
+        fixture.Guard.RecoverSucceeds = false;
+        fixture.Hooks.Starts = false;
+        fixture.Hooks.ThrowOnStart = throws;
+
+        Assert.True(fixture.Host.Start());
+
+        Assert.Equal("Windows 標準のスナップを復元できませんでした。再起動時に再試行します", fixture.Tray.State?.Status);
+        Assert.DoesNotContain("disable", fixture.Calls);
+        Assert.False(fixture.Runtime.Enabled);
+        Assert.Equal(throws ? 2 : 1, fixture.Log.Errors.Count);
+    }
+
+    /// <summary>設定の退避・保護より、未復旧の OS 設定の診断を優先する。</summary>
+    [Theory]
+    [InlineData(true, true)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(false, false)]
+    public void StartupRecoveryFailureTakesPriorityOverSettingsDiagnostics(bool portable, bool reset)
+    {
+        using var fixture = new Fixture();
+        fixture.Guard.RecoverSucceeds = false;
+        if (portable)
+        {
+            fixture.Portable.ResetToDefaults = reset;
+            fixture.Portable.ReadOnly = !reset;
+        }
+        else
+        {
+            fixture.Device.ResetToDefaults = reset;
+            fixture.Device.ReadOnly = !reset;
+        }
+
+        Assert.True(fixture.Host.Start());
+
+        Assert.Equal("Windows 標準のスナップを復元できませんでした。再起動時に再試行します", fixture.Tray.State?.Status);
+        Assert.Single(fixture.Log.Errors);
+    }
+
+    /// <summary>復旧失敗後も同意済みの停止を試み、その成否で復旧失敗の表示を消さない。</summary>
+    [Theory]
+    [InlineData("success")]
+    [InlineData("false")]
+    [InlineData("exception")]
+    public void StartupRecoveryFailurePersistsWhileRequestedDisableStillRuns(string outcome)
+    {
+        using var fixture = new Fixture(new() { DisableStandardSnap = true, StandardSnapConsentGiven = true });
+        fixture.Guard.RecoverSucceeds = false;
+        fixture.Guard.DisableSucceeds = outcome == "success";
+        fixture.Guard.DisableException = outcome == "exception" ? new IOException("disable") : null;
+
+        Assert.True(fixture.Host.Start());
+
+        Assert.Equal("Windows 標準のスナップを復元できませんでした。再起動時に再試行します", fixture.Tray.State?.Status);
+        Assert.Equal(new[] { "mutex", "recover", "portable", "device", "hooks.start", "disable", "tray.show" },
+            fixture.Calls.ToArray());
+        Assert.Equal(outcome == "exception" ? 2 : 1, fixture.Log.Errors.Count);
     }
 
     [Fact]
@@ -275,11 +367,39 @@ public sealed class AppHostTests
         Assert.Contains("mutex.release", fixture.Calls);
     }
 
+    /// <summary>停止結果が偽でも OS の変更有無を断定せず、確認失敗として表示する。</summary>
+    [Fact]
+    public void DisableReturningFalseShowsUnconfirmedStopStatus()
+    {
+        using var fixture = new Fixture(new() { DisableStandardSnap = true, StandardSnapConsentGiven = true });
+        fixture.Guard.DisableSucceeds = false;
+
+        Assert.True(fixture.Host.Start());
+
+        Assert.Equal("Windows 標準のスナップの停止を確認できませんでした", fixture.Tray.State?.Status);
+        Assert.Contains("disable", fixture.Calls);
+    }
+
+    /// <summary>停止中の例外では、停止失敗の表示と元の例外の記録を保つ。</summary>
+    [Fact]
+    public void DisableThrowingKeepsStopFailureStatusAndLogsException()
+    {
+        using var fixture = new Fixture(new() { DisableStandardSnap = true, StandardSnapConsentGiven = true });
+        var exception = new IOException("disable");
+        fixture.Guard.DisableException = exception;
+
+        Assert.True(fixture.Host.Start());
+
+        Assert.Equal("Windows 標準のスナップを停止できませんでした", fixture.Tray.State?.Status);
+        Assert.Same(exception, Assert.Single(fixture.Log.Errors));
+    }
+
     private sealed class Fixture : IDisposable
     {
         internal ConcurrentQueue<string> Calls { get; } = new();
         internal FakeInstance Instance { get; }
         internal FakeGuard Guard { get; }
+        internal FakeStore<PortableSettings> Portable { get; }
         internal FakeStore<DeviceState> Device { get; }
         internal FakeHooks Hooks { get; }
         internal FakeTray Tray { get; }
@@ -292,11 +412,12 @@ public sealed class AppHostTests
         {
             Instance = new(Calls);
             Guard = new(Calls);
+            Portable = new(new(), Calls, "portable");
             Device = new(state ?? new(), Calls, "device");
             Hooks = new(Calls);
             Tray = new(Calls);
             Runtime = new(Calls);
-            Host = new(Instance, Guard, new FakeStore<PortableSettings>(new(), Calls, "portable"),
+            Host = new(Instance, Guard, Portable,
                 Device, Hooks, Tray, Consent, Log, () => Calls.Enqueue("corners"), (_, _, _) => Runtime);
         }
 
@@ -312,8 +433,24 @@ public sealed class AppHostTests
 
     private sealed class FakeGuard(ConcurrentQueue<string> calls) : ISnapGuard
     {
-        public void RecoverOnStartup() => calls.Enqueue("recover");
-        public bool Disable() { calls.Enqueue("disable"); return true; }
+        internal bool RecoverSucceeds = true;
+        internal Exception? RecoverException;
+        internal bool DisableSucceeds = true;
+        internal Exception? DisableException;
+        public bool RecoverOnStartup()
+        {
+            calls.Enqueue("recover");
+            if (RecoverException is { } exception) { throw exception; }
+            return RecoverSucceeds;
+        }
+
+        public bool Disable()
+        {
+            calls.Enqueue("disable");
+            if (DisableException is { } exception) { throw exception; }
+            return DisableSucceeds;
+        }
+
         public bool Restore() { calls.Enqueue("restore"); return true; }
     }
 
@@ -322,9 +459,14 @@ public sealed class AppHostTests
         internal T Value = value;
         internal int Saves;
         internal bool ReadOnly;
+        internal bool ResetToDefaults;
         internal ManualResetEventSlim? BlockSave;
         internal volatile bool SaveEntered;
-        public SettingsLoadResult<T> Load() { calls.Enqueue(name); return new(Value, IsReadOnly: ReadOnly); }
+        public SettingsLoadResult<T> Load()
+        {
+            calls.Enqueue(name);
+            return new(Value, ResetToDefaults: ResetToDefaults, IsReadOnly: ReadOnly);
+        }
         public void Save(T updated)
         {
             SaveEntered = true;

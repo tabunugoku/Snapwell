@@ -62,12 +62,12 @@ public sealed class SnapSettingsGuard
         }
     }
 
-    /// <summary>前回の状態が残っていれば復元し、復元できたときに true を返す。</summary>
+    /// <summary>前回の退避値を復元し、状態ファイルがなければ何もせず true を返す。復元失敗は false を返す。</summary>
     public bool RecoverOnStartup()
     {
         lock (_gate)
         {
-            return File.Exists(_statePath) && RestoreCore();
+            return RestoreCore();
         }
     }
 
