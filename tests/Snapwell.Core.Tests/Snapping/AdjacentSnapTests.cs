@@ -8,8 +8,8 @@ namespace Snapwell.Core.Tests.Snapping;
 /// <summary>隣の辺への吸着と区画選択の優先順位を確かめる。</summary>
 public sealed class AdjacentSnapTests
 {
-    private static readonly FeelPreset Feel = new(1, 1, 0.8, 0.25);
-    private static readonly PixelRect Area = new(0, 0, 1000, 1000);
+    private static readonly FeelPreset _feel = new(1, 1, 0.8, 0.25);
+    private static readonly PixelRect _area = new(0, 0, 1000, 1000);
 
     /// <summary>四辺とも論理間隔と拡大率を反映し、サイズを維持する。</summary>
     [Theory]
@@ -91,8 +91,8 @@ public sealed class AdjacentSnapTests
     public void UpwardThrowMaximizeTakesPriority()
     {
         var current = new PixelRect(400, 100, 100, 100);
-        var result = SnapResolver.Resolve(current, new(0, -600), Feel, SnapMode.Zones, default,
-            [new("main", Area, 1)], neighbors: [new(510, -100, 100, 300)]);
+        var result = SnapResolver.Resolve(current, new(0, -600), _feel, SnapMode.Zones, default,
+            [new("main", _area, 1)], neighbors: [new(510, -100, 100, 300)]);
         Assert.Equal(SnapTargetKind.Maximize, result!.Value.Kind);
     }
 
@@ -171,16 +171,16 @@ public sealed class AdjacentSnapTests
     [Fact]
     public void SlowMovementReturnsNullBeforeConsideringNeighbors()
     {
-        Assert.Null(SnapResolver.Resolve(new(610, 450, 100, 100), new(149, 0), Feel, SnapMode.Zones,
-            default, [new("main", Area, 1)], neighbors: [new(400, 400, 200, 200)]));
+        Assert.Null(SnapResolver.Resolve(new(610, 450, 100, 100), new(149, 0), _feel, SnapMode.Zones,
+            default, [new("main", _area, 1)], neighbors: [new(400, 400, 200, 200)]));
     }
 
     /// <summary>非吸着軸だけを最終的に丸め、吸着する辺は整数座標を保つ。</summary>
     [Fact]
     public void FractionalPredictionRoundsOnlyTheFinalTarget()
     {
-        var result = SnapResolver.Resolve(new(560, 450, 100, 100), new(200, 2), Feel, SnapMode.Zones,
-            default, [new("main", Area, 1)], neighbors: [new(400, 400, 200, 200)])!.Value;
+        var result = SnapResolver.Resolve(new(560, 450, 100, 100), new(200, 2), _feel, SnapMode.Zones,
+            default, [new("main", _area, 1)], neighbors: [new(400, 400, 200, 200)])!.Value;
         Assert.Equal(new Vec2(610, 450.5), result.PredictedPosition);
         Assert.Equal(new PixelRect(600, 450, 100, 100), result.Target);
     }
@@ -188,6 +188,6 @@ public sealed class AdjacentSnapTests
     private static SnapResult? Resolve(PixelRect predicted, IReadOnlyList<PixelRect>? neighbors, int gap = 0,
         double scale = 1, bool canResize = true, SnapMode mode = SnapMode.Zones, Vec2? pointer = null,
         PixelRect? area = null) => SnapResolver.Resolve(
-            new(predicted.X - 50, predicted.Y, predicted.Width, predicted.Height), new(200, 0), Feel,
-            mode, new Spacing(gap, 0), [new("main", area ?? Area, scale)], canResize, pointer, neighbors);
+            new(predicted.X - 50, predicted.Y, predicted.Width, predicted.Height), new(200, 0), _feel,
+            mode, new Spacing(gap, 0), [new("main", area ?? _area, scale)], canResize, pointer, neighbors);
 }
