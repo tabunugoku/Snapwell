@@ -44,12 +44,12 @@ public sealed class DragSnapControllerTests
     [InlineData(1910, 1860, 964)]
     public void HorizontalThrowAtTopPreviewsAndRequestsUpperQuarter(int pointerX, int windowX, int targetX)
     {
-        var cursor = new Vec2(650, 20);
+        var cursor = new Vec2(650, 5);
         var fixture = new Fixture(() => cursor);
         fixture.Inspector.Window = fixture.Inspector.Window with { VisualBounds = new(600, 0, 400, 800) };
         fixture.Controller.Handle(new MoveSizeStarted(1));
-        fixture.Controller.Handle(new MouseMoved(650, 20, 0));
-        fixture.Controller.Handle(new MouseMoved(pointerX, 20, 40));
+        fixture.Controller.Handle(new MouseMoved(650, 5, 0));
+        fixture.Controller.Handle(new MouseMoved(pointerX, 5, 40));
 
         var expected = new PixelRect(targetX, 8, 948, 508);
         Assert.Equal(expected, Assert.Single(fixture.Preview.Shown));

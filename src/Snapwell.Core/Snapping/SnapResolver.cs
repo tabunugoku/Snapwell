@@ -7,8 +7,11 @@ namespace Snapwell.Core.Snapping;
 /// <summary>空走の予測から対象モニターと一つの吸着先を選ぶ。</summary>
 public static class SnapResolver
 {
-    // 背の高いウィンドウでも端への操作を拾い、中央での横投げは半分を選べる幅にする。
-    private const double PointerEdgeBandRatio = 0.1;
+    // 端に押し付けたカーソルと、端の近くにあるタイトルバーを分けるため、内側は論理十二ピクセルに限る。
+    private const double PointerInsideBandWidth = 12;
+
+    // タスクバー上のカーソルも端とみなすため、外側は作業領域の高さの十パーセントまで許す。
+    private const double PointerOutsideBandRatio = 0.1;
 
     /// <summary>論理ピクセルの間隔を対象モニターで換算し、低速時やモニターがなければ null を返す。</summary>
     public static SnapResult? Resolve(PixelRect current, Vec2 velocity, FeelPreset feel, SnapMode mode,
@@ -37,7 +40,7 @@ public static class SnapResolver
         var physicalSpacing = spacing.ToPhysical(monitor.Scale);
         var selection = mode == SnapMode.Corners
             ? SelectCorner(current, predicted, monitor.WorkArea, physicalSpacing.Edge)
-            : SelectZone(current, predicted, center, monitor.WorkArea, physicalSpacing, canResize, pointer);
+            : SelectZone(current, predicted, center, monitor, physicalSpacing, canResize, pointer);
         return new(selection.Target, selection.Kind, monitor.Id, predicted,
             selection.Target.Width != current.Width || selection.Target.Height != current.Height);
     }
@@ -96,20 +99,23 @@ public static class SnapResolver
     }
 
     private static (PixelRect Target, SnapTargetKind Kind) SelectZone(PixelRect current, Vec2 predicted,
-        Vec2 predictedCenter, PixelRect area, PhysicalSpacing spacing, bool canResize, Vec2? pointer)
+        Vec2 predictedCenter, MonitorArea monitor, PhysicalSpacing spacing, bool canResize, Vec2? pointer)
     {
+        var area = monitor.WorkArea;
         var center = ClampCenter(predictedCenter, area);
         var grid = new GridLayout(area, new(2, 2), spacing);
         var right = center.X >= area.Center.X;
         var column = right ? 1 : 0;
         var selectionY = center.Y;
-        if (pointer is { } point)
+        if (pointer is { } point && point.X >= area.X && point.X < area.Right)
         {
-            if (point.Y <= area.Y + area.Height * PointerEdgeBandRatio)
+            var insideBand = PointerInsideBandWidth * monitor.Scale;
+            var outsideBand = area.Height * PointerOutsideBandRatio;
+            if (point.Y >= area.Y - outsideBand && point.Y <= area.Y + insideBand)
             {
                 selectionY = area.Y;
             }
-            else if (point.Y >= area.Bottom - area.Height * PointerEdgeBandRatio)
+            else if (point.Y >= area.Bottom - insideBand && point.Y <= area.Bottom + outsideBand)
             {
                 selectionY = area.Bottom;
             }
