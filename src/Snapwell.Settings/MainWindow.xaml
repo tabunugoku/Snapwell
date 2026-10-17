@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window
+    x:Class="Snapwell.Settings.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Snapwell の設定">
+    <Grid>
+        <TextBlock Text="Snapwell の設定" Margin="24" />
+    </Grid>
+</Window>
