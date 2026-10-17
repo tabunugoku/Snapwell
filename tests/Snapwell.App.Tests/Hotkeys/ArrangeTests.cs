@@ -15,6 +15,7 @@ namespace Snapwell.App.Tests.Hotkeys;
 public sealed class ArrangeTests
 {
     private const uint ThickFrameStyle = 0x00040000;
+    private const uint CaptionStyle = 0x00C00000;
     private const uint PopupStyle = 0x80000000;
     private const uint OwnProcessId = 999;
 
@@ -50,6 +51,25 @@ public sealed class ArrangeTests
             Assert.Equal(expectedTargets[i], fixture.Motion.Requests[i].Target);
             Assert.True(fixture.Motion.Requests[i].Resize);
         }
+    }
+
+    /// <summary>所有された WS_POPUP | WS_CAPTION のダイアログは整列から外し、親ウィンドウだけを配置する。</summary>
+    [Fact]
+    public void OwnedDialogWithCaptionIsExcludedFromArrangement()
+    {
+        var fixture = new ArrangeFixture();
+        fixture.AddWindow(1, new(100, 100, 800, 600));
+        fixture.AddWindow(2, new(300, 200, 400, 300), style: PopupStyle | CaptionStyle, owner: 1);
+        fixture.AddWindow(3, new(350, 250, 400, 300), style: PopupStyle | CaptionStyle | ThickFrameStyle, owner: 1);
+        fixture.Inspector.Foreground = 1;
+
+        fixture.Executor.Handle(new((int)WindowCommand.ArrangeGrid));
+
+        var expected = WindowArrangement.Arrange(
+            ArrangeLayout.Grid, new(0, 0, 1920, 1040), new(8, 8), 1)!;
+        var single = Assert.Single(fixture.Motion.Requests);
+        Assert.Equal((nint)1, single.Handle);
+        Assert.Equal(expected[0], single.Target);
     }
 
     /// <summary>サイズ固定のウィンドウはサイズを変えず、目標区画の中央へ配置する。</summary>
@@ -195,10 +215,12 @@ public sealed class ArrangeTests
             uint style = ThickFrameStyle,
             bool cloaked = false,
             bool minimized = false,
-            uint processId = 100)
+            uint processId = 100,
+            nint owner = 0)
         {
             Inspector.Windows[handle] = new(handle, "TestWindow", $"Window {handle}", processId,
                 style, 0, bounds, bounds, default, cloaked, true, minimized, false);
+            Inspector.Owners[handle] = owner;
             Inspector.TopLevelHandles.Add(handle);
         }
     }
@@ -206,6 +228,7 @@ public sealed class ArrangeTests
     private sealed class ArrangeInspector : IWindowInspector
     {
         internal Dictionary<nint, WindowSnapshot> Windows { get; } = [];
+        internal Dictionary<nint, nint> Owners { get; } = [];
         internal List<nint> TopLevelHandles { get; } = [];
         internal HashSet<nint> CloseAfterFirstInspect { get; } = [];
         private readonly HashSet<nint> _inspectedOnce = [];
@@ -225,6 +248,7 @@ public sealed class ArrangeTests
         public nint GetForegroundWindow() => Foreground;
         public nint GetRootWindowAt(int x, int y) => Foreground;
         public IReadOnlyList<nint> GetTopLevelWindows() => TopLevelHandles;
+        public nint GetOwner(nint handle) => Owners.GetValueOrDefault(handle);
     }
 
     private sealed class ArrangeMonitors : IMonitorSource
