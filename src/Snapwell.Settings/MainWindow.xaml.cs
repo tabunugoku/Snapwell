@@ -56,7 +56,7 @@ public sealed partial class MainWindow : Window
 
         PageHost.Content = (item.Tag as string) switch
         {
-            "general" => new GeneralPage(),
+            "general" => new GeneralPage(_session),
             "feel" => new FeelPage(_session),
             "hotkeys" => new HotkeysPage(_session),
             "backup" => new BackupPage(_session, WinRT.Interop.WindowNative.GetWindowHandle(this)),
