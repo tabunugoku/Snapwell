@@ -53,19 +53,21 @@ public sealed class CommandPlannerTests
     }
 
     [Fact]
-    public void ArrangeCommandsAreAppendedWithOnlyGridBoundByDefault()
+    public void ArrangeCommandsPreserveEnumerationValuesAndHaveDefaultBindings()
     {
         var hotkeys = DefaultHotkeys.Create();
-        Assert.Equal(18, hotkeys.Count);
+        Assert.Equal(22, hotkeys.Count);
         Assert.Equal(new KeyChordSpec(ChordModifiers.Control | ChordModifiers.Alt, 0x41),
             hotkeys[WindowCommand.ArrangeGrid]);
-        Assert.False(hotkeys.ContainsKey(WindowCommand.ArrangeColumns));
-        Assert.False(hotkeys.ContainsKey(WindowCommand.ArrangeRows));
-        Assert.False(hotkeys.ContainsKey(WindowCommand.ArrangeMainAndStack));
+        Assert.True(hotkeys.ContainsKey(WindowCommand.ArrangeColumns));
+        Assert.True(hotkeys.ContainsKey(WindowCommand.ArrangeRows));
+        Assert.True(hotkeys.ContainsKey(WindowCommand.ArrangeMainAndStack));
+        Assert.True(hotkeys.ContainsKey(WindowCommand.ArrangeAllMonitors));
         Assert.Equal(21, (int)WindowCommand.ArrangeGrid);
         Assert.Equal(22, (int)WindowCommand.ArrangeColumns);
         Assert.Equal(23, (int)WindowCommand.ArrangeRows);
         Assert.Equal(24, (int)WindowCommand.ArrangeMainAndStack);
+        Assert.Equal(25, (int)WindowCommand.ArrangeAllMonitors);
     }
 
     [Fact]

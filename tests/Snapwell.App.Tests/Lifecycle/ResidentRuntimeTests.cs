@@ -17,6 +17,28 @@ namespace Snapwell.App.Tests.Lifecycle;
 
 public sealed class ResidentRuntimeTests
 {
+    /// <summary>整列要求を実行役へ一度だけ渡し、一時停止・破棄後は止める。</summary>
+    [Fact]
+    public void CurrentMonitorArrangementReachesExecutorOnceAndStopsWhenPausedOrDisposed()
+    {
+        using var fixture = new OverlayFixture(withLongPress: true);
+        fixture.Inspector.Foreground = 99;
+        fixture.Runtime.ArrangeCurrentMonitor();
+        var request = Assert.Single(fixture.Motion.Requests);
+        Assert.Equal((nint)1, request.Handle);
+        var expected = WindowArrangement.Arrange(ArrangeLayout.Grid, new(0, 0, 1920, 1040), new(8, 8), 1)!;
+        Assert.Equal(expected[0], request.Target);
+        fixture.Runtime.SetEnabled(false);
+        fixture.Runtime.ArrangeCurrentMonitor();
+        Assert.Single(fixture.Motion.Requests);
+        fixture.Runtime.SetEnabled(true);
+        fixture.Runtime.ArrangeCurrentMonitor();
+        Assert.Equal(2, fixture.Motion.Requests.Count);
+        fixture.Runtime.Dispose();
+        fixture.Runtime.ArrangeCurrentMonitor();
+        Assert.Equal(2, fixture.Motion.Requests.Count);
+    }
+
     /// <summary>確定後も長押しが使った移動ループは、配置の取り消しと追加の吸着を起こさない。</summary>
     [Theory]
     [InlineData(false)]
@@ -670,7 +692,7 @@ public sealed class ResidentRuntimeTests
                 tracking.SetLongPress, Timer.Schedule) : null;
             LauncherController? launcher = null;
             var hotkeys = new HotkeyCommandExecutor(inspector, monitors, Motion, new NoPosition(), () => new(),
-                () => true, () => Toggles++, 999, () => launcher?.Open());
+                () => true, () => Toggles++, 999, () => launcher?.Open(), cursorPosition: () => Cursor);
             Launcher = launcher = new(inspector, monitors, () => new(), Presenter, hotkeys.Place,
                 value => Applied = value, Normal, 999);
             Runtime = new(Drag, hotkeys, Motion, Normal, value => Applied = value, Launcher, preview,
@@ -700,6 +722,7 @@ public sealed class ResidentRuntimeTests
 
         public nint GetForegroundWindow() => target.GetForegroundWindow();
         public nint GetRootWindowAt(int x, int y) => target.GetRootWindowAt(x, y);
+        public IReadOnlyList<nint> GetTopLevelWindows() => [target.Window.Handle];
     }
 
     private sealed class CallbackDisposable(Action action) : IDisposable
