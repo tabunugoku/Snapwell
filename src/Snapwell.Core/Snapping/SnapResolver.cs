@@ -40,7 +40,7 @@ public static class SnapResolver
         var physicalSpacing = spacing.ToPhysical(monitor.Scale);
         var selection = mode == SnapMode.Corners
             ? SelectCorner(current, predicted, monitor.WorkArea, physicalSpacing.Edge)
-            : SelectZone(current, predicted, center, monitor, physicalSpacing, canResize, pointer);
+            : SelectZone(current, predicted, center, monitor, monitors, physicalSpacing, canResize, pointer);
         return new(selection.Target, selection.Kind, monitor.Id, predicted,
             selection.Target.Width != current.Width || selection.Target.Height != current.Height);
     }
@@ -99,7 +99,8 @@ public static class SnapResolver
     }
 
     private static (PixelRect Target, SnapTargetKind Kind) SelectZone(PixelRect current, Vec2 predicted,
-        Vec2 predictedCenter, MonitorArea monitor, PhysicalSpacing spacing, bool canResize, Vec2? pointer)
+        Vec2 predictedCenter, MonitorArea monitor, IReadOnlyList<MonitorArea> monitors, PhysicalSpacing spacing,
+        bool canResize, Vec2? pointer)
     {
         var area = monitor.WorkArea;
         var center = ClampCenter(predictedCenter, area);
@@ -107,7 +108,9 @@ public static class SnapResolver
         var right = center.X >= area.Center.X;
         var column = right ? 1 : 0;
         var selectionY = center.Y;
-        if (pointer is { } point && point.X >= area.X && point.X < area.Right)
+        // 内側の帯を優先し、外側の帯が別モニターの作業領域に重なる場合はカーソルを使わない。
+        if (pointer is { } point && point.X >= area.X && point.X < area.Right &&
+            (area.Contains(point) || !monitors.Any(other => other.WorkArea.Contains(point))))
         {
             var insideBand = PointerInsideBandWidth * monitor.Scale;
             var outsideBand = area.Height * PointerOutsideBandRatio;
