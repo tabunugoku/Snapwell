@@ -33,7 +33,7 @@ internal sealed class UserInstanceMutex : ISingleInstance
 /// <summary>Platform が持つ退避ファイルと復旧処理をそのまま使う。</summary>
 internal sealed class SnapGuardService(SnapSettingsGuard guard) : ISnapGuard
 {
-    public void RecoverOnStartup() => guard.RecoverOnStartup();
+    public bool RecoverOnStartup() => guard.RecoverOnStartup();
     public bool Disable() => guard.Disable();
     public bool Restore() => guard.Restore();
 }
