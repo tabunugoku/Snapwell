@@ -26,7 +26,6 @@ internal sealed class LauncherController : IDisposable
     private readonly IReadOnlyList<HotkeyBinding> _launcherBindings;
     private readonly uint _ownProcessId;
     private readonly Func<OverlayTheme> _theme;
-    private readonly LauncherPanelRenderer _renderer = new();
     private double _scale = 1;
     private PhysicalSpacing _spacing;
     private string _targetTitle = "";
@@ -396,7 +395,7 @@ internal sealed class LauncherController : IDisposable
         var revision = ++_drawRevision;
         _panelLayout ??= LauncherPanelLayout.Create(selection, scale, title, menuOpen);
         _presenter.Request(selection.WorkArea, () =>
-            _renderer.Render(selection, title, scale, menuOpen, _theme(), layout =>
+            LauncherPanelRenderer.Current.Render(selection, title, scale, menuOpen, _theme(), layout =>
             {
                 lock (_gate)
                 {

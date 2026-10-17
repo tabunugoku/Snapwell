@@ -14,6 +14,7 @@ internal sealed class OverlayThread : IOverlayPresenter, IOverlaySurface
     private IOverlayLoop? _loop;
     private bool _disposed;
     private bool _faulted;
+    private bool _hidePending;
 
     internal OverlayThread(bool interactive)
         : this(() =>
@@ -60,6 +61,8 @@ internal sealed class OverlayThread : IOverlayPresenter, IOverlaySurface
             if (paint is null)
             {
                 _pendingMove = null;
+                // 直後の Show が要求を上書きしても、非表示時の解放は省略しない。
+                _hidePending = true;
             }
 
             if (wake)
@@ -113,6 +116,7 @@ internal sealed class OverlayThread : IOverlayPresenter, IOverlaySurface
         }
         finally
         {
+            LauncherPanelRenderer.ReleaseCurrent();
             lock (_gate)
             {
                 // 停止要求なしでループが戻った場合も、次の要求を受け取れない。
@@ -163,6 +167,7 @@ internal sealed class OverlayThread : IOverlayPresenter, IOverlaySurface
         }
 
         (PixelRect Bounds, Func<OverlayFrame>? Paint)? pending;
+        bool hide;
         lock (_gate)
         {
             if (_disposed)
@@ -172,6 +177,14 @@ internal sealed class OverlayThread : IOverlayPresenter, IOverlaySurface
 
             pending = _pending;
             _pending = null;
+            hide = _hidePending;
+            _hidePending = false;
+        }
+
+        if (hide)
+        {
+            LauncherPanelRenderer.ReleaseCurrent();
+            surface.Hide();
         }
 
         if (pending is { Paint: { } paint } request)
@@ -188,11 +201,6 @@ internal sealed class OverlayThread : IOverlayPresenter, IOverlaySurface
 
             surface.Show(request.Bounds, frame);
         }
-        else if (pending is not null)
-        {
-            surface.Hide();
-        }
-
         return true;
     }
 

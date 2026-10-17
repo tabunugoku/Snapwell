@@ -66,6 +66,8 @@ internal sealed unsafe class LayeredOverlayWindow : IOverlaySurface, IOverlayLoo
 
     public event Action<OverlayPointer>? Pointer;
 
+    internal long RetainedPixelBytes => (long)_width * _height * 4 + (_lastFrame?.Pixels.LongLength ?? 0);
+
     public void Show(PixelRect bounds, OverlayFrame frame)
     {
         if (frame.Width != bounds.Width || frame.Height != bounds.Height ||
@@ -163,6 +165,7 @@ internal sealed unsafe class LayeredOverlayWindow : IOverlaySurface, IOverlayLoo
         }
 
         PInvoke.ShowWindow(_window, SHOW_WINDOW_CMD.SW_HIDE);
+        ReleaseBitmap();
     }
 
     public void Wake() => PInvoke.PostMessage(_window, WakeMessage, default, default);
@@ -229,6 +232,7 @@ internal sealed unsafe class LayeredOverlayWindow : IOverlaySurface, IOverlayLoo
         _width = 0;
         _height = 0;
         _lastFrame = null;
+        _lastRevision = 0;
     }
 
     private LRESULT HandleMessage(HWND window, uint message, WPARAM wParam, LPARAM lParam)

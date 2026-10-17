@@ -13,6 +13,19 @@ public sealed class LauncherRasterCache
     private OverlayTheme _theme;
     private double _scale;
 
+    /// <summary>保持している全画面・パネル・ラベルの画素配列の合計バイト数。</summary>
+    public long RetainedPixelBytes => (_frame?.Pixels.LongLength ?? 0) +
+        (_panel?.Frame.Pixels.LongLength ?? 0) + (_label?.Frame.Pixels.LongLength ?? 0);
+
+    /// <summary>非表示時に画素を手放し、次の描画を全面更新にする。</summary>
+    public void Clear()
+    {
+        _frame = null;
+        _previous = null;
+        _panel = null;
+        _label = null;
+    }
+
     /// <summary>同じ寸法の全画面バッファを再利用し、変わった領域だけを初期化する。</summary>
     public OverlayFrame Render(ZoneSelection selection, LauncherPanelLayer panel, LauncherPanelLayer label,
         OverlayTheme theme, double scale)
