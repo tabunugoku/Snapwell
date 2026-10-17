@@ -1,8 +1,10 @@
+using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Snapwell.Settings.Pages;
 using Windows.Graphics;
+using Windows.UI;
 
 namespace Snapwell.Settings;
 
@@ -18,7 +20,12 @@ public sealed partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        // タイトルバーのアイコン。exe の隣に置いた .ico を使い、無ければ既定のまま (設定画面は動く)。
+        ExtendsContentIntoTitleBar = true;
+        SetTitleBar(TitleBar);
+        UpdateTitleBarColors();
+        Root.ActualThemeChanged += Root_ActualThemeChanged;
+
+        // タスクバーのアイコン。exe の隣に置いた .ico を使い、無ければ既定のまま (設定画面は動く)。
         var icon = Path.Combine(AppContext.BaseDirectory, "snapwell.ico");
         if (File.Exists(icon))
         {
@@ -31,6 +38,42 @@ public sealed partial class MainWindow : Window
         LoadNotice.IsOpen = _session.LoadMessage is not null;
         Navigation.SelectedItem = Navigation.MenuItems[0];
         UpdateStatus();
+    }
+
+    private void Root_ActualThemeChanged(FrameworkElement sender, object args) => UpdateTitleBarColors();
+
+    private void UpdateTitleBarColors()
+    {
+        if (!AppWindowTitleBar.IsCustomizationSupported())
+        {
+            return;
+        }
+
+        var isDark = Root.ActualTheme switch
+        {
+            ElementTheme.Dark => true,
+            ElementTheme.Light => false,
+            _ => Application.Current.RequestedTheme == ApplicationTheme.Dark,
+        };
+        var foreground = isDark
+            ? Color.FromArgb(0xFF, 0xE6, 0xE6, 0xE3)
+            : Color.FromArgb(0xFF, 0x2F, 0x34, 0x37);
+        var muted = isDark
+            ? Color.FromArgb(0xFF, 0x9B, 0x9A, 0x97)
+            : Color.FromArgb(0xFF, 0x78, 0x77, 0x74);
+        var hoverBackground = isDark
+            ? Color.FromArgb(0xFF, 0x25, 0x25, 0x24)
+            : Color.FromArgb(0xFF, 0xF9, 0xF9, 0xF8);
+
+        var titleBar = AppWindow.TitleBar;
+        titleBar.ButtonBackgroundColor = Colors.Transparent;
+        titleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
+        titleBar.ButtonHoverBackgroundColor = hoverBackground;
+        titleBar.ButtonPressedBackgroundColor = hoverBackground;
+        titleBar.ButtonForegroundColor = foreground;
+        titleBar.ButtonHoverForegroundColor = foreground;
+        titleBar.ButtonPressedForegroundColor = foreground;
+        titleBar.ButtonInactiveForegroundColor = muted;
     }
 
     private void Root_Loaded(object sender, RoutedEventArgs e)
@@ -60,7 +103,10 @@ public sealed partial class MainWindow : Window
             "general" => new GeneralPage(_session),
             "feel" => new FeelPage(_session),
             "hotkeys" => new HotkeysPage(_session),
+            "rules" => new PlaceholderPage("アプリのルール"),
+            "os" => new PlaceholderPage("標準機能"),
             "backup" => new BackupPage(_session, WinRT.Interop.WindowNative.GetWindowHandle(this)),
+            "look" => new PlaceholderPage("外観"),
             _ => new GridPage(_session),
         };
     }
