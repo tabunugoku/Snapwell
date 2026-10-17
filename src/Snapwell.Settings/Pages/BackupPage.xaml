@@ -3,13 +3,104 @@
     x:Class="Snapwell.Settings.Pages.BackupPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Page.Resources>
+        <Style x:Key="DemoSwitchStyle" TargetType="ToggleSwitch">
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="Width" Value="40" />
+            <Setter Property="Height" Value="20" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleSwitch">
+                        <Grid Width="40" Height="20" Background="Transparent">
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroup x:Name="ToggleStates">
+                                    <VisualState x:Name="Off" />
+                                    <VisualState x:Name="On">
+                                        <VisualState.Setters>
+                                            <Setter
+                                                Target="SwitchTrack.Background"
+                                                Value="{ThemeResource SnapwellInkBrush}" />
+                                            <Setter
+                                                Target="SwitchTrack.BorderBrush"
+                                                Value="{ThemeResource SnapwellInkBrush}" />
+                                            <Setter
+                                                Target="SwitchKnob.Fill"
+                                                Value="{ThemeResource SnapwellInkTextBrush}" />
+                                            <Setter Target="SwitchKnob.Margin" Value="23,0,0,0" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                </VisualStateGroup>
+                            </VisualStateManager.VisualStateGroups>
+                            <Border
+                                x:Name="SwitchTrack"
+                                CornerRadius="9999"
+                                BorderThickness="1"
+                                BorderBrush="{ThemeResource SnapwellMutedBrush}" />
+                            <Ellipse
+                                x:Name="SwitchKnob"
+                                Width="12"
+                                Height="12"
+                                Margin="3,0,0,0"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Center"
+                                Fill="{ThemeResource SnapwellMutedBrush}" />
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Page.Resources>
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
         <StackPanel Padding="32,28,32,40" HorizontalAlignment="Stretch">
             <TextBlock Text="同期とバックアップ" Style="{StaticResource SnapwellPageTitleStyle}" TextWrapping="Wrap" />
             <TextBlock Text="ホットキー・分割案・間隔・操作感・ルールを、ほかの PC と共有できます。モニター構成ごとの配置は、この PC にだけ保存します。"
                        Style="{StaticResource SnapwellLeadTextStyle}" />
             <InfoBar x:Name="TransferNotice" IsClosable="True" />
-            <TextBlock Text="ファイル" Style="{StaticResource SnapwellGroupTitleStyle}" Margin="0,0,0,8" />
+
+            <!-- デモ状態 (未実装) -->
+            <Border Style="{StaticResource SnapwellRowsBorderStyle}">
+                <StackPanel>
+                    <Grid Style="{StaticResource SnapwellRowGridStyle}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="同期フォルダ" Style="{StaticResource SnapwellRowTitleStyle}" />
+                            <TextBlock
+                                Text="C:\Users\&lt;ユーザー&gt;\OneDrive\Snapwell"
+                                Style="{StaticResource SnapwellRowDescriptionStyle}"
+                                FontFamily="{StaticResource SnapwellMonoFontFamily}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <Button Content="変更" Style="{StaticResource SnapwellButtonStyle}" />
+                            <ToggleSwitch
+                                Style="{StaticResource DemoSwitchStyle}"
+                                IsOn="True"
+                                AutomationProperties.Name="同期" />
+                        </StackPanel>
+                    </Grid>
+                    <Border Style="{StaticResource SnapwellRowDividerStyle}" />
+                    <Grid Style="{StaticResource SnapwellRowGridStyle}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="最後に同期した時刻" Style="{StaticResource SnapwellRowTitleStyle}" />
+                            <TextBlock
+                                Text="2026/10/17 10:12 · 変更なし"
+                                Style="{StaticResource SnapwellRowDescriptionStyle}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <Button Content="今すぐ同期" Style="{StaticResource SnapwellButtonStyle}" />
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Border>
+            <!-- デモ状態 (未実装) ここまで -->
+            <TextBlock Text="ファイル" Style="{StaticResource SnapwellGroupTitleStyle}" />
             <Border Style="{StaticResource SnapwellRowsBorderStyle}">
                 <StackPanel>
                     <Grid Style="{StaticResource SnapwellRowGridStyle}">
