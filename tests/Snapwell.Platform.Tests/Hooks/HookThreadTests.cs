@@ -6,6 +6,21 @@ namespace Snapwell.Platform.Tests.Hooks;
 /// <summary>実際のフックを登録せず、スレッドの起動・解除・二重停止を確認する。</summary>
 public sealed class HookThreadTests
 {
+    [Theory]
+    [InlineData(123u)]
+    [InlineData(4294967280u)]
+    [InlineData(0u)]
+    public void PublishedMoveEndPreservesOsTimestamp(uint time)
+    {
+        using var api = new FakeHookApi();
+        using var hooks = new HookThread(new HotkeyMatcher(), 8, api);
+        hooks.Publish(new RawHookEvent(RawHookKind.MoveEnd, 42, Time: time));
+        Assert.True(hooks.Events.TryRead(out var value));
+        var end = Assert.IsType<MoveSizeEnded>(value);
+        Assert.Equal((nint)42, end.Handle);
+        Assert.Equal(time, end.TimeMs);
+    }
+
     /// <summary>登録したスレッドで解除し、別スレッドからの二重停止を直列化する。</summary>
     [Fact]
     public async Task ConcurrentStopsUnregisterAllHooksOnOwningThread()

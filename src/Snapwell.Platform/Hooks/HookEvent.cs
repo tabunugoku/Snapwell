@@ -7,7 +7,7 @@ public abstract record HookEvent;
 public sealed record MoveSizeStarted(nint Handle) : HookEvent;
 
 /// <summary>システムの移動・サイズ変更ループの終了。</summary>
-public sealed record MoveSizeEnded(nint Handle) : HookEvent;
+public sealed record MoveSizeEnded(nint Handle, uint TimeMs) : HookEvent;
 
 /// <summary>前面ウィンドウの変更。</summary>
 public sealed record ForegroundChanged(nint Handle) : HookEvent;
