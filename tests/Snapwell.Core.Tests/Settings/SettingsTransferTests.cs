@@ -88,7 +88,7 @@ public sealed class SettingsTransferTests : IDisposable
     [InlineData("")]
     [InlineData("null")]
     [InlineData("[]")]
-    [InlineData("{\"SchemaVersion\":2,\"Feel\":{\"future\":true}}")]
+    [InlineData("{\"SchemaVersion\":3,\"Feel\":{\"future\":true}}")]
     [InlineData("{\"SchemaVersion\":999999999999,\"Feel\":\"Airy\"}")]
     public void InvalidOrFutureFilesAreRejectedWithoutChangingAnything(string json)
     {
@@ -163,7 +163,7 @@ public sealed class SettingsTransferTests : IDisposable
         File.WriteAllText(path, "{\"SchemaVersion\":1,\"Gap\":33}");
         SettingsTransfer.Export(path, new() { Gap = 9 });
         Assert.Equal(9, SettingsStores.Portable(path).Load().Value.Gap);
-        const string future = "{\"SchemaVersion\":2}";
+        const string future = "{\"SchemaVersion\":3}";
         File.WriteAllText(path, future);
         Assert.Throws<InvalidOperationException>(() => SettingsTransfer.Export(path, new()));
         Assert.Equal(future, File.ReadAllText(path));
@@ -177,7 +177,7 @@ public sealed class SettingsTransferTests : IDisposable
     public void FutureExportIsRejectedBeforeReplacingOrCreatingTemporaryFiles(bool holdReadHandle)
     {
         var path = Path.Combine(_directory, "future.json");
-        var original = System.Text.Encoding.UTF8.GetBytes("{\"SchemaVersion\":2,\"Future\":\"保持する\"}\r\n");
+        var original = System.Text.Encoding.UTF8.GetBytes("{\"SchemaVersion\":3,\"Future\":\"保持する\"}\r\n");
         File.WriteAllBytes(path, original);
         // 削除共有を許さず、置換前に版を確認していることを確かめる。
         using var reader = holdReadHandle ? File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read) : null;

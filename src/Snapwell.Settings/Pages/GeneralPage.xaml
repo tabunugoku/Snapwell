@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="Snapwell.Settings.Pages.GeneralPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer>
+        <StackPanel Spacing="16" Padding="24" MaxWidth="760" HorizontalAlignment="Left">
+            <TextBlock Text="全般" Style="{StaticResource TitleTextBlockStyle}" />
+            <InfoBar x:Name="ErrorNotice" Severity="Error" IsClosable="True" />
+            <ToggleSwitch x:Name="AutoStartToggle" Header="サインイン時に Snapwell を起動する"
+                          Toggled="AutoStart_Toggled" />
+            <TextBlock x:Name="RegistrationStatus" TextWrapping="Wrap" />
+            <TextBlock Text="自動起動の変更はすぐに反映されます。保存や未保存の確認とは無関係で、設定が読み取り専用でも変更できます。"
+                       TextWrapping="Wrap" />
+        </StackPanel>
+    </ScrollViewer>
+</Page>

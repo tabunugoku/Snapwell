@@ -80,6 +80,7 @@ public static class HotkeyCatalog
         WindowCommand.NextMonitor => "次のモニターへ",
         WindowCommand.PreviousMonitor => "前のモニターへ",
         WindowCommand.ToggleEnabled => "一時停止・再開",
+        WindowCommand.OpenLauncher => "ランチャーを開く",
         _ => command.ToString(),
     };
 

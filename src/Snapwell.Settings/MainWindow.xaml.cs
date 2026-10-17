@@ -49,6 +49,7 @@ public sealed partial class MainWindow : Window
 
         PageHost.Content = (item.Tag as string) switch
         {
+            "general" => new GeneralPage(),
             "feel" => new FeelPage(_session),
             "hotkeys" => new HotkeysPage(_session),
             "backup" => new BackupPage(_session, WinRT.Interop.WindowNative.GetWindowHandle(this)),
@@ -67,7 +68,7 @@ public sealed partial class MainWindow : Window
         SaveButton.IsEnabled = !_session.IsReadOnly && !_session.IsTransferInProgress;
         Navigation.IsEnabled = !_session.IsTransferInProgress;
         ChangeStatus.Text = _session.IsReadOnly ? "読み取り専用です。保存できません。"
-            : _session.HasChanges ? "保存していない変更があります" : "保存すると、次の起動から反映されます";
+            : _session.HasChanges ? "保存していない変更があります" : "保存すると、起動中の Snapwell に反映されます";
     }
 
     private void Save_Click(object sender, RoutedEventArgs e) => Save();
@@ -116,7 +117,7 @@ public sealed partial class MainWindow : Window
             {
                 XamlRoot = Root.XamlRoot,
                 Title = "変更を保存しますか？",
-                Content = "保存していない変更があります。保存すると、Snapwell の次の起動から反映されます。",
+                Content = "保存していない変更があります。保存すると、起動中の Snapwell に反映されます。",
                 PrimaryButtonText = "保存して閉じる",
                 SecondaryButtonText = "保存せず閉じる",
                 CloseButtonText = "取り消す",

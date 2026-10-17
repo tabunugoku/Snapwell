@@ -69,11 +69,11 @@ public sealed class SettingsSession
 
         try
         {
-            // 保存直前の読み直しは行わない。将来の本体との同時保存も、ストアの原子的な保存と未来の版の保護に任せる。
+            // 本体は読み込みだけを行う。保存はストアの原子的な置換と未来の版の保護に任せる。
             _store.Save(Current);
             _saved = SettingsTransfer.Normalize(Current);
             HasChanges = false;
-            message = "保存しました。Snapwell を再起動すると反映されます。";
+            message = "保存しました。Snapwell が起動していれば、すぐに反映されます。";
         }
         catch (InvalidOperationException)
         {

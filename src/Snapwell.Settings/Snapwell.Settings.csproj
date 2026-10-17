@@ -16,6 +16,8 @@
     <IsAotCompatible>true</IsAotCompatible>
     <PublishAot>true</PublishAot>
     <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- 既存の設定画面を前面に出す LibraryImport の生成コードに要る -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <!-- 自己完結の Windows App SDK はアーキテクチャが要り、AnyCPU ではビルドが止まる。

@@ -15,6 +15,9 @@ public interface ISettingsStore<T>
 
     /// <summary>完全なファイルで置き換える。新しい版は上書きしない。</summary>
     void Save(T value);
+
+    /// <summary>元のファイルを動かさず、読めない場合は現在の値を維持させる。</summary>
+    SettingsLoadResult<T>? TryReload() => null;
 }
 
 /// <summary>ソース生成した JSON を同じディレクトリ内で原子的に置き換える。</summary>
@@ -25,9 +28,19 @@ public sealed class SettingsStore<T>(string path, JsonTypeInfo<T> typeInfo, Func
     private readonly string _path = Path.GetFullPath(path);
     private readonly Action? _beforeReplace;
     private bool _readOnly;
+    private readonly int _currentSchemaVersion = 1;
+    private readonly Func<T, double, T>? _migrate;
+
+    /// <summary>ストアごとの現在の版と、元の JSON の版を受け取る移行を指定する。</summary>
+    public SettingsStore(string path, JsonTypeInfo<T> typeInfo, Func<T> defaults, Func<T, T> normalize,
+        int currentSchemaVersion, Func<T, double, T>? migrate = null) : this(path, typeInfo, defaults, normalize)
+    {
+        _currentSchemaVersion = currentSchemaVersion;
+        _migrate = migrate;
+    }
 
     internal SettingsStore(string path, JsonTypeInfo<T> typeInfo, Func<T> defaults, Func<T, T> normalize,
-        Action beforeReplace) : this(path, typeInfo, defaults, normalize)
+        Action beforeReplace, int currentSchemaVersion = 1) : this(path, typeInfo, defaults, normalize, currentSchemaVersion)
     {
         _beforeReplace = beforeReplace;
     }
@@ -44,16 +57,7 @@ public sealed class SettingsStore<T>(string path, JsonTypeInfo<T> typeInfo, Func
 
             try
             {
-                using var stream = File.OpenRead(_path);
-                using var document = JsonDocument.Parse(stream);
-                if (IsFuture(document.RootElement))
-                {
-                    _readOnly = true;
-                    return new(defaults(), IsReadOnly: true);
-                }
-
-                var value = document.RootElement.Deserialize(typeInfo) ?? throw new JsonException("設定が null。");
-                return new(normalize(value));
+                return Read();
             }
             catch (JsonException)
             {
@@ -139,9 +143,38 @@ public sealed class SettingsStore<T>(string path, JsonTypeInfo<T> typeInfo, Func
         }
     }
 
-    private static bool IsFuture(JsonElement root) => root.ValueKind == JsonValueKind.Object &&
-        root.TryGetProperty("SchemaVersion", out var version) && version.ValueKind == JsonValueKind.Number &&
-        version.TryGetInt32(out var number) && number > 1;
+    /// <summary>同期中の書きかけや共有違反でも、ファイルと現在の設定を保つ。</summary>
+    public SettingsLoadResult<T>? TryReload()
+    {
+        lock (_gate)
+        {
+            try
+            {
+                return Read();
+            }
+            catch (Exception exception) when (exception is JsonException or IOException or UnauthorizedAccessException)
+            {
+                return null;
+            }
+        }
+    }
+
+    private SettingsLoadResult<T> Read()
+    {
+        using var stream = File.OpenRead(_path);
+        using var document = JsonDocument.Parse(stream);
+        var root = document.RootElement;
+        if (IsFuture(root))
+        {
+            _readOnly = true;
+            return new(defaults(), IsReadOnly: true);
+        }
+
+        var value = root.Deserialize(typeInfo) ?? throw new JsonException("設定が null。");
+        return new(normalize(_migrate is null ? value : _migrate(value, SettingsSchema.ReadVersion(root))));
+    }
+
+    private bool IsFuture(JsonElement root) => SettingsSchema.ReadVersion(root) > _currentSchemaVersion;
 }
 
 /// <summary>設定ごとの型情報と既定の保存場所。</summary>
@@ -150,7 +183,7 @@ public static class SettingsStores
     /// <summary>指定パスまたは AppData のポータブル設定ストアを作る。</summary>
     public static SettingsStore<PortableSettings> Portable(string? path = null) => new(
         path ?? PortablePath(), SettingsJsonContext.Default.PortableSettings,
-        () => new(), value => value.Normalize());
+        () => new(), value => value.Normalize(), PortableSettings.CurrentSchemaVersion, SettingsSchema.Migrate);
 
     /// <summary>指定パスまたは LocalAppData の端末状態ストアを作る。</summary>
     public static SettingsStore<DeviceState> Device(string? path = null) => new(

@@ -11,17 +11,18 @@ public sealed record GridSettings(int Columns = 8, int Rows = 8);
 /// <summary>他の端末にも持ち運べる設定。</summary>
 public sealed record PortableSettings
 {
-    public int SchemaVersion { get; init; } = 1;
-    public string Feel { get; init; } = "Airy";
-    public SnapMode SnapMode { get; init; } = SnapMode.Zones;
-    public GridSettings Grid { get; init; } = new();
-    public double Gap { get; init; } = 8;
-    public double Edge { get; init; } = 8;
-    public bool ReduceMotion { get; init; }
-    // JSON のソース生成は、ファイルに無い init のプロパティを初期値でなく既定値 (false) にする。
-    // 古い設定ファイルでも true になるよう、この値だけは set にする。
+    public const int CurrentSchemaVersion = 2;
+
+    // JSON のソース生成でも、欠けた値に初期化子を使うため set にする。
+    public int SchemaVersion { get; set; } = CurrentSchemaVersion;
+    public string Feel { get; set; } = "Airy";
+    public SnapMode SnapMode { get; set; } = SnapMode.Zones;
+    public GridSettings Grid { get; set; } = new();
+    public double Gap { get; set; } = 8;
+    public double Edge { get; set; } = 8;
+    public bool ReduceMotion { get; set; }
     public bool ShowZonePreview { get; set; } = true;
-    public Dictionary<WindowCommand, KeyChordSpec> Hotkeys { get; init; } = DefaultHotkeys.Create();
+    public Dictionary<WindowCommand, KeyChordSpec> Hotkeys { get; set; } = DefaultHotkeys.Create();
 
     /// <summary>物理モデルのプリセットを返す。</summary>
     public FeelPreset ToFeelPreset() => Feel switch
@@ -41,14 +42,14 @@ public sealed record PortableSettings
     internal PortableSettings Normalize()
     {
         var defaults = new PortableSettings();
-        var hotkeys = Hotkeys is null ? defaults.Hotkeys : Hotkeys
+        var hotkeys = (Hotkeys ?? defaults.Hotkeys)
             .Where(pair => Enum.IsDefined(pair.Key) && pair.Value is not null && pair.Value.VirtualKey <= 255 &&
                 (pair.Value.Modifiers & ~(ChordModifiers.Control | ChordModifiers.Alt |
                     ChordModifiers.Shift | ChordModifiers.Win)) == 0)
             .ToDictionary();
         return this with
         {
-            SchemaVersion = 1,
+            SchemaVersion = CurrentSchemaVersion,
             Feel = Feel is "Airy" or "Snappy" or "Heavy" or "Bouncy" ? Feel : defaults.Feel,
             SnapMode = Enum.IsDefined(SnapMode) ? SnapMode : defaults.SnapMode,
             Grid = new(Grid?.Columns is >= 1 and <= 64 ? Grid.Columns : 8,
