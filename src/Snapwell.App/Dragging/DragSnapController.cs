@@ -95,6 +95,7 @@ internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSou
                 case MoveSizeEnded end when _velocity is not null && end.Handle == _tracked:
                     // dwmsEventTime と MSLLHOOKSTRUCT.time は同じ GetTickCount の時計とみなす。実機未確認。
                     var velocity = _velocity.Release(Time(end.TimeMs));
+                    var pointer = _pointer ?? cursorPosition?.Invoke();
                     StopTracking();
                     if (!inspector.TryInspect(end.Handle, out var current) || current.IsMaximized ||
                         WindowClassifier.Classify(current, ownProcessId) == WindowKind.Excluded)
@@ -106,7 +107,7 @@ internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSou
                     var areas = monitors.GetMonitors().Select(monitor => monitor.ToMonitorArea()).ToArray();
                     var result = SnapResolver.Resolve(current.VisualBounds, velocity, options.ToFeelPreset(),
                         options.SnapMode, options.ToSpacing(), areas,
-                        WindowClassifier.CanResize(current, ownProcessId));
+                        WindowClassifier.CanResize(current, ownProcessId), pointer);
                     if (result is { } snap)
                     {
                         var walls = areas.First(area => area.Id == snap.MonitorId).WorkArea;
@@ -150,7 +151,7 @@ internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSou
             checked(_startBounds.Y + (int)offset.Y), _startBounds.Width, _startBounds.Height);
         var areas = monitors.GetMonitors().Select(monitor => monitor.ToMonitorArea()).ToArray();
         var result = SnapResolver.Resolve(current, _velocity!.Release(seconds), options.ToFeelPreset(),
-            options.SnapMode, options.ToSpacing(), areas, _canResize);
+            options.SnapMode, options.ToSpacing(), areas, _canResize, point);
         if (result is { } snap)
         {
             _preview.Show(snap.Target);
