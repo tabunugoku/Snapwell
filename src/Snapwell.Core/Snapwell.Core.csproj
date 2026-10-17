@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Win32 に依存しない。物理モデル、グリッドと間隔、吸着先の選択、設定のモデル -->
+  <PropertyGroup>
+    <RootNamespace>Snapwell.Core</RootNamespace>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+
+</Project>
