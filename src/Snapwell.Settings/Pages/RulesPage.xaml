@@ -2,6 +2,7 @@
 <Page
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:Snapwell.Settings.Controls"
     x:Class="Snapwell.Settings.Pages.RulesPage">
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
         <StackPanel Padding="32,28,32,40" HorizontalAlignment="Stretch">
@@ -12,8 +13,8 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <TextBlock Text="アプリごとのルール" Style="{StaticResource SnapwellPageTitleStyle}" />
-                <Border Grid.Column="1" Style="{StaticResource SnapwellPendingTagStyle}">
-                    <TextBlock Text="準備中" Style="{StaticResource SnapwellPendingTagTextStyle}" />
+                <Border Grid.Column="1" Style="{StaticResource SnapwellTagPendingStyle}">
+                    <TextBlock Text="準備中" Style="{StaticResource SnapwellTagPendingTextStyle}" />
                 </Border>
             </Grid>
             <TextBlock Text="特定のアプリを対象から外したり、位置だけを動かすようにしたりできます。" Style="{StaticResource SnapwellLeadTextStyle}" />
@@ -111,20 +112,8 @@
                         Padding="12,10"
                         BorderThickness="0,0,0,1"
                         BorderBrush="{ThemeResource SnapwellBorderBrush}">
-                        <Border
-                            Background="{ThemeResource SnapwellRedBackgroundBrush}"
-                            CornerRadius="9.4"
-                            Padding="8,1"
-                            HorizontalAlignment="Left"
-                            VerticalAlignment="Center">
-                            <TextBlock
-                                Text="対象外"
-                                FontSize="10.5"
-                                FontWeight="SemiBold"
-                                CharacterSpacing="50"
-                                LineHeight="16.8"
-                                TextWrapping="Wrap"
-                                Foreground="{ThemeResource SnapwellRedTextBrush}" />
+                        <Border Style="{StaticResource SnapwellTagRedStyle}">
+                            <TextBlock Text="対象外" Style="{StaticResource SnapwellTagRedTextStyle}" />
                         </Border>
                     </Border>
                     <Border
@@ -162,20 +151,8 @@
                         Padding="12,10"
                         BorderThickness="0,0,0,1"
                         BorderBrush="{ThemeResource SnapwellBorderBrush}">
-                        <Border
-                            Background="{ThemeResource SnapwellYellowBackgroundBrush}"
-                            CornerRadius="9.4"
-                            Padding="8,1"
-                            HorizontalAlignment="Left"
-                            VerticalAlignment="Center">
-                            <TextBlock
-                                Text="位置だけ"
-                                FontSize="10.5"
-                                FontWeight="SemiBold"
-                                CharacterSpacing="50"
-                                LineHeight="16.8"
-                                TextWrapping="Wrap"
-                                Foreground="{ThemeResource SnapwellYellowTextBrush}" />
+                        <Border Style="{StaticResource SnapwellTagYellowStyle}">
+                            <TextBlock Text="位置だけ" Style="{StaticResource SnapwellTagYellowTextStyle}" />
                         </Border>
                     </Border>
                     <Border
@@ -213,20 +190,8 @@
                         Padding="12,10"
                         BorderThickness="0,0,0,1"
                         BorderBrush="{ThemeResource SnapwellBorderBrush}">
-                        <Border
-                            Background="{ThemeResource SnapwellBlueBackgroundBrush}"
-                            CornerRadius="9.4"
-                            Padding="8,1"
-                            HorizontalAlignment="Left"
-                            VerticalAlignment="Center">
-                            <TextBlock
-                                Text="長押しの範囲を上端 40 px に"
-                                FontSize="10.5"
-                                FontWeight="SemiBold"
-                                CharacterSpacing="50"
-                                LineHeight="16.8"
-                                TextWrapping="Wrap"
-                                Foreground="{ThemeResource SnapwellBlueTextBrush}" />
+                        <Border Style="{StaticResource SnapwellTagBlueStyle}">
+                            <TextBlock Text="長押しの範囲を上端 40 px に" Style="{StaticResource SnapwellTagBlueTextStyle}" />
                         </Border>
                     </Border>
                     <Border
@@ -264,20 +229,8 @@
                         Padding="12,10"
                         BorderThickness="0,0,0,0"
                         BorderBrush="{ThemeResource SnapwellBorderBrush}">
-                        <Border
-                            Background="{ThemeResource SnapwellRedBackgroundBrush}"
-                            CornerRadius="9.4"
-                            Padding="8,1"
-                            HorizontalAlignment="Left"
-                            VerticalAlignment="Center">
-                            <TextBlock
-                                Text="対象外（既定）"
-                                FontSize="10.5"
-                                FontWeight="SemiBold"
-                                CharacterSpacing="50"
-                                LineHeight="16.8"
-                                TextWrapping="Wrap"
-                                Foreground="{ThemeResource SnapwellRedTextBrush}" />
+                        <Border Style="{StaticResource SnapwellTagRedStyle}">
+                            <TextBlock Text="対象外（既定）" Style="{StaticResource SnapwellTagRedTextStyle}" />
                         </Border>
                     </Border>
                 </Grid>

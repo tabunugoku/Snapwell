@@ -2,7 +2,8 @@
 <Page
     x:Class="Snapwell.Settings.Pages.BackupPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:Snapwell.Settings.Controls">
     <Page.Resources>
         <Style x:Key="DemoSwitchStyle" TargetType="ToggleSwitch"
                BasedOn="{StaticResource SnapwellDemoSwitchStyle}" />
@@ -29,8 +30,8 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="同期フォルダ" Style="{StaticResource SnapwellRowTitleStyle}" />
-                                <Border Grid.Column="1" Style="{StaticResource SnapwellPendingTagStyle}">
-                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellPendingTagTextStyle}" />
+                                <Border Grid.Column="1" Style="{StaticResource SnapwellTagPendingStyle}">
+                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellTagPendingTextStyle}" />
                                 </Border>
                             </Grid>
                             <TextBlock
@@ -59,8 +60,8 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="最後に同期した時刻" Style="{StaticResource SnapwellRowTitleStyle}" />
-                                <Border Grid.Column="1" Style="{StaticResource SnapwellPendingTagStyle}">
-                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellPendingTagTextStyle}" />
+                                <Border Grid.Column="1" Style="{StaticResource SnapwellTagPendingStyle}">
+                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellTagPendingTextStyle}" />
                                 </Border>
                             </Grid>
                             <TextBlock
