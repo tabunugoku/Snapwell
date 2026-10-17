@@ -26,7 +26,7 @@
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
         <StackPanel Padding="32,28,32,40" HorizontalAlignment="Stretch">
             <TextBlock Text="ホットキー" Style="{StaticResource SnapwellPageTitleStyle}" />
-            <TextBlock Text="クリックして新しいキーを押すと変更できます。ほかのアプリと重なるキーには印が付きます。"
+            <TextBlock Text="割り当ての一覧です。同じキーを複数の操作に割り当てている行には「重複」と表示します。"
                        Style="{StaticResource SnapwellLeadTextStyle}" />
             <InfoBar x:Name="ConflictNotice" Severity="Warning" IsClosable="False"
                      Message="キーが重複しています。「既定に戻す」か、重複しない設定ファイルを取り込んでください。" />
