@@ -68,6 +68,7 @@ public sealed partial class GridPage : Page
         Chip4x4.Style = is4x4 ? selectedStyle : normalStyle;
         Chip16x9.Style = is16x9 ? selectedStyle : normalStyle;
         ChipCustom.Style = !isPreset ? selectedStyle : normalStyle;
+        ChipCustom.Opacity = isPreset ? 0.55 : 1.0;
         ChipCustom.Content = !isPreset ? $"カスタム ({grid.Columns} × {grid.Rows})" : "カスタム…";
     }
 
