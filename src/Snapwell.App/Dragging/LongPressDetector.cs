@@ -20,17 +20,24 @@ internal sealed class LongPressDetector(IWindowInspector inspector, IMonitorSour
     internal const double MovementLogicalPixels = 6;
     private readonly object _gate = new();
     private LongPressCandidate? _press;
+    private LongPressCandidate? _launcherOwner;
     private IDisposable? _timer;
     private long _generation;
     private bool _elapsed;
-    private bool _opened;
+    private bool _moveSizeEnded;
     private bool _disposed;
 
     internal event Action<LongPressCandidate>? CandidateReady;
 
     internal bool HasOpenedLauncher
     {
-        get { lock (_gate) { return _opened; } }
+        get { lock (_gate) { return _launcherOwner is not null; } }
+    }
+
+    /// <summary>表示を開いた世代の左ボタンがまだ解放されていないかを返す。</summary>
+    internal bool IsHoldingLauncher
+    {
+        get { lock (_gate) { return _launcherOwner is { } owner && _press?.Generation == owner.Generation; } }
     }
 
     /// <summary>同じ押下から遅れて届いた移動ループ開始を区別する。</summary>
@@ -38,7 +45,7 @@ internal sealed class LongPressDetector(IWindowInspector inspector, IMonitorSour
     {
         lock (_gate)
         {
-            return _opened && _press?.Handle == handle;
+            return _launcherOwner?.Handle == handle;
         }
     }
 
@@ -54,8 +61,20 @@ internal sealed class LongPressDetector(IWindowInspector inspector, IMonitorSour
 
             if (value is MouseButton { Button: MouseButtonKind.Left } button)
             {
+                if (!button.IsDown)
+                {
+                    // 解放後に移動開始が遅配される可能性があるため、移動終了までは所有を残す（実機未確認）。
+                    ResetPress();
+                    if (_moveSizeEnded)
+                    {
+                        ClearOwnership();
+                    }
+
+                    return false;
+                }
+
                 Reset();
-                if (button.IsDown && canStart)
+                if (canStart)
                 {
                     var handle = inspector.GetRootWindowAt(button.X, button.Y);
                     var areas = monitors.GetMonitors().Select(monitor => monitor.ToMonitorArea()).ToArray();
@@ -74,9 +93,17 @@ internal sealed class LongPressDetector(IWindowInspector inspector, IMonitorSour
             else if (value is MouseMoved move && _press is { } press &&
                 (new Vec2(move.X, move.Y) - press.Position).Length > press.Radius)
             {
-                var close = _opened;
+                var close = _launcherOwner is not null;
                 Reset();
                 return close;
+            }
+            else if (value is MoveSizeEnded end && _launcherOwner?.Handle == end.Handle)
+            {
+                _moveSizeEnded = true;
+                if (_press is null)
+                {
+                    ClearOwnership();
+                }
             }
 
             return false;
@@ -93,12 +120,12 @@ internal sealed class LongPressDetector(IWindowInspector inspector, IMonitorSour
     {
         lock (_gate)
         {
-            if (_disposed || _press != candidate || !_elapsed || _opened)
+            if (_disposed || _press != candidate || !_elapsed || _launcherOwner is not null)
             {
                 return false;
             }
 
-            _opened = true;
+            _launcherOwner = candidate;
             return true;
         }
     }
@@ -142,6 +169,18 @@ internal sealed class LongPressDetector(IWindowInspector inspector, IMonitorSour
 
     private void Reset()
     {
+        ResetPress();
+        ClearOwnership();
+    }
+
+    private void ClearOwnership()
+    {
+        _launcherOwner = null;
+        _moveSizeEnded = false;
+    }
+
+    private void ResetPress()
+    {
         _generation++;
         _timer?.Dispose();
         _timer = null;
@@ -152,7 +191,6 @@ internal sealed class LongPressDetector(IWindowInspector inspector, IMonitorSour
 
         _press = null;
         _elapsed = false;
-        _opened = false;
     }
 
     private static IDisposable Schedule(TimeSpan due, Action callback) =>

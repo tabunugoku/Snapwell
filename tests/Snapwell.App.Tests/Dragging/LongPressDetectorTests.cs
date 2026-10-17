@@ -9,6 +9,67 @@ namespace Snapwell.App.Tests.Dragging;
 /// <summary>時間と入力を制御して長押しの境界と古い候補の無効化を検証する。</summary>
 public sealed class LongPressDetectorTests
 {
+    /// <summary>解放と対象の移動終了が両方そろうまで表示の所有を保つ。</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void OwnershipSurvivesUntilReleaseAndMatchingMoveSizeEnd(bool endBeforeRelease)
+    {
+        using var fixture = new Fixture();
+        fixture.Down();
+        fixture.Timer.Advance(450);
+        fixture.Detector.Handle(new MoveSizeEnded(2, 450), false);
+        Assert.True(fixture.Detector.OwnsLauncherFor(1));
+        Assert.False(fixture.Detector.OwnsLauncherFor(2));
+        if (endBeforeRelease)
+        {
+            fixture.Detector.Handle(new MoveSizeEnded(1, 451), false);
+            Assert.True(fixture.Detector.OwnsLauncherFor(1));
+        }
+
+        fixture.Detector.Handle(new MouseButton(MouseButtonKind.Left, false, 100, 100, 452), false);
+        Assert.False(fixture.Tracking.Last());
+        Assert.Equal(!endBeforeRelease, fixture.Detector.OwnsLauncherFor(1));
+        fixture.Detector.Handle(new MoveSizeStarted(1), false);
+        fixture.Detector.Handle(new MoveSizeEnded(1, 453), false);
+        Assert.False(fixture.Detector.HasOpenedLauncher);
+        fixture.Timer.FireEvenIfCanceled(0);
+        Assert.Single(fixture.Opened);
+    }
+
+    /// <summary>次の押下、Cancel、Dispose は解放後にも残る表示の所有を破棄する。</summary>
+    [Theory]
+    [InlineData("press")]
+    [InlineData("cancel")]
+    [InlineData("dispose")]
+    public void NewOperationClearsReleasedOwnership(string action)
+    {
+        using var fixture = new Fixture();
+        fixture.Down();
+        fixture.Timer.Advance(450);
+        fixture.Detector.Handle(new MouseButton(MouseButtonKind.Left, false, 100, 100, 451), false);
+        Assert.True(fixture.Detector.OwnsLauncherFor(1));
+        if (action == "press")
+        {
+            fixture.Detector.Handle(new MouseButton(MouseButtonKind.Left, true, 100, 100, 452), false);
+        }
+        else if (action == "cancel")
+        {
+            fixture.Detector.Cancel();
+        }
+        else
+        {
+            fixture.Detector.Dispose();
+        }
+
+        fixture.Detector.Handle(new MoveSizeStarted(1), false);
+        fixture.Detector.Handle(new MoveSizeEnded(1, 453), false);
+        fixture.Timer.FireEvenIfCanceled(0);
+        Assert.False(fixture.Detector.HasOpenedLauncher);
+        Assert.False(fixture.Detector.OwnsLauncherFor(1));
+        Assert.Single(fixture.Opened);
+    }
+
     /// <summary>静止した左押下は判定時間で一度だけ発火する。</summary>
     [Fact]
     public void StationaryCaptionHoldFiresOnceAt450Milliseconds()

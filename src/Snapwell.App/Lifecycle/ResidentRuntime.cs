@@ -104,7 +104,9 @@ internal sealed class ResidentRuntime : IAppRuntime
                     _launcher?.Close();
                 }
 
-                if (_launcher?.Handle(chord) != true &&
+                // 移動ループ中の押下と配置を競合させず、解放まではランチャーの抑止割り当てを保つ。
+                var suppressAccept = chord.Id == (int)LauncherInput.Accept && _longPress?.IsHoldingLauncher == true;
+                if (!suppressAccept && _launcher?.Handle(chord) != true &&
                     ((_enabled && _launcher?.IsOpen != true) || chord.Id == (int)WindowCommand.ToggleEnabled))
                 {
                     _hotkeys.Handle(chord);
