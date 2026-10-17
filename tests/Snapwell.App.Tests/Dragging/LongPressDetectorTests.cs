@@ -9,6 +9,78 @@ namespace Snapwell.App.Tests.Dragging;
 /// <summary>時間と入力を制御して長押しの境界と古い候補の無効化を検証する。</summary>
 public sealed class LongPressDetectorTests
 {
+    /// <summary>表示の所有を破棄しても、対応する終了通知までは移動ループの記録を保つ。</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ClosingLauncherKeepsConsumedMoveSizeLoopUntilMatchingEnd(bool release)
+    {
+        using var fixture = new Fixture();
+        fixture.Down();
+        fixture.Timer.Advance(450);
+        if (release)
+        {
+            fixture.Detector.Handle(new MouseButton(MouseButtonKind.Left, false, 100, 100, 451), false);
+        }
+
+        fixture.Detector.CancelLauncher();
+        Assert.False(fixture.Detector.HasOpenedLauncher);
+        Assert.False(fixture.Detector.IsHoldingLauncher);
+        Assert.True(fixture.Detector.OwnsMoveSizeFor(1));
+        Assert.False(fixture.Detector.OwnsMoveSizeFor(2));
+        fixture.Detector.Handle(new MoveSizeStarted(1), true);
+        fixture.Detector.Handle(new MoveSizeEnded(2, 452), true);
+        Assert.True(fixture.Detector.OwnsMoveSizeFor(1));
+        fixture.Detector.Handle(new MoveSizeEnded(1, 453), true);
+        Assert.False(fixture.Detector.OwnsMoveSizeFor(1));
+        fixture.Timer.FireEvenIfCanceled(0);
+        Assert.Single(fixture.Opened);
+    }
+
+    /// <summary>次の左押下と停止は、表示を閉じたあとに残る移動ループの記録も消す。</summary>
+    [Theory]
+    [InlineData("press")]
+    [InlineData("cancel")]
+    [InlineData("dispose")]
+    public void NewOperationClearsConsumedMoveSizeLoop(string action)
+    {
+        using var fixture = new Fixture();
+        fixture.Down();
+        fixture.Timer.Advance(450);
+        fixture.Detector.CancelLauncher();
+        Assert.True(fixture.Detector.OwnsMoveSizeFor(1));
+        if (action == "press")
+        {
+            fixture.Detector.Handle(new MouseButton(MouseButtonKind.Left, true, 100, 100, 451), false);
+        }
+        else if (action == "cancel")
+        {
+            fixture.Detector.Cancel();
+        }
+        else
+        {
+            fixture.Detector.Dispose();
+        }
+
+        Assert.False(fixture.Detector.OwnsMoveSizeFor(1));
+    }
+
+    /// <summary>長押し後の移動や右押下では、同じ左押下の移動ループを消費し続ける。</summary>
+    [Fact]
+    public void MovementAndRightPressKeepConsumedMoveSizeLoop()
+    {
+        using var fixture = new Fixture();
+        fixture.Down();
+        fixture.Timer.Advance(450);
+        Assert.True(fixture.Detector.Handle(new MouseMoved(107, 100, 451), false));
+        Assert.False(fixture.Detector.HasOpenedLauncher);
+        fixture.Detector.Handle(new MouseButton(MouseButtonKind.Right, true, 107, 100, 452), false);
+        fixture.Detector.Handle(new MouseButton(MouseButtonKind.Left, false, 107, 100, 453), false);
+        Assert.True(fixture.Detector.OwnsMoveSizeFor(1));
+        fixture.Detector.Handle(new MoveSizeEnded(1, 454), false);
+        Assert.False(fixture.Detector.OwnsMoveSizeFor(1));
+    }
+
     /// <summary>解放と対象の移動終了が両方そろうまで表示の所有を保つ。</summary>
     [Theory]
     [InlineData(false)]
@@ -25,14 +97,17 @@ public sealed class LongPressDetectorTests
         {
             fixture.Detector.Handle(new MoveSizeEnded(1, 451), false);
             Assert.True(fixture.Detector.OwnsLauncherFor(1));
+            Assert.False(fixture.Detector.OwnsMoveSizeFor(1));
         }
 
         fixture.Detector.Handle(new MouseButton(MouseButtonKind.Left, false, 100, 100, 452), false);
         Assert.False(fixture.Tracking.Last());
         Assert.Equal(!endBeforeRelease, fixture.Detector.OwnsLauncherFor(1));
+        Assert.Equal(!endBeforeRelease, fixture.Detector.OwnsMoveSizeFor(1));
         fixture.Detector.Handle(new MoveSizeStarted(1), false);
         fixture.Detector.Handle(new MoveSizeEnded(1, 453), false);
         Assert.False(fixture.Detector.HasOpenedLauncher);
+        Assert.False(fixture.Detector.OwnsMoveSizeFor(1));
         fixture.Timer.FireEvenIfCanceled(0);
         Assert.Single(fixture.Opened);
     }

@@ -88,9 +88,16 @@ internal sealed class ResidentRuntime : IAppRuntime
             if (_launcher?.IsOpen != true && _longPress?.HasOpenedLauncher == true)
             {
                 // 描画失敗やオーバーレイ側の操作で閉じた表示の所有権を、次の表示へ持ち越さない。
-                _longPress.Cancel();
+                _longPress.CancelLauncher();
             }
 
+            // 終了の処理で記録を消す前に判定し、その終了通知自体もドラッグへ渡さない。
+            var consumeMoveSize = value switch
+            {
+                MoveSizeStarted start => _longPress?.OwnsMoveSizeFor(start.Handle) == true,
+                MoveSizeEnded end => _longPress?.OwnsMoveSizeFor(end.Handle) == true,
+                _ => false
+            };
             if (_longPress?.Handle(value, _enabled && _launcher is { IsOpen: false }) == true)
             {
                 _launcher?.Close();
@@ -118,7 +125,8 @@ internal sealed class ResidentRuntime : IAppRuntime
                 {
                     _launcher?.HandleGlobalPointer(button);
                 }
-                else if (value is MoveSizeStarted start && _longPress?.OwnsLauncherFor(start.Handle) != true)
+                else if (value is MoveSizeStarted start && !consumeMoveSize &&
+                    _longPress?.OwnsLauncherFor(start.Handle) != true)
                 {
                     // 別のドラッグへ操作を返し、ランチャーとプレビューを同時に表示しない。
                     _launcher?.Close();
@@ -129,7 +137,10 @@ internal sealed class ResidentRuntime : IAppRuntime
                 }
 
                 _drag.Enabled = _enabled && _launcher?.IsOpen != true;
-                _drag.Handle(value);
+                if (!consumeMoveSize)
+                {
+                    _drag.Handle(value);
+                }
             }
 
             _drag.Enabled = _enabled && _launcher?.IsOpen != true;
@@ -137,14 +148,14 @@ internal sealed class ResidentRuntime : IAppRuntime
             {
                 if (_longPress?.HasOpenedLauncher != true)
                 {
-                    _longPress?.Cancel();
+                    _longPress?.CancelLauncher();
                 }
 
                 _preview?.Hide();
             }
             else if (_longPress?.HasOpenedLauncher == true)
             {
-                _longPress.Cancel();
+                _longPress.CancelLauncher();
             }
         }
     }
