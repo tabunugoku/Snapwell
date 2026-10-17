@@ -7,8 +7,29 @@ namespace Snapwell.Settings.Pages;
 /// <summary>ホットキー一覧の表示値。</summary>
 public sealed record HotkeyRow(string Name, string Chord, Visibility ConflictVisibility)
 {
+    private string[] Parts => Chord.Split('+');
+
+    public string Key1 => GetPart(0);
+    public string Key2 => GetPart(1);
+    public string Key3 => GetPart(2);
+    public string Key4 => GetPart(3);
+    public string Key5 => GetPart(4);
+
+    public Visibility Key2Visibility => HasPart(1);
+    public Visibility Key3Visibility => HasPart(2);
+    public Visibility Key4Visibility => HasPart(3);
+    public Visibility Key5Visibility => HasPart(4);
+
     /// <summary>読み上げ用に操作名とキーを返す。</summary>
     public override string ToString() => $"{Name}: {Chord}";
+
+    private string GetPart(int index)
+    {
+        var parts = Parts;
+        return index < parts.Length ? parts[index] : "";
+    }
+
+    private Visibility HasPart(int index) => index < Parts.Length ? Visibility.Visible : Visibility.Collapsed;
 }
 
 /// <summary>割り当てと競合を表示し、既定の割り当てへ戻す。</summary>
