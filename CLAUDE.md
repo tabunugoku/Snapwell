@@ -55,9 +55,9 @@ Codex と Claude Code のどちらが書いても、同じ見た目にそろえ�
 Codex もこのファイルを読む（`run-codex-exec.sh` が `project_doc_fallback_filenames` で渡す）。
 
 - **役割**: Claude Code（Opus 5.5）が統括する。設計、モックアップ、Codex へのプロンプト、レビュー、品質の確認、コミット、リリースを受け持つ。Codex（`gpt-6.1-sol`）は実装を受け持ち、渡されたプロンプトの範囲だけを変える
-- **人の手を介さない**: Codex への指示は Codex CLI（`codex exec`）で渡し、承認を求めない設定（`approval_policy="never"`、サンドボックスは `workspace-write`）で最後まで動かす。ユーザーへの確認が要るのは、main へのマージ、リリース、「守ること」の例外だけ
+- **人の手を介さない**: Codex への指示は Codex CLI（`codex exec`）で渡し、承認を求めない設定（`approval_policy="never"`、サンドボックスは `workspace-write`）で最後まで動かす。ユーザーへの確認が要るのは、main へのマージ、リリース、「守ること」の例外、Codex が使えないときの進め方だけ
 - **料金**: Claude と ChatGPT のサブスクの範囲で動かす。`ANTHROPIC_API_KEY`・`OPENAI_API_KEY` は使わない。Codex は ChatGPT のログイン（`codex login`）で動かす
-- **Codex が使えないとき**: ChatGPT の利用制限などで Codex が動かないときは、Opus が同じプロンプトの範囲で実装してよい。そのときはコミットのメッセージに書かず、PR の説明に「Codex の制限のため Opus が実装」と書く
+- **Codex が使えないとき**: ChatGPT の利用制限などで Codex が動かないときは、自動で Opus の実装に切り替えない。ユーザーに、いったん開発を止めて制限のリセットを待つか、Opus で実装を続けるかを確認する（制限のリセットを待つほうがよい場合があるため）。確認するときは、止まった作業、制限が解ける時刻（Codex の出力にあれば）、残りの項目を示す。Opus で続けると決まったときは、同じプロンプトの範囲で実装し、コミットのメッセージには書かず、PR の説明に「Codex の制限のため Opus が実装」と書く
 - **流れ**:
   1. 要件の確認（`docs/DESIGN.md`、必要ならモックアップ）
   2. `git worktree add ../Snapwell-wt/<名前> -b codex/<名前> origin/main` で作業のフォルダを作り、そこで `dotnet restore` をしておく（`Directory.Build.props` の `RuntimeIdentifiers` で x64 と ARM64 の両方を復元する。`-r` を付けると片方だけになるので付けない。Codex のサンドボックスはネットワークが止められ、NuGet から取れないため）
