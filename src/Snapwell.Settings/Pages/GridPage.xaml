@@ -4,6 +4,64 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <Page.Resources>
+        <Style x:Key="DemoSwitchStyle" TargetType="ToggleSwitch">
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="Width" Value="40" />
+            <Setter Property="Height" Value="20" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleSwitch">
+                        <Grid Width="40" Height="20" Background="Transparent">
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroup x:Name="ToggleStates">
+                                    <VisualState x:Name="Off" />
+                                    <VisualState x:Name="On">
+                                        <VisualState.Setters>
+                                            <Setter
+                                                Target="SwitchTrack.Background"
+                                                Value="{ThemeResource SnapwellInkBrush}" />
+                                            <Setter
+                                                Target="SwitchTrack.BorderBrush"
+                                                Value="{ThemeResource SnapwellInkBrush}" />
+                                            <Setter
+                                                Target="SwitchKnob.Fill"
+                                                Value="{ThemeResource SnapwellInkTextBrush}" />
+                                            <Setter Target="SwitchKnob.Margin" Value="23,0,0,0" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                </VisualStateGroup>
+                            </VisualStateManager.VisualStateGroups>
+                            <Border
+                                x:Name="SwitchTrack"
+                                CornerRadius="9999"
+                                BorderThickness="1"
+                                BorderBrush="{ThemeResource SnapwellMutedBrush}" />
+                            <Ellipse
+                                x:Name="SwitchKnob"
+                                Width="12"
+                                Height="12"
+                                Margin="3,0,0,0"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Center"
+                                Fill="{ThemeResource SnapwellMutedBrush}" />
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="DemoSelectStyle" TargetType="ComboBox">
+            <Setter Property="FontFamily" Value="{StaticResource SnapwellUiFontFamily}" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Padding" Value="8,6" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Background" Value="{ThemeResource SnapwellSurfaceBrush}" />
+            <Setter Property="Foreground" Value="{ThemeResource SnapwellTextBrush}" />
+            <Setter Property="BorderBrush" Value="{ThemeResource SnapwellBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
         <Style x:Key="ChipButtonStyle" TargetType="Button" BasedOn="{StaticResource SnapwellButtonStyle}">
             <Setter Property="Padding" Value="12,5" />
             <Setter Property="FontSize" Value="13" />
@@ -40,6 +98,31 @@
             <TextBlock Text="モニターごとに分割案を決めます。1 区画が基本単位で、ウィンドウのサイズはその整数倍になります。"
                        Style="{StaticResource SnapwellLeadTextStyle}" />
 
+            <!-- デモ状態 (未実装) -->
+            <Border Style="{StaticResource SnapwellRowsBorderStyle}">
+                <StackPanel>
+                    <Grid Style="{StaticResource SnapwellRowGridStyle}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="モニター" Style="{StaticResource SnapwellRowTitleStyle}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <ComboBox
+                                Width="260"
+                                Style="{StaticResource DemoSelectStyle}"
+                                SelectedIndex="0"
+                                AutomationProperties.Name="1 · 2560 × 1440 · 150%（メイン）">
+                                <ComboBoxItem Content="1 · 2560 × 1440 · 150%（メイン）" />
+                                <ComboBoxItem Content="2 · 1920 × 1080 · 100%" />
+                            </ComboBox>
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Border>
+            <!-- デモ状態 (未実装) ここまで -->
             <ComboBox x:Name="PlanBox" Header="分割案" HorizontalAlignment="Stretch" Visibility="Collapsed"
                       SelectionChanged="Plan_SelectionChanged">
                 <ComboBoxItem Content="8 × 8" />
@@ -48,7 +131,7 @@
                 <ComboBoxItem Content="カスタム" />
             </ComboBox>
 
-            <TextBlock Text="分割案" Style="{StaticResource SnapwellGroupTitleStyle}" Margin="0,0,0,8" />
+            <TextBlock Text="分割案" Style="{StaticResource SnapwellGroupTitleStyle}" />
             <StackPanel Orientation="Horizontal" Spacing="6">
                 <Button x:Name="Chip8x8" Content="8 × 8" Tag="8,8" Click="Chip_Click"
                         Style="{StaticResource ChipButtonStyle}" />
@@ -117,6 +200,74 @@
                 </StackPanel>
             </Grid>
 
+            <!-- デモ状態 (未実装) -->
+            <TextBlock Text="区画単位のサイズ変更" Style="{StaticResource SnapwellGroupTitleStyle}" />
+            <Border Style="{StaticResource SnapwellRowsBorderStyle}">
+                <StackPanel>
+                    <Grid Style="{StaticResource SnapwellRowGridStyle}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="1 回の拡大・縮小の幅" Style="{StaticResource SnapwellRowTitleStyle}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <ComboBox
+                                Width="160"
+                                Style="{StaticResource DemoSelectStyle}"
+                                SelectedIndex="0"
+                                AutomationProperties.Name="1 区画">
+                                <ComboBoxItem Content="1 区画" />
+                                <ComboBoxItem Content="2 区画" />
+                            </ComboBox>
+                        </StackPanel>
+                    </Grid>
+                    <Border Style="{StaticResource SnapwellRowDividerStyle}" />
+                    <Grid Style="{StaticResource SnapwellRowGridStyle}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="固定する位置" Style="{StaticResource SnapwellRowTitleStyle}" />
+                            <TextBlock Text="拡大・縮小するときに動かさない辺" Style="{StaticResource SnapwellRowDescriptionStyle}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <ComboBox
+                                Width="160"
+                                Style="{StaticResource DemoSelectStyle}"
+                                SelectedIndex="0"
+                                AutomationProperties.Name="左上">
+                                <ComboBoxItem Content="左上" />
+                                <ComboBoxItem Content="中心" />
+                                <ComboBoxItem Content="近い辺" />
+                            </ComboBox>
+                        </StackPanel>
+                    </Grid>
+                    <Border Style="{StaticResource SnapwellRowDividerStyle}" />
+                    <Grid Style="{StaticResource SnapwellRowGridStyle}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="手動でリサイズしたら区画に揃える" Style="{StaticResource SnapwellRowTitleStyle}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <ToggleSwitch
+                                Style="{StaticResource DemoSwitchStyle}"
+                                IsOn="False"
+                                AutomationProperties.Name="区画に揃える" />
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Border>
+            <TextBlock
+                Text="見た目の枠（DWMWA_EXTENDED_FRAME_BOUNDS）で計算するため、間隔 0 でも隙間はできません。"
+                Style="{StaticResource SnapwellHintTextStyle}"
+                Margin="0,10,0,0" />
+            <!-- デモ状態 (未実装) ここまで -->
             <TextBlock Text="数値での指定" Style="{StaticResource SnapwellGroupTitleStyle}" />
             <Border Style="{StaticResource SnapwellRowsBorderStyle}">
                 <StackPanel>
@@ -183,8 +334,6 @@
                     </Grid>
                 </StackPanel>
             </Border>
-            <TextBlock Text="見た目の枠（DWMWA_EXTENDED_FRAME_BOUNDS）で計算するため、間隔 0 でも隙間はできません。間隔と余白はモニターの DPI に合わせて換算されます。"
-                       Style="{StaticResource SnapwellHintTextStyle}" Margin="0,10,0,0" />
         </StackPanel>
     </ScrollViewer>
 </Page>
