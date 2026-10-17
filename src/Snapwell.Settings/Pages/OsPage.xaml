@@ -5,53 +5,7 @@
     x:Class="Snapwell.Settings.Pages.OsPage">
     <Page.Resources>
         <Style x:Key="DemoSwitchStyle" TargetType="ToggleSwitch"
-               BasedOn="{StaticResource SnapwellDemoSwitchStyle}">
-            <Setter Property="MinWidth" Value="0" />
-            <Setter Property="Width" Value="40" />
-            <Setter Property="Height" Value="20" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ToggleSwitch">
-                        <Grid Width="40" Height="20" Background="Transparent">
-                            <VisualStateManager.VisualStateGroups>
-                                <VisualStateGroup x:Name="ToggleStates">
-                                    <VisualState x:Name="Off" />
-                                    <VisualState x:Name="On">
-                                        <VisualState.Setters>
-                                            <Setter
-                                                Target="SwitchTrack.Background"
-                                                Value="{ThemeResource SnapwellInkBrush}" />
-                                            <Setter
-                                                Target="SwitchTrack.BorderBrush"
-                                                Value="{ThemeResource SnapwellInkBrush}" />
-                                            <Setter Target="SwitchTrack.BorderThickness" Value="0" />
-                                            <Setter
-                                                Target="SwitchKnob.Fill"
-                                                Value="{ThemeResource SnapwellInkTextBrush}" />
-                                            <Setter Target="SwitchKnob.Margin" Value="23,0,0,0" />
-                                        </VisualState.Setters>
-                                    </VisualState>
-                                </VisualStateGroup>
-                            </VisualStateManager.VisualStateGroups>
-                            <Border
-                                x:Name="SwitchTrack"
-                                CornerRadius="9999"
-                                BorderThickness="1"
-                                BorderBrush="{ThemeResource SnapwellMutedBrush}" />
-                            <Ellipse
-                                x:Name="SwitchKnob"
-                                Width="12"
-                                Height="12"
-                                Margin="3,0,0,0"
-                                HorizontalAlignment="Left"
-                                VerticalAlignment="Center"
-                                Fill="{ThemeResource SnapwellMutedBrush}" />
-                        </Grid>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
+               BasedOn="{StaticResource SnapwellDemoSwitchStyle}" />
         <Style x:Key="DemoKeyBorderStyle" TargetType="Border">
             <Setter Property="Background" Value="{ThemeResource SnapwellSurface2Brush}" />
             <Setter Property="BorderBrush" Value="{ThemeResource SnapwellBorderStrongBrush}" />
