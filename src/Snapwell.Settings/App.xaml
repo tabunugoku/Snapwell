@@ -638,10 +638,25 @@
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="ToggleSwitch">
-                            <Grid Width="40" Height="20" Background="Transparent">
+                            <Grid x:Name="LayoutRoot" Width="40" Height="20" Background="Transparent">
                                 <VisualStateManager.VisualStateGroups>
+                                    <VisualStateGroup x:Name="CommonStates">
+                                        <VisualState x:Name="Normal" />
+                                        <VisualState x:Name="PointerOver" />
+                                        <VisualState x:Name="Pressed" />
+                                        <VisualState x:Name="Disabled" />
+                                    </VisualStateGroup>
                                     <VisualStateGroup x:Name="ToggleStates">
-                                        <VisualState x:Name="Off" />
+                                        <VisualState x:Name="Off">
+                                            <Storyboard>
+                                                <DoubleAnimation
+                                                    x:Name="SwitchKnobOff"
+                                                    Storyboard.TargetName="KnobTranslateTransform"
+                                                    Storyboard.TargetProperty="X"
+                                                    To="0"
+                                                    Duration="0" />
+                                            </Storyboard>
+                                        </VisualState>
                                         <VisualState x:Name="On">
                                             <VisualState.Setters>
                                                 <Setter
@@ -654,8 +669,15 @@
                                                 <Setter
                                                     Target="ThumbEllipse.Fill"
                                                     Value="{ThemeResource SnapwellInkTextBrush}" />
-                                                <Setter Target="ThumbEllipse.Margin" Value="23,3,0,0" />
                                             </VisualState.Setters>
+                                            <Storyboard>
+                                                <DoubleAnimation
+                                                    x:Name="SwitchKnobOn"
+                                                    Storyboard.TargetName="KnobTranslateTransform"
+                                                    Storyboard.TargetProperty="X"
+                                                    To="20"
+                                                    Duration="0" />
+                                            </Storyboard>
                                         </VisualState>
                                         <VisualState x:Name="Dragging" />
                                     </VisualStateGroup>
@@ -668,14 +690,41 @@
                                     Background="Transparent"
                                     BorderThickness="1"
                                     BorderBrush="{ThemeResource SnapwellMutedBrush}" />
-                                <Ellipse
-                                    x:Name="ThumbEllipse"
-                                    Width="12"
-                                    Height="12"
-                                    Margin="3,3,0,0"
-                                    HorizontalAlignment="Left"
-                                    VerticalAlignment="Top"
-                                    Fill="{ThemeResource SnapwellMutedBrush}" />
+                                <Grid x:Name="SwitchKnobBounds" Width="40" Height="20">
+                                    <Grid.RenderTransform>
+                                        <TranslateTransform x:Name="BoundsTranslateTransform" />
+                                    </Grid.RenderTransform>
+                                    <!-- 可動幅は 40 - 12 - 3 - 5 = 20。状態変更は補間せず即座に反映する。 -->
+                                    <Grid
+                                        x:Name="SwitchKnob"
+                                        Width="12"
+                                        Height="12"
+                                        Margin="3,3,5,0"
+                                        HorizontalAlignment="Left"
+                                        VerticalAlignment="Top">
+                                        <Grid.RenderTransform>
+                                            <TranslateTransform x:Name="KnobTranslateTransform" />
+                                        </Grid.RenderTransform>
+                                        <Ellipse
+                                            x:Name="ThumbEllipse"
+                                            Width="12"
+                                            Height="12"
+                                            Fill="{ThemeResource SnapwellMutedBrush}" />
+                                    </Grid>
+                                </Grid>
+                                <!-- 入力面は描画と分離し、トラック全体でタップとドラッグを受ける。 -->
+                                <Thumb
+                                    x:Name="SwitchThumb"
+                                    Width="40"
+                                    Height="20"
+                                    IsTabStop="False"
+                                    AutomationProperties.AccessibilityView="Raw">
+                                    <Thumb.Template>
+                                        <ControlTemplate TargetType="Thumb">
+                                            <Grid Background="Transparent" />
+                                        </ControlTemplate>
+                                    </Thumb.Template>
+                                </Thumb>
                             </Grid>
                         </ControlTemplate>
                     </Setter.Value>
