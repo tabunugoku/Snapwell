@@ -79,6 +79,10 @@ internal sealed class ResidentRuntime(DragSnapController drag, HotkeyCommandExec
                     // 別のドラッグへ操作を返し、ランチャーとプレビューを同時に表示しない。
                     launcher?.Close();
                 }
+                else if (value is ForegroundChanged foreground)
+                {
+                    launcher?.HandleForegroundChanged(foreground);
+                }
 
                 drag.Enabled = _enabled && launcher?.IsOpen != true;
                 drag.Handle(value);

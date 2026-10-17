@@ -16,6 +16,35 @@ namespace Snapwell.App.Tests.Lifecycle;
 
 public sealed class ResidentRuntimeTests
 {
+    /// <summary>対象が生きていても別の前面へ移ったら閉じ、遅れた Enter では動かさない。</summary>
+    [Theory]
+    [InlineData(2)]
+    [InlineData(0)]
+    public void ForegroundChangeClosesLauncherAndReleasesBindings(int handle)
+    {
+        using var fixture = new OverlayFixture();
+        fixture.Runtime.Handle(new KeyChord((int)WindowCommand.OpenLauncher));
+        fixture.Runtime.Handle(new ForegroundChanged(handle));
+        Assert.False(fixture.Launcher.IsOpen);
+        Assert.Equal(fixture.Normal, fixture.Applied);
+        Assert.True(fixture.Drag.Enabled);
+        fixture.Runtime.Handle(new KeyChord((int)LauncherInput.Accept));
+        Assert.Empty(fixture.Motion.Requests);
+    }
+
+    /// <summary>遅れた対象自身の前面化と自プロセスの前面化では選択を保つ。</summary>
+    [Theory]
+    [InlineData(1)]
+    [InlineData(99)]
+    public void TargetOrOwnForegroundKeepsLauncherOpen(int handle)
+    {
+        using var fixture = new OverlayFixture();
+        fixture.Runtime.Handle(new KeyChord((int)WindowCommand.OpenLauncher));
+        fixture.Runtime.Handle(new ForegroundChanged(handle));
+        Assert.True(fixture.Launcher.IsOpen);
+        Assert.Contains(fixture.Applied, binding => binding.Id == (int)LauncherInput.Accept);
+    }
+
     /// <summary>通常のキーとランチャー用のキーを、それぞれの実行経路へ渡す。</summary>
     [Fact]
     public void RoutesNormalAndLauncherChordsAndPreventsSimultaneousPreview()
@@ -54,8 +83,10 @@ public sealed class ResidentRuntimeTests
         Assert.False(fixture.OverlayStates.Last());
         fixture.Runtime.Handle(new KeyChord((int)WindowCommand.OpenLauncher));
         fixture.Runtime.Handle(new KeyChord((int)LauncherInput.Accept));
+        fixture.Runtime.Handle(new ForegroundChanged(2));
         Assert.False(fixture.Launcher.IsOpen);
         Assert.Empty(fixture.Motion.Requests);
+        Assert.Equal((int)WindowCommand.ToggleEnabled, Assert.Single(fixture.Applied).Id);
         fixture.Runtime.SetEnabled(true);
         Assert.True(fixture.OverlayStates.Last());
         Assert.Equal(fixture.Normal, fixture.Applied);
@@ -194,12 +225,13 @@ public sealed class ResidentRuntimeTests
         internal OverlayFixture()
         {
             var monitors = new FakeMonitors();
+            var inspector = new ForegroundInspector(Inspector);
             var preview = new ZonePreview(PreviewPresenter, monitors);
-            Drag = new(Inspector, monitors, Motion, () => new(), _ => { }, 999, () => 0, preview);
+            Drag = new(inspector, monitors, Motion, () => new(), _ => { }, 999, () => 0, preview);
             LauncherController? launcher = null;
-            var hotkeys = new HotkeyCommandExecutor(Inspector, monitors, Motion, new NoPosition(), () => new(),
+            var hotkeys = new HotkeyCommandExecutor(inspector, monitors, Motion, new NoPosition(), () => new(),
                 () => true, () => Toggles++, 999, () => launcher?.Open());
-            Launcher = launcher = new(Inspector, monitors, () => new(), Presenter, hotkeys.Place,
+            Launcher = launcher = new(inspector, monitors, () => new(), Presenter, hotkeys.Place,
                 value => Applied = value, Normal, 999);
             Runtime = new(Drag, hotkeys, Motion, Normal, value => Applied = value, Launcher, preview,
                 OverlayStates.Add, [new CallbackDisposable(() =>
@@ -210,6 +242,24 @@ public sealed class ResidentRuntimeTests
         }
 
         public void Dispose() => Runtime.Dispose();
+    }
+
+    private sealed class ForegroundInspector(FakeInspector target) : IWindowInspector
+    {
+        public bool TryInspect(nint handle,
+            [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out WindowSnapshot? snapshot)
+        {
+            if (handle == 99)
+            {
+                snapshot = target.Window with { Handle = handle, ProcessId = 999 };
+                return true;
+            }
+
+            return target.TryInspect(handle, out snapshot);
+        }
+
+        public nint GetForegroundWindow() => target.GetForegroundWindow();
+        public nint GetRootWindowAt(int x, int y) => target.GetRootWindowAt(x, y);
     }
 
     private sealed class CallbackDisposable(Action action) : IDisposable

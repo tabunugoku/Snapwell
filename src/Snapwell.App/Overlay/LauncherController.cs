@@ -46,6 +46,7 @@ internal sealed class LauncherController : IDisposable
         _launcherBindings = HotkeyBindingsBuilder.Launcher(normalBindings);
         _ownProcessId = ownProcessId;
         presenter.Pointer += HandlePointer;
+        presenter.Faulted += Close;
     }
 
     internal bool IsOpen
@@ -167,6 +168,26 @@ internal sealed class LauncherController : IDisposable
         }
     }
 
+    internal void HandleForegroundChanged(ForegroundChanged foreground)
+    {
+        lock (_gate)
+        {
+            if (_disposed || _selection is null || foreground.Handle == _target)
+            {
+                return;
+            }
+
+            // NOACTIVATE の前提が崩れても自分の表示では閉じない（実機未確認）。
+            if (foreground.Handle != 0 && _inspector.TryInspect(foreground.Handle, out var window) &&
+                window.ProcessId == _ownProcessId)
+            {
+                return;
+            }
+
+            CloseCore();
+        }
+    }
+
     internal void SetEnabled(bool enabled)
     {
         lock (_gate)
@@ -206,6 +227,7 @@ internal sealed class LauncherController : IDisposable
             CloseCore();
             _disposed = true;
             _presenter.Pointer -= HandlePointer;
+            _presenter.Faulted -= Close;
         }
     }
 

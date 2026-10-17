@@ -20,6 +20,8 @@ internal sealed record OverlayPointer(OverlayPointerKind Kind, Vec2 Position);
 internal interface IOverlayPresenter : IDisposable
 {
     event Action<OverlayPointer>? Pointer;
+    // 専用スレッドを持たない出力先は終了の失敗通知を省略できる。
+    event Action? Faulted { add { } remove { } }
     void Request(PixelRect bounds, Func<OverlayFrame> paint);
     void Hide();
 }

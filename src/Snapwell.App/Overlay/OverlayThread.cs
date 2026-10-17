@@ -12,6 +12,7 @@ internal sealed class OverlayThread : IOverlayPresenter, IOverlaySurface
     private (PixelRect Bounds, Func<OverlayFrame>? Paint)? _pending;
     private IOverlayLoop? _loop;
     private bool _disposed;
+    private bool _faulted;
 
     internal OverlayThread(bool interactive)
         : this(() =>
@@ -31,6 +32,12 @@ internal sealed class OverlayThread : IOverlayPresenter, IOverlaySurface
     }
 
     public event Action<OverlayPointer>? Pointer;
+    public event Action? Faulted;
+
+    internal bool IsFaulted
+    {
+        get { lock (_gate) { return _faulted; } }
+    }
 
     public void Show(PixelRect bounds, OverlayFrame frame) => Request(bounds, () => frame);
 
@@ -76,6 +83,7 @@ internal sealed class OverlayThread : IOverlayPresenter, IOverlaySurface
     {
         IOverlaySurface? surface = null;
         IOverlayLoop? loop = null;
+        var faulted = false;
         try
         {
             (surface, loop) = _factory();
@@ -90,22 +98,41 @@ internal sealed class OverlayThread : IOverlayPresenter, IOverlaySurface
         catch (Exception)
         {
             // 描画の失敗で入力や OS 設定の復元を止めない。
+            faulted = true;
         }
         finally
         {
             lock (_gate)
             {
+                // 停止要求なしでループが戻った場合も、次の要求を受け取れない。
+                _faulted = faulted || !_disposed;
                 _disposed = true;
                 _pending = null;
                 _loop = null;
             }
 
-            if (loop is not null)
+            try
             {
-                loop.Pointer -= OnPointer;
+                if (loop is not null)
+                {
+                    loop.Pointer -= OnPointer;
+                }
+
+                surface?.Dispose();
+            }
+            catch (Exception)
+            {
+                lock (_gate)
+                {
+                    _faulted = true;
+                }
             }
 
-            surface?.Dispose();
+            // 片付けの失敗も含めて、状態のロックを持たずに終了を通知する。
+            if (IsFaulted)
+            {
+                Faulted?.Invoke();
+            }
         }
     }
 
