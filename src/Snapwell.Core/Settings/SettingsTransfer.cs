@@ -8,7 +8,7 @@ namespace Snapwell.Core.Settings;
 /// <summary>選んで取り込める設定の種類。</summary>
 public enum SettingsField
 {
-    Grid, Gap, Edge, Feel, SnapMode, ReduceMotion, ShowZonePreview, Hotkey,
+    Grid, Gap, Edge, Feel, SnapMode, ReduceMotion, ShowZonePreview, LongPressMilliseconds, LongPressDistance, Hotkey,
 }
 
 /// <summary>ホットキーはコマンドごと、それ以外は項目ごとに識別する。</summary>
@@ -153,6 +153,11 @@ public static class SettingsTransfer
                 SettingsField.SnapMode => value with { SnapMode = imported.SnapMode },
                 SettingsField.ReduceMotion => value with { ReduceMotion = imported.ReduceMotion },
                 SettingsField.ShowZonePreview => value with { ShowZonePreview = imported.ShowZonePreview },
+                SettingsField.LongPressMilliseconds => value with
+                {
+                    LongPressMilliseconds = imported.LongPressMilliseconds,
+                },
+                SettingsField.LongPressDistance => value with { LongPressDistance = imported.LongPressDistance },
                 _ => value,
             };
             if (key.Field == SettingsField.Hotkey && key.Command is { } command)
@@ -189,6 +194,10 @@ public static class SettingsTransfer
             imported.ReduceMotion ? "オン" : "オフ");
         Add(SettingsField.ShowZonePreview, "区画のプレビュー", current.ShowZonePreview ? "オン" : "オフ",
             imported.ShowZonePreview ? "オン" : "オフ");
+        Add(SettingsField.LongPressMilliseconds, "長押しの時間", Milliseconds(current.LongPressMilliseconds),
+            Milliseconds(imported.LongPressMilliseconds));
+        Add(SettingsField.LongPressDistance, "長押し中に動いてよい距離", Pixels(current.LongPressDistance),
+            Pixels(imported.LongPressDistance));
         foreach (var command in current.Hotkeys.Keys.Union(imported.Hotkeys.Keys).OrderBy(HotkeyCatalog.GetDisplayOrder))
         {
             current.Hotkeys.TryGetValue(command, out var before);
@@ -211,6 +220,8 @@ public static class SettingsTransfer
             }
         }
     }
+
+    private static string Milliseconds(int value) => value.ToString(CultureInfo.InvariantCulture) + " ms";
 
     private static string Pixels(double value) => value.ToString(CultureInfo.InvariantCulture) + " px";
 
