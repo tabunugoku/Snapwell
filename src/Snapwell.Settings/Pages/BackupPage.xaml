@@ -4,7 +4,8 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <Page.Resources>
-        <Style x:Key="DemoSwitchStyle" TargetType="ToggleSwitch">
+        <Style x:Key="DemoSwitchStyle" TargetType="ToggleSwitch"
+               BasedOn="{StaticResource SnapwellDemoSwitchStyle}">
             <Setter Property="MinWidth" Value="0" />
             <Setter Property="Width" Value="40" />
             <Setter Property="Height" Value="20" />
@@ -67,17 +68,26 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="同期フォルダ" Style="{StaticResource SnapwellRowTitleStyle}" />
+                            <Grid ColumnSpacing="6" HorizontalAlignment="Left">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="同期フォルダ" Style="{StaticResource SnapwellRowTitleStyle}" />
+                                <Border Grid.Column="1" Style="{StaticResource SnapwellPendingTagStyle}">
+                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellPendingTagTextStyle}" />
+                                </Border>
+                            </Grid>
                             <TextBlock
-                                Text="C:\Users\&lt;ユーザー&gt;\OneDrive\Snapwell"
+                                Text="—"
                                 Style="{StaticResource SnapwellRowDescriptionStyle}"
                                 FontFamily="{StaticResource SnapwellMonoFontFamily}" />
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <Button Content="変更" Style="{StaticResource SnapwellButtonStyle}" />
-                            <ToggleSwitch
+                            <Button IsEnabled="False" Content="変更" Style="{StaticResource SnapwellDemoButtonStyle}" />
+                            <ToggleSwitch IsEnabled="False"
                                 Style="{StaticResource DemoSwitchStyle}"
-                                IsOn="True"
+                                IsOn="False"
                                 AutomationProperties.Name="同期" />
                         </StackPanel>
                     </Grid>
@@ -88,13 +98,22 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="最後に同期した時刻" Style="{StaticResource SnapwellRowTitleStyle}" />
+                            <Grid ColumnSpacing="6" HorizontalAlignment="Left">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="最後に同期した時刻" Style="{StaticResource SnapwellRowTitleStyle}" />
+                                <Border Grid.Column="1" Style="{StaticResource SnapwellPendingTagStyle}">
+                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellPendingTagTextStyle}" />
+                                </Border>
+                            </Grid>
                             <TextBlock
-                                Text="2026/10/17 10:12 · 変更なし"
+                                Text="—"
                                 Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <Button Content="今すぐ同期" Style="{StaticResource SnapwellButtonStyle}" />
+                            <Button IsEnabled="False" Content="今すぐ同期" Style="{StaticResource SnapwellDemoButtonStyle}" />
                         </StackPanel>
                     </Grid>
                 </StackPanel>

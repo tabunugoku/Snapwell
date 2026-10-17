@@ -4,7 +4,8 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <Page.Resources>
-        <Style x:Key="DemoSwitchStyle" TargetType="ToggleSwitch">
+        <Style x:Key="DemoSwitchStyle" TargetType="ToggleSwitch"
+               BasedOn="{StaticResource SnapwellDemoSwitchStyle}">
             <Setter Property="MinWidth" Value="0" />
             <Setter Property="Width" Value="40" />
             <Setter Property="Height" Value="20" />
@@ -20,7 +21,7 @@
                                     <VisualState x:Name="Pressed" />
                                     <VisualState x:Name="Disabled">
                                         <VisualState.Setters>
-                                            <Setter Target="SwitchVisualRoot.Opacity" Value="0.55" />
+                                            <Setter Target="SwitchVisualRoot.Opacity" Value="1" />
                                         </VisualState.Setters>
                                     </VisualState>
                                 </VisualStateGroup>
@@ -60,7 +61,8 @@
                 </Setter.Value>
             </Setter>
         </Style>
-        <Style x:Key="DemoSelectStyle" TargetType="ComboBox">
+        <Style x:Key="DemoSelectStyle" TargetType="ComboBox"
+               BasedOn="{StaticResource SnapwellDemoSelectStyle}">
             <Setter Property="FontFamily" Value="{StaticResource SnapwellUiFontFamily}" />
             <Setter Property="FontSize" Value="14" />
             <Setter Property="MinHeight" Value="0" />
@@ -87,11 +89,20 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="Snapwell を有効にする" Style="{StaticResource SnapwellRowTitleStyle}" />
-                            <TextBlock Text="オフにすると、標準のスナップ機能を元の状態に戻します" Style="{StaticResource SnapwellRowDescriptionStyle}" />
+                            <Grid ColumnSpacing="6" HorizontalAlignment="Left">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Snapwell を有効にする" Style="{StaticResource SnapwellRowTitleStyle}" />
+                                <Border Grid.Column="1" Style="{StaticResource SnapwellPendingTagStyle}">
+                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellPendingTagTextStyle}" />
+                                </Border>
+                            </Grid>
+                            <TextBlock Text="オフにすると、標準のスナップ機能を元の状態に戻します。トレイメニューから操作できます" Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <ToggleSwitch Style="{StaticResource DemoSwitchStyle}" IsOn="True" AutomationProperties.Name="有効" />
+                            <ToggleSwitch IsEnabled="False" Style="{StaticResource DemoSwitchStyle}" IsOn="True" AutomationProperties.Name="有効" />
                         </StackPanel>
                     </Grid>
                     <Border Style="{StaticResource SnapwellRowDividerStyle}" />
@@ -121,13 +132,22 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="管理者として起動する" Style="{StaticResource SnapwellRowTitleStyle}" />
+                            <Grid ColumnSpacing="6" HorizontalAlignment="Left">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="管理者として起動する" Style="{StaticResource SnapwellRowTitleStyle}" />
+                                <Border Grid.Column="1" Style="{StaticResource SnapwellPendingTagStyle}">
+                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellPendingTagTextStyle}" />
+                                </Border>
+                            </Grid>
                             <TextBlock
                                 Text="管理者権限で動くアプリのウィンドウも動かせます。タスク スケジューラに登録します"
                                 Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <ToggleSwitch
+                            <ToggleSwitch IsEnabled="False"
                                 Style="{StaticResource DemoSwitchStyle}"
                                 IsOn="False"
                                 AutomationProperties.Name="管理者として起動" />
@@ -140,10 +160,19 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="言語" Style="{StaticResource SnapwellRowTitleStyle}" />
+                            <Grid ColumnSpacing="6" HorizontalAlignment="Left">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="言語" Style="{StaticResource SnapwellRowTitleStyle}" />
+                                <Border Grid.Column="1" Style="{StaticResource SnapwellPendingTagStyle}">
+                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellPendingTagTextStyle}" />
+                                </Border>
+                            </Grid>
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <ComboBox
+                            <ComboBox IsEnabled="False"
                                 Width="160"
                                 Style="{StaticResource DemoSelectStyle}"
                                 SelectedIndex="0"
@@ -167,13 +196,22 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="サイズ固定のウィンドウも動かす" Style="{StaticResource SnapwellRowTitleStyle}" />
+                            <Grid ColumnSpacing="6" HorizontalAlignment="Left">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="サイズ固定のウィンドウも動かす" Style="{StaticResource SnapwellRowTitleStyle}" />
+                                <Border Grid.Column="1" Style="{StaticResource SnapwellPendingTagStyle}">
+                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellPendingTagTextStyle}" />
+                                </Border>
+                            </Grid>
                             <TextBlock
                                 Text="サイズは変えず、区画の中で位置だけを合わせます"
                                 Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <ToggleSwitch
+                            <ToggleSwitch IsEnabled="False"
                                 Style="{StaticResource DemoSwitchStyle}"
                                 IsOn="True"
                                 AutomationProperties.Name="サイズ固定" />
@@ -186,13 +224,22 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="ポップアップとフライアウトも動かす" Style="{StaticResource SnapwellRowTitleStyle}" />
+                            <Grid ColumnSpacing="6" HorizontalAlignment="Left">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="ポップアップとフライアウトも動かす" Style="{StaticResource SnapwellRowTitleStyle}" />
+                                <Border Grid.Column="1" Style="{StaticResource SnapwellPendingTagStyle}">
+                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellPendingTagTextStyle}" />
+                                </Border>
+                            </Grid>
                             <TextBlock
                                 Text="タスクバーから開く小さなウィンドウなど。フォーカスを奪わずに移動します"
                                 Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <ToggleSwitch
+                            <ToggleSwitch IsEnabled="False"
                                 Style="{StaticResource DemoSwitchStyle}"
                                 IsOn="True"
                                 AutomationProperties.Name="ポップアップ" />

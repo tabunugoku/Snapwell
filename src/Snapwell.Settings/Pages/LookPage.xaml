@@ -4,7 +4,8 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     x:Class="Snapwell.Settings.Pages.LookPage">
     <Page.Resources>
-        <Style x:Key="DemoSwitchStyle" TargetType="ToggleSwitch">
+        <Style x:Key="DemoSwitchStyle" TargetType="ToggleSwitch"
+               BasedOn="{StaticResource SnapwellDemoSwitchStyle}">
             <Setter Property="MinWidth" Value="0" />
             <Setter Property="Width" Value="40" />
             <Setter Property="Height" Value="20" />
@@ -50,7 +51,8 @@
                 </Setter.Value>
             </Setter>
         </Style>
-        <Style x:Key="DemoSelectStyle" TargetType="ComboBox">
+        <Style x:Key="DemoSelectStyle" TargetType="ComboBox"
+               BasedOn="{StaticResource SnapwellDemoSelectStyle}">
             <Setter Property="FontFamily" Value="{StaticResource SnapwellUiFontFamily}" />
             <Setter Property="FontSize" Value="14" />
             <Setter Property="MinHeight" Value="0" />
@@ -76,13 +78,22 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="ウィンドウの角" Style="{StaticResource SnapwellRowTitleStyle}" />
+                            <Grid ColumnSpacing="6" HorizontalAlignment="Left">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="ウィンドウの角" Style="{StaticResource SnapwellRowTitleStyle}" />
+                                <Border Grid.Column="1" Style="{StaticResource SnapwellPendingTagStyle}">
+                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellPendingTagTextStyle}" />
+                                </Border>
+                            </Grid>
                             <TextBlock
                                 Text="DWM の角の設定を使います。半径は Windows が決めます（約 8 px）"
                                 Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <ComboBox
+                            <ComboBox IsEnabled="False"
                                 Width="200"
                                 Style="{StaticResource DemoSelectStyle}"
                                 SelectedIndex="0"
@@ -101,7 +112,16 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="大きな角丸（macOS 風）" Style="{StaticResource SnapwellRowTitleStyle}" />
+                            <Grid ColumnSpacing="6" HorizontalAlignment="Left">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="大きな角丸（macOS 風）" Style="{StaticResource SnapwellRowTitleStyle}" />
+                                <Border Grid.Column="1" Style="{StaticResource SnapwellPendingTagStyle}">
+                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellPendingTagTextStyle}" />
+                                </Border>
+                            </Grid>
                             <TextBlock Text="半径を自由に決める方法を検証しています" Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
@@ -170,10 +190,19 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="区画の線を表示する" Style="{StaticResource SnapwellRowTitleStyle}" />
+                            <Grid ColumnSpacing="6" HorizontalAlignment="Left">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="区画の線を表示する" Style="{StaticResource SnapwellRowTitleStyle}" />
+                                <Border Grid.Column="1" Style="{StaticResource SnapwellPendingTagStyle}">
+                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellPendingTagTextStyle}" />
+                                </Border>
+                            </Grid>
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <ToggleSwitch
+                            <ToggleSwitch IsEnabled="False"
                                 Style="{StaticResource DemoSwitchStyle}"
                                 IsOn="True"
                                 AutomationProperties.Name="区画の線" />
@@ -186,11 +215,20 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="投げたときに予測の線を表示する" Style="{StaticResource SnapwellRowTitleStyle}" />
+                            <Grid ColumnSpacing="6" HorizontalAlignment="Left">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="投げたときに予測の線を表示する" Style="{StaticResource SnapwellRowTitleStyle}" />
+                                <Border Grid.Column="1" Style="{StaticResource SnapwellPendingTagStyle}">
+                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellPendingTagTextStyle}" />
+                                </Border>
+                            </Grid>
                             <TextBlock Text="慣れたら消せます" Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <ToggleSwitch
+                            <ToggleSwitch IsEnabled="False"
                                 Style="{StaticResource DemoSwitchStyle}"
                                 IsOn="True"
                                 AutomationProperties.Name="予測の線" />
