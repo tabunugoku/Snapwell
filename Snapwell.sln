@@ -9,6 +9,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Snapwell.Core", "src\Snapwe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Snapwell.Core.Tests", "tests\Snapwell.Core.Tests\Snapwell.Core.Tests.csproj", "{764CEBDB-9D70-4110-8D02-0CA481C1E77F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Snapwell.Platform", "src\Snapwell.Platform\Snapwell.Platform.csproj", "{8D8A1FA8-ADFD-4AA2-8BBF-C0839E235C99}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Snapwell.Platform.Tests", "tests\Snapwell.Platform.Tests\Snapwell.Platform.Tests.csproj", "{9BFB9259-E8DC-4446-A01B-018BAF3394E1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -23,6 +27,14 @@ Global
 		{764CEBDB-9D70-4110-8D02-0CA481C1E77F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{764CEBDB-9D70-4110-8D02-0CA481C1E77F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{764CEBDB-9D70-4110-8D02-0CA481C1E77F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8D8A1FA8-ADFD-4AA2-8BBF-C0839E235C99}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8D8A1FA8-ADFD-4AA2-8BBF-C0839E235C99}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8D8A1FA8-ADFD-4AA2-8BBF-C0839E235C99}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8D8A1FA8-ADFD-4AA2-8BBF-C0839E235C99}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9BFB9259-E8DC-4446-A01B-018BAF3394E1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9BFB9259-E8DC-4446-A01B-018BAF3394E1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9BFB9259-E8DC-4446-A01B-018BAF3394E1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9BFB9259-E8DC-4446-A01B-018BAF3394E1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -30,5 +42,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{A8DF5371-B527-4092-B7B4-BF48CC62E897} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{764CEBDB-9D70-4110-8D02-0CA481C1E77F} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{8D8A1FA8-ADFD-4AA2-8BBF-C0839E235C99} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{9BFB9259-E8DC-4446-A01B-018BAF3394E1} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 EndGlobal
