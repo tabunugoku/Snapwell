@@ -10,4 +10,5 @@ public enum WindowCommand
     MoveCellLeft, MoveCellRight, MoveCellUp, MoveCellDown,
     NextMonitor, PreviousMonitor,
     ToggleEnabled,
+    OpenLauncher,
 }

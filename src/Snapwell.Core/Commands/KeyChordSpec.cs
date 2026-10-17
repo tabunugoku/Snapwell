@@ -41,6 +41,7 @@ public static class DefaultHotkeys
             [WindowCommand.NextMonitor] = new(plain, 0x22),
             [WindowCommand.PreviousMonitor] = new(plain, 0x21),
             [WindowCommand.ToggleEnabled] = new(plain, 0x13),
+            [WindowCommand.OpenLauncher] = new(plain, 0x20),
         };
     }
 }
