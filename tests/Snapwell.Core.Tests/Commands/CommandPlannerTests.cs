@@ -75,6 +75,82 @@ public sealed class CommandPlannerTests
         var result = CommandPlanner.Plan(WindowCommand.NextMonitor, new(-10, -10, 400, 300), true,
             _monitors, GridPlan.EightByEight, new(8, 8));
         Assert.True(_monitors[0].WorkArea.Contains(result!.Value));
+        Assert.Equal(new PixelRect(0, 0, 400, 300), result.Value);
+    }
+
+    [Theory]
+    [InlineData(WindowCommand.NextMonitor)]
+    [InlineData(WindowCommand.PreviousMonitor)]
+    public void TransferBetweenDifferentDpiMonitorsPreservesAllEdgeMargins(WindowCommand command)
+    {
+        MonitorArea[] monitors =
+        [
+            new("left", new(-1200, -200, 1200, 900), 1),
+            new("right", new(0, 0, 900, 600), 1.5),
+        ];
+        var result = CommandPlanner.Plan(command, new(-500, 250, 700, 500), true,
+            monitors, GridPlan.EightByEight, new(0, 20));
+        Assert.True(new PixelRect(30, 30, 840, 540).Contains(result!.Value));
+    }
+
+    [Fact]
+    public void TransferMapsPositionUsingBothMonitorsInnerAreas()
+    {
+        MonitorArea[] monitors =
+        [
+            new("left", new(-1200, -200, 1200, 900), 1),
+            new("right", new(0, 0, 900, 600), 1.5),
+        ];
+        var result = CommandPlanner.Plan(WindowCommand.NextMonitor, new(-600, 35, 100, 100), true,
+            monitors, GridPlan.EightByEight, new(0, 20));
+        Assert.Equal(new PixelRect(450, 165, 100, 100), result);
+    }
+
+    [Theory]
+    [InlineData(1000, 800)]
+    [InlineData(1000, 300)]
+    [InlineData(400, 800)]
+    public void OversizedFixedWindowAlignsWithDestinationInnerTopLeft(int width, int height)
+    {
+        MonitorArea[] monitors = [.. _monitors, new("right", new(1920, -100, 800, 600), 1.5)];
+        var result = CommandPlanner.Plan(WindowCommand.NextMonitor, new(100, 100, width, height), false,
+            monitors, GridPlan.EightByEight, new(0, 20));
+        Assert.Equal(new PixelRect(1950, -70, width, height), result);
+    }
+
+    [Fact]
+    public void EqualDpiRoundTripReturnsOriginalBoundsWithinOnePixel()
+    {
+        MonitorArea[] monitors = [.. _monitors, new("right", new(1920, -200, 1400, 900), 1)];
+        var original = new PixelRect(300, 200, 400, 300);
+        var next = CommandPlanner.Plan(WindowCommand.NextMonitor, original, true,
+            monitors, GridPlan.EightByEight, new(0, 20))!.Value;
+        var previous = CommandPlanner.Plan(WindowCommand.PreviousMonitor, next, true,
+            monitors, GridPlan.EightByEight, new(0, 20))!.Value;
+        Assert.InRange(Math.Abs(original.X - previous.X), 0, 1);
+        Assert.InRange(Math.Abs(original.Y - previous.Y), 0, 1);
+        Assert.Equal(original.Width, previous.Width);
+        Assert.Equal(original.Height, previous.Height);
+    }
+
+    [Theory]
+    [InlineData(100, 300, 50)]
+    [InlineData(100, 300, 60)]
+    [InlineData(300, 100, 50)]
+    public void EdgeConsumingDestinationDimensionReturnsNull(int width, int height, int edge)
+    {
+        MonitorArea[] monitors = [.. _monitors, new("right", new(1920, 0, width, height), 1)];
+        Assert.Null(CommandPlanner.Plan(WindowCommand.NextMonitor, _current, true,
+            monitors, GridPlan.EightByEight, new(0, edge)));
+    }
+
+    [Fact]
+    public void WindowOutsideSourceInnerAreaIsContainedAtDestination()
+    {
+        MonitorArea[] monitors = [.. _monitors, new("right", new(1920, 0, 1920, 1040), 1)];
+        var result = CommandPlanner.Plan(WindowCommand.NextMonitor, new(-100, -100, 400, 300), true,
+            monitors, GridPlan.EightByEight, new(0, 20));
+        Assert.Equal(new PixelRect(1940, 20, 400, 300), result);
     }
 
     [Fact]
