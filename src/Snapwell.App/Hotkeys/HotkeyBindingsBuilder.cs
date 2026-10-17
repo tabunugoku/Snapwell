@@ -28,4 +28,8 @@ internal static class HotkeyBindingsBuilder
 
         return new(bindings, dropped);
     }
+
+    /// <summary>一時停止中の割り当て。再開のキーだけを残し、ほかのキーはアプリへ通す。</summary>
+    internal static IReadOnlyList<HotkeyBinding> Paused(IEnumerable<HotkeyBinding> bindings) =>
+        [.. bindings.Where(binding => binding.Id == (int)WindowCommand.ToggleEnabled)];
 }

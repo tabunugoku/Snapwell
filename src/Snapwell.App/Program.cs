@@ -38,15 +38,15 @@ internal static class Program
             SettingsStores.Portable(), SettingsStores.Device(), hooks, tray, new WindowsConsentPrompt(),
             log, corners.RestoreAll, (settings, enabled, toggle) =>
             {
+                // 割り当ては AppHost が SetEnabled を呼んだときに、有効・一時停止に合わせて入れる。
                 var bindings = HotkeyBindingsBuilder.Build(settings.Hotkeys);
-                matcher.SetBindings(bindings.Bindings);
                 var motion = new MotionEngine(new DwmFramePacer(), new MonotonicClock(), mover,
                     new Win32MotionPreference(() => settings.ReduceMotion));
                 var drag = new DragSnapController(inspector, monitors, motion, () => settings,
                     value => hooks.MouseTrackingEnabled = value, (uint)Environment.ProcessId);
                 var hotkeys = new HotkeyCommandExecutor(inspector, monitors, motion, position, () => settings,
                     enabled, toggle, (uint)Environment.ProcessId);
-                return new ResidentRuntime(drag, hotkeys, motion);
+                return new ResidentRuntime(drag, hotkeys, motion, bindings.Bindings, matcher.SetBindings);
             });
         UnhandledExceptionEventHandler unhandled = (_, args) => host.HandleUnhandledException(
             args.ExceptionObject as Exception ?? new InvalidOperationException("未処理の例外。"));
