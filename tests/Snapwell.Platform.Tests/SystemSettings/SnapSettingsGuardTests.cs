@@ -266,6 +266,118 @@ public sealed class SnapSettingsGuardTests : IDisposable
         Assert.False(File.Exists(path));
     }
 
+    /// <summary>復元値の不一致や読み直し失敗では退避値を残し、通常復元と起動時復旧を再試行する。</summary>
+    [Theory]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    public void UnverifiedRestoreKeepsStateAndCanBeRetried(bool recoverOnStartup, bool setIgnored)
+    {
+        var path = Path.Combine(_directory, "state.json");
+        var api = new FakeSettings { Enabled = true };
+        var guard = new SnapSettingsGuard(api, path);
+        Assert.True(guard.Disable());
+        var saved = File.ReadAllText(path);
+        if (recoverOnStartup)
+        {
+            guard = new SnapSettingsGuard(api, path);
+        }
+
+        api.SetIgnored = setIgnored;
+        api.GetSucceeds = setIgnored;
+        Assert.False(recoverOnStartup ? guard.RecoverOnStartup() : guard.Restore());
+        Assert.Equal(!setIgnored, api.Enabled);
+        Assert.Equal(saved, File.ReadAllText(path));
+
+        api.SetIgnored = false;
+        api.GetSucceeds = true;
+        Assert.True(recoverOnStartup ? guard.RecoverOnStartup() : guard.Restore());
+        Assert.True(api.Enabled);
+        Assert.False(File.Exists(path));
+    }
+
+    /// <summary>既定値を確認できるまでは、どの入口でも壊れた状態ファイルを隔離せず再試行に残す。</summary>
+    [Theory]
+    [InlineData(nameof(SnapSettingsGuard.Disable), true)]
+    [InlineData(nameof(SnapSettingsGuard.Restore), true)]
+    [InlineData(nameof(SnapSettingsGuard.RecoverOnStartup), true)]
+    [InlineData(nameof(SnapSettingsGuard.Disable), false)]
+    [InlineData(nameof(SnapSettingsGuard.Restore), false)]
+    [InlineData(nameof(SnapSettingsGuard.RecoverOnStartup), false)]
+    public void UnverifiedDefaultRestoreKeepsInvalidStateAndCanBeRetried(string operation, bool setIgnored)
+    {
+        Directory.CreateDirectory(_directory);
+        var path = Path.Combine(_directory, "state.json");
+        const string Json = "invalid";
+        File.WriteAllText(path, Json);
+        var api = new FakeSettings { Enabled = false, SetIgnored = setIgnored, GetSucceeds = setIgnored };
+        var guard = new SnapSettingsGuard(api, path);
+
+        Assert.False(InvokeGuard(guard, operation));
+        Assert.Equal(!setIgnored, api.Enabled);
+        Assert.Equal(1, api.SetCount);
+        Assert.Equal(Json, File.ReadAllText(path));
+        Assert.Empty(Directory.GetFiles(_directory, "state.json.broken*"));
+
+        api.SetIgnored = false;
+        api.GetSucceeds = true;
+        Assert.True(InvokeGuard(guard, operation));
+        if (operation == nameof(SnapSettingsGuard.Disable))
+        {
+            Assert.Contains("\"DragSnapEnabled\":true", File.ReadAllText(path));
+            Assert.False(api.Enabled);
+            Assert.True(guard.Restore());
+        }
+
+        Assert.True(api.Enabled);
+        Assert.False(File.Exists(path));
+        Assert.Equal(Json, File.ReadAllText(path + ".broken"));
+    }
+
+    /// <summary>無効化が無視されても元の値を退避し、再無効化で上書きせず復元する。</summary>
+    [Fact]
+    public void IgnoredDisableKeepsOriginalStateAndCanBeRetried()
+    {
+        var path = Path.Combine(_directory, "state.json");
+        var api = new FakeSettings { Enabled = true, SetIgnored = true };
+        var guard = new SnapSettingsGuard(api, path);
+
+        Assert.False(guard.Disable());
+        Assert.True(api.Enabled);
+        var saved = File.ReadAllText(path);
+        Assert.Contains("\"DragSnapEnabled\":true", saved);
+
+        api.SetIgnored = false;
+        Assert.True(guard.Disable());
+        Assert.False(api.Enabled);
+        Assert.Equal(saved, File.ReadAllText(path));
+        Assert.True(guard.Restore());
+        Assert.True(api.Enabled);
+        Assert.False(File.Exists(path));
+    }
+
+    /// <summary>退避済みの無効化でも読み直しが失敗すれば成功とせず、元の値を残す。</summary>
+    [Fact]
+    public void DisableReadbackFailureKeepsOriginalState()
+    {
+        var path = Path.Combine(_directory, "state.json");
+        var api = new FakeSettings { Enabled = true };
+        var guard = new SnapSettingsGuard(api, path);
+        Assert.True(guard.Disable());
+        var saved = File.ReadAllText(path);
+        api.GetSucceeds = false;
+
+        Assert.False(guard.Disable());
+        Assert.False(api.Enabled);
+        Assert.Equal(saved, File.ReadAllText(path));
+
+        api.GetSucceeds = true;
+        Assert.True(guard.Restore());
+        Assert.True(api.Enabled);
+        Assert.False(File.Exists(path));
+    }
+
     /// <summary>このテストが作った一時フォルダだけを削除する。</summary>
     public void Dispose()
     {
@@ -287,6 +399,7 @@ public sealed class SnapSettingsGuardTests : IDisposable
     {
         internal bool Enabled { get; set; }
         internal bool SetSucceeds { get; set; } = true;
+        internal bool SetIgnored { get; set; }
         internal bool GetSucceeds { get; set; } = true;
         internal int SetCount { get; private set; }
 
@@ -299,7 +412,7 @@ public sealed class SnapSettingsGuardTests : IDisposable
         public bool TrySetEnabled(bool enabled)
         {
             SetCount++;
-            if (SetSucceeds)
+            if (SetSucceeds && !SetIgnored)
             {
                 Enabled = enabled;
             }
