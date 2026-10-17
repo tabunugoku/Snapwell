@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- 常駐する本体。トレイ、起動と終了の手順、ドラッグの吸着、ホットキーの配線。出荷は NativeAOT で x64 と ARM64 -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <RootNamespace>Snapwell.App</RootNamespace>
+    <AssemblyName>Snapwell</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <IsAotCompatible>true</IsAotCompatible>
+    <PublishAot>true</PublishAot>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <!-- RID なし (テストの AnyCPU ビルド) では、アーキテクチャ別の API (NOTIFYICONDATAW など) を x64 の配置で生成する。
+       x64 と ARM64 は同じ配置。出荷物は -r で RID のアーキテクチャになる -->
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' == ''">
+    <CsWin32PlatformTarget>x64</CsWin32PlatformTarget>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.363">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Snapwell.Platform\Snapwell.Platform.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Snapwell.App.Tests" />
+  </ItemGroup>
+
+</Project>
