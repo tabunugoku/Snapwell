@@ -2,6 +2,7 @@ using Snapwell.App.Dragging;
 using Snapwell.App.Hotkeys;
 using Snapwell.App.Lifecycle;
 using Snapwell.App.Overlay;
+using Snapwell.App.Tests.Dragging;
 using Snapwell.App.Tests.Motion;
 using Snapwell.App.Tests.Overlay;
 using Snapwell.Core.Commands;
@@ -16,6 +17,437 @@ namespace Snapwell.App.Tests.Lifecycle;
 
 public sealed class ResidentRuntimeTests
 {
+    /// <summary>確定後も長押しが使った移動ループは、配置の取り消しと追加の吸着を起こさない。</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AcceptedHoldConsumesMoveSizeLoopUntilEnd(bool delayedStart)
+    {
+        using var fixture = new OverlayFixture(withLongPress: true);
+        fixture.Runtime.Handle(new MouseButton(MouseButtonKind.Left, true, 100, 100, 0));
+        if (!delayedStart)
+        {
+            fixture.Runtime.Handle(new MoveSizeStarted(1));
+        }
+
+        fixture.Timer.Advance(450);
+        fixture.Runtime.Handle(new MouseButton(MouseButtonKind.Left, false, 100, 100, 451));
+        var target = fixture.Launcher.Selection!.Bounds;
+        fixture.Runtime.Handle(new KeyChord((int)LauncherInput.Accept));
+        Assert.False(fixture.Launcher.IsOpen);
+        Assert.Equal(target, Assert.Single(fixture.Motion.Requests).Target);
+        var cancellations = fixture.Motion.Canceled.Count;
+        if (delayedStart)
+        {
+            fixture.Runtime.Handle(new MoveSizeStarted(1));
+        }
+
+        Assert.Equal(cancellations, fixture.Motion.Canceled.Count);
+        Assert.True(fixture.Motion.IsMoving(1));
+        fixture.Runtime.Handle(new MouseMoved(100, 100, 452));
+        fixture.Runtime.Handle(new MouseMoved(600, 100, 492));
+        fixture.Runtime.Handle(new MoveSizeEnded(1, 492));
+        Assert.Equal(cancellations, fixture.Motion.Canceled.Count);
+        Assert.Equal(target, Assert.Single(fixture.Motion.Requests).Target);
+        Assert.True(fixture.Motion.IsMoving(1));
+        Assert.Empty(fixture.PreviewPresenter.Requests);
+    }
+
+    /// <summary>終了通知の有無にかかわらず、次の左押下から通常のドラッグと吸着に戻す。</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void NextPressAfterAcceptedHoldCanSnap(bool deliverEnd)
+    {
+        using var fixture = new OverlayFixture(withLongPress: true);
+        fixture.Runtime.Handle(new MouseButton(MouseButtonKind.Left, true, 100, 100, 0));
+        fixture.Timer.Advance(450);
+        fixture.Runtime.Handle(new MouseButton(MouseButtonKind.Left, false, 100, 100, 451));
+        fixture.Runtime.Handle(new KeyChord((int)LauncherInput.Accept));
+        if (deliverEnd)
+        {
+            fixture.Runtime.Handle(new MoveSizeStarted(1));
+            fixture.Runtime.Handle(new MoveSizeEnded(1, 452));
+        }
+
+        Assert.Single(fixture.Motion.Requests);
+        fixture.Runtime.Handle(new MouseButton(MouseButtonKind.Left, true, 100, 100, 453));
+        fixture.Runtime.Handle(new MoveSizeStarted(1));
+        fixture.Runtime.Handle(new MouseMoved(100, 100, 454));
+        fixture.Runtime.Handle(new MouseMoved(600, 100, 494));
+        fixture.Runtime.Handle(new MouseButton(MouseButtonKind.Left, false, 600, 100, 494));
+        fixture.Runtime.Handle(new MoveSizeEnded(1, 494));
+        Assert.Equal(2, fixture.Motion.Requests.Count);
+        Assert.True(fixture.Drag.Enabled);
+        Assert.NotEmpty(fixture.PreviewPresenter.Requests);
+    }
+
+    /// <summary>表示だけを閉じても、消費済みの移動通知で次のランチャーを閉じない。</summary>
+    [Theory]
+    [InlineData("accept")]
+    [InlineData("cancel")]
+    [InlineData("external")]
+    public void ConsumedMoveSizeLoopKeepsSubsequentLauncherOpen(string close)
+    {
+        using var fixture = new OverlayFixture(withLongPress: true);
+        fixture.Runtime.Handle(new MouseButton(MouseButtonKind.Left, true, 100, 100, 0));
+        fixture.Timer.Advance(450);
+        fixture.Runtime.Handle(new MouseButton(MouseButtonKind.Left, false, 100, 100, 451));
+        if (close == "external")
+        {
+            fixture.Launcher.Close();
+        }
+        else
+        {
+            fixture.Runtime.Handle(new KeyChord((int)(close == "accept" ? LauncherInput.Accept : LauncherInput.Cancel)));
+        }
+
+        fixture.Runtime.Handle(new KeyChord((int)WindowCommand.OpenLauncher));
+        fixture.Runtime.Handle(new MoveSizeStarted(1));
+        Assert.True(fixture.Launcher.IsOpen);
+        fixture.Runtime.Handle(new MoveSizeEnded(1, 452));
+        Assert.True(fixture.Launcher.IsOpen);
+        fixture.Runtime.Handle(new MoveSizeStarted(1));
+        Assert.False(fixture.Launcher.IsOpen);
+    }
+
+    /// <summary>一時停止で終了の来ない移動ループの記録を消し、再開後のドラッグを通す。</summary>
+    [Fact]
+    public void PauseClearsAcceptedHoldMoveSizeLoop()
+    {
+        using var fixture = new OverlayFixture(withLongPress: true);
+        fixture.Runtime.Handle(new MouseButton(MouseButtonKind.Left, true, 100, 100, 0));
+        fixture.Timer.Advance(450);
+        fixture.Runtime.Handle(new MouseButton(MouseButtonKind.Left, false, 100, 100, 451));
+        fixture.Runtime.Handle(new KeyChord((int)LauncherInput.Accept));
+        fixture.Runtime.SetEnabled(false);
+        fixture.Runtime.SetEnabled(true);
+        fixture.Runtime.Handle(new KeyChord((int)WindowCommand.OpenLauncher));
+        fixture.Runtime.Handle(new MoveSizeStarted(1));
+        Assert.False(fixture.Launcher.IsOpen);
+        Assert.True(fixture.Drag.Enabled);
+    }
+
+    /// <summary>長押しの解放前は Enter を消費し、選択を保ったまま解放後に一度だけ配置する。</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AcceptWaitsForHoldRelease(bool endBeforeRelease)
+    {
+        using var fixture = new OverlayFixture(withLongPress: true);
+        fixture.Runtime.Handle(new MouseButton(MouseButtonKind.Left, true, 100, 100, 0));
+        fixture.Runtime.Handle(new MoveSizeStarted(1));
+        fixture.Timer.Advance(450);
+        if (endBeforeRelease)
+        {
+            fixture.Runtime.Handle(new MoveSizeEnded(1, 451));
+        }
+
+        fixture.Runtime.Handle(new KeyChord((int)LauncherInput.ExtendRight));
+        var target = fixture.Launcher.Selection!.Bounds;
+        fixture.Runtime.Handle(new KeyChord((int)LauncherInput.Accept));
+        fixture.Runtime.Handle(new KeyChord((int)LauncherInput.Accept));
+        Assert.Empty(fixture.Motion.Requests);
+        Assert.True(fixture.Launcher.IsOpen);
+        Assert.False(fixture.Drag.Enabled);
+        Assert.Contains(fixture.Applied, binding => binding.Id == (int)LauncherInput.Accept && binding.Suppress);
+        fixture.Runtime.Handle(new MouseButton(MouseButtonKind.Left, false, 100, 100, 452));
+        fixture.Runtime.Handle(new KeyChord((int)LauncherInput.Accept));
+        fixture.Runtime.Handle(new KeyChord((int)LauncherInput.Accept));
+        Assert.False(fixture.Launcher.IsOpen);
+        Assert.Equal(target, Assert.Single(fixture.Motion.Requests).Target);
+    }
+
+    /// <summary>解放後に遅配された同じ移動ループは表示を保ち、追跡と吸着を始めない。</summary>
+    [Fact]
+    public void MoveSizeStartDeliveredAfterReleaseKeepsLauncherWithoutSnapping()
+    {
+        using var fixture = new OverlayFixture(withLongPress: true);
+        fixture.Runtime.Handle(new MouseButton(MouseButtonKind.Left, true, 100, 100, 0));
+        fixture.Timer.Advance(450);
+        fixture.Runtime.Handle(new MouseButton(MouseButtonKind.Left, false, 100, 100, 451));
+        fixture.Runtime.Handle(new MoveSizeStarted(1));
+        Assert.True(fixture.Launcher.IsOpen);
+        Assert.False(fixture.Drag.Enabled);
+        Assert.False(fixture.Tracking.Last());
+        fixture.Runtime.Handle(new MouseMoved(500, 100, 460));
+        fixture.Runtime.Handle(new MoveSizeEnded(1, 461));
+        Assert.True(fixture.Launcher.IsOpen);
+        Assert.False(fixture.Drag.Enabled);
+        Assert.Empty(fixture.Motion.Requests);
+        Assert.Empty(fixture.PreviewPresenter.Requests);
+    }
+
+    /// <summary>移動終了後の次の押下からは同じ対象も別対象も通常のドラッグに戻す。</summary>
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    public void NextPressAndMoveSizeStartCloseHeldLauncher(int handle)
+    {
+        using var fixture = new OverlayFixture(withLongPress: true);
+        fixture.Runtime.Handle(new MouseButton(MouseButtonKind.Left, true, 100, 100, 0));
+        fixture.Runtime.Handle(new MoveSizeStarted(1));
+        fixture.Timer.Advance(450);
+        fixture.Runtime.Handle(new MouseButton(MouseButtonKind.Left, false, 100, 100, 451));
+        fixture.Runtime.Handle(new MoveSizeEnded(1, 452));
+        fixture.Runtime.Handle(new MouseButton(MouseButtonKind.Left, true, 100, 100, 453));
+        fixture.Runtime.Handle(new MoveSizeStarted(handle));
+        Assert.False(fixture.Launcher.IsOpen);
+        Assert.True(fixture.Drag.Enabled);
+    }
+
+    /// <summary>所有中の停止と Cancel は、古いタイマーと移動通知を次の表示へ持ち越さない。</summary>
+    [Theory]
+    [InlineData("pause")]
+    [InlineData("dispose")]
+    [InlineData("cancel")]
+    public void StoppingOwnedLauncherInvalidatesLateNotifications(string action)
+    {
+        using var fixture = new OverlayFixture(withLongPress: true);
+        fixture.Runtime.Handle(new MouseButton(MouseButtonKind.Left, true, 100, 100, 0));
+        fixture.Timer.Advance(450);
+        if (action == "dispose")
+        {
+            fixture.Runtime.Dispose();
+        }
+        else if (action == "pause")
+        {
+            fixture.Runtime.SetEnabled(false);
+        }
+        else
+        {
+            fixture.Runtime.Handle(new KeyChord((int)LauncherInput.Cancel));
+        }
+
+        Assert.False(fixture.Launcher.IsOpen);
+        fixture.Runtime.Handle(new MouseButton(MouseButtonKind.Left, false, 100, 100, 451));
+        fixture.Runtime.Handle(new MoveSizeStarted(1));
+        fixture.Runtime.Handle(new MoveSizeEnded(1, 452));
+        fixture.Timer.FireEvenIfCanceled(0);
+        Assert.False(fixture.Launcher.IsOpen);
+        Assert.Empty(fixture.Motion.Requests);
+        if (action != "dispose")
+        {
+            fixture.Runtime.SetEnabled(true);
+            fixture.Runtime.Handle(new KeyChord((int)WindowCommand.OpenLauncher));
+            fixture.Runtime.Handle(new MoveSizeStarted(1));
+            Assert.False(fixture.Launcher.IsOpen);
+            Assert.True(fixture.Drag.Enabled);
+        }
+    }
+
+    /// <summary>先行する移動ループと解放通知は、長押しの表示を閉じたり吸着させたりしない。</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CaptionHoldOpensPressedTargetAndReleaseKeepsLauncher(bool endBeforeRelease)
+    {
+        using var fixture = new OverlayFixture(withLongPress: true);
+        fixture.Inspector.Foreground = 2;
+        fixture.Runtime.Handle(new MouseButton(MouseButtonKind.Left, true, 100, 100, 0));
+        fixture.Runtime.Handle(new MoveSizeStarted(1));
+        fixture.Timer.Advance(450);
+        Assert.True(fixture.Launcher.IsOpen);
+        Assert.False(fixture.Drag.Enabled);
+        Assert.True(fixture.Tracking.Last());
+        if (endBeforeRelease)
+        {
+            fixture.Runtime.Handle(new MoveSizeEnded(1, 451));
+        }
+
+        fixture.Runtime.Handle(new MouseButton(MouseButtonKind.Left, false, 100, 100, 451));
+        fixture.Runtime.Handle(new MoveSizeEnded(1, 452));
+        Assert.True(fixture.Launcher.IsOpen);
+        Assert.Empty(fixture.Motion.Requests);
+        fixture.Runtime.Handle(new KeyChord((int)LauncherInput.Accept));
+        Assert.Equal((nint)1, Assert.Single(fixture.Motion.Requests).Handle);
+    }
+
+    /// <summary>同じ押下の遅い開始通知でも表示を保つ。</summary>
+    [Fact]
+    public void LateMoveSizeStartFromHeldTargetKeepsLauncher()
+    {
+        using var fixture = new OverlayFixture(withLongPress: true);
+        fixture.Runtime.Handle(new MouseButton(MouseButtonKind.Left, true, 100, 100, 0));
+        fixture.Timer.Advance(450);
+        fixture.Runtime.Handle(new MoveSizeStarted(1));
+        Assert.True(fixture.Launcher.IsOpen);
+        fixture.Runtime.Handle(new MouseButton(MouseButtonKind.Left, false, 100, 100, 451));
+        fixture.Runtime.Handle(new MoveSizeEnded(1, 452));
+        Assert.Empty(fixture.Motion.Requests);
+    }
+
+    /// <summary>長押し後の移動は表示を閉じ、そのドラッグの解放では吸着しない。</summary>
+    [Fact]
+    public void MovementAfterHoldClosesLauncherWithoutSnapping()
+    {
+        using var fixture = new OverlayFixture(withLongPress: true);
+        fixture.Runtime.Handle(new MouseButton(MouseButtonKind.Left, true, 100, 100, 0));
+        fixture.Runtime.Handle(new MoveSizeStarted(1));
+        fixture.Timer.Advance(450);
+        fixture.Runtime.Handle(new MouseMoved(107, 100, 451));
+        Assert.False(fixture.Launcher.IsOpen);
+        fixture.Runtime.Handle(new MouseMoved(500, 100, 460));
+        fixture.Runtime.Handle(new MouseButton(MouseButtonKind.Left, false, 500, 100, 461));
+        fixture.Runtime.Handle(new MoveSizeEnded(1, 462));
+        Assert.Empty(fixture.Motion.Requests);
+        Assert.False(fixture.Tracking.Last());
+    }
+
+    /// <summary>外部で閉じた長押し表示のあとに開いた表示を、古い押下の移動で閉じない。</summary>
+    [Fact]
+    public void ClosedHoldCannotCloseSubsequentHotkeyLauncher()
+    {
+        using var fixture = new OverlayFixture(withLongPress: true);
+        fixture.Runtime.Handle(new MouseButton(MouseButtonKind.Left, true, 100, 100, 0));
+        fixture.Timer.Advance(450);
+        fixture.Launcher.Close();
+        fixture.Runtime.Handle(new KeyChord((int)WindowCommand.OpenLauncher));
+        fixture.Runtime.Handle(new MouseMoved(107, 100, 451));
+        Assert.True(fixture.Launcher.IsOpen);
+        Assert.False(fixture.Tracking.Last());
+    }
+
+    /// <summary>停止や一時停止は中止済みタイマーの遅配も無効にする。</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void PauseOrDisposeInvalidatesPendingTimer(bool dispose)
+    {
+        using var fixture = new OverlayFixture(withLongPress: true);
+        fixture.Runtime.Handle(new MouseButton(MouseButtonKind.Left, true, 100, 100, 0));
+        if (dispose)
+        {
+            fixture.Runtime.Dispose();
+        }
+        else
+        {
+            fixture.Runtime.SetEnabled(false);
+            fixture.Runtime.SetEnabled(true);
+        }
+
+        fixture.Timer.FireEvenIfCanceled(0);
+        Assert.False(fixture.Launcher.IsOpen);
+        Assert.False(fixture.Tracking.Last());
+        Assert.Empty(fixture.Motion.Requests);
+    }
+
+    /// <summary>停止中や表示中の押下ではタイマーを作らない。</summary>
+    [Theory]
+    [InlineData("paused")]
+    [InlineData("disposed")]
+    [InlineData("open")]
+    public void IneligibleRuntimeDoesNotStartHold(string state)
+    {
+        using var fixture = new OverlayFixture(withLongPress: true);
+        if (state == "paused")
+        {
+            fixture.Runtime.SetEnabled(false);
+        }
+        else if (state == "disposed")
+        {
+            fixture.Runtime.Dispose();
+        }
+        else
+        {
+            fixture.Runtime.Handle(new KeyChord((int)WindowCommand.OpenLauncher));
+        }
+
+        fixture.Runtime.Handle(new MouseButton(MouseButtonKind.Left, true, 100, 100, 0));
+        Assert.Equal(0, fixture.Timer.Count);
+    }
+
+    /// <summary>応答待ちの間にも別スレッドの配送と停止が完了し、古い結果は表示しない。</summary>
+    [Theory]
+    [InlineData("release")]
+    [InlineData("move")]
+    [InlineData("pause")]
+    [InlineData("dispose")]
+    [InlineData("open")]
+    [InlineData("newPress")]
+    public void HitTestRunsOutsideRuntimeLockAndRevalidatesState(string action)
+    {
+        using var fixture = new OverlayFixture(withLongPress: true);
+        fixture.CaptionHitTest = (_, _) =>
+        {
+            var delivery = Task.Run(() =>
+            {
+                switch (action)
+                {
+                    case "release":
+                        fixture.Runtime.Handle(new MouseButton(MouseButtonKind.Left, false, 100, 100, 450));
+                        break;
+                    case "move":
+                        fixture.Runtime.Handle(new MouseMoved(107, 100, 450));
+                        break;
+                    case "pause":
+                        fixture.Runtime.SetEnabled(false);
+                        fixture.Runtime.SetEnabled(true);
+                        break;
+                    case "dispose":
+                        fixture.Runtime.Dispose();
+                        break;
+                    case "open":
+                        fixture.Runtime.Handle(new KeyChord((int)WindowCommand.OpenLauncher));
+                        break;
+                    case "newPress":
+                        fixture.Runtime.Handle(new MouseButton(MouseButtonKind.Left, true, 100, 100, 450));
+                        break;
+                }
+            });
+            Assert.True(delivery.Wait(TimeSpan.FromSeconds(2)));
+            return true;
+        };
+        fixture.Runtime.Handle(new MouseButton(MouseButtonKind.Left, true, 100, 100, 0));
+        fixture.Timer.Advance(450);
+        Assert.Equal(action == "open", fixture.Launcher.IsOpen);
+        Assert.Empty(fixture.Motion.Requests);
+    }
+
+    /// <summary>ヒットテスト失敗と、発火直前のカーソル移動では表示しない。</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void FailedHitTestOrMissedMovementDoesNotOpen(bool moved)
+    {
+        using var fixture = new OverlayFixture(withLongPress: true);
+        fixture.CaptionHitTest = (_, _) => moved;
+        fixture.Runtime.Handle(new MouseButton(MouseButtonKind.Left, true, 100, 100, 0));
+        if (moved)
+        {
+            fixture.Cursor = new(107, 100);
+        }
+
+        fixture.Timer.Advance(450);
+        Assert.False(fixture.Launcher.IsOpen);
+    }
+
+    /// <summary>一方が要求をやめても、他方の追跡要求を保つ。</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void MouseTrackingContinuesUntilBothVotesAreFalse(bool longPressFirst)
+    {
+        var enabled = false;
+        var votes = new MouseTrackingVotes(value => enabled = value);
+        votes.SetDrag(true);
+        votes.SetLongPress(true);
+        if (longPressFirst)
+        {
+            votes.SetLongPress(false);
+            Assert.True(enabled);
+            votes.SetDrag(false);
+        }
+        else
+        {
+            votes.SetDrag(false);
+            Assert.True(enabled);
+            votes.SetLongPress(false);
+        }
+
+        Assert.False(enabled);
+    }
+
     /// <summary>対象が生きていても別の前面へ移ったら閉じ、遅れた Enter では動かさない。</summary>
     [Theory]
     [InlineData(2)]
@@ -218,16 +650,24 @@ public sealed class ResidentRuntimeTests
         internal Action? BeforeOverlayDispose;
         internal int OverlayDisposals;
         internal int Toggles;
+        internal ControlledLongPressTimer Timer { get; } = new();
+        internal Vec2? Cursor = new(100, 100);
+        internal Func<nint, Vec2, bool>? CaptionHitTest;
+        internal List<bool> Tracking { get; } = [];
         internal DragSnapController Drag { get; }
         internal LauncherController Launcher { get; }
         internal ResidentRuntime Runtime { get; }
 
-        internal OverlayFixture()
+        internal OverlayFixture(bool withLongPress = false)
         {
             var monitors = new FakeMonitors();
             var inspector = new ForegroundInspector(Inspector);
             var preview = new ZonePreview(PreviewPresenter, monitors);
-            Drag = new(inspector, monitors, Motion, () => new(), _ => { }, 999, () => 0, preview);
+            var tracking = new MouseTrackingVotes(Tracking.Add);
+            Drag = new(inspector, monitors, Motion, () => new(), tracking.SetDrag, 999, () => 0, preview);
+            var longPress = withLongPress ? new LongPressDetector(inspector, monitors,
+                (handle, point) => CaptionHitTest?.Invoke(handle, point) ?? true, () => Cursor,
+                tracking.SetLongPress, Timer.Schedule) : null;
             LauncherController? launcher = null;
             var hotkeys = new HotkeyCommandExecutor(inspector, monitors, Motion, new NoPosition(), () => new(),
                 () => true, () => Toggles++, 999, () => launcher?.Open());
@@ -238,7 +678,7 @@ public sealed class ResidentRuntimeTests
                 {
                     BeforeOverlayDispose?.Invoke();
                     OverlayDisposals++;
-                })]);
+                })], longPress);
         }
 
         public void Dispose() => Runtime.Dispose();

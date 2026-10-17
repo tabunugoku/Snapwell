@@ -13,6 +13,30 @@ namespace Snapwell.App.Tests.Overlay;
 /// <summary>ランチャーの対象・選択・入力の切り替えを検証する。</summary>
 public sealed class LauncherControllerTests
 {
+    /// <summary>前面でない指定対象にも配置を配送する。</summary>
+    [Fact]
+    public void ExplicitTargetAcceptPlacesNonForegroundWindow()
+    {
+        using var fixture = new Fixture();
+        fixture.Inspector.Foreground = 2;
+        fixture.Launcher.Open(1);
+        Assert.True(fixture.Launcher.IsOpen);
+        var expected = fixture.Launcher.Selection!.Bounds;
+        fixture.Key(LauncherInput.Accept);
+        Assert.Equal(((nint)1, expected), Assert.Single(fixture.Placements));
+    }
+
+    /// <summary>明示指定でも除外対象は開かない。</summary>
+    [Fact]
+    public void ExplicitExcludedTargetDoesNotOpen()
+    {
+        using var fixture = new Fixture();
+        fixture.Inspector.Window = fixture.Inspector.Window with { IsCloaked = true };
+        fixture.Launcher.Open(1);
+        Assert.False(fixture.Launcher.IsOpen);
+        Assert.Empty(fixture.Presenter.Requests);
+    }
+
     /// <summary>対象のモニターで開き、選択と Enter の配置を配送する。</summary>
     [Fact]
     public void OpenSelectAndAcceptRestoreNormalBindings()
