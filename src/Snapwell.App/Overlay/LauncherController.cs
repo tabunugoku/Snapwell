@@ -59,7 +59,10 @@ internal sealed class LauncherController : IDisposable
         get { lock (_gate) { return _selection; } }
     }
 
-    internal void Open()
+    internal void Open() => Open(_inspector.GetForegroundWindow());
+
+    /// <summary>指定したウィンドウを対象に区画を選ぶ。</summary>
+    internal void Open(nint handle)
     {
         lock (_gate)
         {
@@ -68,7 +71,6 @@ internal sealed class LauncherController : IDisposable
                 return;
             }
 
-            var handle = _inspector.GetForegroundWindow();
             if (handle == 0 || !_inspector.TryInspect(handle, out var window) ||
                 WindowClassifier.Classify(window, _ownProcessId) == WindowKind.Excluded)
             {
