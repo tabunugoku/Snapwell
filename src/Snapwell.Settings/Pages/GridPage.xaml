@@ -11,13 +11,11 @@
         <Style x:Key="SelectedChipButtonStyle" TargetType="Button" BasedOn="{StaticResource SnapwellButtonStyle}">
             <Setter Property="Padding" Value="11,4" />
             <Setter Property="FontSize" Value="13" />
-            <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="Foreground" Value="{ThemeResource SnapwellInkBrush}" />
             <Setter Property="BorderBrush" Value="{ThemeResource SnapwellInkBrush}" />
             <Setter Property="BorderThickness" Value="2" />
         </Style>
         <Style x:Key="PreviewCellBorderStyle" TargetType="Border">
-            <Setter Property="Background" Value="{ThemeResource SnapwellCellBrush}" />
             <Setter Property="BorderBrush" Value="{ThemeResource SnapwellCellBorderBrush}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="2" />
@@ -37,7 +35,7 @@
         </Style>
     </Page.Resources>
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-        <StackPanel x:Name="Editor" Padding="32,16,32,40" MaxWidth="820" HorizontalAlignment="Stretch">
+        <StackPanel x:Name="Editor" Padding="32,28,32,40" HorizontalAlignment="Stretch">
             <TextBlock Text="分割と間隔" Style="{StaticResource SnapwellPageTitleStyle}" />
             <TextBlock Text="モニターごとに分割案を決めます。1 区画が基本単位で、ウィンドウのサイズはその整数倍になります。"
                        Style="{StaticResource SnapwellLeadTextStyle}" />
@@ -62,14 +60,14 @@
                         Style="{StaticResource ChipButtonStyle}" />
                 <Button x:Name="Chip16x9" Content="16 × 9" Tag="16,9" Click="Chip_Click"
                         Style="{StaticResource ChipButtonStyle}" />
-                <Button x:Name="ChipCustom" Content="カスタム…" IsHitTestVisible="False"
+                <Button x:Name="ChipCustom" Content="カスタム…" IsHitTestVisible="False" Opacity="0.55"
                         Style="{StaticResource ChipButtonStyle}" />
             </StackPanel>
 
             <Grid ColumnSpacing="20" Margin="0,12,0,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="228" />
+                    <ColumnDefinition Width="220" />
                 </Grid.ColumnDefinitions>
                 <Border x:Name="PreviewHost" Background="{ThemeResource SnapwellWallBrush}"
                         BorderBrush="{ThemeResource SnapwellBorderBrush}" BorderThickness="1"
@@ -88,8 +86,7 @@
                                     VerticalAlignment="Center" AutomationProperties.Name="ウィンドウの間隔"
                                     ValueChanged="GapSlider_ValueChanged" />
                             <TextBlock x:Name="GapOutputText" Grid.Column="1"
-                                       FontFamily="{StaticResource SnapwellMonoFontFamily}" FontSize="12"
-                                       Foreground="{ThemeResource SnapwellTextBrush}"
+                                       Style="{StaticResource SnapwellMonoTextStyle}"
                                        HorizontalTextAlignment="End" VerticalAlignment="Center" />
                         </Grid>
                     </StackPanel>
@@ -104,20 +101,18 @@
                                     VerticalAlignment="Center" AutomationProperties.Name="画面端の余白"
                                     ValueChanged="EdgeSlider_ValueChanged" />
                             <TextBlock x:Name="EdgeOutputText" Grid.Column="1"
-                                       FontFamily="{StaticResource SnapwellMonoFontFamily}" FontSize="12"
-                                       Foreground="{ThemeResource SnapwellTextBrush}"
+                                       Style="{StaticResource SnapwellMonoTextStyle}"
                                        HorizontalTextAlignment="End" VerticalAlignment="Center" />
                         </Grid>
-                        <CheckBox x:Name="LinkEdgeCheck" Content="間隔と同じにする" FontSize="13"
+                        <CheckBox x:Name="LinkEdgeCheck" Content="間隔と同じにする" FontSize="14"
                                   Foreground="{ThemeResource SnapwellTextBrush}" MinWidth="0"
                                   Checked="LinkEdge_Changed" Unchecked="LinkEdge_Changed" />
                     </StackPanel>
                     <Border Background="{ThemeResource SnapwellSurface2Brush}"
                             BorderBrush="{ThemeResource SnapwellBorderBrush}" BorderThickness="1"
                             CornerRadius="8" Padding="14,12">
-                        <TextBlock x:Name="FormulaText" FontFamily="{StaticResource SnapwellMonoFontFamily}"
-                                   FontSize="12" LineHeight="20" Foreground="{ThemeResource SnapwellTextBrush}"
-                                   TextWrapping="Wrap" />
+                        <TextBlock x:Name="FormulaText" Style="{StaticResource SnapwellMonoTextStyle}"
+                                   LineHeight="20.4" TextWrapping="Wrap" />
                     </Border>
                 </StackPanel>
             </Grid>
@@ -130,7 +125,7 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <StackPanel Spacing="2" VerticalAlignment="Center">
+                        <StackPanel VerticalAlignment="Center">
                             <TextBlock Text="列数" Style="{StaticResource SnapwellRowTitleStyle}" />
                             <TextBlock Text="横方向の区画数 (1〜64)" Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
@@ -145,7 +140,7 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <StackPanel Spacing="2" VerticalAlignment="Center">
+                        <StackPanel VerticalAlignment="Center">
                             <TextBlock Text="行数" Style="{StaticResource SnapwellRowTitleStyle}" />
                             <TextBlock Text="縦方向の区画数 (1〜64)" Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
@@ -160,7 +155,7 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <StackPanel Spacing="2" VerticalAlignment="Center">
+                        <StackPanel VerticalAlignment="Center">
                             <TextBlock Text="ウィンドウの間隔 (px)" Style="{StaticResource SnapwellRowTitleStyle}" />
                             <TextBlock Text="隣り合う区画の間の隙間 (0〜200 px)"
                                        Style="{StaticResource SnapwellRowDescriptionStyle}" />
@@ -176,7 +171,7 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <StackPanel Spacing="2" VerticalAlignment="Center">
+                        <StackPanel VerticalAlignment="Center">
                             <TextBlock Text="画面端の余白 (px)" Style="{StaticResource SnapwellRowTitleStyle}" />
                             <TextBlock Text="モニターの作業領域の外周の余白 (0〜200 px)"
                                        Style="{StaticResource SnapwellRowDescriptionStyle}" />
