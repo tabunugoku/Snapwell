@@ -23,6 +23,9 @@ public interface IWindowInspector
 
     /// <summary>前面から順にトップレベルウィンドウを返す。</summary>
     IReadOnlyList<nint> GetTopLevelWindows() => [];
+
+    /// <summary>所有者のウィンドウを返し、所有者が無ければ 0 を返す。</summary>
+    nint GetOwner(nint handle) => 0;
 }
 
 /// <summary>公開 Win32 API でウィンドウを調査する。</summary>
@@ -86,6 +89,10 @@ public sealed class Win32WindowInspector : IWindowInspector
     public unsafe nint GetRootWindowAt(int x, int y) =>
         (nint)PInvoke.GetAncestor(PInvoke.WindowFromPoint(new System.Drawing.Point(x, y)),
             GET_ANCESTOR_FLAGS.GA_ROOT).Value;
+
+    /// <summary>所有者のハンドルを返し、所有者が無ければ 0 を返す。</summary>
+    public unsafe nint GetOwner(nint handle) =>
+        (nint)PInvoke.GetWindow(new HWND(handle), GET_WINDOW_CMD.GW_OWNER).Value;
 
     /// <summary>Z オーダーの前面から順にトップレベルウィンドウを列挙する。</summary>
     public unsafe IReadOnlyList<nint> GetTopLevelWindows()

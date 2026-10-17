@@ -116,9 +116,10 @@ internal sealed class HotkeyCommandExecutor(IWindowInspector inspector, IMonitor
                 continue;
             }
 
-            // クロークされた別仮想デスクトップのウィンドウや最小化・ポップアップは除外する。
+            // クロークされた別仮想デスクトップのウィンドウや最小化・ポップアップ・所有されたダイアログは除外する。
             var kind = WindowClassifier.Classify(window, ownProcessId);
             if (kind is not (WindowKind.Normal or WindowKind.FixedSize) ||
+                inspector.GetOwner(handle) != 0 ||
                 CommandPlanner.SelectMonitor(window.VisualBounds, areas) != targetMonitor)
             {
                 continue;
