@@ -12,7 +12,8 @@ namespace Snapwell.App.Dragging;
 /// <summary>システムのドラッグ終了から投げの速度を求め、Core の吸着先へ移動を要求する。</summary>
 internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSource monitors,
     IMotionEngine motion, Func<PortableSettings> settings, Action<bool> trackMouse, uint ownProcessId,
-    Func<uint>? tickCount = null, IZonePreview? preview = null, Func<Vec2>? cursorPosition = null)
+    Func<uint>? tickCount = null, IZonePreview? preview = null, Func<Vec2>? cursorPosition = null,
+    Func<nint, IReadOnlyList<PixelRect>>? neighbors = null)
 {
     // 120 Hz の全イベントで予測せず、16 px または約二フレームごとに更新する。
     private const double PredictionDistance = 16;
@@ -31,6 +32,7 @@ internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSou
     private Vec2? _lastPredictionPosition;
     private double _lastPredictionTime;
     private bool _canResize;
+    private IReadOnlyList<PixelRect> _neighbors = [];
 
     internal bool Enabled
     {
@@ -66,6 +68,7 @@ internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSou
             switch (value)
             {
                 case MoveSizeStarted start:
+                    StopTracking();
                     if (!inspector.TryInspect(start.Handle, out var window) || window.IsMaximized ||
                         WindowClassifier.Classify(window, ownProcessId) == WindowKind.Excluded)
                     {
@@ -73,8 +76,8 @@ internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSou
                     }
 
                     motion.Cancel(start.Handle);
-                    StopTracking();
                     _tracked = start.Handle;
+                    _neighbors = neighbors?.Invoke(start.Handle).ToArray() ?? [];
                     _startBounds = window.VisualBounds;
                     _canResize = WindowClassifier.CanResize(window, ownProcessId);
                     _dragOrigin = cursorPosition?.Invoke() ?? _pointer;
@@ -96,6 +99,7 @@ internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSou
                     // dwmsEventTime と MSLLHOOKSTRUCT.time は同じ GetTickCount の時計とみなす。実機未確認。
                     var velocity = _velocity.Release(Time(end.TimeMs));
                     var pointer = _pointer ?? cursorPosition?.Invoke();
+                    var dragNeighbors = _neighbors;
                     StopTracking();
                     if (!inspector.TryInspect(end.Handle, out var current) || current.IsMaximized ||
                         WindowClassifier.Classify(current, ownProcessId) == WindowKind.Excluded)
@@ -107,7 +111,7 @@ internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSou
                     var areas = monitors.GetMonitors().Select(monitor => monitor.ToMonitorArea()).ToArray();
                     var result = SnapResolver.Resolve(current.VisualBounds, velocity, options.ToFeelPreset(),
                         options.SnapMode, options.ToSpacing(), areas,
-                        WindowClassifier.CanResize(current, ownProcessId), pointer);
+                        WindowClassifier.CanResize(current, ownProcessId), pointer, dragNeighbors);
                     if (result is { } snap)
                     {
                         var walls = areas.First(area => area.Id == snap.MonitorId).WorkArea;
@@ -151,7 +155,7 @@ internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSou
             checked(_startBounds.Y + (int)offset.Y), _startBounds.Width, _startBounds.Height);
         var areas = monitors.GetMonitors().Select(monitor => monitor.ToMonitorArea()).ToArray();
         var result = SnapResolver.Resolve(current, _velocity!.Release(seconds), options.ToFeelPreset(),
-            options.SnapMode, options.ToSpacing(), areas, _canResize, point);
+            options.SnapMode, options.ToSpacing(), areas, _canResize, point, _neighbors);
         if (result is { } snap)
         {
             _preview.Show(snap.Target);
@@ -187,5 +191,6 @@ internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSou
         _velocity = null;
         _dragOrigin = null;
         _lastPredictionPosition = null;
+        _neighbors = [];
     }
 }
