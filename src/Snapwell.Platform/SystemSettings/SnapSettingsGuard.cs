@@ -49,7 +49,7 @@ public sealed class SnapSettingsGuard
             }
 
             // 変更に失敗しても復元用ファイルを残し、再試行できるようにする。
-            return _settings.TrySetEnabled(false);
+            return TrySetAndVerify(false);
         }
     }
 
@@ -83,7 +83,7 @@ public sealed class SnapSettingsGuard
             return RestoreDefaultAndQuarantine();
         }
 
-        if (!_settings.TrySetEnabled(state!.DragSnapEnabled))
+        if (!TrySetAndVerify(state!.DragSnapEnabled))
         {
             return false;
         }
@@ -97,7 +97,7 @@ public sealed class SnapSettingsGuard
         // 元の値は不明なので無効のまま固定されることを避け、OS の既定値である有効へ戻す。
         // 元々無効だった利用者も有効になるが、復元不能な無効化を残さないことを優先する。
         // ダウングレード時の未来の版も読めない状態として扱い、同じ既定値へ戻す。
-        if (!_settings.TrySetEnabled(true))
+        if (!TrySetAndVerify(true))
         {
             return false;
         }
@@ -111,6 +111,15 @@ public sealed class SnapSettingsGuard
 
         File.Move(_statePath, brokenPath);
         return true;
+    }
+
+    private bool TrySetAndVerify(bool enabled)
+    {
+        // 呼び出し元の _gate 内で書き込みと読み直しを続けて行う。
+        // 単一インスタンスのミューテックスにより、別インスタンスの書き込みはない前提。
+        return _settings.TrySetEnabled(enabled)
+            && _settings.TryGetEnabled(out var actual)
+            && actual == enabled;
     }
 
     private void SaveState(SnapSettingsState state)
