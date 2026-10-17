@@ -7,6 +7,32 @@ namespace Snapwell.Core.Tests.Overlay;
 /// <summary>差分の合成が全面の描画と同じ画素を作ることを検証する。</summary>
 public sealed class LauncherRasterCacheTests
 {
+    /// <summary>非表示で全画面と合成レイヤーを手放し、再描画は全面更新から始める。</summary>
+    [Theory]
+    [InlineData(OverlayTheme.Light, 1)]
+    [InlineData(OverlayTheme.Dark, 1.5)]
+    public void ClearReleasesPixelsAndNextFrameMatchesFullRender(OverlayTheme theme, double scale)
+    {
+        var selection = new ZoneSelection(new(-900, -500, 720, 540), new(4, 4), new(4, 4));
+        var cache = new LauncherRasterCache();
+        var layout = LauncherPanelLayout.Create(selection, scale, "対象", menuOpen: true);
+        var panel = OverlayPainter.CreatePanelLayer(selection.WorkArea, layout, theme, scale, DrawText);
+        var label = OverlayPainter.CreateSelectionLabelLayer(layout, theme, scale, DrawText);
+        var first = cache.Render(selection, panel, label, theme, scale);
+        Assert.True(cache.RetainedPixelBytes > first.Pixels.LongLength);
+        cache.Clear();
+        Assert.Equal(0, cache.RetainedPixelBytes);
+        cache.Clear();
+        var actual = cache.Render(selection, panel, label, theme, scale);
+        var expected = OverlayPainter.Launcher(selection, theme, scale);
+        OverlayPainter.Panel(expected, selection, layout, theme, scale, DrawText);
+        Assert.NotSame(first.Pixels, actual.Pixels);
+        Assert.Equal(expected.Pixels, actual.Pixels);
+        Assert.Equal(new PixelRect(0, 0, actual.Width, actual.Height), Assert.Single(actual.DirtyRegions!));
+        Assert.Equal(0, actual.BaseRevision);
+        Assert.Equal(1, actual.Revision);
+    }
+
     /// <summary>拡張・縮小・反転・パネルとの重なりでも同じ配列を更新する。</summary>
     [Theory]
     [InlineData(OverlayTheme.Light, 1, 0)]

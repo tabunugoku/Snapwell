@@ -7,6 +7,8 @@ namespace Snapwell.App.Overlay;
 /// <summary>専用描画スレッドで文字幅とパネルを確定する。</summary>
 internal sealed class LauncherPanelRenderer
 {
+    [ThreadStatic]
+    private static LauncherPanelRenderer? _current;
     private readonly LauncherRasterCache _raster = new();
     private (GridLayout Grid, double Scale, string Target, bool Menu, OverlayTheme Theme)? _key;
     private LauncherPanelLayout? _layout;
@@ -16,6 +18,24 @@ internal sealed class LauncherPanelRenderer
 
     internal int PanelBuildCount { get; private set; }
     internal int ShadowBuildCount { get; private set; }
+    // 終了待ちを打ち切った旧 STA と、再開後の STA は可変キャッシュを共有しない。
+    internal static LauncherPanelRenderer Current => _current ??= new();
+    internal long RetainedPixelBytes => _raster.RetainedPixelBytes + (_shadow?.Frame.Pixels.LongLength ?? 0);
+
+    /// <summary>所有する描画スレッド上で画素と差分の前提を手放す。</summary>
+    internal static void ReleaseCurrent()
+    {
+        if (_current is { } renderer)
+        {
+            renderer._raster.Clear();
+            renderer._key = null;
+            renderer._layout = null;
+            renderer._panel = null;
+            renderer._shadowKey = null;
+            renderer._shadow = null;
+            _current = null;
+        }
+    }
 
     /// <summary>同じ文字計測を配置と描画に使い、表示した配置を入力側へ渡す。</summary>
     internal static OverlayFrame Paint(ZoneSelection selection, string target, double scale, bool menuOpen,
