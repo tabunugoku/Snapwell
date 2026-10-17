@@ -47,9 +47,26 @@ public static class SettingsTransfer
     public static void Export(string path, PortableSettings value)
     {
         var destination = Path.GetFullPath(path);
+        if (File.Exists(destination))
+        {
+            try
+            {
+                using var stream = File.OpenRead(destination);
+                using var document = JsonDocument.Parse(stream);
+                if (IsFuture(document.RootElement))
+                {
+                    throw new InvalidOperationException("新しい版の設定は上書きできない。");
+                }
+            }
+            catch (JsonException)
+            {
+                // 保存ピッカーの空ファイルや壊れた JSON は、書き出し先として置き換えてよい。
+            }
+        }
+
+        // 利用者がピッカーで選んだファイルなので、確認から置換までの他プロセスによる版の変更は扱わない。
         Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
         var temporary = destination + "." + Guid.NewGuid().ToString("N") + ".tmp";
-        var backup = destination + "." + Guid.NewGuid().ToString("N") + ".bak";
         try
         {
             using (var stream = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write,
@@ -65,43 +82,13 @@ public static class SettingsTransfer
                 return;
             }
 
-            // 保存ピッカーが先に作った空ファイルも置き換える。置換した旧ファイルで未来の版を確かめる。
-            File.Replace(temporary, destination, backup);
-            try
-            {
-                var future = false;
-                try
-                {
-                    using var stream = File.OpenRead(backup);
-                    using var document = JsonDocument.Parse(stream);
-                    future = IsFuture(document.RootElement);
-                }
-                catch (JsonException)
-                {
-                    // 空ファイルや壊れた JSON は、書き出し先として置き換えてよい。
-                }
-
-                if (future)
-                {
-                    throw new InvalidOperationException("新しい版の設定は上書きできない。");
-                }
-            }
-            catch
-            {
-                File.Replace(backup, destination, null);
-                throw;
-            }
+            File.Replace(temporary, destination, null);
         }
         finally
         {
             if (File.Exists(temporary))
             {
                 File.Delete(temporary);
-            }
-
-            if (File.Exists(backup))
-            {
-                File.Delete(backup);
             }
         }
     }
