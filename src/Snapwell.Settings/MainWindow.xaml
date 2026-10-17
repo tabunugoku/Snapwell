@@ -18,6 +18,7 @@
                         PaneDisplayMode="Left" OpenPaneLength="220" IsBackButtonVisible="Collapsed"
                         IsPaneToggleButtonVisible="True" SelectionChanged="Navigation_SelectionChanged">
             <NavigationView.MenuItems>
+                <NavigationViewItem Content="全般" Tag="general" />
                 <NavigationViewItem Content="分割と間隔" Tag="grid" />
                 <NavigationViewItem Content="操作感" Tag="feel" />
                 <NavigationViewItem Content="ホットキー" Tag="hotkeys" />
