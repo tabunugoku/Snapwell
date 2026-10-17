@@ -12,4 +12,5 @@ public enum WindowCommand
     ToggleEnabled,
     OpenLauncher,
     ArrangeGrid, ArrangeColumns, ArrangeRows, ArrangeMainAndStack,
+    ArrangeAllMonitors,
 }

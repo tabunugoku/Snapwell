@@ -194,6 +194,23 @@ internal sealed class ResidentRuntime : IAppRuntime
         }
     }
 
+    /// <summary>入力配送と停止に対して直列化し、カーソルのモニターを整列する。</summary>
+    public void ArrangeCurrentMonitor()
+    {
+        lock (_gate)
+        {
+            if (_disposed || !_enabled)
+            {
+                return;
+            }
+
+            _longPress?.Cancel();
+            _launcher?.Close();
+            _preview?.Hide();
+            _hotkeys.ArrangeCurrentMonitor();
+        }
+    }
+
     public void CancelAll() => _motion.CancelAll();
 
     public void Dispose()

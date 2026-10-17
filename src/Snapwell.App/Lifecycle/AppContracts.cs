@@ -53,6 +53,7 @@ internal interface IAppRuntime : IDisposable
 {
     void SetEnabled(bool enabled);
     void Handle(HookEvent value);
+    void ArrangeCurrentMonitor();
     void CancelAll();
 }
 
@@ -65,6 +66,7 @@ internal interface ITrayService
     event Action? ToggleRequested;
     event Action? StandardSnapRequested;
     event Action? RestoreRequested;
+    event Action? ArrangeRequested;
     event Action? ExitRequested;
     event Action? SessionEnding;
     void Show(TrayState state);
