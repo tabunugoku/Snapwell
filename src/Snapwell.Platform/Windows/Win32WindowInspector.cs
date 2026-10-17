@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Snapwell.Core.Geometry;
 using Windows.Win32;
@@ -19,6 +20,12 @@ public interface IWindowInspector
 
     /// <summary>物理ピクセルの点の下にあるトップレベルウィンドウを返す。</summary>
     nint GetRootWindowAt(int x, int y);
+
+    /// <summary>前面から順にトップレベルウィンドウを返す。</summary>
+    IReadOnlyList<nint> GetTopLevelWindows() => [];
+
+    /// <summary>所有者のウィンドウを返し、所有者が無ければ 0 を返す。</summary>
+    nint GetOwner(nint handle) => 0;
 }
 
 /// <summary>公開 Win32 API でウィンドウを調査する。</summary>
@@ -82,6 +89,46 @@ public sealed class Win32WindowInspector : IWindowInspector
     public unsafe nint GetRootWindowAt(int x, int y) =>
         (nint)PInvoke.GetAncestor(PInvoke.WindowFromPoint(new System.Drawing.Point(x, y)),
             GET_ANCESTOR_FLAGS.GA_ROOT).Value;
+
+    /// <summary>所有者のハンドルを返し、所有者が無ければ 0 を返す。</summary>
+    public unsafe nint GetOwner(nint handle) =>
+        (nint)PInvoke.GetWindow(new HWND(handle), GET_WINDOW_CMD.GW_OWNER).Value;
+
+    /// <summary>Z オーダーの前面から順にトップレベルウィンドウを列挙する。</summary>
+    public unsafe IReadOnlyList<nint> GetTopLevelWindows()
+    {
+        var windows = new List<nint>();
+        var handle = GCHandle.Alloc(windows);
+        try
+        {
+            // EnumWindows は前面から順にトップレベルウィンドウを渡す。実機未確認。
+            PInvoke.EnumWindows(&EnumerateWindow, (nint)GCHandle.ToIntPtr(handle));
+            return windows.AsReadOnly();
+        }
+        finally
+        {
+            handle.Free();
+        }
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
+    private static unsafe BOOL EnumerateWindow(HWND window, LPARAM data)
+    {
+        try
+        {
+            if (!window.IsNull && GCHandle.FromIntPtr(data.Value).Target is List<nint> windows)
+            {
+                windows.Add((nint)window.Value);
+            }
+
+            return true;
+        }
+        catch (Exception)
+        {
+            // 例外をネイティブの列挙スタックへ出さない。
+            return false;
+        }
+    }
 
     private static bool TryReadStyle(HWND handle, WINDOW_LONG_PTR_INDEX index, out uint style)
     {

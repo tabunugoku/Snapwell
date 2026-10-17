@@ -11,7 +11,10 @@ public static class CommandPlanner
     public static PixelRect? Plan(WindowCommand command, PixelRect currentVisual, bool canResize,
         IReadOnlyList<MonitorArea> monitors, GridPlan plan, Spacing spacing)
     {
-        if (monitors.Count == 0 || command == WindowCommand.ToggleEnabled || !Enum.IsDefined(command))
+        if (monitors.Count == 0 ||
+            command is WindowCommand.ToggleEnabled or WindowCommand.ArrangeGrid or
+                WindowCommand.ArrangeColumns or WindowCommand.ArrangeRows or WindowCommand.ArrangeMainAndStack ||
+            !Enum.IsDefined(command))
         {
             return null;
         }
