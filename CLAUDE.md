@@ -39,9 +39,9 @@ Codex と Claude Code のどちらが書いても、同じ見た目にそろえ�
 - **コメントは日本語**: 新しく書くコメントは日本語の常体（短い体言止めまたは「〜する」）。識別子・API 名はそのまま
 - **コメントの中身**: 「なぜそうするか」「前提・制約・落とし穴」を書く。Win32 や DWM の挙動への推測は「実機未確認」と書く。公開する型とメソッドには 1 行の `/// <summary>` を書く
 - **無駄を足さない**: 使われないコード、コメントアウトした古いコード、「念のため」の分岐を残さない。既存のコードの整形し直しは、機能の変更と同じコミットに入れない
-- **確認**: push の前に次を通す。ソリューションは RID を付けてビルドできない（NETSDK1134）ので、RID ごとのビルドは出荷するプロジェクト（いまは `src/Snapwell.Core`、App ができたら `src/Snapwell.App`）に対して行う
-  - `dotnet build src/Snapwell.Core/Snapwell.Core.csproj -c Release -r win-x64 --no-restore`
-  - `dotnet build src/Snapwell.Core/Snapwell.Core.csproj -c Release -r win-arm64 --no-restore`
+- **確認**: push の前に次を通す。ソリューションは RID を付けてビルドできない（NETSDK1134）ので、RID ごとのビルドは出荷するプロジェクト（いまは Core を参照する `src/Snapwell.Platform`、App ができたら `src/Snapwell.App`）に対して行う
+  - `dotnet build src/Snapwell.Platform/Snapwell.Platform.csproj -c Release -r win-x64 --no-restore`
+  - `dotnet build src/Snapwell.Platform/Snapwell.Platform.csproj -c Release -r win-arm64 --no-restore`
   - `dotnet test --no-restore`
   - `dotnet format --verify-no-changes --no-restore`
 
