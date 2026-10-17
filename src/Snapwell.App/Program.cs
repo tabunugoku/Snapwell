@@ -57,7 +57,7 @@ internal static class Program
                     preview: preview, cursorPosition: CursorPosition, neighbors: neighbors.Snapshot);
                 var longPress = new LongPressDetector(inspector, monitors, Win32CaptionHitTest.IsCaption,
                     () => PInvoke.GetCursorPos(out var point) ? new Vec2(point.X, point.Y) : null,
-                    tracking.SetLongPress);
+                    tracking.SetLongPress, settings: () => settings);
                 LauncherController? launcher = null;
                 var hotkeys = new HotkeyCommandExecutor(inspector, monitors, motion, position, () => settings,
                     enabled, toggle, (uint)Environment.ProcessId, () => launcher?.Open());
