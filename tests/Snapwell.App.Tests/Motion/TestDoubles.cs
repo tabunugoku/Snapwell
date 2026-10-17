@@ -63,9 +63,19 @@ internal sealed class FakeMover : IWindowMover
     internal ConcurrentQueue<(nint Handle, int X, int Y)> Moves { get; } = new();
     internal ConcurrentQueue<(nint Handle, PixelRect Bounds)> Bounds { get; } = new();
     internal nint FailingHandle;
+    internal nint ThrowingHandle;
+    internal ManualResetEventSlim? Block;
+    internal ManualResetEventSlim Entered { get; } = new(false);
     public bool MoveVisual(nint handle, int x, int y)
     {
         Moves.Enqueue((handle, x, y));
+        Entered.Set();
+        Block?.Wait();
+        if (handle == ThrowingHandle)
+        {
+            throw new InvalidOperationException("closed");
+        }
+
         return handle != FailingHandle;
     }
 

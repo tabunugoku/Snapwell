@@ -96,6 +96,59 @@ public sealed class MotionEngineTests
         Assert.Equal(changed.Target, Assert.Single(mover.Bounds).Bounds);
     }
 
+    [Fact]
+    public async Task BlockedWindowCallDoesNotBlockCancelRequestOrQueries()
+    {
+        using var frames = new ControlledFrames();
+        using var block = new ManualResetEventSlim(false);
+        var mover = new FakeMover { Block = block };
+        using var engine = new MotionEngine(frames, frames, mover, new FakePreference());
+        engine.Request(Request(1));
+        frames.Advance();
+        Assert.True(mover.Entered.Wait(5000));
+        var others = Task.Run(() =>
+        {
+            engine.Cancel(1);
+            engine.Request(Request(2));
+            _ = engine.IsMoving(2);
+            engine.CancelAll();
+        });
+        await others.WaitAsync(TimeSpan.FromSeconds(1));
+        mover.Block = null;
+        block.Set();
+        frames.Advance(600);
+        await Task.Delay(100);
+        Assert.Single(mover.Moves, move => move.Handle == 1);
+        Assert.Empty(mover.Bounds);
+    }
+
+    [Fact]
+    public async Task DisposeReturnsWhileWindowCallIsBlocked()
+    {
+        using var frames = new ControlledFrames();
+        using var block = new ManualResetEventSlim(false);
+        var mover = new FakeMover { Block = block };
+        var engine = new MotionEngine(frames, frames, mover, new FakePreference());
+        engine.Request(Request(1));
+        frames.Advance();
+        Assert.True(mover.Entered.Wait(5000));
+        await Task.Run(engine.Dispose).WaitAsync(TimeSpan.FromSeconds(1));
+        block.Set();
+    }
+
+    [Fact]
+    public void ThrowingWindowIsRemovedWhileAnotherSettles()
+    {
+        using var frames = new ControlledFrames();
+        var mover = new FakeMover { ThrowingHandle = 1 };
+        using var engine = new MotionEngine(frames, frames, mover, new FakePreference());
+        engine.Request(Request(1));
+        engine.Request(Request(2));
+        frames.Advance(600);
+        WaitUntil(() => !engine.IsMoving(1) && !engine.IsMoving(2));
+        Assert.Equal((nint)2, Assert.Single(mover.Bounds).Handle);
+    }
+
     private static MotionRequest Request(nint handle) => new(handle, new(100, 100, 400, 300),
         new(8, 8, 948, 1024), new(0, 0, 1920, 1040), FeelPreset.Airy, new(-1000, -200), true);
 
