@@ -22,6 +22,15 @@ internal static class SettingsSchema
             }
         }
 
+        if (sourceVersion < 3 && !normalized.Hotkeys.ContainsKey(WindowCommand.ArrangeGrid))
+        {
+            var chord = DefaultHotkeys.Create()[WindowCommand.ArrangeGrid];
+            if (!normalized.Hotkeys.ContainsValue(chord))
+            {
+                normalized.Hotkeys.Add(WindowCommand.ArrangeGrid, chord);
+            }
+        }
+
         return normalized;
     }
 }

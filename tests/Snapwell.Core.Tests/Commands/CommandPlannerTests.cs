@@ -53,9 +53,27 @@ public sealed class CommandPlannerTests
     }
 
     [Fact]
+    public void ArrangeCommandsAreAppendedWithOnlyGridBoundByDefault()
+    {
+        var hotkeys = DefaultHotkeys.Create();
+        Assert.Equal(18, hotkeys.Count);
+        Assert.Equal(new KeyChordSpec(ChordModifiers.Control | ChordModifiers.Alt, 0x41),
+            hotkeys[WindowCommand.ArrangeGrid]);
+        Assert.False(hotkeys.ContainsKey(WindowCommand.ArrangeColumns));
+        Assert.False(hotkeys.ContainsKey(WindowCommand.ArrangeRows));
+        Assert.False(hotkeys.ContainsKey(WindowCommand.ArrangeMainAndStack));
+        Assert.Equal(21, (int)WindowCommand.ArrangeGrid);
+        Assert.Equal(22, (int)WindowCommand.ArrangeColumns);
+        Assert.Equal(23, (int)WindowCommand.ArrangeRows);
+        Assert.Equal(24, (int)WindowCommand.ArrangeMainAndStack);
+    }
+
+    [Fact]
     public void EveryPlacementPreservesFixedSize()
     {
-        foreach (var command in Enum.GetValues<WindowCommand>().Where(c => c != WindowCommand.ToggleEnabled))
+        foreach (var command in Enum.GetValues<WindowCommand>().Where(c =>
+            c is not (WindowCommand.ToggleEnabled or WindowCommand.ArrangeGrid or
+                WindowCommand.ArrangeColumns or WindowCommand.ArrangeRows or WindowCommand.ArrangeMainAndStack)))
         {
             var result = CommandPlanner.Plan(command, _current, false, _monitors, GridPlan.EightByEight, new(8, 8));
             Assert.Equal(_current.Width, result!.Value.Width);
@@ -79,6 +97,10 @@ public sealed class CommandPlannerTests
             [new("tiny", new(0, 0, 2, 2), 1)], GridPlan.EightByEight, new(8, 8)));
         Assert.Null(CommandPlanner.Plan(WindowCommand.LeftHalf, _current, true, [], GridPlan.EightByEight, new()));
         Assert.Null(Plan(WindowCommand.ToggleEnabled));
+        Assert.Null(Plan(WindowCommand.ArrangeGrid));
+        Assert.Null(Plan(WindowCommand.ArrangeColumns));
+        Assert.Null(Plan(WindowCommand.ArrangeRows));
+        Assert.Null(Plan(WindowCommand.ArrangeMainAndStack));
     }
 
     [Fact]

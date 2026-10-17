@@ -25,16 +25,17 @@ public sealed class SettingsCompatibilityTests : IDisposable
         Assert.Equal(new DeviceState(), SettingsStores.Device(device).Load().Value);
         store.Save(value);
         using var document = JsonDocument.Parse(File.ReadAllText(SettingsPath));
-        Assert.Equal(2, document.RootElement.GetProperty("SchemaVersion").GetInt32());
+        Assert.Equal(PortableSettings.CurrentSchemaVersion,
+            document.RootElement.GetProperty("SchemaVersion").GetInt32());
     }
 
     [Theory]
-    [InlineData("{\"Hotkeys\":{}}", true, 1)]
-    [InlineData("{\"SchemaVersion\":1,\"Hotkeys\":{}}", true, 1)]
-    [InlineData("{\"SchemaVersion\":2,\"Hotkeys\":{}}", false, 0)]
-    [InlineData("{\"SchemaVersion\":1,\"Hotkeys\":{\"LeftHalf\":{\"Modifiers\":\"Control, Alt\",\"VirtualKey\":32}}}", false, 1)]
-    [InlineData("{\"SchemaVersion\":1,\"Hotkeys\":null}", true, 17)]
-    [InlineData("{\"SchemaVersion\":2,\"Hotkeys\":null}", true, 17)]
+    [InlineData("{\"Hotkeys\":{}}", true, 2)]
+    [InlineData("{\"SchemaVersion\":1,\"Hotkeys\":{}}", true, 2)]
+    [InlineData("{\"SchemaVersion\":2,\"Hotkeys\":{}}", false, 1)]
+    [InlineData("{\"SchemaVersion\":1,\"Hotkeys\":{\"LeftHalf\":{\"Modifiers\":\"Control, Alt\",\"VirtualKey\":32}}}", false, 2)]
+    [InlineData("{\"SchemaVersion\":1,\"Hotkeys\":null}", true, 18)]
+    [InlineData("{\"SchemaVersion\":2,\"Hotkeys\":null}", true, 18)]
     public void StoreAndImportMigrateOnlyOlderFilesWithoutCreatingConflicts(string json, bool launcher, int count)
     {
         File.WriteAllText(SettingsPath, json);
@@ -51,9 +52,36 @@ public sealed class SettingsCompatibilityTests : IDisposable
     }
 
     [Theory]
+    [InlineData("{\"SchemaVersion\":2,\"Hotkeys\":{}}", true, false)]
+    [InlineData("{\"SchemaVersion\":1,\"Hotkeys\":{}}", true, true)]
+    [InlineData("{\"SchemaVersion\":2,\"Hotkeys\":{\"LeftHalf\":{\"Modifiers\":\"Control, Alt\",\"VirtualKey\":65}}}", false, false)]
+    [InlineData("{\"SchemaVersion\":3,\"Hotkeys\":{}}", false, false)]
+    public void SchemaThreeMigratesArrangeGridUnlessConflictingOrAlreadyCurrent(
+        string json, bool arrangeGrid, bool openLauncher)
+    {
+        File.WriteAllText(SettingsPath, json);
+        var store = SettingsStores.Portable(SettingsPath);
+        var stored = store.Load().Value;
+        var imported = SettingsTransfer.Apply(new(), SettingsTransfer.Read(SettingsPath, new()));
+        Assert.Equal(arrangeGrid, stored.Hotkeys.ContainsKey(WindowCommand.ArrangeGrid));
+        Assert.Equal(openLauncher, stored.Hotkeys.ContainsKey(WindowCommand.OpenLauncher));
+        Assert.Equal(stored.Hotkeys, imported.Hotkeys);
+        if (arrangeGrid)
+        {
+            Assert.Equal(new(ChordModifiers.Control | ChordModifiers.Alt, 0x41),
+                stored.Hotkeys[WindowCommand.ArrangeGrid]);
+        }
+
+        store.Save(stored);
+        using var document = JsonDocument.Parse(File.ReadAllText(SettingsPath));
+        Assert.Equal(3, document.RootElement.GetProperty("SchemaVersion").GetInt32());
+    }
+
+    [Theory]
     [InlineData(1, false, false)]
     [InlineData(2, false, true)]
-    [InlineData(3, true, true)]
+    [InlineData(3, false, true)]
+    [InlineData(4, true, true)]
     [InlineData(999999999999, true, true)]
     public void FutureVersionsUseEachStoresCurrentVersion(long version, bool portableFuture, bool deviceFuture)
     {
@@ -77,7 +105,7 @@ public sealed class SettingsCompatibilityTests : IDisposable
             Assert.Null(store.TryReload());
         }
 
-        File.WriteAllText(SettingsPath, "{\"SchemaVersion\":3}");
+        File.WriteAllText(SettingsPath, $$"""{"SchemaVersion":{{PortableSettings.CurrentSchemaVersion + 1}}}""");
         Assert.True(store.TryReload()!.IsReadOnly);
         File.WriteAllText(SettingsPath, "{\"Gap\":17}");
         Assert.Equal(17, store.TryReload()!.Value.Gap);
