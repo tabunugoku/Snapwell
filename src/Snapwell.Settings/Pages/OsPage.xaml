@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    x:Class="Snapwell.Settings.Pages.OsPage">
+    <Page.Resources>
+        <Style x:Key="DemoSwitchStyle" TargetType="ToggleSwitch"
+               BasedOn="{StaticResource SnapwellDemoSwitchStyle}">
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="Width" Value="40" />
+            <Setter Property="Height" Value="20" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleSwitch">
+                        <Grid Width="40" Height="20" Background="Transparent">
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroup x:Name="ToggleStates">
+                                    <VisualState x:Name="Off" />
+                                    <VisualState x:Name="On">
+                                        <VisualState.Setters>
+                                            <Setter
+                                                Target="SwitchTrack.Background"
+                                                Value="{ThemeResource SnapwellInkBrush}" />
+                                            <Setter
+                                                Target="SwitchTrack.BorderBrush"
+                                                Value="{ThemeResource SnapwellInkBrush}" />
+                                            <Setter Target="SwitchTrack.BorderThickness" Value="0" />
+                                            <Setter
+                                                Target="SwitchKnob.Fill"
+                                                Value="{ThemeResource SnapwellInkTextBrush}" />
+                                            <Setter Target="SwitchKnob.Margin" Value="23,0,0,0" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                </VisualStateGroup>
+                            </VisualStateManager.VisualStateGroups>
+                            <Border
+                                x:Name="SwitchTrack"
+                                CornerRadius="9999"
+                                BorderThickness="1"
+                                BorderBrush="{ThemeResource SnapwellMutedBrush}" />
+                            <Ellipse
+                                x:Name="SwitchKnob"
+                                Width="12"
+                                Height="12"
+                                Margin="3,0,0,0"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Center"
+                                Fill="{ThemeResource SnapwellMutedBrush}" />
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="DemoKeyBorderStyle" TargetType="Border">
+            <Setter Property="Background" Value="{ThemeResource SnapwellSurface2Brush}" />
+            <Setter Property="BorderBrush" Value="{ThemeResource SnapwellBorderStrongBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Padding" Value="6,0" />
+            <Setter Property="MinWidth" Value="22" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style x:Key="DemoKeyTextStyle" TargetType="TextBlock" BasedOn="{StaticResource SnapwellMonoTextStyle}">
+            <Setter Property="FontSize" Value="11.5" />
+            <Setter Property="LineHeight" Value="20" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+        </Style>
+    </Page.Resources>
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Padding="32,28,32,40" HorizontalAlignment="Stretch">
+            <!-- デモ状態 (未実装) -->
+            <TextBlock Text="Windows の標準機能" Style="{StaticResource SnapwellPageTitleStyle}" />
+            <TextBlock
+                Text="Snapwell が有効な間だけ、次の機能を止めます。止める前の値を保存しておき、無効にしたとき・終了したとき・異常終了のあとに起動したときに戻します。"
+                Style="{StaticResource SnapwellLeadTextStyle}" />
+            <Border Style="{StaticResource SnapwellRowsBorderStyle}">
+                <StackPanel>
+                    <Grid Style="{StaticResource SnapwellRowGridStyle}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <Grid ColumnSpacing="6" HorizontalAlignment="Left">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="ドラッグでのスナップ" Style="{StaticResource SnapwellRowTitleStyle}" />
+                                <Border Grid.Column="1" Style="{StaticResource SnapwellPendingTagStyle}">
+                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellPendingTagTextStyle}" />
+                                </Border>
+                            </Grid>
+                            <TextBlock
+                                Text="SPI_SETWINARRANGING"
+                                Style="{StaticResource SnapwellRowDescriptionStyle}"
+                                FontFamily="{StaticResource SnapwellMonoFontFamily}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <Border
+                                Background="{ThemeResource SnapwellGreenBackgroundBrush}"
+                                CornerRadius="9999"
+                                Padding="8,1"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Center">
+                                <TextBlock
+                                    Text="—"
+                                    FontSize="10.5"
+                                    FontWeight="SemiBold"
+                                    CharacterSpacing="50"
+                                    LineHeight="16.8"
+                                    TextWrapping="Wrap"
+                                    Foreground="{ThemeResource SnapwellGreenTextBrush}" />
+                            </Border>
+                            <ToggleSwitch IsEnabled="False"
+                                Style="{StaticResource DemoSwitchStyle}"
+                                IsOn="True"
+                                AutomationProperties.Name="ドラッグでのスナップ" />
+                        </StackPanel>
+                    </Grid>
+                    <Border Style="{StaticResource SnapwellRowDividerStyle}" />
+                    <Grid Style="{StaticResource SnapwellRowGridStyle}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <Grid ColumnSpacing="6" HorizontalAlignment="Left">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="スナップ レイアウト（最大化ボタンのメニュー）" Style="{StaticResource SnapwellRowTitleStyle}" />
+                                <Border Grid.Column="1" Style="{StaticResource SnapwellPendingTagStyle}">
+                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellPendingTagTextStyle}" />
+                                </Border>
+                            </Grid>
+                            <TextBlock
+                                Text="レジストリの値 · Windows のビルドで差があります"
+                                Style="{StaticResource SnapwellRowDescriptionStyle}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <Border
+                                Background="{ThemeResource SnapwellYellowBackgroundBrush}"
+                                CornerRadius="9999"
+                                Padding="8,1"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Center">
+                                <TextBlock
+                                    Text="要検証"
+                                    FontSize="10.5"
+                                    FontWeight="SemiBold"
+                                    CharacterSpacing="50"
+                                    LineHeight="16.8"
+                                    TextWrapping="Wrap"
+                                    Foreground="{ThemeResource SnapwellYellowTextBrush}" />
+                            </Border>
+                            <ToggleSwitch IsEnabled="False"
+                                Style="{StaticResource DemoSwitchStyle}"
+                                IsOn="True"
+                                AutomationProperties.Name="スナップ レイアウト" />
+                        </StackPanel>
+                    </Grid>
+                    <Border Style="{StaticResource SnapwellRowDividerStyle}" />
+                    <Grid Style="{StaticResource SnapwellRowGridStyle}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <Grid ColumnSpacing="6" HorizontalAlignment="Left">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="画面上端のスナップ バー" Style="{StaticResource SnapwellRowTitleStyle}" />
+                                <Border Grid.Column="1" Style="{StaticResource SnapwellPendingTagStyle}">
+                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellPendingTagTextStyle}" />
+                                </Border>
+                            </Grid>
+                            <TextBlock Text="24H2 以降" Style="{StaticResource SnapwellRowDescriptionStyle}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <Border
+                                Background="{ThemeResource SnapwellYellowBackgroundBrush}"
+                                CornerRadius="9999"
+                                Padding="8,1"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Center">
+                                <TextBlock
+                                    Text="要検証"
+                                    FontSize="10.5"
+                                    FontWeight="SemiBold"
+                                    CharacterSpacing="50"
+                                    LineHeight="16.8"
+                                    TextWrapping="Wrap"
+                                    Foreground="{ThemeResource SnapwellYellowTextBrush}" />
+                            </Border>
+                            <ToggleSwitch IsEnabled="False"
+                                Style="{StaticResource DemoSwitchStyle}"
+                                IsOn="True"
+                                AutomationProperties.Name="スナップ バー" />
+                        </StackPanel>
+                    </Grid>
+                    <Border Style="{StaticResource SnapwellRowDividerStyle}" />
+                    <Grid Style="{StaticResource SnapwellRowGridStyle}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <Border Style="{StaticResource DemoKeyBorderStyle}">
+                                    <TextBlock Text="Win" Style="{StaticResource DemoKeyTextStyle}" />
+                                </Border>
+                                <TextBlock Text=" + 矢印" Style="{StaticResource SnapwellRowTitleStyle}" />
+                                <Border Style="{StaticResource SnapwellPendingTagStyle}">
+                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellPendingTagTextStyle}" />
+                                </Border>
+                            </StackPanel>
+                            <TextBlock Text="Snapwell の操作に置き換えます" Style="{StaticResource SnapwellRowDescriptionStyle}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <Border
+                                Background="{ThemeResource SnapwellGreenBackgroundBrush}"
+                                CornerRadius="9999"
+                                Padding="8,1"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Center">
+                                <TextBlock
+                                    Text="—"
+                                    FontSize="10.5"
+                                    FontWeight="SemiBold"
+                                    CharacterSpacing="50"
+                                    LineHeight="16.8"
+                                    TextWrapping="Wrap"
+                                    Foreground="{ThemeResource SnapwellGreenTextBrush}" />
+                            </Border>
+                            <ToggleSwitch IsEnabled="False"
+                                Style="{StaticResource DemoSwitchStyle}"
+                                IsOn="True"
+                                AutomationProperties.Name="Win 矢印" />
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Border>
+            <Grid ColumnSpacing="10" Margin="0,12,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <Button IsEnabled="False" Content="標準の動作に戻す" Style="{StaticResource SnapwellDemoButtonStyle}" />
+                    <Border Style="{StaticResource SnapwellPendingTagStyle}">
+                        <TextBlock Text="準備中" Style="{StaticResource SnapwellPendingTagTextStyle}" />
+                    </Border>
+                </StackPanel>
+                <TextBlock
+                    Grid.Column="1"
+                    Text="保存した値: —。トレイメニューから操作できます"
+                    Style="{StaticResource SnapwellHintTextStyle}"
+                    VerticalAlignment="Center" />
+            </Grid>
+            <!-- デモ状態 (未実装) ここまで -->
+        </StackPanel>
+    </ScrollViewer>
+</Page>
