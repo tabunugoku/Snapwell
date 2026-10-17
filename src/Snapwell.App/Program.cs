@@ -51,9 +51,10 @@ internal static class Program
                 var launcherSurface = new OverlaySession(interactive: true);
                 var preview = new ZonePreview(previewSurface, monitors);
                 var tracking = new MouseTrackingVotes(value => hooks.MouseTrackingEnabled = value);
+                var neighbors = new NeighborWindowSource(inspector, monitors, (uint)Environment.ProcessId);
                 var drag = new DragSnapController(inspector, monitors, motion, () => settings,
                     tracking.SetDrag, (uint)Environment.ProcessId,
-                    preview: preview, cursorPosition: CursorPosition);
+                    preview: preview, cursorPosition: CursorPosition, neighbors: neighbors.Snapshot);
                 var longPress = new LongPressDetector(inspector, monitors, Win32CaptionHitTest.IsCaption,
                     () => PInvoke.GetCursorPos(out var point) ? new Vec2(point.X, point.Y) : null,
                     tracking.SetLongPress);
