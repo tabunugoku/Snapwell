@@ -3,29 +3,223 @@
     x:Class="Snapwell.Settings.Pages.FeelPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Page.Resources>
+        <Style x:Key="FeelCardButtonStyle" TargetType="Button" BasedOn="{StaticResource SnapwellButtonStyle}">
+            <Setter Property="Padding" Value="12" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="VerticalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="VerticalContentAlignment" Value="Stretch" />
+        </Style>
+        <Style x:Key="SelectedFeelCardButtonStyle" TargetType="Button" BasedOn="{StaticResource FeelCardButtonStyle}">
+            <Setter Property="Padding" Value="11" />
+            <Setter Property="BorderBrush" Value="{ThemeResource SnapwellInkBrush}" />
+            <Setter Property="BorderThickness" Value="2" />
+        </Style>
+    </Page.Resources>
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-        <StackPanel x:Name="Editor" Padding="28,16,28,32" Spacing="24" MaxWidth="820">
-            <TextBlock Text="操作感" Style="{StaticResource TitleTextBlockStyle}" />
-            <TextBlock Text="投げたときの動き方です。言葉で選ぶと、質量・振動数・減衰比が決まります。"
-                       TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+        <StackPanel x:Name="Editor" Padding="32,16,32,40" MaxWidth="820" HorizontalAlignment="Stretch">
+            <TextBlock Text="操作感" Style="{StaticResource SnapwellPageTitleStyle}" />
+            <TextBlock Text="投げたときの動き方です。言葉で選ぶと、質量・振動数・減衰比が決まります。曲線は手を離してから止まるまでの位置です。"
+                       Style="{StaticResource SnapwellLeadTextStyle}" />
+
             <ComboBox x:Name="FeelBox" Header="物理モデルのプリセット" HorizontalAlignment="Stretch"
-                      SelectionChanged="Feel_SelectionChanged">
+                      Visibility="Collapsed" SelectionChanged="Feel_SelectionChanged">
                 <ComboBoxItem Content="Airy — 軽やかに、少し引き寄せる" Tag="Airy" />
                 <ComboBoxItem Content="Snappy — きびきび、正確に" Tag="Snappy" />
                 <ComboBoxItem Content="Heavy — 重く、落ち着いて" Tag="Heavy" />
                 <ComboBoxItem Content="Bouncy — 軽く、弾むように" Tag="Bouncy" />
             </ComboBox>
-            <ComboBox x:Name="ModeBox" Header="吸着の方式" HorizontalAlignment="Stretch"
-                      SelectionChanged="Mode_SelectionChanged">
-                <ComboBoxItem Content="区画 — 半分・四分割・最大化" />
-                <ComboBoxItem Content="四隅 — サイズを変えずに移動" />
-            </ComboBox>
-            <StackPanel Spacing="8">
-                <ToggleSwitch x:Name="MotionSwitch" Header="動きを減らす" OnContent="オン" OffContent="オフ"
-                              Toggled="Motion_Toggled" />
-                <TextBlock Text="オンにすると、アニメーションせずに吸着先へすぐ移動します。Windows の「アニメーション効果」がオフのときも同じです。"
-                           TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-            </StackPanel>
+
+            <Grid ColumnSpacing="10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Button x:Name="CardAiry" Tag="Airy" Click="FeelCard_Click"
+                        Style="{StaticResource FeelCardButtonStyle}"
+                        AutomationProperties.Name="airy — airy, slightly magnetic">
+                    <StackPanel Spacing="2">
+                        <TextBlock Text="airy" FontWeight="SemiBold" FontSize="13"
+                                   Foreground="{ThemeResource SnapwellInkBrush}" />
+                        <TextBlock Text="airy, slightly magnetic"
+                                   FontFamily="{StaticResource SnapwellMonoFontFamily}" FontSize="11"
+                                   Foreground="{ThemeResource SnapwellMutedBrush}" TextWrapping="Wrap" />
+                        <Viewbox Height="54" Stretch="Fill" Margin="0,8,0,0">
+                            <Canvas Width="160" Height="54">
+                                <Line X1="0" Y1="12" X2="160" Y2="12"
+                                      Stroke="{ThemeResource SnapwellBorderStrongBrush}"
+                                      StrokeThickness="1" StrokeDashArray="3,3" />
+                                <Polyline x:Name="AiryCurve" Stroke="{ThemeResource SnapwellInkBrush}"
+                                          StrokeThickness="1.5" />
+                            </Canvas>
+                        </Viewbox>
+                    </StackPanel>
+                </Button>
+                <Button x:Name="CardSnappy" Grid.Column="1" Tag="Snappy" Click="FeelCard_Click"
+                        Style="{StaticResource FeelCardButtonStyle}"
+                        AutomationProperties.Name="snappy — snappy, precise">
+                    <StackPanel Spacing="2">
+                        <TextBlock Text="snappy" FontWeight="SemiBold" FontSize="13"
+                                   Foreground="{ThemeResource SnapwellInkBrush}" />
+                        <TextBlock Text="snappy, precise"
+                                   FontFamily="{StaticResource SnapwellMonoFontFamily}" FontSize="11"
+                                   Foreground="{ThemeResource SnapwellMutedBrush}" TextWrapping="Wrap" />
+                        <Viewbox Height="54" Stretch="Fill" Margin="0,8,0,0">
+                            <Canvas Width="160" Height="54">
+                                <Line X1="0" Y1="12" X2="160" Y2="12"
+                                      Stroke="{ThemeResource SnapwellBorderStrongBrush}"
+                                      StrokeThickness="1" StrokeDashArray="3,3" />
+                                <Polyline x:Name="SnappyCurve" Stroke="{ThemeResource SnapwellInkBrush}"
+                                          StrokeThickness="1.5" />
+                            </Canvas>
+                        </Viewbox>
+                    </StackPanel>
+                </Button>
+                <Button x:Name="CardHeavy" Grid.Column="2" Tag="Heavy" Click="FeelCard_Click"
+                        Style="{StaticResource FeelCardButtonStyle}"
+                        AutomationProperties.Name="heavy — heavy, settled">
+                    <StackPanel Spacing="2">
+                        <TextBlock Text="heavy" FontWeight="SemiBold" FontSize="13"
+                                   Foreground="{ThemeResource SnapwellInkBrush}" />
+                        <TextBlock Text="heavy, settled"
+                                   FontFamily="{StaticResource SnapwellMonoFontFamily}" FontSize="11"
+                                   Foreground="{ThemeResource SnapwellMutedBrush}" TextWrapping="Wrap" />
+                        <Viewbox Height="54" Stretch="Fill" Margin="0,8,0,0">
+                            <Canvas Width="160" Height="54">
+                                <Line X1="0" Y1="12" X2="160" Y2="12"
+                                      Stroke="{ThemeResource SnapwellBorderStrongBrush}"
+                                      StrokeThickness="1" StrokeDashArray="3,3" />
+                                <Polyline x:Name="HeavyCurve" Stroke="{ThemeResource SnapwellInkBrush}"
+                                          StrokeThickness="1.5" />
+                            </Canvas>
+                        </Viewbox>
+                    </StackPanel>
+                </Button>
+                <Button x:Name="CardBouncy" Grid.Column="3" Tag="Bouncy" Click="FeelCard_Click"
+                        Style="{StaticResource FeelCardButtonStyle}"
+                        AutomationProperties.Name="bouncy — light, playful">
+                    <StackPanel Spacing="2">
+                        <TextBlock Text="bouncy" FontWeight="SemiBold" FontSize="13"
+                                   Foreground="{ThemeResource SnapwellInkBrush}" />
+                        <TextBlock Text="light, playful"
+                                   FontFamily="{StaticResource SnapwellMonoFontFamily}" FontSize="11"
+                                   Foreground="{ThemeResource SnapwellMutedBrush}" TextWrapping="Wrap" />
+                        <Viewbox Height="54" Stretch="Fill" Margin="0,8,0,0">
+                            <Canvas Width="160" Height="54">
+                                <Line X1="0" Y1="12" X2="160" Y2="12"
+                                      Stroke="{ThemeResource SnapwellBorderStrongBrush}"
+                                      StrokeThickness="1" StrokeDashArray="3,3" />
+                                <Polyline x:Name="BouncyCurve" Stroke="{ThemeResource SnapwellInkBrush}"
+                                          StrokeThickness="1.5" />
+                            </Canvas>
+                        </Viewbox>
+                    </StackPanel>
+                </Button>
+            </Grid>
+
+            <TextBlock Text="詳細" Style="{StaticResource SnapwellGroupTitleStyle}" />
+            <Border Style="{StaticResource SnapwellRowsBorderStyle}">
+                <StackPanel>
+                    <Grid Style="{StaticResource SnapwellRowGridStyle}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Text="吸着の方式" Style="{StaticResource SnapwellRowTitleStyle}" />
+                            <TextBlock Text="投げたウィンドウを吸い寄せる対象"
+                                       Style="{StaticResource SnapwellRowDescriptionStyle}" />
+                        </StackPanel>
+                        <ComboBox x:Name="ModeBox" Grid.Column="1" Width="240" VerticalAlignment="Center"
+                                  AutomationProperties.Name="吸着の方式" SelectionChanged="Mode_SelectionChanged">
+                            <ComboBoxItem Content="区画 — 半分・四分割・最大化" />
+                            <ComboBoxItem Content="四隅 — サイズを変えずに移動" />
+                        </ComboBox>
+                    </Grid>
+                    <Border Style="{StaticResource SnapwellRowDividerStyle}" />
+                    <Grid Style="{StaticResource SnapwellRowGridStyle}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Text="質量 m" Style="{StaticResource SnapwellRowTitleStyle}" />
+                            <TextBlock Text="重いほど手から遅れ、遠くまで滑ります"
+                                       Style="{StaticResource SnapwellRowDescriptionStyle}" />
+                        </StackPanel>
+                        <TextBlock x:Name="MassValueText" Grid.Column="1" VerticalAlignment="Center"
+                                   FontFamily="{StaticResource SnapwellMonoFontFamily}"
+                                   Foreground="{ThemeResource SnapwellInkBrush}" />
+                    </Grid>
+                    <Border Style="{StaticResource SnapwellRowDividerStyle}" />
+                    <Grid Style="{StaticResource SnapwellRowGridStyle}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Text="固有振動数 f" Style="{StaticResource SnapwellRowTitleStyle}" />
+                            <TextBlock Text="大きいほど素早く吸着します"
+                                       Style="{StaticResource SnapwellRowDescriptionStyle}" />
+                        </StackPanel>
+                        <TextBlock x:Name="FrequencyValueText" Grid.Column="1" VerticalAlignment="Center"
+                                   FontFamily="{StaticResource SnapwellMonoFontFamily}"
+                                   Foreground="{ThemeResource SnapwellInkBrush}" />
+                    </Grid>
+                    <Border Style="{StaticResource SnapwellRowDividerStyle}" />
+                    <Grid Style="{StaticResource SnapwellRowGridStyle}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Text="減衰比 ζ" Style="{StaticResource SnapwellRowTitleStyle}" />
+                            <TextBlock Text="1 に近いほど行き過ぎません"
+                                       Style="{StaticResource SnapwellRowDescriptionStyle}" />
+                        </StackPanel>
+                        <TextBlock x:Name="DampingRatioValueText" Grid.Column="1" VerticalAlignment="Center"
+                                   FontFamily="{StaticResource SnapwellMonoFontFamily}"
+                                   Foreground="{ThemeResource SnapwellInkBrush}" />
+                    </Grid>
+                    <Border Style="{StaticResource SnapwellRowDividerStyle}" />
+                    <Grid Style="{StaticResource SnapwellRowGridStyle}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Text="導かれる値" Style="{StaticResource SnapwellRowTitleStyle}" />
+                            <TextBlock Text="k = m(2πf)², c = 2ζ√(km)"
+                                       Style="{StaticResource SnapwellRowDescriptionStyle}" />
+                        </StackPanel>
+                        <TextBlock x:Name="DerivedValueText" Grid.Column="1" VerticalAlignment="Center"
+                                   FontFamily="{StaticResource SnapwellMonoFontFamily}"
+                                   Foreground="{ThemeResource SnapwellInkBrush}" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <TextBlock Text="アクセシビリティ" Style="{StaticResource SnapwellGroupTitleStyle}" />
+            <Border Style="{StaticResource SnapwellRowsBorderStyle}">
+                <Grid Style="{StaticResource SnapwellRowGridStyle}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Spacing="2" VerticalAlignment="Center">
+                        <TextBlock Text="動きを減らす" Style="{StaticResource SnapwellRowTitleStyle}" />
+                        <TextBlock Text="オンにすると、アニメーションせずに吸着先へすぐ移動します。Windows の「アニメーション効果」がオフのときも同じです"
+                                   Style="{StaticResource SnapwellRowDescriptionStyle}" />
+                    </StackPanel>
+                    <ToggleSwitch x:Name="MotionSwitch" Grid.Column="1" OnContent="" OffContent="" MinWidth="0"
+                                  VerticalAlignment="Center" AutomationProperties.Name="動きを減らす"
+                                  Toggled="Motion_Toggled" />
+                </Grid>
+            </Border>
         </StackPanel>
     </ScrollViewer>
 </Page>
