@@ -14,12 +14,18 @@ public enum OverlayTheme { Light, Dark }
 
 /// <summary>モックアップの CSS 変数を RGBA に換算した配色。</summary>
 public sealed record OverlayPalette(OverlayColor Dim, OverlayColor Cell, OverlayColor CellBorder,
-    OverlayColor BlueBackground, OverlayColor BlueLine, OverlayColor BlueText)
+    OverlayColor BlueBackground, OverlayColor BlueLine, OverlayColor BlueText,
+    OverlayColor Surface, OverlayColor Surface2, OverlayColor Border, OverlayColor BorderStrong,
+    OverlayColor Text, OverlayColor Muted, OverlayColor Ink)
 {
     private static readonly OverlayPalette _light = new(new(247, 246, 243, 140), new(255, 255, 255, 140),
-        new(0, 0, 0, 20), new(225, 243, 254, 255), new(31, 108, 159, 140), new(31, 108, 159, 255));
+        new(0, 0, 0, 20), new(225, 243, 254, 255), new(31, 108, 159, 140), new(31, 108, 159, 255),
+        new(255, 255, 255, 255), new(249, 249, 248, 255), new(234, 234, 234, 255), new(218, 218, 215, 255),
+        new(47, 52, 55, 255), new(120, 119, 116, 255), new(17, 17, 17, 255));
     private static readonly OverlayPalette _dark = new(new(25, 25, 24, 128), new(255, 255, 255, 13),
-        new(255, 255, 255, 23), new(31, 108, 159, 71), new(140, 203, 242, 153), new(140, 203, 242, 255));
+        new(255, 255, 255, 23), new(31, 108, 159, 71), new(140, 203, 242, 153), new(140, 203, 242, 255),
+        new(32, 32, 32, 255), new(37, 37, 36, 255), new(255, 255, 255, 20), new(255, 255, 255, 36),
+        new(230, 230, 227, 255), new(155, 154, 151, 255), new(242, 242, 240, 255));
 
     /// <summary>指定したテーマの配色を返す。</summary>
     public static OverlayPalette For(OverlayTheme theme) => theme == OverlayTheme.Dark ? _dark : _light;
@@ -130,6 +136,173 @@ public static class OverlayPainter
         ValidateScale(scale);
         ArgumentOutOfRangeException.ThrowIfNegative(radius);
         PaintRounded(frame, rect.X, rect.Y, rect.Width, rect.Height, radius * scale, color);
+    }
+
+    /// <summary>区画の上に、文字以外のパネル・アイコン・キー・選択ラベルを描く。</summary>
+    public static void Panel(OverlayFrame frame, ZoneSelection selection, LauncherPanelLayout layout,
+        OverlayTheme theme = OverlayTheme.Light, double scale = 1,
+        Action<OverlayFrame, PixelRect, LauncherText>? drawText = null)
+    {
+        ValidateScale(scale);
+        var palette = OverlayPalette.For(theme);
+        var area = selection.WorkArea;
+        void Box(PixelRect bounds, double radius, OverlayColor fill, OverlayColor border)
+        {
+            var rect = Local(bounds, area);
+            FillRounded(frame, rect, fill, radius, scale);
+            StrokeRounded(frame, rect, border, radius, 1, scale);
+        }
+
+        Box(layout.SelectionLabel, 6, palette.Surface, palette.Border);
+        drawText?.Invoke(frame, area, layout.Text[0]);
+        PaintPanelShadow(frame, Local(layout.Panel, area), scale);
+        Box(layout.Panel, 12, palette.Surface, palette.Border);
+        FillRounded(frame, Local(layout.Tag, area), palette.BlueBackground, 9999, scale);
+        Box(layout.Plan, 6, palette.Surface, palette.Border);
+        if (layout.Plan.Width > 0)
+        {
+            var plan = Local(layout.Plan, area);
+            // select の下向き矢印もレイヤードウィンドウ内に描く。
+            for (var row = 0; row < 3; row++)
+            {
+                Fill(frame, new(plan.Right - (int)Math.Round((14 - row) * scale),
+                    (int)(plan.Center.Y + row * scale), Math.Max(1, (int)Math.Round((5 - 2 * row) * scale)),
+                    Math.Max(1, (int)Math.Round(scale))), palette.Text);
+            }
+        }
+
+        foreach (var button in layout.Presets)
+        {
+            var rect = Local(button.Bounds, area);
+            // disabled の opacity は背景も含むボタン全体にかけ、下の面へ合成する。
+            var layer = Create(rect.Width, rect.Height);
+            var full = new PixelRect(0, 0, rect.Width, rect.Height);
+            FillRounded(layer, full, palette.Surface2, 6, scale);
+            StrokeRounded(layer, full, palette.Border, 6, 1, scale);
+            var icon = Local(button.Icon, new(button.Bounds.X, button.Bounds.Y, rect.Width, rect.Height));
+            PaintRounded(layer, icon.X + .5 * scale, icon.Y + .5 * scale, 17 * scale, 11 * scale,
+                1.5 * scale, palette.Muted, Math.Max(1, scale), centered: true);
+            var preset = LauncherPreset.All[button.Index];
+            var on = new PixelRect(icon.X + (int)Math.Round((1.5 + preset.X0 * 15) * scale),
+                icon.Y + (int)Math.Round((1.5 + preset.Y0 * 9) * scale),
+                Math.Max(1, (int)Math.Round((preset.X1 - preset.X0) * 15 * scale)),
+                Math.Max(1, (int)Math.Round((preset.Y1 - preset.Y0) * 9 * scale)));
+            FillRounded(layer, on, palette.Muted, .5, scale);
+            drawText?.Invoke(layer, button.Bounds, layout.Text.First(text => button.Bounds.Contains(text.Bounds)));
+            Composite(frame, layer, rect.X, rect.Y, button.Enabled ? 1 : .4);
+        }
+
+        foreach (var key in layout.Keys)
+        {
+            Box(key, 4, palette.Surface2, palette.BorderStrong);
+        }
+
+        foreach (var text in layout.Text.Skip(1).Where(text => !layout.Options.Contains(text.Bounds) &&
+            !layout.Presets.Any(button => button.Bounds.Contains(text.Bounds))))
+        {
+            drawText?.Invoke(frame, area, text);
+        }
+
+        foreach (var option in layout.Options)
+        {
+            Box(option, 0, palette.Surface, palette.Border);
+            foreach (var text in layout.Text.Where(text => text.Bounds == option))
+            {
+                drawText?.Invoke(frame, area, text);
+            }
+        }
+    }
+
+    private static void PaintPanelShadow(OverlayFrame frame, PixelRect panel, double scale)
+    {
+        if (panel.Width == 0 || panel.Height == 0)
+        {
+            return;
+        }
+
+        // CSS の blur 28 px は標準偏差 14 px。三回のボックスぼかしで Gaussian を近似する。
+        var sigma = 14 * scale;
+        var lower = (int)Math.Floor(Math.Sqrt(4 * sigma * sigma + 1));
+        lower -= 1 - lower % 2;
+        var upper = lower + 2;
+        var count = (int)Math.Round((12 * sigma * sigma - 3 * lower * lower - 12 * lower - 9) / (-4 * lower - 4));
+        var radii = Enumerable.Range(0, 3).Select(index => ((index < count ? lower : upper) - 1) / 2).ToArray();
+        var padding = radii.Sum();
+        var shadow = Create(panel.Width + 2 * padding, panel.Height + 2 * padding);
+        FillRounded(shadow, new(padding, padding, panel.Width, panel.Height), new(0, 0, 0, 255), 12, scale);
+        var values = new double[shadow.Width * shadow.Height];
+        var scratch = new double[values.Length];
+        for (var index = 0; index < values.Length; index++)
+        {
+            values[index] = shadow.Pixels[index * 4 + 3];
+        }
+
+        foreach (var radius in radii)
+        {
+            Blur(values, scratch, shadow.Width, shadow.Height, radius, horizontal: true);
+            Blur(scratch, values, shadow.Width, shadow.Height, radius, horizontal: false);
+        }
+
+        for (var index = 0; index < values.Length; index++)
+        {
+            shadow.Pixels[index * 4 + 3] = (byte)Math.Round(values[index] * .05);
+        }
+
+        Composite(frame, shadow, panel.X - padding, panel.Y - padding + (int)Math.Round(8 * scale));
+    }
+
+    private static void Blur(double[] source, double[] destination, int width, int height, int radius, bool horizontal)
+    {
+        var length = horizontal ? width : height;
+        var lines = horizontal ? height : width;
+        var step = horizontal ? 1 : width;
+        for (var line = 0; line < lines; line++)
+        {
+            var start = horizontal ? line * width : line;
+            var sum = 0.0;
+            for (var index = 0; index <= Math.Min(radius, length - 1); index++)
+            {
+                sum += source[start + index * step];
+            }
+
+            for (var index = 0; index < length; index++)
+            {
+                destination[start + index * step] = sum / (2 * radius + 1);
+                if (index - radius >= 0)
+                {
+                    sum -= source[start + (index - radius) * step];
+                }
+
+                if (index + radius + 1 < length)
+                {
+                    sum += source[start + (index + radius + 1) * step];
+                }
+            }
+        }
+    }
+
+    /// <summary>乗算済みの画素を、不透明度を含めて source-over で合成する。</summary>
+    public static void Composite(OverlayFrame destination, OverlayFrame source, int left, int top, double opacity = 1)
+    {
+        if (!double.IsFinite(opacity) || opacity < 0 || opacity > 1)
+        {
+            throw new ArgumentOutOfRangeException(nameof(opacity));
+        }
+
+        for (var y = Math.Max(0, -top); y < Math.Min(source.Height, destination.Height - top); y++)
+        {
+            for (var x = Math.Max(0, -left); x < Math.Min(source.Width, destination.Width - left); x++)
+            {
+                var from = (y * source.Width + x) * 4;
+                var to = ((top + y) * destination.Width + left + x) * 4;
+                var alpha = (byte)Math.Round(source.Pixels[from + 3] * opacity);
+                for (var channel = 0; channel < 4; channel++)
+                {
+                    destination.Pixels[to + channel] = Blend((byte)Math.Round(source.Pixels[from + channel] * opacity),
+                        destination.Pixels[to + channel], alpha);
+                }
+            }
+        }
     }
 
     /// <summary>論理半径と太さを物理 px に換算し、矩形の内側に角丸の枠を描く。</summary>
