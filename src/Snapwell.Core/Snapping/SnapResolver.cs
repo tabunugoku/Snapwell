@@ -7,9 +7,12 @@ namespace Snapwell.Core.Snapping;
 /// <summary>空走の予測から対象モニターと一つの吸着先を選ぶ。</summary>
 public static class SnapResolver
 {
+    // 背の高いウィンドウでも端への操作を拾い、中央での横投げは半分を選べる幅にする。
+    private const double PointerEdgeBandRatio = 0.1;
+
     /// <summary>論理ピクセルの間隔を対象モニターで換算し、低速時やモニターがなければ null を返す。</summary>
     public static SnapResult? Resolve(PixelRect current, Vec2 velocity, FeelPreset feel, SnapMode mode,
-        Spacing spacing, IReadOnlyList<MonitorArea> monitors, bool canResize = true)
+        Spacing spacing, IReadOnlyList<MonitorArea> monitors, bool canResize = true, Vec2? pointer = null)
     {
         ArgumentNullException.ThrowIfNull(feel);
         ArgumentNullException.ThrowIfNull(monitors);
@@ -34,7 +37,7 @@ public static class SnapResolver
         var physicalSpacing = spacing.ToPhysical(monitor.Scale);
         var selection = mode == SnapMode.Corners
             ? SelectCorner(current, predicted, monitor.WorkArea, physicalSpacing.Edge)
-            : SelectZone(current, predicted, center, monitor.WorkArea, physicalSpacing, canResize);
+            : SelectZone(current, predicted, center, monitor.WorkArea, physicalSpacing, canResize, pointer);
         return new(selection.Target, selection.Kind, monitor.Id, predicted,
             selection.Target.Width != current.Width || selection.Target.Height != current.Height);
     }
@@ -93,12 +96,25 @@ public static class SnapResolver
     }
 
     private static (PixelRect Target, SnapTargetKind Kind) SelectZone(PixelRect current, Vec2 predicted,
-        Vec2 predictedCenter, PixelRect area, PhysicalSpacing spacing, bool canResize)
+        Vec2 predictedCenter, PixelRect area, PhysicalSpacing spacing, bool canResize, Vec2? pointer)
     {
         var center = ClampCenter(predictedCenter, area);
         var grid = new GridLayout(area, new(2, 2), spacing);
         var right = center.X >= area.Center.X;
         var column = right ? 1 : 0;
+        var selectionY = center.Y;
+        if (pointer is { } point)
+        {
+            if (point.Y <= area.Y + area.Height * PointerEdgeBandRatio)
+            {
+                selectionY = area.Y;
+            }
+            else if (point.Y >= area.Bottom - area.Height * PointerEdgeBandRatio)
+            {
+                selectionY = area.Bottom;
+            }
+        }
+
         PixelRect target;
         SnapTargetKind kind;
         if (predicted.Y <= area.Y - current.Height * 0.25 &&
@@ -107,12 +123,12 @@ public static class SnapResolver
             target = grid.SpanRect(0, 0, 1, 1);
             kind = SnapTargetKind.Maximize;
         }
-        else if (center.Y < area.Y + area.Height * 0.3)
+        else if (selectionY < area.Y + area.Height * 0.3)
         {
             target = grid.CellRect(column, 0);
             kind = right ? SnapTargetKind.TopRight : SnapTargetKind.TopLeft;
         }
-        else if (center.Y > area.Y + area.Height * 0.7)
+        else if (selectionY > area.Y + area.Height * 0.7)
         {
             target = grid.CellRect(column, 1);
             kind = right ? SnapTargetKind.BottomRight : SnapTargetKind.BottomLeft;
