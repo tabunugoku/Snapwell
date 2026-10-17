@@ -1,5 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Shapes;
 using Snapwell.Core.Physics;
 using Snapwell.Core.Snapping;
@@ -45,7 +46,8 @@ public sealed partial class FeelPage : Page
         var x = 0.0;
         var v = 0.0;
 
-        polyline.Points.Clear();
+        // Points の既定値は実装によって null のことがあるため、毎回新しい集合を入れる。
+        polyline.Points = new PointCollection();
         polyline.Points.Add(new Point(0, height - 4));
         for (var i = 1; i <= steps; i++)
         {
