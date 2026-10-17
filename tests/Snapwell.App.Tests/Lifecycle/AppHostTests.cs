@@ -1,8 +1,15 @@
 using System.Collections.Concurrent;
 using System.Threading.Channels;
+using Snapwell.App.Dragging;
+using Snapwell.App.Hotkeys;
 using Snapwell.App.Lifecycle;
+using Snapwell.App.Overlay;
+using Snapwell.App.Tests.Motion;
+using Snapwell.App.Tests.Overlay;
+using Snapwell.Core.Geometry;
 using Snapwell.Core.Settings;
 using Snapwell.Platform.Hooks;
+using Snapwell.Platform.Windows;
 
 namespace Snapwell.App.Tests.Lifecycle;
 
@@ -338,6 +345,7 @@ public sealed class AppHostTests
         var shutdown = Task.Run(fixture.Host.Shutdown);
         Assert.True(SpinWait.SpinUntil(() => fixture.Calls.Contains("restore") && fixture.Calls.Contains("corners"),
             1000));
+        Assert.True(fixture.Watcher.Disposed);
         block.Set();
         await Task.WhenAll(resume, shutdown).WaitAsync(TimeSpan.FromSeconds(5));
     }
@@ -394,6 +402,180 @@ public sealed class AppHostTests
         Assert.Same(exception, Assert.Single(fixture.Log.Errors));
     }
 
+    [Fact]
+    public void WatcherStartsAfterTrayAndNotificationPostsBeforeReloadingOnce()
+    {
+        using var fixture = new Fixture();
+        fixture.Watcher.OnStart = () => Assert.NotNull(fixture.Tray.State);
+        fixture.Tray.QueuePosts = true;
+        fixture.Host.Start();
+        fixture.Portable.ReloadResult = new(new() { Gap = 19 });
+        fixture.Watcher.Notify();
+        Assert.Single(fixture.Tray.Posted);
+        Assert.Single(fixture.Created);
+        Assert.Equal(0, fixture.Portable.Reloads);
+        fixture.Tray.Flush();
+        Assert.Equal(2, fixture.Created.Count);
+        Assert.Equal(19, fixture.SettingsSeen.Last().Gap);
+        Assert.Equal(1, fixture.Runtime.Disposals);
+        Assert.Equal(1, fixture.Runtime.Cancels);
+        Assert.True(Assert.IsType<FakeRuntime>(fixture.Created.Last()).Enabled);
+        Assert.Equal(0, fixture.Portable.Saves);
+    }
+
+    [Fact]
+    public void ReplacementAppliesRealRuntimeBindingsAfterOldRuntimeDisposes()
+    {
+        using var fixture = new Fixture();
+        IReadOnlyList<HotkeyBinding> applied = [];
+        var motions = new List<FakeMotion>();
+        fixture.Factory = settings =>
+        {
+            var inspector = new FakeInspector();
+            var monitors = new FakeMonitors();
+            var motion = new FakeMotion();
+            motions.Add(motion);
+            var bindings = HotkeyBindingsBuilder.Build(settings.Hotkeys).Bindings;
+            var drag = new DragSnapController(inspector, monitors, motion, () => settings, _ => { }, 999);
+            var hotkeys = new HotkeyCommandExecutor(inspector, monitors, motion, new NoPosition(), () => settings,
+                () => true, () => { }, 999);
+            var launcher = new LauncherController(inspector, monitors, () => settings, new RecordingPresenter(),
+                hotkeys.Place, value => applied = value, bindings, 999);
+            return new ResidentRuntime(drag, hotkeys, motion, bindings, value => applied = value, launcher);
+        };
+        fixture.Host.Start();
+        var settings = new PortableSettings { Hotkeys = [] };
+        settings.Hotkeys[Snapwell.Core.Commands.WindowCommand.OpenLauncher] =
+            new(Snapwell.Core.Commands.ChordModifiers.Alt, 0x4C);
+        fixture.Portable.ReloadResult = new(settings);
+        fixture.Watcher.Notify();
+        Assert.Equal(HotkeyBindingsBuilder.Build(settings.Hotkeys).Bindings, applied);
+        Assert.Equal(1, motions[0].DisposeCalls);
+    }
+
+    [Theory]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    public void ReloadKeepsPausedOrFailedHookRuntimeDisabled(bool enabled, bool hooksStart)
+    {
+        using var fixture = new Fixture(new() { Enabled = enabled });
+        fixture.Hooks.Starts = hooksStart;
+        fixture.Host.Start();
+        fixture.Portable.ReloadResult = new(new() { ShowZonePreview = false });
+        fixture.Watcher.Notify();
+        Assert.False(Assert.IsType<FakeRuntime>(fixture.Created.Last()).Enabled);
+    }
+
+    [Fact]
+    public void UnchangedOrUnreadableReloadPreservesRuntimeAndSuccessfulReadClearsOnlyReloadStatus()
+    {
+        using var fixture = new Fixture();
+        fixture.Guard.RecoverSucceeds = false;
+        fixture.Host.Start();
+        var recoveryStatus = fixture.Tray.State!.Status;
+        fixture.Portable.ReloadResult = null;
+        fixture.Watcher.Notify();
+        Assert.Contains("前の設定", fixture.Tray.State!.Status);
+        Assert.Equal(0, fixture.Runtime.Disposals);
+        fixture.Portable.ReloadResult = new(new());
+        fixture.Watcher.Notify();
+        Assert.Single(fixture.Created);
+        Assert.Equal(recoveryStatus, fixture.Tray.State!.Status);
+    }
+
+    [Fact]
+    public void FutureSettingsRemainProtectedUntilReadableSettingsArrive()
+    {
+        using var fixture = new Fixture();
+        fixture.Host.Start();
+        fixture.Portable.ReloadResult = new(new() { Gap = 19 }, IsReadOnly: true);
+        fixture.Watcher.Notify();
+        Assert.Single(fixture.Created);
+        Assert.Equal("新しい版の設定を保護しています", fixture.Tray.State!.Status);
+        fixture.Portable.ReloadResult = new(new());
+        fixture.Watcher.Notify();
+        Assert.Null(fixture.Tray.State!.Status);
+        Assert.Equal(0, fixture.Runtime.Disposals);
+    }
+
+    [Fact]
+    public void RuntimeCreationFailureKeepsOldRuntimeAndCanRetry()
+    {
+        using var fixture = new Fixture();
+        fixture.Host.Start();
+        fixture.Portable.ReloadResult = new(new() { Gap = 19 });
+        fixture.Factory = _ => throw new IOException("create");
+        fixture.Watcher.Notify();
+        Assert.Equal(0, fixture.Runtime.Disposals);
+        Assert.True(fixture.Runtime.Enabled);
+        Assert.Single(fixture.Log.Errors);
+        Assert.Contains("前の設定", fixture.Tray.State!.Status);
+        fixture.Factory = null;
+        fixture.Watcher.Notify();
+        Assert.Equal(1, fixture.Runtime.Disposals);
+        Assert.Null(fixture.Tray.State!.Status);
+    }
+
+    [Fact]
+    public void ShutdownDisposesWatcherAndQueuedLateNotificationsDoNothing()
+    {
+        using var fixture = new Fixture();
+        fixture.Tray.QueuePosts = true;
+        fixture.Host.Start();
+        fixture.Portable.ReloadResult = new(new() { Gap = 19 });
+        fixture.Watcher.Notify();
+        fixture.Host.Shutdown();
+        fixture.Watcher.Notify();
+        fixture.Tray.Flush();
+        Assert.True(fixture.Watcher.Disposed);
+        Assert.Single(fixture.Created);
+        Assert.Equal(0, fixture.Portable.Reloads);
+    }
+
+    [Fact]
+    public void ShutdownDuringCreationDisposesReplacementWithoutEnablingIt()
+    {
+        using var fixture = new Fixture();
+        fixture.Host.Start();
+        var replacement = new FakeRuntime(fixture.Calls);
+        fixture.Factory = _ =>
+        {
+            fixture.Host.Shutdown();
+            return replacement;
+        };
+        fixture.Portable.ReloadResult = new(new() { Gap = 19 });
+        fixture.Watcher.Notify();
+        Assert.Equal(1, replacement.Disposals);
+        Assert.False(replacement.Enabled);
+    }
+
+    [Fact]
+    public void WatcherStartFailureIsLoggedAndDoesNotPreventStartup()
+    {
+        using var fixture = new Fixture();
+        fixture.Watcher.OnStart = () => throw new IOException("watch");
+        Assert.True(fixture.Host.Start());
+        Assert.Single(fixture.Log.Errors);
+        Assert.NotNull(fixture.Tray.State);
+    }
+
+    private sealed class NoPosition : IWindowPositionApi
+    {
+        public bool Restore(nint handle) => true;
+        public bool SetBounds(nint handle, PixelRect bounds, bool positionOnly) => true;
+        public bool ApplyBatch(IReadOnlyList<NativeWindowPlacement> placements) => true;
+    }
+
+    private sealed class FakeWatcher : ISettingsWatcher
+    {
+        public event Action? Changed;
+        internal Action? OnStart;
+        internal bool Disposed;
+        public void Start() => OnStart?.Invoke();
+        public void Dispose() => Disposed = true;
+        internal void Notify() => Changed?.Invoke();
+    }
+
     private sealed class Fixture : IDisposable
     {
         internal ConcurrentQueue<string> Calls { get; } = new();
@@ -407,6 +589,10 @@ public sealed class AppHostTests
         internal FakeLog Log { get; } = new();
         internal FakeRuntime Runtime { get; }
         internal AppHost Host { get; }
+        internal FakeWatcher Watcher { get; } = new();
+        internal Func<PortableSettings, IAppRuntime>? Factory;
+        internal List<IAppRuntime> Created { get; } = [];
+        internal List<PortableSettings> SettingsSeen { get; } = [];
 
         internal Fixture(DeviceState? state = null)
         {
@@ -418,7 +604,13 @@ public sealed class AppHostTests
             Tray = new(Calls);
             Runtime = new(Calls);
             Host = new(Instance, Guard, Portable,
-                Device, Hooks, Tray, Consent, Log, () => Calls.Enqueue("corners"), (_, _, _) => Runtime);
+                Device, Hooks, Tray, Consent, Log, () => Calls.Enqueue("corners"), (settings, _, _) =>
+                {
+                    var runtime = Factory?.Invoke(settings) ?? (Created.Count == 0 ? Runtime : new FakeRuntime(Calls));
+                    Created.Add(runtime);
+                    SettingsSeen.Add(settings);
+                    return runtime;
+                }, Watcher);
         }
 
         public void Dispose() => Host.Shutdown();
@@ -458,6 +650,9 @@ public sealed class AppHostTests
     {
         internal T Value = value;
         internal int Saves;
+        internal int Reloads;
+        internal SettingsLoadResult<T>? ReloadResult;
+        public SettingsLoadResult<T>? TryReload() { Reloads++; return ReloadResult; }
         internal bool ReadOnly;
         internal bool ResetToDefaults;
         internal ManualResetEventSlim? BlockSave;
@@ -513,7 +708,17 @@ public sealed class AppHostTests
         public void Show(TrayState state) { State = state; calls.Enqueue("tray.show"); }
         public void Update(TrayState state) => State = state;
         public void Remove() => calls.Enqueue("tray.remove");
-        public void Post(Action action) => action();
+        internal bool QueuePosts;
+        internal Queue<Action> Posted { get; } = new();
+        public void Post(Action action)
+        {
+            if (QueuePosts) { Posted.Enqueue(action); }
+            else { action(); }
+        }
+        internal void Flush()
+        {
+            while (Posted.TryDequeue(out var action)) { action(); }
+        }
         public void RunMessageLoop() { }
         internal void RequestToggle() => ToggleRequested?.Invoke();
         internal void RequestStandardSnap() => StandardSnapRequested?.Invoke();
@@ -544,6 +749,7 @@ public sealed class AppHostTests
     {
         internal bool Enabled;
         internal int Cancels;
+        internal int Disposals;
         internal ManualResetEventSlim? BlockDispose;
         internal Action? OnDispose;
         internal ConcurrentQueue<HookEvent> Events { get; } = new();
@@ -560,6 +766,7 @@ public sealed class AppHostTests
         public void CancelAll() => Cancels++;
         public void Dispose()
         {
+            Disposals++;
             calls.Enqueue("motion.stop");
             BlockDispose?.Wait();
             OnDispose?.Invoke();

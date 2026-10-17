@@ -64,7 +64,7 @@ internal static class Program
                         previewSurface.SetEnabled(value);
                         launcherSurface.SetEnabled(value);
                     }, [previewSurface, launcherSurface]);
-            });
+            }, new SettingsWatcher(SettingsStores.PortablePath()));
         UnhandledExceptionEventHandler unhandled = (_, args) => host.HandleUnhandledException(
             args.ExceptionObject as Exception ?? new InvalidOperationException("未処理の例外。"));
         EventHandler<UnobservedTaskExceptionEventArgs> unobserved = (_, args) =>
