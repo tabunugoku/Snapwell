@@ -85,6 +85,7 @@ public static class HotkeyCatalog
         WindowCommand.ArrangeColumns => "現在のモニターを横一列に整列",
         WindowCommand.ArrangeRows => "現在のモニターを縦一列に整列",
         WindowCommand.ArrangeMainAndStack => "現在のモニターをメインとスタックで整列",
+        WindowCommand.ArrangeAllMonitors => "全モニターを整列 (グリッド)",
         _ => command.ToString(),
     };
 
