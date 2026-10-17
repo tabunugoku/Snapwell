@@ -22,6 +22,8 @@ public sealed record PortableSettings
     public double Edge { get; set; } = 8;
     public bool ReduceMotion { get; set; }
     public bool ShowZonePreview { get; set; } = true;
+    public int LongPressMilliseconds { get; set; } = 450;
+    public double LongPressDistance { get; set; } = 6;
     public Dictionary<WindowCommand, KeyChordSpec> Hotkeys { get; set; } = DefaultHotkeys.Create();
 
     /// <summary>物理モデルのプリセットを返す。</summary>
@@ -57,6 +59,12 @@ public sealed record PortableSettings
             Gap = double.IsFinite(Gap) && Gap is >= 0 and <= 200 ? Gap : defaults.Gap,
             Edge = double.IsFinite(Edge) && Edge is >= 0 and <= 200 ? Edge : defaults.Edge,
             ShowZonePreview = ShowZonePreview,
+            LongPressMilliseconds = LongPressMilliseconds is >= 150 and <= 2000
+                ? LongPressMilliseconds
+                : defaults.LongPressMilliseconds,
+            LongPressDistance = double.IsFinite(LongPressDistance) && LongPressDistance is >= 2 and <= 32
+                ? LongPressDistance
+                : defaults.LongPressDistance,
             Hotkeys = hotkeys,
         };
     }
