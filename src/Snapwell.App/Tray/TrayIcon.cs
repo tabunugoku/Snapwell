@@ -14,6 +14,10 @@ internal sealed unsafe class TrayIcon(IAppLog log) : ITrayService
 {
     private const uint CallbackMessage = 0x8001;
     private const uint InvokeMessage = 0x8002;
+    private const uint WmDestroy = 0x0002;
+    private const uint WmClose = 0x0010;
+    private const uint WmContextMenu = 0x007B;
+    private const uint WmRButtonUp = 0x0205;
     private const string ClassName = "Snapwell.TrayHost";
     [ThreadStatic]
     private static TrayIcon? _current;
@@ -97,7 +101,7 @@ internal sealed unsafe class TrayIcon(IAppLog log) : ITrayService
                 var data = IconData();
                 PInvoke.Shell_NotifyIcon(NOTIFY_ICON_MESSAGE.NIM_DELETE, in data);
                 // DestroyWindow は作成したスレッドに任せる。
-                PInvoke.PostMessage(_window, 0x0010, default, default);
+                PInvoke.PostMessage(_window, WmClose, default, default);
             }
         }
     }
@@ -234,7 +238,7 @@ internal sealed unsafe class TrayIcon(IAppLog log) : ITrayService
 
         switch (message)
         {
-            case CallbackMessage when (uint)lParam.Value is 0x0205 or 0x007B:
+            case CallbackMessage when (uint)lParam.Value is WmRButtonUp or WmContextMenu:
                 ShowMenu();
                 return default;
             case InvokeMessage:
@@ -244,18 +248,20 @@ internal sealed unsafe class TrayIcon(IAppLog log) : ITrayService
                 }
 
                 return default;
-            case 0x0011:
-                SessionEnding?.Invoke();
-                return new(1);
-            case 0x0016 when wParam.Value != 0:
-                SessionEnding?.Invoke();
-                return default;
-            case 0x0010:
+            case SessionEndPolicy.WmQueryEndSession or SessionEndPolicy.WmEndSession:
+                // 問い合わせの段階では終わらない。ほかのアプリがシャットダウンを取り消すことがあるため。
+                if (SessionEndPolicy.Decide(message, wParam.Value) == SessionEndAction.Shutdown)
+                {
+                    SessionEnding?.Invoke();
+                }
+
+                return message == SessionEndPolicy.WmQueryEndSession ? new(1) : default;
+            case WmClose:
                 ExitRequested?.Invoke();
                 PInvoke.DestroyWindow(window);
                 _window = default;
                 return default;
-            case 0x0002:
+            case WmDestroy:
                 PInvoke.PostQuitMessage(0);
                 return default;
             default:
@@ -288,7 +294,7 @@ internal sealed unsafe class TrayIcon(IAppLog log) : ITrayService
             {
             }
 
-            return message == 0x0011 ? new(1) : default;
+            return message == SessionEndPolicy.WmQueryEndSession ? new(1) : default;
         }
     }
 
