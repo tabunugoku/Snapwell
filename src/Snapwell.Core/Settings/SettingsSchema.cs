@@ -31,6 +31,24 @@ internal static class SettingsSchema
             }
         }
 
+        if (sourceVersion < 4)
+        {
+            var defaults = DefaultHotkeys.Create();
+            WindowCommand[] commands =
+            [
+                WindowCommand.ArrangeColumns, WindowCommand.ArrangeRows,
+                WindowCommand.ArrangeMainAndStack, WindowCommand.ArrangeAllMonitors,
+            ];
+            foreach (var command in commands)
+            {
+                var chord = defaults[command];
+                if (!normalized.Hotkeys.ContainsKey(command) && !normalized.Hotkeys.ContainsValue(chord))
+                {
+                    normalized.Hotkeys.Add(command, chord);
+                }
+            }
+        }
+
         return normalized;
     }
 }
