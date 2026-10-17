@@ -8,7 +8,7 @@ Windows 11 用のウィンドウマネージャー。画面のグリッド分割
 基本設計とモックアップ（`docs/mockups/snapwell.html`。`.claude/launch.json` の `mockups` で表示する）まで完了。コードはまだ無い。次は技術検証（`docs/DESIGN.md` §15）と、Core の物理モデル・グリッド計算の実装。
 
 ## 守ること
-- **x64 と ARM64 のネイティブだけ**: ビルド対象は `win-x64` と `win-arm64`。x86（`win-x86`）や AnyCPU の成果物は作らない。どの変更も両方の RID でビルドが通ること
+- **x64 と ARM64 のネイティブだけ**: ビルド対象は `win-x64` と `win-arm64`。x86（`win-x86`）や AnyCPU の成果物は作らない。どの変更も両方の RID でビルドが通ること。ソリューションの `Any CPU` 構成は開発とテストのためだけに残す（x86・x64 の構成は置かない）。出荷する成果物は必ず `-r win-x64` / `-r win-arm64` で作る
 - **DLL インジェクションをしない**: フックは `SetWinEventHook(WINEVENT_OUTOFCONTEXT)`、`WH_KEYBOARD_LL`、`WH_MOUSE_LL` だけ。`SetWindowsHookEx` のグローバルな in-context フック、`CreateRemoteThread`、他プロセスのメモリの読み書きは使わない（対象のアプリのアーキテクチャに左右されないため）
 - **非公開 API を使わない**: 仮想デスクトップの非公開 COM（`IVirtualDesktopManagerInternal` など）、文書化されていないエクスポートや序数での呼び出しは使わない。使うしかない場合は、先にユーザーに確認する
 - **OS の設定を変えたら必ず戻す**: 標準スナップの停止などで OS の設定を変えるときは、変更前の値を状態ファイルに退避し、無効化・終了・異常終了後の起動のどれでも復元する。変えてよい設定は `docs/DESIGN.md` §8 にあるものだけ
