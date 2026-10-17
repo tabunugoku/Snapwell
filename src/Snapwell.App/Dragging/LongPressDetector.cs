@@ -21,6 +21,7 @@ internal sealed class LongPressDetector(IWindowInspector inspector, IMonitorSour
     private readonly object _gate = new();
     private LongPressCandidate? _press;
     private LongPressCandidate? _launcherOwner;
+    private nint? _consumedMoveSizeHandle;
     private IDisposable? _timer;
     private long _generation;
     private bool _elapsed;
@@ -46,6 +47,15 @@ internal sealed class LongPressDetector(IWindowInspector inspector, IMonitorSour
         lock (_gate)
         {
             return _launcherOwner?.Handle == handle;
+        }
+    }
+
+    /// <summary>表示を閉じたあとも、長押しが使った移動ループの通知を区別する。</summary>
+    internal bool OwnsMoveSizeFor(nint handle)
+    {
+        lock (_gate)
+        {
+            return _consumedMoveSizeHandle == handle;
         }
     }
 
@@ -94,15 +104,23 @@ internal sealed class LongPressDetector(IWindowInspector inspector, IMonitorSour
                 (new Vec2(move.X, move.Y) - press.Position).Length > press.Radius)
             {
                 var close = _launcherOwner is not null;
-                Reset();
+                ResetLauncher();
                 return close;
             }
-            else if (value is MoveSizeEnded end && _launcherOwner?.Handle == end.Handle)
+            else if (value is MoveSizeEnded end)
             {
-                _moveSizeEnded = true;
-                if (_press is null)
+                if (_consumedMoveSizeHandle == end.Handle)
                 {
-                    ClearOwnership();
+                    _consumedMoveSizeHandle = null;
+                }
+
+                if (_launcherOwner?.Handle == end.Handle)
+                {
+                    _moveSizeEnded = true;
+                    if (_press is null)
+                    {
+                        ClearOwnership();
+                    }
                 }
             }
 
@@ -126,7 +144,17 @@ internal sealed class LongPressDetector(IWindowInspector inspector, IMonitorSour
             }
 
             _launcherOwner = candidate;
+            _consumedMoveSizeHandle = candidate.Handle;
             return true;
+        }
+    }
+
+    /// <summary>表示の所有だけを破棄し、確定した配置を守るため移動ループの記録を残す。</summary>
+    internal void CancelLauncher()
+    {
+        lock (_gate)
+        {
+            ResetLauncher();
         }
     }
 
@@ -168,6 +196,12 @@ internal sealed class LongPressDetector(IWindowInspector inspector, IMonitorSour
     }
 
     private void Reset()
+    {
+        ResetLauncher();
+        _consumedMoveSizeHandle = null;
+    }
+
+    private void ResetLauncher()
     {
         ResetPress();
         ClearOwnership();
