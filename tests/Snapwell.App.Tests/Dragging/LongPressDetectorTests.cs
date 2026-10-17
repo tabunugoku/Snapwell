@@ -1,6 +1,7 @@
 using Snapwell.App.Dragging;
 using Snapwell.App.Tests.Motion;
 using Snapwell.Core.Geometry;
+using Snapwell.Core.Settings;
 using Snapwell.Platform.Hooks;
 using Snapwell.Platform.Monitors;
 
@@ -190,6 +191,88 @@ public sealed class LongPressDetectorTests
         Assert.Equal(opens ? 1 : 0, fixture.Opened.Count);
     }
 
+    /// <summary>設定された長押し時間に達するまで発火せず、達した時点で発火する。</summary>
+    [Fact]
+    public void ConfiguredHoldMillisecondsDelaysCandidateUntilElapsed()
+    {
+        using var fixture = new Fixture(settings: () => new() { LongPressMilliseconds = 800 });
+        fixture.Down();
+        fixture.Timer.Advance(799);
+        Assert.Empty(fixture.Opened);
+        fixture.Timer.Advance(1);
+        Assert.Single(fixture.Opened);
+    }
+
+    /// <summary>設定された論理距離をモニター拡大率で物理半径に換算して移動を判定する。</summary>
+    [Theory]
+    [InlineData(96, 10, true, 12)]
+    [InlineData(96, 14, false, 12)]
+    [InlineData(144, 18, true, 18)]
+    [InlineData(144, 19, false, 18)]
+    public void ConfiguredMovementDistanceUsesScaledRadius(uint dpi, int distance, bool opens, double expectedRadius)
+    {
+        using var fixture = new Fixture(dpi, () => new() { LongPressDistance = 12 });
+        fixture.Down();
+        fixture.Cursor = new(100 + distance, 100);
+        fixture.Detector.Handle(new MouseMoved(100 + distance, 100, 10), true);
+        fixture.Timer.Advance(450);
+        if (opens)
+        {
+            Assert.Equal(expectedRadius, Assert.Single(fixture.Opened).Radius);
+        }
+        else
+        {
+            Assert.Empty(fixture.Opened);
+        }
+    }
+
+    /// <summary>押下中に設定が変わっても進行中の押下は押下時の値で判定し、次の押下から新しい値を使う。</summary>
+    [Fact]
+    public void SettingsChangeDuringHoldAppliesOnlyToSubsequentPress()
+    {
+        var current = new PortableSettings { LongPressMilliseconds = 800, LongPressDistance = 12 };
+        var readCount = 0;
+        using var fixture = new Fixture(settings: () =>
+        {
+            readCount++;
+            return current;
+        });
+
+        fixture.Down();
+        Assert.Equal(1, readCount);
+        current = new() { LongPressMilliseconds = 300, LongPressDistance = 4 };
+
+        fixture.Cursor = new(110, 100);
+        fixture.Detector.Handle(new MouseMoved(110, 100, 10), true);
+        fixture.Timer.Advance(300);
+        Assert.Empty(fixture.Opened);
+        fixture.Timer.Advance(499);
+        Assert.Empty(fixture.Opened);
+        fixture.Timer.Advance(1);
+        Assert.Single(fixture.Opened);
+        Assert.Equal(1, readCount);
+
+        fixture.Detector.Handle(new MouseButton(MouseButtonKind.Left, false, 110, 100, 801), true);
+        fixture.Cursor = new(100, 100);
+        fixture.Down();
+        Assert.Equal(2, readCount);
+
+        fixture.Cursor = new(105, 100);
+        fixture.Detector.Handle(new MouseMoved(105, 100, 810), true);
+        fixture.Timer.Advance(300);
+        Assert.Single(fixture.Opened);
+
+        fixture.Cursor = new(100, 100);
+        fixture.Down();
+        Assert.Equal(3, readCount);
+        fixture.Cursor = new(104, 100);
+        fixture.Detector.Handle(new MouseMoved(104, 100, 1120), true);
+        fixture.Timer.Advance(299);
+        Assert.Single(fixture.Opened);
+        fixture.Timer.Advance(1);
+        Assert.Equal(2, fixture.Opened.Count);
+    }
+
     /// <summary>移動イベントが欠けても発火直前の位置を再点検する。</summary>
     [Theory]
     [InlineData(5, 0, true)]
@@ -318,14 +401,14 @@ public sealed class LongPressDetectorTests
         internal bool IsCaption = true;
         internal Action? DuringHitTest;
 
-        internal Fixture(uint dpi = 96)
+        internal Fixture(uint dpi = 96, Func<PortableSettings>? settings = null)
         {
             Detector = new(new FakeInspector(), new ScaledMonitors(dpi), (_, position) =>
             {
                 HitPosition = position;
                 DuringHitTest?.Invoke();
                 return IsCaption;
-            }, () => Cursor, Tracking.Add, Timer.Schedule);
+            }, () => Cursor, Tracking.Add, Timer.Schedule, settings);
             Detector.CandidateReady += candidate =>
             {
                 if (Detector.CheckTarget(candidate) && Detector.TryActivate(candidate))
