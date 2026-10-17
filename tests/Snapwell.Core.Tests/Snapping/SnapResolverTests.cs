@@ -96,6 +96,70 @@ public sealed class SnapResolverTests
         Assert.Equal(ZoneRect(SnapTargetKind.LeftHalf, destination, _spacing.ToPhysical(1)), result.Target);
     }
 
+    /// <summary>上下に並ぶ別モニター内のカーソルは外側の帯に入っても対象の行を選ばない。</summary>
+    [Theory]
+    [InlineData(980, 0, 1000, "lower")]
+    [InlineData(1020, -4000, 1060, "upper")]
+    [InlineData(1020, -4000, 1040, "upper")]
+    public void PointerOnVerticallyAdjacentMonitorDoesNotSelectDestinationRow(int windowY, double vy,
+        double pointerY, string expectedMonitor)
+    {
+        MonitorArea[] monitors =
+        [
+            new("upper", new(0, 0, 1920, 1040), 1),
+            new("lower", new(0, 1040, 1920, 1040), 1),
+        ];
+        var result = SnapResolver.Resolve(new(1000, windowY, 600, 800), new(500, vy), FeelPreset.Airy,
+            SnapMode.Zones, _spacing, monitors, pointer: new(1300, pointerY))!.Value;
+        var area = monitors.Single(monitor => monitor.Id == expectedMonitor).WorkArea;
+        Assert.Equal(expectedMonitor, result.MonitorId);
+        Assert.Equal(SnapTargetKind.RightHalf, result.Kind);
+        Assert.Equal(ZoneRect(SnapTargetKind.RightHalf, area, _spacing.ToPhysical(1)), result.Target);
+    }
+
+    /// <summary>上下に隣接していても対象モニター内の端の帯は四分割を選ぶ。</summary>
+    [Theory]
+    [InlineData(980, 0, 1040, "lower", SnapTargetKind.TopRight)]
+    [InlineData(980, 0, 1041, "lower", SnapTargetKind.TopRight)]
+    [InlineData(980, 0, 1051, "lower", SnapTargetKind.TopRight)]
+    [InlineData(980, 0, 1052, "lower", SnapTargetKind.TopRight)]
+    [InlineData(980, 0, 1053, "lower", SnapTargetKind.RightHalf)]
+    [InlineData(1020, -4000, 1027, "upper", SnapTargetKind.RightHalf)]
+    [InlineData(1020, -4000, 1028, "upper", SnapTargetKind.BottomRight)]
+    [InlineData(1020, -4000, 1029, "upper", SnapTargetKind.BottomRight)]
+    [InlineData(1020, -4000, 1038, "upper", SnapTargetKind.BottomRight)]
+    [InlineData(1020, -4000, 1039, "upper", SnapTargetKind.BottomRight)]
+    public void PointerInsideVerticallyAdjacentMonitorBandsPreservesRow(int windowY, double vy,
+        double pointerY, string expectedMonitor, SnapTargetKind expected)
+    {
+        MonitorArea[] monitors =
+        [
+            new("upper", new(0, 0, 1920, 1040), 1),
+            new("lower", new(0, 1040, 1920, 1040), 1),
+        ];
+        var result = SnapResolver.Resolve(new(1000, windowY, 600, 800), new(500, vy), FeelPreset.Airy,
+            SnapMode.Zones, _spacing, monitors, pointer: new(1300, pointerY))!.Value;
+        var area = monitors.Single(monitor => monitor.Id == expectedMonitor).WorkArea;
+        Assert.Equal(expectedMonitor, result.MonitorId);
+        Assert.Equal(expected, result.Kind);
+        Assert.Equal(ZoneRect(expected, area, _spacing.ToPhysical(1)), result.Target);
+    }
+
+    /// <summary>別モニターの作業領域がないタスクバー上は外側の帯として使う。</summary>
+    [Theory]
+    [InlineData(1040)]
+    [InlineData(1060)]
+    [InlineData(1144)]
+    public void PointerOnSingleMonitorTaskbarPreservesQuarter(double pointerY)
+    {
+        var area = new PixelRect(0, 0, 1920, 1040);
+        var result = SnapResolver.Resolve(new(1000, 1020, 600, 800), new(500, -4000), FeelPreset.Airy,
+            SnapMode.Zones, _spacing, [new("upper", area, 1)], pointer: new(1300, pointerY))!.Value;
+        Assert.Equal("upper", result.MonitorId);
+        Assert.Equal(SnapTargetKind.BottomRight, result.Kind);
+        Assert.Equal(ZoneRect(SnapTargetKind.BottomRight, area, _spacing.ToPhysical(1)), result.Target);
+    }
+
     /// <summary>カーソルが無い場合と中央にある場合は従来の半分を維持する。</summary>
     [Theory]
     [InlineData(-2000, null, SnapTargetKind.LeftHalf)]
