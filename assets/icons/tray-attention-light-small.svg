@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44">
+  <rect x="3" y="3" width="38" height="38" rx="9" fill="none" stroke="#111111" stroke-width="4"/>
+  <mask id="bang-s" maskUnits="userSpaceOnUse" x="0" y="0" width="44" height="44">
+    <rect width="44" height="44" fill="#fff"/>
+    <path d="M29 9.5 V16.5" stroke="#000" stroke-width="4.6" stroke-linecap="round"/>
+    <circle cx="29" cy="22.2" r="2.4" fill="#000"/>
+  </mask>
+  <circle cx="29" cy="15" r="10.5" fill="#9F2F2D" mask="url(#bang-s)"/>
+</svg>

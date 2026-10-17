@@ -17,6 +17,9 @@ internal sealed unsafe class TrayIcon(IAppLog log, ISettingsLauncher? settings =
     private const uint WmDestroy = 0x0002;
     private const uint WmClose = 0x0010;
     private const uint WmContextMenu = 0x007B;
+    private const uint WmDisplayChange = 0x007E;
+    private const uint WmSettingChange = 0x001A;
+    private const uint WmDpiChanged = 0x02E0;
     private const uint WmRButtonUp = 0x0205;
     private const uint WmLButtonDblClk = 0x0203;
     private const string ClassName = "Snapwell.TrayHost";
@@ -24,12 +27,15 @@ internal sealed unsafe class TrayIcon(IAppLog log, ISettingsLauncher? settings =
     private static TrayIcon? _current;
     private readonly object _gate = new();
     private readonly ConcurrentQueue<Action> _posted = new();
+    private readonly TrayIconSet _icons = new();
     private readonly ISettingsLauncher _settings = settings ?? new SettingsLauncher(log);
     private HWND _window;
     private HINSTANCE _module;
     private uint _taskbarCreated;
     private TrayState _state = new(true, false);
     private bool _removed;
+    private HICON _shownIcon;
+    private string _shownTip = "";
 
     public event Action? ToggleRequested;
     public event Action? StandardSnapRequested;
@@ -72,7 +78,12 @@ internal sealed unsafe class TrayIcon(IAppLog log, ISettingsLauncher? settings =
         }
     }
 
-    public void Update(TrayState state) => Volatile.Write(ref _state, state);
+    public void Update(TrayState state)
+    {
+        Volatile.Write(ref _state, state);
+        // NIM_MODIFY はトレイを作ったスレッドで行う。
+        Post(RefreshIcon);
+    }
 
     public void Post(Action action)
     {
@@ -100,7 +111,8 @@ internal sealed unsafe class TrayIcon(IAppLog log, ISettingsLauncher? settings =
             _removed = true;
             if (!_window.IsNull)
             {
-                var data = IconData();
+                // 削除にはアイコンの画像は要らない。
+                var data = new NOTIFYICONDATAW { cbSize = (uint)sizeof(NOTIFYICONDATAW), hWnd = _window, uID = 1 };
                 PInvoke.Shell_NotifyIcon(NOTIFY_ICON_MESSAGE.NIM_DELETE, in data);
                 // DestroyWindow は作成したスレッドに任せる。
                 PInvoke.PostMessage(_window, WmClose, default, default);
@@ -142,12 +154,16 @@ internal sealed unsafe class TrayIcon(IAppLog log, ISettingsLauncher? settings =
             {
                 PInvoke.UnregisterClass(name, _module);
             }
+            _icons.Dispose();
             _current = null;
         }
     }
 
     private NOTIFYICONDATAW IconData()
     {
+        var state = Volatile.Read(ref _state);
+        _shownIcon = CurrentIcon(state);
+        _shownTip = TrayIconPolicy.Tip(state);
         var data = new NOTIFYICONDATAW
         {
             cbSize = (uint)sizeof(NOTIFYICONDATAW),
@@ -156,10 +172,42 @@ internal sealed unsafe class TrayIcon(IAppLog log, ISettingsLauncher? settings =
             uFlags = NOTIFY_ICON_DATA_FLAGS.NIF_MESSAGE | NOTIFY_ICON_DATA_FLAGS.NIF_ICON |
                 NOTIFY_ICON_DATA_FLAGS.NIF_TIP,
             uCallbackMessage = CallbackMessage,
-            hIcon = PInvoke.LoadIcon(default, new PCWSTR((char*)32512)),
+            hIcon = _shownIcon,
         };
-        "Snapwell".AsSpan().CopyTo(data.szTip.AsSpan());
+        _shownTip.AsSpan(0, Math.Min(_shownTip.Length, data.szTip.Length - 1)).CopyTo(data.szTip.AsSpan());
         return data;
+    }
+
+    private HICON CurrentIcon(TrayState state)
+    {
+        return _icons.Get(TrayIconPolicy.KindOf(state), TrayIconSet.IsTaskbarLight(),
+            TrayIconSet.SmallIconSize(_window));
+    }
+
+    /// <summary>状態・テーマ・DPI の変化に合わせて、アイコンとホバー文言を差し替える。</summary>
+    private void RefreshIcon()
+    {
+        lock (_gate)
+        {
+            if (_removed || _window.IsNull)
+            {
+                return;
+            }
+
+            var previousIcon = _shownIcon;
+            var previousTip = _shownTip;
+            var data = IconData();
+            if (data.hIcon == previousIcon && _shownTip == previousTip)
+            {
+                return;
+            }
+
+            data.uFlags = NOTIFY_ICON_DATA_FLAGS.NIF_ICON | NOTIFY_ICON_DATA_FLAGS.NIF_TIP;
+            if (!PInvoke.Shell_NotifyIcon(NOTIFY_ICON_MESSAGE.NIM_MODIFY, in data))
+            {
+                log.Error(new InvalidOperationException("トレイのアイコンを更新できない。"));
+            }
+        }
     }
 
     private void AddIcon()
@@ -248,6 +296,11 @@ internal sealed unsafe class TrayIcon(IAppLog log, ISettingsLauncher? settings =
             case CallbackMessage when (uint)lParam.Value is WmRButtonUp or WmContextMenu:
                 ShowMenu();
                 return default;
+            case WmSettingChange or WmDpiChanged or WmDisplayChange:
+                // テーマの切り替えは WM_SETTINGCHANGE ("ImmersiveColorSet") で届く。実機未確認。
+                // 文字列の中身は見ず、毎回選び直す。同じアイコンなら何もしない。
+                RefreshIcon();
+                return PInvoke.DefWindowProc(window, message, wParam, lParam);
             case InvokeMessage:
                 while (!_removed && _posted.TryDequeue(out var action))
                 {
