@@ -49,6 +49,7 @@ internal static class Program
                     new Win32MotionPreference(() => settings.ReduceMotion));
                 var previewSurface = new OverlaySession(interactive: false);
                 var launcherSurface = new OverlaySession(interactive: true);
+                var ringSurface = new OverlaySession(interactive: false);
                 var preview = new ZonePreview(previewSurface, monitors);
                 var tracking = new MouseTrackingVotes(value => hooks.MouseTrackingEnabled = value);
                 var neighbors = new NeighborWindowSource(inspector, monitors, (uint)Environment.ProcessId);
@@ -58,6 +59,7 @@ internal static class Program
                 var longPress = new LongPressDetector(inspector, monitors, Win32CaptionHitTest.IsCaption,
                     () => PInvoke.GetCursorPos(out var point) ? new Vec2(point.X, point.Y) : null,
                     tracking.SetLongPress, settings: () => settings);
+                var holdRing = new HoldRing(longPress, ringSurface, monitors);
                 LauncherController? launcher = null;
                 var hotkeys = new HotkeyCommandExecutor(inspector, monitors, motion, position, () => settings,
                     enabled, toggle, (uint)Environment.ProcessId, () => launcher?.Open());
@@ -68,7 +70,8 @@ internal static class Program
                     {
                         previewSurface.SetEnabled(value);
                         launcherSurface.SetEnabled(value);
-                    }, [previewSurface, launcherSurface], longPress);
+                        ringSurface.SetEnabled(value);
+                    }, [holdRing, ringSurface, previewSurface, launcherSurface], longPress);
             }, new SettingsWatcher(SettingsStores.PortablePath()));
         UnhandledExceptionEventHandler unhandled = (_, args) => host.HandleUnhandledException(
             args.ExceptionObject as Exception ?? new InvalidOperationException("未処理の例外。"));
