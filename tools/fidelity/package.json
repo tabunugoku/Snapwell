@@ -1,0 +1,10 @@
+{
+  "name": "snapwell-fidelity",
+  "private": true,
+  "type": "module",
+  "description": "モックアップと実機の見た目の差を測る補助ツール (本体のビルドには含めない)",
+  "dependencies": {
+    "playwright-core": "1.49.1",
+    "pngjs": "7.0.0"
+  }
+}
