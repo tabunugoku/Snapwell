@@ -38,7 +38,8 @@ jobs:
         run: dotnet format Snapwell.sln --verify-no-changes --no-restore
 
       - name: Test
-        run: dotnet test Snapwell.sln -c Release --no-restore
+        # スレッドの待ちを使うテストが、並列実行で遅いランナーのスレッドプールに詰まって落ちるため、並列実行を止める
+        run: dotnet test Snapwell.sln -c Release --no-restore -- xUnit.ParallelizeTestCollections=false
 
       - name: Build (win-x64)
         run: |
