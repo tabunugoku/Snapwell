@@ -84,7 +84,16 @@ internal sealed unsafe class TrayMenuWindow : ITrayMenuView, ITrayMenuPresentati
     void ITrayMenuPresentationPlatform.Activate() => PInvoke.SetForegroundWindow(_window);
     bool ITrayMenuPresentationPlatform.IsForeground => PInvoke.GetForegroundWindow() == _window;
     void ITrayMenuPresentationPlatform.Focus() => PInvoke.SetFocus(_window);
-    void ITrayMenuPresentationPlatform.Capture() => PInvoke.SetCapture(_window);
+    void ITrayMenuPresentationPlatform.Capture()
+    {
+        PInvoke.SetCapture(_window);
+        // 捕捉中は移動しても WM_SETCURSOR が来ないため、開いた時点で矢印にしておく。実機未確認。
+        if (!_arrow.IsNull)
+        {
+            PInvoke.SetCursor(_arrow);
+        }
+    }
+
     bool ITrayMenuPresentationPlatform.HasCapture => PInvoke.GetCapture() == _window;
     void ITrayMenuPresentationPlatform.ReleaseCapture() => PInvoke.ReleaseCapture();
     void ITrayMenuPresentationPlatform.Hide() => PInvoke.ShowWindow(_window, SHOW_WINDOW_CMD.SW_HIDE);
