@@ -8,6 +8,73 @@ namespace Snapwell.App.Tests.Overlay;
 /// <summary>文字マスクの境界と乗算済み alpha を検証する。</summary>
 public sealed class GdiOverlayTextTests
 {
+    /// <summary>ASCII と非 ASCII の境界だけで分け、サイズ表示の記号は等幅のまま保つ。</summary>
+    [Theory]
+    [InlineData("", new string[] { }, new bool[] { })]
+    [InlineData("123 ABC", new[] { "123 ABC" }, new[] { false })]
+    [InlineData("区画", new[] { "区画" }, new[] { true })]
+    [InlineData("A区画B日本語", new[] { "A", "区画", "B", "日本語" }, new[] { false, true, false, true })]
+    [InlineData("区画12", new[] { "区画", "12" }, new[] { true, false })]
+    [InlineData("1 × 1 区画 · 626 × 247", new[] { "1 × 1 ", "区画", " · 626 × 247" },
+        new[] { false, true, false })]
+    [InlineData("×·", new[] { "×·" }, new[] { false })]
+    [InlineData("区画·×日本語", new[] { "区画", "·×", "日本語" }, new[] { true, false, true })]
+    [InlineData("A😀区画B", new[] { "A", "😀区画", "B" }, new[] { false, true, false })]
+    public void MonoRunsPreserveNumbersAndSymbols(string value, string[] values, bool[] japanese)
+    {
+        var runs = GdiOverlayText.SplitRuns(value, true);
+        Assert.Equal(values, runs.Select(run => run.Value));
+        Assert.Equal(japanese, runs.Select(run => run.Japanese));
+        Assert.Equal(value, string.Concat(runs.Select(run => run.Value)));
+    }
+
+    /// <summary>通常の UI 文字列は分割せず、文字間隔があるときもサロゲートペアを分断しない。</summary>
+    [Fact]
+    public void UiAndSpacedRunsKeepTheirFontAndTextElements()
+    {
+        Assert.Equal(("A区画·×B", false), Assert.Single(GdiOverlayText.SplitRuns("A区画·×B", false)));
+        var spaced = GdiOverlayText.SplitRuns("A😀区·×", true, spaced: true);
+        Assert.Equal(new[] { "A", "😀", "区", "·", "×" }, spaced.Select(run => run.Value));
+        Assert.Equal(new[] { false, true, true, false, false }, spaced.Select(run => run.Japanese));
+        Assert.All(GdiOverlayText.SplitRuns("A区画", false, spaced: true), run => Assert.False(run.Japanese));
+    }
+
+    /// <summary>中央ラベルの実測幅と各 run の描画幅をそろえ、四倍描画でも同じ位置と画素に収める。</summary>
+    [Theory]
+    [InlineData(1)]
+    [InlineData(1.5)]
+    [InlineData(2)]
+    public void MixedSelectionLabelMatchesMeasuredRunDrawing(double scale)
+    {
+        using var text = new GdiOverlayText(scale);
+        var selection = new ZoneSelection(new(-100, -80, 1920, 1080), new(8, 8), new(8, 8));
+        var layout = LauncherPanelLayout.Create(selection, scale, measure: text.Measure);
+        var label = Assert.Single(layout.Text, item => item.Kind == LauncherTextKind.Ink);
+        var parts = label.Value.Split("区画");
+        var runs = new[] { parts[0], "区画", parts[1] };
+        var widths = runs.Select(run => (int)Math.Round(text.Measure(run, 12, true) * scale)).ToArray();
+        var measured = text.Measure(label.Value, 12, true) * scale;
+        Assert.InRange(Math.Abs(measured - widths.Sum()), 0, .00001);
+        Assert.Equal((int)Math.Ceiling(measured + 22 * scale), layout.SelectionLabel.Width);
+        Assert.InRange(Math.Abs(selection.Bounds.Center.X - label.Bounds.Center.X), 0, 1);
+
+        var actual = OverlayPainter.Create(label.Bounds.Width, label.Bounds.Height);
+        var expected = OverlayPainter.Create(label.Bounds.Width, label.Bounds.Height);
+        var color = new OverlayColor(255, 255, 255, 255);
+        text.Draw(actual, label.Bounds, label, color);
+        var x = (label.Bounds.Width - widths.Sum()) / 2;
+        for (var index = 0; index < runs.Length; index++)
+        {
+            var bounds = new PixelRect(label.Bounds.X + x, label.Bounds.Y, widths[index], label.Bounds.Height);
+            text.Draw(expected, label.Bounds, label with { Value = runs[index], Bounds = bounds, Center = false }, color);
+            x += widths[index];
+        }
+
+        Assert.Contains(actual.Pixels, pixel => pixel > 0);
+        Assert.Equal(expected.Pixels, actual.Pixels);
+        Assert.Equal(measured, text.Measure(label.Value, 12, true) * scale);
+    }
+
     /// <summary>小さい日本語と等幅キーの縁に、白黒だけでない十分な中間階調を作る。</summary>
     [Theory]
     [InlineData(1)]
