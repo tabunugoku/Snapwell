@@ -123,6 +123,28 @@ public sealed class OverlayZOrderTests
         Assert.Equal(diagnosticFails ? 2 : 1, api.Raises);
     }
 
+    /// <summary>昇格しても遮蔽が残る環境では、再試行に待ちを置き、ログを繰り返さない。</summary>
+    [Fact]
+    public void UnresolvedWindowAboveBacksOffAndLogsOnce()
+    {
+        var now = 0L;
+        var lines = new List<string>();
+        var api = new FakeApi { StickyAbove = true };
+        var order = Create(api, lines, () => now);
+        order.Show();
+        api.HasWindowAbove = true;
+        order.Show();
+        Assert.Equal(2, api.Raises);
+        Assert.Single(lines);
+        now += 500;
+        order.Show();
+        Assert.Equal(2, api.Raises);
+        now += 600;
+        order.Show();
+        Assert.Equal(3, api.Raises);
+        Assert.Single(lines);
+    }
+
     private static OverlayZOrder Create(FakeApi api, List<string> lines, Func<long>? milliseconds = null) =>
         new(api, 42, (generation, state, exception) =>
             lines.Add(LauncherLog.Format(DateTimeOffset.UnixEpoch, generation, state, exception)), milliseconds);
@@ -135,6 +157,7 @@ public sealed class OverlayZOrderTests
         internal bool FailRaise { get; set; }
         internal bool ThrowOnRaise { get; set; }
         internal bool ThrowOnCheck { get; set; }
+        internal bool StickyAbove { get; set; }
 
         public bool IsTopmost
         {
@@ -162,7 +185,7 @@ public sealed class OverlayZOrderTests
             }
 
             _isTopmost = true;
-            HasWindowAbove = false;
+            HasWindowAbove = StickyAbove;
             return true;
         }
     }

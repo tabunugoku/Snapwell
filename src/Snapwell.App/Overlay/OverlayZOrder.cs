@@ -15,6 +15,7 @@ internal sealed class OverlayZOrder(IOverlayZOrderApi api, long generation,
     private readonly Func<long> _milliseconds = milliseconds ?? (() => Environment.TickCount64);
     private bool _visible;
     private long? _retryAfter;
+    private bool _unresolvedLogged;
 
     /// <summary>描画 STA から呼び、通常の表示開始ではログを増やさない。</summary>
     internal void Show()
@@ -33,6 +34,7 @@ internal sealed class OverlayZOrder(IOverlayZOrderApi api, long generation,
                 api.HasWindowAbove ? "zorder-window-above" : null;
             if (!starting && reason is null)
             {
+                _unresolvedLogged = false;
                 return;
             }
 
@@ -43,11 +45,15 @@ internal sealed class OverlayZOrder(IOverlayZOrderApi api, long generation,
                 return;
             }
 
-            _retryAfter = null;
-            if (reason is not null)
+            // 通常の TOPMOST より上の層 (常に手前に表示など) は昇格しても残る。待ちを置き、ログは 1 回だけにする。
+            var unresolved = reason is not null && api.HasWindowAbove;
+            _retryAfter = unresolved ? now + 1000 : null;
+            if (reason is not null && !(unresolved && _unresolvedLogged))
             {
-                diagnostic(generation, reason, null);
+                diagnostic(generation, unresolved ? reason + "-unresolved" : reason, null);
             }
+
+            _unresolvedLogged = unresolved;
         }
         catch (Exception)
         {
@@ -61,5 +67,6 @@ internal sealed class OverlayZOrder(IOverlayZOrderApi api, long generation,
     {
         _visible = false;
         _retryAfter = null;
+        _unresolvedLogged = false;
     }
 }
