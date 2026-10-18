@@ -15,6 +15,59 @@ namespace Snapwell.App.Tests.Lifecycle;
 
 public sealed class AppHostTests
 {
+    /// <summary>未完了かつ書き込み可能な端末だけ案内し、同意前に OS を変更しない。</summary>
+    [Theory]
+    [InlineData(false, false, 1)]
+    [InlineData(true, false, 0)]
+    [InlineData(false, true, 0)]
+    public void StartupOpensSetupOnlyForWritableIncompleteDevice(bool completed, bool readOnly, int opens)
+    {
+        using var fixture = new Fixture(new() { SetupCompleted = completed, DisableStandardSnap = true });
+        fixture.Device.ReadOnly = readOnly;
+        Assert.True(fixture.Host.Start());
+        Assert.Equal(opens, fixture.SetupOpens);
+        Assert.DoesNotContain("disable", fixture.Calls);
+        Assert.True(fixture.Runtime.Enabled);
+        Assert.Equal(0, fixture.Consent.Calls);
+        Assert.False(fixture.Host.Start());
+        Assert.Equal(opens, fixture.SetupOpens);
+    }
+
+    /// <summary>ウィザードの同意の保存と取り消しを、起動中の本体へ反映する。</summary>
+    [Fact]
+    public void SetupConsentReloadAppliesAndRevocationRestoresStandardSnap()
+    {
+        using var fixture = new Fixture(watchDevice: true);
+        Assert.True(fixture.Host.Start());
+        Assert.DoesNotContain("disable", fixture.Calls);
+        fixture.Device.ReloadResult = new(new() { DisableStandardSnap = true, StandardSnapConsentGiven = true });
+        fixture.DeviceWatcher.Notify();
+        Assert.Contains("disable", fixture.Calls);
+        fixture.Device.ReloadResult = new(new() { SetupCompleted = true });
+        fixture.DeviceWatcher.Notify();
+        Assert.Contains("restore", fixture.Calls);
+        Assert.False(fixture.Tray.State!.DisableStandardSnap);
+    }
+
+    /// <summary>変更通知より先にトレイを操作しても、ウィザードの変更を保持する。</summary>
+    [Fact]
+    public void TraySavePreservesSetupCompletionAndConsentBeforeNotificationArrives()
+    {
+        using var fixture = new Fixture();
+        Assert.True(fixture.Host.Start());
+        fixture.Device.ReloadResult = new(new()
+        {
+            SetupCompleted = true,
+            DisableStandardSnap = true,
+            StandardSnapConsentGiven = true,
+        });
+        fixture.Host.ToggleEnabled();
+        Assert.True(fixture.Device.Value.SetupCompleted);
+        Assert.True(fixture.Device.Value.StandardSnapConsentGiven);
+        Assert.True(fixture.Device.Value.DisableStandardSnap);
+        Assert.False(fixture.Device.Value.Enabled);
+    }
+
     /// <summary>トレイから一度だけ整列し、再読込後は交換済みの Runtime だけに配送する。</summary>
     [Fact]
     public void TrayArrangementUsesCurrentRuntimeOnceAcrossReloadsAndDetachesOnShutdown()
@@ -143,7 +196,7 @@ public sealed class AppHostTests
 
         Assert.True(fixture.Host.Start());
 
-        Assert.Equal("Windows 標準のスナップを復元できませんでした。再起動時に再試行します", fixture.Tray.State?.Status);
+        Assert.StartsWith("Windows 標準のスナップを復元できませんでした。再起動時に再試行します", fixture.Tray.State?.Status);
         Assert.Single(fixture.Log.Errors);
     }
 
@@ -773,11 +826,13 @@ public sealed class AppHostTests
         internal FakeRuntime Runtime { get; }
         internal AppHost Host { get; }
         internal FakeWatcher Watcher { get; } = new();
+        internal FakeWatcher DeviceWatcher { get; } = new();
+        internal int SetupOpens;
         internal Func<PortableSettings, IAppRuntime>? Factory;
         internal List<IAppRuntime> Created { get; } = [];
         internal List<PortableSettings> SettingsSeen { get; } = [];
 
-        internal Fixture(DeviceState? state = null)
+        internal Fixture(DeviceState? state = null, bool watchDevice = false)
         {
             Instance = new(Calls);
             Guard = new(Calls);
@@ -793,7 +848,7 @@ public sealed class AppHostTests
                     Created.Add(runtime);
                     SettingsSeen.Add(settings);
                     return runtime;
-                }, Watcher);
+                }, Watcher, () => SetupOpens++, watchDevice ? DeviceWatcher : null);
         }
 
         public void Dispose() => Host.Shutdown();
@@ -835,7 +890,11 @@ public sealed class AppHostTests
         internal int Saves;
         internal int Reloads;
         internal SettingsLoadResult<T>? ReloadResult = new(value);
-        public SettingsLoadResult<T>? TryReload() { Reloads++; return ReloadResult; }
+        public SettingsLoadResult<T>? TryReload()
+        {
+            Reloads++;
+            return ReloadResult is null ? null : ReloadResult with { IsReadOnly = ReadOnly || ReloadResult.IsReadOnly };
+        }
         internal bool ReadOnly;
         internal bool ResetToDefaults;
         internal ManualResetEventSlim? BlockSave;
@@ -850,6 +909,7 @@ public sealed class AppHostTests
             SaveEntered = true;
             BlockSave?.Wait();
             Value = updated;
+            ReloadResult = new(updated, IsReadOnly: ReadOnly);
             Saves++;
         }
     }

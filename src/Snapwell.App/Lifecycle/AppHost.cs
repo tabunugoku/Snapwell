@@ -22,6 +22,8 @@ internal sealed class AppHost
     private readonly Action _restoreCorners;
     private readonly RuntimeFactory _createRuntime;
     private readonly ISettingsWatcher? _watcher;
+    private readonly ISettingsWatcher? _deviceWatcher;
+    private readonly Action? _openSetup;
     private readonly CancellationTokenSource _deliveryStop = new();
     private readonly ManualResetEventSlim _shutdownDone = new(false);
     private IAppRuntime? _runtime;
@@ -42,7 +44,8 @@ internal sealed class AppHost
 
     internal AppHost(ISingleInstance instance, ISnapGuard guard, ISettingsStore<PortableSettings> portableStore,
         ISettingsStore<DeviceState> deviceStore, IHookService hooks, ITrayService tray, IConsentPrompt consent,
-        IAppLog log, Action restoreCorners, RuntimeFactory createRuntime, ISettingsWatcher? watcher = null)
+        IAppLog log, Action restoreCorners, RuntimeFactory createRuntime, ISettingsWatcher? watcher = null,
+        Action? openSetup = null, ISettingsWatcher? deviceWatcher = null)
     {
         _instance = instance;
         _guard = guard;
@@ -55,6 +58,12 @@ internal sealed class AppHost
         _restoreCorners = restoreCorners;
         _createRuntime = createRuntime;
         _watcher = watcher;
+        _openSetup = openSetup;
+        _deviceWatcher = deviceWatcher;
+        if (_deviceWatcher is not null)
+        {
+            _deviceWatcher.Changed += OnDeviceChanged;
+        }
         if (_watcher is not null)
         {
             _watcher.Changed += OnSettingsChanged;
@@ -149,6 +158,14 @@ internal sealed class AppHost
             _runtime.SetEnabled(_enabled && _hooksStarted);
             DisableIfRequested();
             _tray.Show(State());
+            if (_deviceWatcher is not null)
+            {
+                Cleanup(() =>
+                {
+                    _deviceWatcher.Start();
+                    _tray.Post(ReloadDevice);
+                });
+            }
             if (_watcher is not null)
             {
                 Cleanup(() =>
@@ -163,11 +180,67 @@ internal sealed class AppHost
                 _ = Task.Run(DeliverAsync);
             }
 
+            if (SetupWizard.ShouldOpen(device) && _openSetup is not null)
+            {
+                Cleanup(_openSetup);
+            }
+
             return true;
         }
     }
 
     internal void RunMessageLoop() => _tray.RunMessageLoop();
+
+    private void OnDeviceChanged()
+    {
+        if (Volatile.Read(ref _shutdown) == 0)
+        {
+            Cleanup(() => _tray.Post(ReloadDevice));
+        }
+    }
+
+    internal void ReloadDevice()
+    {
+        lock (_gate)
+        {
+            if (!CanOperate())
+            {
+                return;
+            }
+
+            Cleanup(() =>
+            {
+                var loaded = _deviceStore.TryReload();
+                if (loaded is null)
+                {
+                    return;
+                }
+
+                _deviceReadOnly = loaded.IsReadOnly;
+                if (loaded.IsReadOnly || loaded.Value == _device)
+                {
+                    return;
+                }
+
+                var previouslyDisabled = _device.DisableStandardSnap && _device.StandardSnapConsentGiven;
+                _device = loaded.Value;
+                _enabled = _device.Enabled;
+                _runtime?.SetEnabled(_enabled && _hooksStarted);
+                if (!_enabled || !_device.DisableStandardSnap || !_device.StandardSnapConsentGiven)
+                {
+                    if (previouslyDisabled)
+                    {
+                        RestoreSnap();
+                    }
+                }
+                else
+                {
+                    DisableIfRequested();
+                }
+                _tray.Update(State());
+            });
+        }
+    }
 
     private void OnSettingsChanged()
     {
@@ -291,6 +364,7 @@ internal sealed class AppHost
                 return;
             }
 
+            ReloadDevice();
             _enabled = !_enabled;
             _device = _device with { Enabled = _enabled };
             if (!_enabled)
@@ -306,7 +380,7 @@ internal sealed class AppHost
                 DisableIfRequested();
             }
 
-            SaveDevice();
+            SaveDevice(current => current with { Enabled = _enabled });
             _tray.Update(State());
         }
     }
@@ -322,6 +396,7 @@ internal sealed class AppHost
                 return;
             }
 
+            ReloadDevice();
             needsConsent = !_device.DisableStandardSnap && !_device.StandardSnapConsentGiven;
         }
 
@@ -351,7 +426,11 @@ internal sealed class AppHost
                 RestoreSnap();
             }
 
-            SaveDevice();
+            SaveDevice(current => current with
+            {
+                DisableStandardSnap = _device.DisableStandardSnap,
+                StandardSnapConsentGiven = _device.StandardSnapConsentGiven,
+            });
             _tray.Update(State());
         }
     }
@@ -367,7 +446,7 @@ internal sealed class AppHost
 
             RestoreSnap();
             _device = _device with { DisableStandardSnap = false };
-            SaveDevice();
+            SaveDevice(current => current with { DisableStandardSnap = false });
             _tray.Update(State());
         }
     }
@@ -407,6 +486,11 @@ internal sealed class AppHost
 
     private void ShutdownCore()
     {
+        if (_deviceWatcher is not null)
+        {
+            _deviceWatcher.Changed -= OnDeviceChanged;
+            Cleanup(_deviceWatcher.Dispose);
+        }
         _tray.ArrangeRequested -= ArrangeCurrentMonitor;
         if (_watcher is not null)
         {
@@ -549,11 +633,23 @@ internal sealed class AppHost
     private TrayState State() => new(_enabled, _device.DisableStandardSnap,
         _status is null ? _reloadStatus : _reloadStatus is null ? _status : $"{_status} / {_reloadStatus}");
 
-    private void SaveDevice()
+    private void SaveDevice(Func<DeviceState, DeviceState> update)
     {
         if (!_deviceReadOnly)
         {
-            Cleanup(() => _deviceStore.Save(_device));
+            Cleanup(() =>
+            {
+                // ウィザードが保存した完了フラグと同意を、古いキャッシュで上書きしない。
+                try
+                {
+                    DeviceStateChanges.Update(_deviceStore, update);
+                }
+                catch (InvalidOperationException)
+                {
+                    _deviceReadOnly = true;
+                    throw;
+                }
+            });
         }
     }
 
