@@ -178,7 +178,7 @@ public sealed class OverlaySessionTests
             race = true;
             await Task.Run(launcher.Open).WaitAsync(TimeSpan.FromSeconds(3));
             Assert.True(faultFinished.Wait(2000));
-            Assert.False(launcher.IsOpen);
+            Assert.True(launcher.IsOpen);
         }
         finally
         {
@@ -192,10 +192,192 @@ public sealed class OverlaySessionTests
         }
     }
 
+    /// <summary>旧世代の通知が到着する前の要求でも、死んだスレッドを交換して表示を保つ。</summary>
+    [Fact]
+    public void OpenBeforeFaultDeliveryReplacesUnavailableGeneration()
+    {
+        using var fail = new ManualResetEventSlim(false);
+        using var entered = new ManualResetEventSlim(false);
+        using var release = new ManualResetEventSlim(false);
+        using var delivered = new ManualResetEventSlim(false);
+        var recovered = new FakeOverlay();
+        var attempts = 0;
+        using var session = new OverlaySession(true, _ =>
+        {
+            if (Interlocked.Increment(ref attempts) > 1)
+            {
+                return new(() => (recovered, recovered));
+            }
+
+            var thread = new OverlayThread(() =>
+            {
+                fail.Wait();
+                throw new InvalidOperationException();
+            });
+            thread.Faulted += () =>
+            {
+                entered.Set();
+                release.Wait();
+            };
+            thread.Faulted += delivered.Set;
+            return thread;
+        });
+        using var launcher = CreateLauncher(session);
+        try
+        {
+            launcher.Open();
+            fail.Set();
+            Assert.True(entered.Wait(2000));
+            Assert.True(launcher.IsOpen);
+            Assert.False(session.IsAvailable);
+            launcher.Open();
+            Assert.True(recovered.Drawn.Wait(3000));
+            Assert.True(launcher.IsOpen);
+            release.Set();
+            Assert.True(delivered.Wait(2000));
+            Assert.True(launcher.IsOpen);
+            Assert.Equal(2, attempts);
+        }
+        finally
+        {
+            fail.Set();
+            release.Set();
+        }
+    }
+
+    /// <summary>失敗通知が Launcher に届くまでに次の表示を開いても、その表示を閉じない。</summary>
+    [Fact]
+    public void DelayedFailureDoesNotCloseNewLauncher()
+    {
+        using var fail = new ManualResetEventSlim(false);
+        using var entered = new ManualResetEventSlim(false);
+        using var release = new ManualResetEventSlim(false);
+        using var delivered = new ManualResetEventSlim(false);
+        var recovered = new FakeOverlay();
+        var attempts = 0;
+        using var session = new OverlaySession(true, _ =>
+        {
+            var attempt = Interlocked.Increment(ref attempts);
+            return new(() =>
+            {
+                if (attempt == 1)
+                {
+                    fail.Wait();
+                    throw new InvalidOperationException();
+                }
+
+                return (recovered, recovered);
+            });
+        });
+        session.Faulted += () =>
+        {
+            entered.Set();
+            release.Wait();
+        };
+        using var launcher = CreateLauncher(session);
+        session.Faulted += delivered.Set;
+        try
+        {
+            launcher.Open();
+            fail.Set();
+            Assert.True(entered.Wait(2000));
+            launcher.Close();
+            launcher.Open();
+            Assert.True(recovered.Drawn.Wait(3000));
+            release.Set();
+            Assert.True(delivered.Wait(2000));
+            Assert.True(launcher.IsOpen);
+        }
+        finally
+        {
+            fail.Set();
+            release.Set();
+        }
+    }
+
+    /// <summary>起床通知が失敗しても入力を戻し、次の要求を新しい表示先へ送る。</summary>
+    [Fact]
+    public void WakeFailureRecoversOnNextOpen()
+    {
+        var broken = new FakeOverlay();
+        var recovered = new FakeOverlay();
+        var attempts = 0;
+        var diagnostics = new ConcurrentQueue<string>();
+        using var session = new OverlaySession(true, _ =>
+        {
+            var fake = Interlocked.Increment(ref attempts) == 1 ? broken : recovered;
+            return new(() => (fake, fake));
+        }, (_, state, _) => diagnostics.Enqueue(state));
+        using var launcher = CreateLauncher(session);
+        launcher.Open();
+        Assert.True(broken.Drawn.Wait(3000));
+        broken.ThrowNextWake = true;
+        launcher.Handle(new((int)LauncherInput.Right));
+        Assert.False(launcher.IsOpen);
+        launcher.Open();
+        Assert.True(recovered.Drawn.Wait(3000));
+        Assert.True(launcher.IsOpen);
+        Assert.Contains("request-failed", diagnostics);
+        Assert.Contains("recovery-requested", diagnostics);
+    }
+
+    /// <summary>250 ms で停止を打ち切った旧世代が後から失敗しても、新しい表示を守る。</summary>
+    [Fact]
+    public void TimedOutGenerationDoesNotAffectNextOpen()
+    {
+        using var entered = new ManualResetEventSlim(false);
+        using var release = new ManualResetEventSlim(false);
+        using var finished = new ManualResetEventSlim(false);
+        var recovered = new FakeOverlay();
+        var attempts = 0;
+        var diagnostics = new ConcurrentQueue<string>();
+        using var session = new OverlaySession(true, _ =>
+        {
+            if (Interlocked.Increment(ref attempts) > 1)
+            {
+                return new(() => (recovered, recovered));
+            }
+
+            var thread = new OverlayThread(() =>
+            {
+                entered.Set();
+                release.Wait();
+                throw new InvalidOperationException();
+            }, (_, state, _) => diagnostics.Enqueue(state));
+            thread.Faulted += finished.Set;
+            return thread;
+        });
+        using var launcher = CreateLauncher(session);
+        try
+        {
+            launcher.Open();
+            Assert.True(entered.Wait(2000));
+            launcher.SetEnabled(false);
+            session.SetEnabled(false);
+            Assert.Contains("stop-timeout", diagnostics);
+            session.SetEnabled(true);
+            launcher.SetEnabled(true);
+            launcher.Open();
+            Assert.True(recovered.Drawn.Wait(3000));
+            release.Set();
+            Assert.True(finished.Wait(2000));
+            Assert.True(launcher.IsOpen);
+        }
+        finally
+        {
+            release.Set();
+        }
+    }
+
+    private static LauncherController CreateLauncher(IOverlayPresenter presenter) => new(
+        new FakeInspector(), new FakeMonitors(), () => new(), presenter, (_, _, _) => { }, _ => { },
+        HotkeyBindingsBuilder.Build(new PortableSettings().Hotkeys).Bindings, 999, () => OverlayTheme.Light);
+
     private sealed class FakeOverlay : IOverlaySurface, IOverlayLoop
     {
         private readonly AutoResetEvent _wake = new(false);
         internal bool ThrowOnShow { get; init; }
+        internal bool ThrowNextWake { get; set; }
         internal ConcurrentQueue<PixelRect> Shown { get; } = new();
         internal ManualResetEventSlim Drawn { get; } = new(false);
         internal ManualResetEventSlim Disposed { get; } = new(false);
@@ -212,7 +394,16 @@ public sealed class OverlaySessionTests
         }
 
         public void Hide() { }
-        public void Wake() => _wake.Set();
+        public void Wake()
+        {
+            if (ThrowNextWake)
+            {
+                ThrowNextWake = false;
+                throw new InvalidOperationException();
+            }
+
+            _wake.Set();
+        }
         public void Run(Func<bool> process)
         {
             while (process())

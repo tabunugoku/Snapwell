@@ -19,6 +19,7 @@ internal sealed record OverlayPointer(OverlayPointerKind Kind, Vec2 Position);
 /// <summary>描画を専用スレッドへ要求し、入力を受け取る窓口。</summary>
 internal interface IOverlayPresenter : IDisposable
 {
+    bool IsAvailable => true;
     event Action<OverlayPointer>? Pointer;
     // 専用スレッドを持たない出力先は終了の失敗通知を省略できる。
     event Action? Faulted { add { } remove { } }

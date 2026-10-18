@@ -659,6 +659,47 @@ public sealed class ResidentRuntimeTests
         Assert.True(fakes[1].Disposed.Wait(2000));
     }
 
+    /// <summary>表示先が失われて通知が遅れても、実際のキー判定から次の表示へ回復する。</summary>
+    [Fact]
+    public void ReopenChordRecoversUnavailableLauncherBeforeFailureNotification()
+    {
+        var presenter = new RecoveringPresenter();
+        using var fixture = new OverlayFixture(launcherPresenter: presenter);
+        fixture.Runtime.Handle(new KeyChord((int)WindowCommand.OpenLauncher));
+        var matcher = new HotkeyMatcher();
+        matcher.SetBindings(fixture.Applied);
+        matcher.ProcessKey(0x11, true);
+        matcher.ProcessKey(0x12, true);
+        var match = matcher.ProcessKey(0x20, true);
+        Assert.True(match.Matched);
+        Assert.Equal((int)WindowCommand.OpenLauncher, match.Id);
+        fixture.Runtime.Handle(new KeyChord(match.Id));
+        Assert.Equal(1, presenter.Requests);
+
+        presenter.IsAvailable = false;
+        matcher.ProcessKey(0x20, false);
+        match = matcher.ProcessKey(0x20, true);
+        Assert.True(match.Matched);
+        fixture.Runtime.Handle(new KeyChord(match.Id));
+        Assert.True(fixture.Launcher.IsOpen);
+        Assert.Equal(2, presenter.Requests);
+    }
+
+    private sealed class RecoveringPresenter : IOverlayPresenter
+    {
+        public bool IsAvailable { get; set; } = true;
+        internal int Requests { get; private set; }
+        public event Action<OverlayPointer>? Pointer { add { } remove { } }
+        public void Request(PixelRect bounds, Func<OverlayFrame> paint)
+        {
+            Requests++;
+            IsAvailable = true;
+        }
+
+        public void Hide() { }
+        public void Dispose() { }
+    }
+
     private sealed class OverlayFixture : IDisposable
     {
         internal FakeInspector Inspector { get; } = new();
@@ -680,7 +721,7 @@ public sealed class ResidentRuntimeTests
         internal LauncherController Launcher { get; }
         internal ResidentRuntime Runtime { get; }
 
-        internal OverlayFixture(bool withLongPress = false)
+        internal OverlayFixture(bool withLongPress = false, IOverlayPresenter? launcherPresenter = null)
         {
             var monitors = new FakeMonitors();
             var inspector = new ForegroundInspector(Inspector);
@@ -693,7 +734,7 @@ public sealed class ResidentRuntimeTests
             LauncherController? launcher = null;
             var hotkeys = new HotkeyCommandExecutor(inspector, monitors, Motion, new NoPosition(), () => new(),
                 () => true, () => Toggles++, 999, () => launcher?.Open(), cursorPosition: () => Cursor);
-            Launcher = launcher = new(inspector, monitors, () => new(), Presenter, hotkeys.Place,
+            Launcher = launcher = new(inspector, monitors, () => new(), launcherPresenter ?? Presenter, hotkeys.Place,
                 value => Applied = value, Normal, 999);
             Runtime = new(Drag, hotkeys, Motion, Normal, value => Applied = value, Launcher, preview,
                 OverlayStates.Add, [new CallbackDisposable(() =>
