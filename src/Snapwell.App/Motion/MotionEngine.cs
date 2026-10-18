@@ -216,7 +216,7 @@ internal sealed class MotionEngine : IMotionEngine
             return;
         }
 
-        var current = new List<Application>(applications.Length);
+        var current = new Dictionary<nint, Application>(applications.Length);
         var placements = new List<WindowPlacement>(applications.Length);
         lock (_gate)
         {
@@ -229,7 +229,7 @@ internal sealed class MotionEngine : IMotionEngine
             {
                 if (IsCurrent(application))
                 {
-                    current.Add(application);
+                    current.Add(application.Handle, application);
                     placements.Add(new(application.Handle, application.Bounds));
                 }
             }
@@ -237,7 +237,7 @@ internal sealed class MotionEngine : IMotionEngine
 
         if (current.Count < 2)
         {
-            foreach (var application in current)
+            foreach (var application in current.Values)
             {
                 Apply(application);
             }
@@ -245,12 +245,22 @@ internal sealed class MotionEngine : IMotionEngine
             return;
         }
 
-        // 確認から呼び出しの間の取り消しは個別適用と同じ制約がある。外部呼び出し中はロックしない。
+        bool IsBatchCurrent(nint handle)
+        {
+            lock (_gate)
+            {
+                return !_disposed && IsCurrent(current[handle]);
+            }
+        }
+
+        // 準備中の取り消しも確認する。判定からネイティブ呼び出しまでの間だけは取り消せない。
+        // 外部呼び出し中はロックせず、判定でだけ短く取得する。
         bool applied;
         IReadOnlyList<nint> failedHandles;
         try
         {
-            applied = _mover.ApplyBatch(placements, current[0].Kind == ApplyKind.Position, out failedHandles);
+            applied = _mover.ApplyBatch(placements, current.Values.First().Kind == ApplyKind.Position,
+                out failedHandles, IsBatchCurrent);
         }
         catch (Exception)
         {
@@ -258,8 +268,14 @@ internal sealed class MotionEngine : IMotionEngine
             failedHandles = [];
         }
 
-        foreach (var application in current)
+        foreach (var application in current.Values)
         {
+            // 無効な対象は failedHandles に含まれないため、成功扱いの完了処理からも除く。
+            if (!IsBatchCurrent(application.Handle))
+            {
+                continue;
+            }
+
             if (!applied)
             {
                 // バッチの一部が適用済みでも、同じフレームの値で全対象を個別に再試行する。

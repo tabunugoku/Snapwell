@@ -21,9 +21,9 @@ public interface IWindowMover
     /// <summary>現在の見た目の矩形を返し、調査に失敗したときは null を返す。</summary>
     PixelRect? GetVisualBounds(nint handle);
 
-    /// <summary>調査できない対象を除いて一括適用し、除いたハンドルと API の成否を返す。</summary>
+    /// <summary>調査失敗と無効な対象を除いて一括適用し、調査失敗のハンドルと API の成否を返す。</summary>
     bool ApplyBatch(IReadOnlyList<WindowPlacement> placements, bool positionOnly,
-        out IReadOnlyList<nint> failedHandles);
+        out IReadOnlyList<nint> failedHandles, Func<nint, bool>? isCurrent = null);
 }
 
 /// <summary>移動の状態判断から分離したネイティブ操作。</summary>
@@ -72,12 +72,17 @@ public sealed class WindowMover(IWindowInspector inspector, IWindowPositionApi a
 
     /// <summary>調査できた対象だけ、通常状態の枠で補正してまとめて適用する。</summary>
     public bool ApplyBatch(IReadOnlyList<WindowPlacement> placements, bool positionOnly,
-        out IReadOnlyList<nint> failedHandles)
+        out IReadOnlyList<nint> failedHandles, Func<nint, bool>? isCurrent = null)
     {
         var corrected = new List<NativeWindowPlacement>(placements.Count);
         var failed = new List<nint>();
         foreach (var placement in placements)
         {
+            if (isCurrent is not null && !isCurrent(placement.Handle))
+            {
+                continue;
+            }
+
             try
             {
                 if (TryPrepare(placement.Handle, out var window))
@@ -92,6 +97,14 @@ public sealed class WindowMover(IWindowInspector inspector, IWindowPositionApi a
             }
 
             failed.Add(placement.Handle);
+        }
+
+        // 復元は同期で待つため、準備済みの対象もネイティブ呼び出し直前に確かめ直す。
+        // 無効な対象は失敗に含めない。呼び出し側も同じ判定で完了処理から除く。null は全員有効。
+        if (isCurrent is not null)
+        {
+            failed.RemoveAll(handle => !isCurrent(handle));
+            corrected.RemoveAll(placement => !isCurrent(placement.Handle));
         }
 
         failedHandles = failed;

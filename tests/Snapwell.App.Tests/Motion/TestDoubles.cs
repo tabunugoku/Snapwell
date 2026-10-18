@@ -104,7 +104,7 @@ internal sealed class FakeMover : IWindowMover
     }
 
     public bool ApplyBatch(IReadOnlyList<WindowPlacement> placements, bool positionOnly,
-        out IReadOnlyList<nint> failedHandles)
+        out IReadOnlyList<nint> failedHandles, Func<nint, bool>? isCurrent = null)
     {
         Calls.Enqueue("batch");
         Batches.Enqueue(([.. placements], positionOnly));
