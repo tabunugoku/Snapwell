@@ -198,6 +198,27 @@ public sealed class SpringSwitchTests
         Assert.False(sw.IsOn);
     }
 
+    /// <summary>速い入力の直後に止めて離しても、壁を押し越さず、端の側に決まる。</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void FastInputIntoTheEndStaysInsideAndSettlesOnThatSide(bool towardOn)
+    {
+        var sw = new SpringSwitch(Travel, FeelPreset.StiffHeavy, !towardOn);
+        sw.Grab(towardOn ? 4 : 16, 0);
+        sw.Move(towardOn ? Travel : 0, 0.004);
+        for (var i = 0; i < 30; i++)
+        {
+            sw.Advance(Frame);
+            Assert.InRange(sw.Position, 0, Travel);
+        }
+
+        sw.Release();
+        Assert.Equal(towardOn, sw.IsOn);
+        Run(sw, 2);
+        Assert.Equal(towardOn ? Travel : 0, sw.Position);
+    }
+
     /// <summary>握りの取り消しは状態を変えず、元の側へ静止する。</summary>
     [Theory]
     [InlineData(false)]

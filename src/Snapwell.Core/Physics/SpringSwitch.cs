@@ -6,8 +6,6 @@ public sealed class SpringSwitch
     private const double FixedStep = 1.0 / 240;
     private const double MaximumFrame = 1.0 / 30;
     private const double HandFrequency = 6;
-    private const double WallFrequency = 8;
-    private const double WallDampingRatio = 0.9;
     private const double RestVelocity = 4;
     private const double RestPosition = 0.25;
     private const double StaleHandSeconds = 0.06;
@@ -42,7 +40,7 @@ public sealed class SpringSwitch
     /// <summary>ばねの物理パラメーター。</summary>
     public FeelPreset Feel { get; }
 
-    /// <summary>つまみの位置。0 がオフ側、<see cref="Travel"/> がオン側。壁は柔らかく、わずかに越える。</summary>
+    /// <summary>つまみの位置。0 がオフ側、<see cref="Travel"/> がオン側。壁で止めるので範囲の外へは出ない。</summary>
     public double Position { get; private set; }
 
     /// <summary>つまみの速度。単位は px/s。</summary>
@@ -195,11 +193,24 @@ public sealed class SpringSwitch
         var k4v = Acceleration(x + h * k3x, v + h * k3v);
         Position = x + h / 6 * (k1x + 2 * k2x + 2 * k3x + k4x);
         Velocity = v + h / 6 * (k1v + 2 * k2v + 2 * k3v + k4v);
+
+        // 壁はトラックの端で位置と外向きの速度を止める。feel の柔らかい壁は、速い手の速度が残ると
+        // 押し越して反動で逆側へ決まるため、ここでは使わない（行き過ぎを受けるだけの用途は同じ）。
+        if (Position > Travel)
+        {
+            Position = Travel;
+            Velocity = Math.Min(Velocity, 0);
+        }
+        else if (Position < 0)
+        {
+            Position = 0;
+            Velocity = Math.Max(Velocity, 0);
+        }
     }
 
     private double Acceleration(double x, double v)
     {
-        var force = -Feel.Damping * v + Wall(x, v);
+        var force = -Feel.Damping * v;
         if (IsHeld)
         {
             // ハンドばねは質量 1 のつまみに合わせた強さ。重いつまみは指に遅れてついてくる。
@@ -215,22 +226,5 @@ public sealed class SpringSwitch
         }
 
         return force / Feel.Mass;
-    }
-
-    private double Wall(double x, double v)
-    {
-        var kw = Feel.Mass * Math.Pow(2 * Math.PI * WallFrequency, 2);
-        var cw = 2 * WallDampingRatio * Math.Sqrt(kw * Feel.Mass);
-        if (x < 0)
-        {
-            return -kw * x - (v < 0 ? cw * v : 0);
-        }
-
-        if (x > Travel)
-        {
-            return -kw * (x - Travel) - (v > 0 ? cw * v : 0);
-        }
-
-        return 0;
     }
 }
