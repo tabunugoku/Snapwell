@@ -4,63 +4,8 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <Page.Resources>
-        <Style x:Key="DemoSwitchStyle" TargetType="ToggleSwitch">
-            <Setter Property="MinWidth" Value="0" />
-            <Setter Property="Width" Value="40" />
-            <Setter Property="Height" Value="20" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ToggleSwitch">
-                        <Grid x:Name="SwitchVisualRoot" Width="40" Height="20" Background="Transparent">
-                            <VisualStateManager.VisualStateGroups>
-                                <VisualStateGroup x:Name="CommonStates">
-                                    <VisualState x:Name="Normal" />
-                                    <VisualState x:Name="PointerOver" />
-                                    <VisualState x:Name="Pressed" />
-                                    <VisualState x:Name="Disabled">
-                                        <VisualState.Setters>
-                                            <Setter Target="SwitchVisualRoot.Opacity" Value="0.55" />
-                                        </VisualState.Setters>
-                                    </VisualState>
-                                </VisualStateGroup>
-                                <VisualStateGroup x:Name="ToggleStates">
-                                    <VisualState x:Name="Off" />
-                                    <VisualState x:Name="On">
-                                        <VisualState.Setters>
-                                            <Setter
-                                                Target="SwitchTrack.Background"
-                                                Value="{ThemeResource SnapwellInkBrush}" />
-                                            <Setter
-                                                Target="SwitchTrack.BorderBrush"
-                                                Value="{ThemeResource SnapwellInkBrush}" />
-                                            <Setter Target="SwitchTrack.BorderThickness" Value="0" />
-                                            <Setter
-                                                Target="SwitchKnob.Fill"
-                                                Value="{ThemeResource SnapwellInkTextBrush}" />
-                                            <Setter Target="SwitchKnob.Margin" Value="23,0,0,0" />
-                                        </VisualState.Setters>
-                                    </VisualState>
-                                </VisualStateGroup>
-                            </VisualStateManager.VisualStateGroups>
-                            <Border
-                                x:Name="SwitchTrack"
-                                CornerRadius="9999"
-                                BorderThickness="1"
-                                BorderBrush="{ThemeResource SnapwellMutedBrush}" />
-                            <Ellipse
-                                x:Name="SwitchKnob"
-                                Width="12"
-                                Height="12"
-                                Margin="3,0,0,0"
-                                HorizontalAlignment="Left"
-                                VerticalAlignment="Center"
-                                Fill="{ThemeResource SnapwellMutedBrush}" />
-                        </Grid>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
+        <Style x:Key="DemoSwitchStyle" TargetType="ToggleSwitch"
+               BasedOn="{StaticResource SnapwellDemoSwitchStyle}" />
         <Style x:Key="FeelCardButtonStyle" TargetType="Button" BasedOn="{StaticResource SnapwellButtonStyle}">
             <Setter Property="Padding" Value="12" />
             <Setter Property="CornerRadius" Value="8" />
@@ -324,6 +269,7 @@
                                    Style="{StaticResource SnapwellRowDescriptionStyle}" />
                     </StackPanel>
                     <ToggleSwitch x:Name="MotionSwitch" Grid.Column="1" OnContent="" OffContent="" MinWidth="0"
+                                  Style="{StaticResource SnapwellToggleSwitchStyle}"
                                   VerticalAlignment="Center" AutomationProperties.Name="動きを減らす"
                                   Toggled="Motion_Toggled" />
                 </Grid>

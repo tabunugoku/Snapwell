@@ -113,7 +113,7 @@
                         BorderBrush="{ThemeResource SnapwellBorderBrush}">
                         <Border
                             Background="{ThemeResource SnapwellRedBackgroundBrush}"
-                            CornerRadius="9999"
+                            CornerRadius="9.4"
                             Padding="8,1"
                             HorizontalAlignment="Left"
                             VerticalAlignment="Center">
@@ -164,7 +164,7 @@
                         BorderBrush="{ThemeResource SnapwellBorderBrush}">
                         <Border
                             Background="{ThemeResource SnapwellYellowBackgroundBrush}"
-                            CornerRadius="9999"
+                            CornerRadius="9.4"
                             Padding="8,1"
                             HorizontalAlignment="Left"
                             VerticalAlignment="Center">
@@ -215,7 +215,7 @@
                         BorderBrush="{ThemeResource SnapwellBorderBrush}">
                         <Border
                             Background="{ThemeResource SnapwellBlueBackgroundBrush}"
-                            CornerRadius="9999"
+                            CornerRadius="9.4"
                             Padding="8,1"
                             HorizontalAlignment="Left"
                             VerticalAlignment="Center">
@@ -266,7 +266,7 @@
                         BorderBrush="{ThemeResource SnapwellBorderBrush}">
                         <Border
                             Background="{ThemeResource SnapwellRedBackgroundBrush}"
-                            CornerRadius="9999"
+                            CornerRadius="9.4"
                             Padding="8,1"
                             HorizontalAlignment="Left"
                             VerticalAlignment="Center">
