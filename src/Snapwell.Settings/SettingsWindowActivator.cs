@@ -8,10 +8,10 @@ namespace Snapwell.Settings;
 /// <summary>同じユーザーが開いている設定画面だけを復元して前面化する。</summary>
 internal static partial class SettingsWindowActivator
 {
-    internal static void Activate(string sid)
+    internal static void Activate(string sid, bool setup = false)
     {
         nint window = 0;
-        while ((window = FindWindowEx(0, window, null, "Snapwell の設定")) != 0)
+        while ((window = FindWindowEx(0, window, null, setup ? "Snapwell の初回セットアップ" : "Snapwell の設定")) != 0)
         {
             GetWindowThreadProcessId(window, out var processId);
             if (!IsSameUser(processId, sid))

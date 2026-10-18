@@ -4,6 +4,19 @@ namespace Snapwell.Core.Tests.Settings;
 
 public sealed class SingleInstanceTests
 {
+    /// <summary>通常の設定画面と併用しても、ウィザード自身は一つに制限する。</summary>
+    [Fact]
+    public void SetupHasItsOwnSingleInstanceAndCanCoexistWithSettings()
+    {
+        var sid = Guid.NewGuid().ToString("N");
+        using var settings = SingleInstance.TryAcquire(sid);
+        using var setup = SingleInstance.TryAcquire(sid, setup: true);
+        Assert.NotNull(settings);
+        Assert.NotNull(setup);
+        Assert.Null(SingleInstance.TryAcquire(sid, setup: true));
+        Assert.NotEqual(SingleInstance.GetMutexName(sid), SingleInstance.GetMutexName(sid, setup: true));
+    }
+
     [Fact]
     public void SameNameIsRejectedUntilFirstInstanceIsDisposed()
     {
