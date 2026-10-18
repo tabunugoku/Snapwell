@@ -826,7 +826,7 @@ table.list tr:last-child td { border-bottom: 0; }
                   <button class="chip" type="button" data-mode="zones" aria-pressed="true">区画</button>
                 </div>
                 <button class="chip" type="button" id="feelThrow">ランダムに投げる</button>
-                <span class="feel-try-hint">ウィンドウをつかんで投げます。いまの 5 つの値で動きます（離した速さが 150 px/s 未満だと吸着しません）</span>
+                <span class="feel-try-hint">ウィンドウをつかんで投げます。いまの 5 つの値で動き、止まる先は本体と同じ規則で決まります（離した速さが 150 px/s 未満だと吸着しません。区画では、中央から上へ強く投げると最大化になります）</span>
               </div>
             </div>
             <div class="group-title">詳細 <span class="feel-state" id="feelState"></span><button class="chip feel-reset" type="button" id="feelReset" hidden>プリセットに戻す</button></div>
@@ -1838,7 +1838,7 @@ function curvePath(p, w, h) {
 // 操作感の 5 つの値。範囲は feel のデモ（rig.js の dial）に合わせた: 質量 0.15–8（対数）、振動数 0.4–7 Hz（対数）、
 // 減衰比 0.1–1.6。磁石の強さ 0–2 と吸着半径 8–96 px は Snapwell の設定（feel では語彙と click radius から決まる）
 const TUNE = [
-  { key: 'm', name: '質量 m', desc: '重いほど手から遅れ、遠くまで滑ります', min: 0.15, max: 8, log: true, step: 0.01, digits: 2, unit: '', tol: 0.005 },
+  { key: 'm', name: '質量 m', desc: 'feel の磁石場では力が質量に比例するため、吸着の動きは変わりません。導かれる値の k と c に効きます', min: 0.15, max: 8, log: true, step: 0.01, digits: 2, unit: '', tol: 0.005 },
   { key: 'f', name: '固有振動数 f', desc: '大きいほど素早く吸着します', min: 0.4, max: 7, log: true, step: 0.01, digits: 2, unit: 'Hz', tol: 0.005 },
   { key: 'z', name: '減衰比 ζ', desc: '1 に近いほど行き過ぎません', min: 0.1, max: 1.6, log: false, step: 0.01, digits: 2, unit: '', tol: 0.005 },
   { key: 'magnet', name: '磁石の強さ', desc: '停止点へ吸い寄せる力。大きいほど強く引きます', min: 0, max: 2, log: false, step: 0.05, digits: 2, unit: '', tol: 0.005 },
@@ -1851,42 +1851,157 @@ const fromSlider = (t, x) => {
   return t.log ? t.min * Math.pow(t.max / t.min, r) : t.min + r * (t.max - t.min);
 };
 
-/** feel の磁石場（二段のばね・壁・RK4）で、試す領域のウィンドウ 1 枚を動かす。固定の継続時間やイージングは使わない */
+/**
+ * feel の磁石場（二段のばね・壁・RK4）で、試す領域のウィンドウ 1 枚を動かす。固定の継続時間やイージングは使わない。
+ * 吸着先と停止点の選び方は本体の SnapResolver と同じ規則（150 px/s の足切り、最大化は上端の外へ予測されたときだけ、
+ * 左右の二候補は磁石場で決める、四隅は 4 点の場）。位置はウィンドウの左上、停止点も左上の座標
+ */
 function initFeelTry(getTune) {
   const stage = $('#feelStage');
   const card = $('#feelCard');
-  const zonesBox = $('#feelZones');
+  const guideBox = $('#feelZones');
   const CARD_W = 120;
   const CARD_H = 76;
   const GAP = 6;
   let mode = 'zones';
-  let stops = [];
-  let zones = [];
+  let guides = [];
+  let corners = [];
   let size = { w: CARD_W, h: CARD_H };
   let c = { x: 0, y: 0, vx: 0, vy: 0 };
-  let flying = false;
+  let flight = null;
   let dragging = false;
   let rafId = 0;
   let lastT = 0;
   const smooth = (e) => (e <= 0 ? 0 : e >= 1 ? 1 : e * e * (3 - 2 * e));
+  const area = () => ({ W: stage.clientWidth, H: stage.clientHeight });
+  const center = (r) => ({ x: r.x + r.w / 2, y: r.y + r.h / 2 });
+
+  // 本体の GridLayout（2×2、間隔 GAP）と同じ区画
+  const zoneRects = () => {
+    const { W, H } = area();
+    const cw = (W - 3 * GAP) / 2;
+    const ch = (H - 3 * GAP) / 2;
+    const x1 = GAP + cw + GAP;
+    const y1 = GAP + ch + GAP;
+    return {
+      left: { x: GAP, y: GAP, w: cw, h: H - 2 * GAP },
+      right: { x: x1, y: GAP, w: cw, h: H - 2 * GAP },
+      tl: { x: GAP, y: GAP, w: cw, h: ch },
+      tr: { x: x1, y: GAP, w: cw, h: ch },
+      bl: { x: GAP, y: y1, w: cw, h: ch },
+      br: { x: x1, y: y1, w: cw, h: ch },
+      max: { x: GAP, y: GAP, w: W - 2 * GAP, h: H - 2 * GAP },
+    };
+  };
+
+  // feel の力則: F = −c·v − [kFar + kNear·smoothstep(1 − |u|/R)]·u （u = 位置 − 最寄りの停止点）＋ 壁
+  const nearest = (stops, x, y) => {
+    let best = 0;
+    let bd = Infinity;
+    stops.forEach((s, i) => {
+      const d = (s.x - x) ** 2 + (s.y - y) ** 2;
+      if (d < bd) { bd = d; best = i; }
+    });
+    return best;
+  };
+  const accel = (ctx, x, y, vx, vy) => {
+    const t = ctx.tune;
+    const m = t.m;
+    const k = m * Math.pow(2 * Math.PI * t.f, 2);
+    const cc = 2 * t.z * Math.sqrt(k * m);
+    const s = ctx.stops[nearest(ctx.stops, x, y)];
+    const ux = x - s.x;
+    const uy = y - s.y;
+    const kFar = m * Math.pow(2 * Math.PI * (0.6 + 0.5 * t.magnet), 2);
+    const kNear = m * Math.pow(2 * Math.PI * (3 + 4 * t.magnet), 2);
+    const kk = kFar + kNear * smooth(1 - Math.hypot(ux, uy) / t.radius);
+    const kw = m * Math.pow(2 * Math.PI * 8, 2);
+    const cw = 2 * 0.9 * Math.sqrt(kw * m);
+    const wall = (p, v, lo, hi) => (p < lo ? -kw * (p - lo) - (v < 0 ? cw * v : 0) : p > hi ? -kw * (p - hi) - (v > 0 ? cw * v : 0) : 0);
+    const { W, H } = area();
+    const xs = ctx.stops.map((q) => q.x);
+    const ys = ctx.stops.map((q) => q.y);
+    return {
+      x: (-cc * vx - kk * ux + wall(x, vx, Math.min(0, ...xs), Math.max(W - ctx.w, ...xs))) / m,
+      y: (-cc * vy - kk * uy + wall(y, vy, Math.min(0, ...ys), Math.max(H - ctx.h, ...ys))) / m,
+    };
+  };
+  const rk4 = (ctx, b, h) => {
+    const a1 = accel(ctx, b.x, b.y, b.vx, b.vy);
+    const v2x = b.vx + a1.x * h / 2;
+    const v2y = b.vy + a1.y * h / 2;
+    const a2 = accel(ctx, b.x + b.vx * h / 2, b.y + b.vy * h / 2, v2x, v2y);
+    const v3x = b.vx + a2.x * h / 2;
+    const v3y = b.vy + a2.y * h / 2;
+    const a3 = accel(ctx, b.x + v2x * h / 2, b.y + v2y * h / 2, v3x, v3y);
+    const v4x = b.vx + a3.x * h;
+    const v4y = b.vy + a3.y * h;
+    const a4 = accel(ctx, b.x + v3x * h, b.y + v3y * h, v4x, v4y);
+    b.x += (b.vx + 2 * v2x + 2 * v3x + v4x) * h / 6;
+    b.y += (b.vy + 2 * v2y + 2 * v3y + v4y) * h / 6;
+    b.vx += (a1.x + 2 * a2.x + 2 * a3.x + a4.x) * h / 6;
+    b.vy += (a1.y + 2 * a2.y + 2 * a3.y + a4.y) * h / 6;
+  };
+  const resting = (ctx, b) => {
+    const s = ctx.stops[nearest(ctx.stops, b.x, b.y)];
+    return Math.hypot(b.vx, b.vy) < 4 && Math.hypot(b.x - s.x, b.y - s.y) < 0.25;
+  };
+  // 本体の WindowBody.PredictRest: 今の速度のまま 1/60 秒刻みで最大 6 秒、場が止める停止点を返す
+  const predictRest = (ctx, from, vx, vy) => {
+    const b = { x: from.x, y: from.y, vx, vy };
+    for (let t = 0; t < 6; t += 1 / 60) {
+      for (let i = 0; i < 4; i++) rk4(ctx, b, 1 / 240);
+      if (resting(ctx, b)) break;
+    }
+    return ctx.stops[nearest(ctx.stops, b.x, b.y)];
+  };
+
+  // 本体の SnapResolver.Resolve と同じ順序: 足切り → 予測点（x + v·m/c）→ 最大化 → 行 → 左右を場で決める
+  const resolve = (t, vx, vy) => {
+    if (Math.hypot(vx, vy) < 150) return null;
+    const { W, H } = area();
+    const k = t.m * Math.pow(2 * Math.PI * t.f, 2);
+    const coast = t.m / (2 * t.z * Math.sqrt(k * t.m));
+    const cur = { x: c.x, y: c.y, w: size.w, h: size.h };
+    if (mode === 'corners') {
+      return { stops: corners, target: null, kind: 'corners' };
+    }
+    const z = zoneRects();
+    const px = cur.x + vx * coast;
+    const py = cur.y + vy * coast;
+    const cx = Math.max(0, Math.min(W, px + cur.w / 2));
+    const cy = Math.max(0, Math.min(H, py + cur.h / 2));
+    if (py <= -cur.h * 0.25 && Math.abs(cx - W / 2) <= W * 0.25) return { stops: [{ x: z.max.x, y: z.max.y }], target: z.max, kind: 'max' };
+    const row = cy < H * 0.3 ? 0 : cy > H * 0.7 ? 1 : 2;
+    const pair = row === 0 ? [z.tl, z.tr] : row === 1 ? [z.bl, z.br] : [z.left, z.right];
+    const names = row === 0 ? ['tl', 'tr'] : row === 1 ? ['bl', 'br'] : ['left', 'right'];
+    // 窓の中心を、二つの区画の中心を停止点とする場で動かす（本体は大きさ 0 の物体で中心を動かす）
+    const centers = pair.map(center);
+    const ctx = { tune: t, stops: centers, w: 0, h: 0 };
+    const rest = predictRest(ctx, center(cur), vx, vy);
+    const pick = rest === centers[0] ? 0 : 1;
+    return { stops: [{ x: pair[pick].x, y: pair[pick].y }], target: pair[pick], kind: names[pick] };
+  };
 
   const layout = () => {
-    const W = stage.clientWidth;
-    const H = stage.clientHeight;
+    const { W, H } = area();
     if (!W) return;
+    const z = zoneRects();
     if (mode === 'zones') {
-      const zr = (x, y, w, h) => ({ x: x * W + GAP / 2, y: y * H + GAP / 2, w: w * W - GAP, h: h * H - GAP });
-      zones = [zr(0, 0, 0.5, 1), zr(0.5, 0, 0.5, 1), zr(0, 0, 0.5, 0.5), zr(0.5, 0, 0.5, 0.5), zr(0, 0.5, 0.5, 0.5), zr(0.5, 0.5, 0.5, 0.5)];
-      stops = zones.map((z) => ({ x: z.x + z.w / 2, y: z.y + z.h / 2 }));
+      corners = [];
+      guides = ['left', 'right', 'tl', 'tr', 'bl', 'br', 'max'].map((k) => ({ k, r: z[k] }));
     } else {
-      const ix = CARD_W / 2 + 12;
-      const iy = CARD_H / 2 + 12;
-      zones = [];
-      stops = [{ x: ix, y: iy }, { x: W - ix, y: iy }, { x: W - ix, y: H - iy }, { x: ix, y: H - iy }];
+      guides = [];
+      corners = [
+        { x: GAP, y: GAP },
+        { x: W - CARD_W - GAP, y: GAP },
+        { x: W - CARD_W - GAP, y: H - CARD_H - GAP },
+        { x: GAP, y: H - CARD_H - GAP },
+      ];
     }
-    zonesBox.innerHTML = zones.map((z, i) => `<div class="fz" data-i="${i}" style="left:${z.x}px;top:${z.y}px;width:${z.w}px;height:${z.h}px"></div>`).join('')
-      + stops.map((s) => `<div class="fz-dot" style="left:${s.x}px;top:${s.y}px"></div>`).join('');
-    if (!flying && !dragging) place(W / 2, H / 2, CARD_W, CARD_H);
+    guideBox.innerHTML = guides.map((g, i) => `<div class="fz${g.k === 'max' ? ' fz-max' : ''}" data-k="${g.k}" style="left:${g.r.x}px;top:${g.r.y}px;width:${g.r.w}px;height:${g.r.h}px"></div>`).join('')
+      + corners.map((s) => `<div class="fz-dot" style="left:${s.x + CARD_W / 2}px;top:${s.y + CARD_H / 2}px"></div>`).join('');
+    if (!flight && !dragging) place((W - CARD_W) / 2, (H - CARD_H) / 2, CARD_W, CARD_H);
   };
   const place = (x, y, w, h) => {
     c = { x, y, vx: 0, vy: 0 };
@@ -1896,112 +2011,63 @@ function initFeelTry(getTune) {
   const paint = (lift) => {
     card.style.width = `${size.w}px`;
     card.style.height = `${size.h}px`;
-    card.style.transform = `translate(${(c.x - size.w / 2).toFixed(2)}px, ${(c.y - size.h / 2).toFixed(2)}px) scale(${(1 + 0.05 * lift).toFixed(4)})`;
+    card.style.transform = `translate(${c.x.toFixed(2)}px, ${c.y.toFixed(2)}px) scale(${(1 + 0.05 * lift).toFixed(4)})`;
     card.style.boxShadow = `0 1px 2px rgba(16,16,20,.08), 0 ${(4 + 16 * lift).toFixed(1)}px ${(12 + 28 * lift).toFixed(1)}px rgba(16,16,20,${(0.12 + 0.12 * lift).toFixed(3)})`;
   };
-  const nearest = (x, y) => {
-    let best = 0;
-    let bd = Infinity;
-    stops.forEach((s, i) => {
-      const d = (s.x - x) ** 2 + (s.y - y) ** 2;
-      if (d < bd) { bd = d; best = i; }
-    });
-    return best;
-  };
-
-  // feel の力則: F = −c·v − [kFar + kNear·smoothstep(1 − |u|/R)]·u （u = 位置 − 最寄りの停止点）＋ 壁
-  const accel = (x, y, vx, vy, t) => {
-    const m = t.m;
-    const k = m * Math.pow(2 * Math.PI * t.f, 2);
-    const cc = 2 * t.z * Math.sqrt(k * m);
-    const s = stops[nearest(x, y)];
-    const ux = x - s.x;
-    const uy = y - s.y;
-    const kFar = m * Math.pow(2 * Math.PI * (0.6 + 0.5 * t.magnet), 2);
-    const kNear = m * Math.pow(2 * Math.PI * (3 + 4 * t.magnet), 2);
-    const kk = kFar + kNear * smooth(1 - Math.hypot(ux, uy) / t.radius);
-    const kw = m * Math.pow(2 * Math.PI * 8, 2);
-    const cw = 2 * 0.9 * Math.sqrt(kw * m);
-    const wall = (p, v, lo, hi) => (p < lo ? -kw * (p - lo) - (v < 0 ? cw * v : 0) : p > hi ? -kw * (p - hi) - (v > 0 ? cw * v : 0) : 0);
-    const W = stage.clientWidth;
-    const H = stage.clientHeight;
-    return {
-      x: (-cc * vx - kk * ux + wall(x, vx, Math.min(0, ...stops.map((q) => q.x)), Math.max(W, ...stops.map((q) => q.x)))) / m,
-      y: (-cc * vy - kk * uy + wall(y, vy, Math.min(0, ...stops.map((q) => q.y)), Math.max(H, ...stops.map((q) => q.y)))) / m,
-    };
-  };
-  const rk4 = (h, t) => {
-    const a1 = accel(c.x, c.y, c.vx, c.vy, t);
-    const v2x = c.vx + a1.x * h / 2;
-    const v2y = c.vy + a1.y * h / 2;
-    const a2 = accel(c.x + c.vx * h / 2, c.y + c.vy * h / 2, v2x, v2y, t);
-    const v3x = c.vx + a2.x * h / 2;
-    const v3y = c.vy + a2.y * h / 2;
-    const a3 = accel(c.x + v2x * h / 2, c.y + v2y * h / 2, v3x, v3y, t);
-    const v4x = c.vx + a3.x * h;
-    const v4y = c.vy + a3.y * h;
-    const a4 = accel(c.x + v3x * h, c.y + v3y * h, v4x, v4y, t);
-    c.x += (c.vx + 2 * v2x + 2 * v3x + v4x) * h / 6;
-    c.y += (c.vy + 2 * v2y + 2 * v3y + v4y) * h / 6;
-    c.vx += (a1.x + 2 * a2.x + 2 * a3.x + a4.x) * h / 6;
-    c.vy += (a1.y + 2 * a2.y + 2 * a3.y + a4.y) * h / 6;
+  const settle = () => {
+    const f = flight;
+    flight = null;
+    rafId = 0;
+    const s = f.stops[nearest(f.stops, c.x, c.y)];
+    if (f.target) place(f.target.x, f.target.y, f.target.w, f.target.h);
+    else place(s.x, s.y, CARD_W, CARD_H);
+    $$('.fz', guideBox).forEach((el) => el.classList.toggle('on', !!f.kind && el.dataset.k === f.kind));
   };
   const loop = (now) => {
-    const t = getTune();
     let acc = Math.min(1 / 30, (now - lastT) / 1000);
     lastT = now;
+    flight.ctx.tune = getTune();
     while (acc > 1e-9) {
       const h = Math.min(1 / 240, acc);
-      rk4(h, t);
+      rk4(flight.ctx, c, h);
       acc -= h;
     }
-    const s = stops[nearest(c.x, c.y)];
-    if (Math.hypot(c.vx, c.vy) < 4 && Math.hypot(c.x - s.x, c.y - s.y) < 0.25) {
-      settle(nearest(c.x, c.y));
+    if (resting(flight.ctx, c)) {
+      settle();
       return;
     }
     paint(Math.min(1, Math.hypot(c.vx, c.vy) / 3000));
     rafId = requestAnimationFrame(loop);
   };
-  const settle = (i) => {
-    flying = false;
-    rafId = 0;
-    const z = zones[i];
-    if (mode === 'zones') place(z.x + z.w / 2, z.y + z.h / 2, z.w, z.h);
-    else place(stops[i].x, stops[i].y, CARD_W, CARD_H);
-    $$('.fz', zonesBox).forEach((el) => el.classList.toggle('on', mode === 'zones' && +el.dataset.i === i));
-  };
-  const launch = (vx, vy) => {
-    if (reducedMotion()) {
-      const s = nearest(c.x + vx * 0.25, c.y + vy * 0.25);
-      settle(s);
-      return;
-    }
+  // 離す、または投げ出す。選ばれなければその場に置く
+  const release = (vx, vy) => {
+    const t = getTune();
+    const r = resolve(t, vx, vy);
+    if (!r) { paint(0); return; }
+    flight = { ...r, ctx: { tune: t, stops: r.stops, w: size.w, h: size.h } };
+    $$('.fz', guideBox).forEach((el) => el.classList.remove('on'));
     c.vx = vx;
     c.vy = vy;
-    flying = true;
+    if (reducedMotion()) {
+      while (!resting(flight.ctx, c)) rk4(flight.ctx, c, 1 / 240);
+      settle();
+      return;
+    }
     lastT = performance.now();
     cancelAnimationFrame(rafId);
     rafId = requestAnimationFrame(loop);
   };
-  // 標準のドラッグと投げを分ける Snapwell の足切り: 離した速さが 150 px/s 未満なら吸着せず、その場に置く
-  const release = (vx, vy) => {
-    if (Math.hypot(vx, vy) < 150) { paint(0); return; }
-    launch(vx, vy);
-  };
 
-  let grab = null;
   let samples = [];
   card.addEventListener('pointerdown', (ev) => {
     cancelAnimationFrame(rafId);
-    flying = false;
+    flight = null;
     dragging = true;
-    $$('.fz', zonesBox).forEach((el) => el.classList.remove('on'));
+    $$('.fz', guideBox).forEach((el) => el.classList.remove('on'));
     const r = stage.getBoundingClientRect();
     // つかんだら元の大きさに戻し、つかんだ位置をカードの中心にそろえる
     size = { w: CARD_W, h: CARD_H };
-    grab = { dx: 0, dy: 0 };
-    c = { x: ev.clientX - r.left, y: ev.clientY - r.top, vx: 0, vy: 0 };
+    c = { x: ev.clientX - r.left - CARD_W / 2, y: ev.clientY - r.top - CARD_H / 2, vx: 0, vy: 0 };
     samples = [{ t: ev.timeStamp, x: c.x, y: c.y }];
     card.setPointerCapture(ev.pointerId);
     paint(0.4);
@@ -2009,16 +2075,16 @@ function initFeelTry(getTune) {
   card.addEventListener('pointermove', (ev) => {
     if (!dragging) return;
     const r = stage.getBoundingClientRect();
-    c.x = Math.min(r.width, Math.max(0, ev.clientX - r.left));
-    c.y = Math.min(r.height, Math.max(0, ev.clientY - r.top));
+    const { W, H } = area();
+    c.x = Math.min(W, Math.max(0, ev.clientX - r.left)) - CARD_W / 2;
+    c.y = Math.min(H, Math.max(0, ev.clientY - r.top)) - CARD_H / 2;
     samples.push({ t: ev.timeStamp, x: c.x, y: c.y });
     while (samples.length > 2 && ev.timeStamp - samples[0].t > 100) samples.shift();
     paint(0.4);
   });
-  const up = (ev) => {
+  const up = () => {
     if (!dragging) return;
     dragging = false;
-    grab = null;
     const a = samples[0];
     const b = samples[samples.length - 1];
     const dt = Math.max(0.016, (b.t - a.t) / 1000);
@@ -2030,18 +2096,22 @@ function initFeelTry(getTune) {
     const v = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[ev.key];
     if (!v) return;
     ev.preventDefault();
-    launch(v[0] * 2200, v[1] * 2200);
+    cancelAnimationFrame(rafId);
+    flight = null;
+    release(v[0] * 2200, v[1] * 2200);
   });
   $('#feelThrow').addEventListener('click', () => {
     const a = Math.random() * Math.PI * 2;
     const sp = 1200 + Math.random() * 2400;
-    launch(Math.cos(a) * sp, Math.sin(a) * sp);
+    cancelAnimationFrame(rafId);
+    flight = null;
+    release(Math.cos(a) * sp, Math.sin(a) * sp);
   });
   $$('[data-mode]').forEach((b) => b.addEventListener('click', () => {
     mode = b.dataset.mode;
     $$('[data-mode]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
     cancelAnimationFrame(rafId);
-    flying = false;
+    flight = null;
     layout();
   }));
   new ResizeObserver(layout).observe(stage);
