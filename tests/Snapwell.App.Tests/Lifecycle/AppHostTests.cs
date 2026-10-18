@@ -41,7 +41,7 @@ public sealed class AppHostTests
 
         Assert.Equal(["Ctrl", "Alt", "Space"], items.Single(item => item.Command == TrayMenuCommand.Launcher).Keys);
         Assert.Equal(["Ctrl", "Alt", "Pause"], items.Single(item => item.Command == TrayMenuCommand.Toggle).Keys);
-        Assert.Equal(["Ctrl", "Alt", "A"], items.Single(item => item.Command == TrayMenuCommand.Arrange).Keys);
+        Assert.Empty(items.Single(item => item.Command == TrayMenuCommand.Arrange).Keys);
     }
 
     /// <summary>対象と選択時刻を現在の Runtime へ渡し、再読込後は交換先だけへ渡す。</summary>
