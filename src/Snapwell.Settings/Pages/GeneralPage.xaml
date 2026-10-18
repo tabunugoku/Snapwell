@@ -2,7 +2,8 @@
 <Page
     x:Class="Snapwell.Settings.Pages.GeneralPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:Snapwell.Settings.Controls">
     <Page.Resources>
         <Style x:Key="DemoSwitchStyle" TargetType="ToggleSwitch"
                BasedOn="{StaticResource SnapwellDemoSwitchStyle}" />
@@ -40,8 +41,8 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="Snapwell を有効にする" Style="{StaticResource SnapwellRowTitleStyle}" />
-                                <Border Grid.Column="1" Style="{StaticResource SnapwellPendingTagStyle}">
-                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellPendingTagTextStyle}" />
+                                <Border Grid.Column="1" Style="{StaticResource SnapwellTagPendingStyle}">
+                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellTagPendingTextStyle}" />
                                 </Border>
                             </Grid>
                             <TextBlock Text="オフにすると、標準のスナップ機能を元の状態に戻します。トレイメニューから操作できます" Style="{StaticResource SnapwellRowDescriptionStyle}" />
@@ -84,8 +85,8 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="管理者として起動する" Style="{StaticResource SnapwellRowTitleStyle}" />
-                                <Border Grid.Column="1" Style="{StaticResource SnapwellPendingTagStyle}">
-                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellPendingTagTextStyle}" />
+                                <Border Grid.Column="1" Style="{StaticResource SnapwellTagPendingStyle}">
+                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellTagPendingTextStyle}" />
                                 </Border>
                             </Grid>
                             <TextBlock
@@ -112,8 +113,8 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="言語" Style="{StaticResource SnapwellRowTitleStyle}" />
-                                <Border Grid.Column="1" Style="{StaticResource SnapwellPendingTagStyle}">
-                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellPendingTagTextStyle}" />
+                                <Border Grid.Column="1" Style="{StaticResource SnapwellTagPendingStyle}">
+                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellTagPendingTextStyle}" />
                                 </Border>
                             </Grid>
                         </StackPanel>
@@ -148,8 +149,8 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="サイズ固定のウィンドウも動かす" Style="{StaticResource SnapwellRowTitleStyle}" />
-                                <Border Grid.Column="1" Style="{StaticResource SnapwellPendingTagStyle}">
-                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellPendingTagTextStyle}" />
+                                <Border Grid.Column="1" Style="{StaticResource SnapwellTagPendingStyle}">
+                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellTagPendingTextStyle}" />
                                 </Border>
                             </Grid>
                             <TextBlock
@@ -176,8 +177,8 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="ポップアップとフライアウトも動かす" Style="{StaticResource SnapwellRowTitleStyle}" />
-                                <Border Grid.Column="1" Style="{StaticResource SnapwellPendingTagStyle}">
-                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellPendingTagTextStyle}" />
+                                <Border Grid.Column="1" Style="{StaticResource SnapwellTagPendingStyle}">
+                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellTagPendingTextStyle}" />
                                 </Border>
                             </Grid>
                             <TextBlock
