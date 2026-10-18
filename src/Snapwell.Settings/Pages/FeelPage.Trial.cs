@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Shapes;
@@ -54,7 +53,7 @@ public sealed partial class FeelPage
         }
 
         var line = ThemeBrush("SnapwellCellBorderBrush");
-        foreach (var zone in _trial.Zones)
+        foreach (var zone in _trial.Guides)
         {
             var rectangle = new Rectangle
             {
@@ -74,7 +73,7 @@ public sealed partial class FeelPage
         }
 
         var muted = ThemeBrush("SnapwellMutedBrush");
-        foreach (var stop in _trial.Stops)
+        foreach (var stop in _trial.CornerPoints)
         {
             var dot = new Ellipse { Width = 8, Height = 8, Fill = muted, Opacity = 0.6, IsHitTestVisible = false };
             Canvas.SetLeft(dot, stop.X - 4);
@@ -101,16 +100,16 @@ public sealed partial class FeelPage
         var highlight = ThemeBrush("SnapwellCellBrush");
         for (var i = 0; i < _zoneShapes.Count; i++)
         {
-            _zoneShapes[i].Fill = _trial.ZoneIndex == i ? highlight : null;
+            _zoneShapes[i].Fill = _trial.GuideIndex == i ? highlight : null;
         }
 
     }
 
     private void TrialMode_Click(object sender, RoutedEventArgs e)
     {
-        _trialMode = ((ToggleButton)sender).Tag is "Corners" ? SnapMode.Corners : SnapMode.Zones;
-        TrialZonesButton.IsChecked = _trialMode == SnapMode.Zones;
-        TrialCornersButton.IsChecked = _trialMode == SnapMode.Corners;
+        _trialMode = ((Button)sender).Tag is "Corners" ? SnapMode.Corners : SnapMode.Zones;
+        TrialZonesButton.Style = (Style)Resources[_trialMode == SnapMode.Zones ? "SelectedChipButtonStyle" : "ChipButtonStyle"];
+        TrialCornersButton.Style = (Style)Resources[_trialMode == SnapMode.Corners ? "SelectedChipButtonStyle" : "ChipButtonStyle"];
         if (_trial is not null)
         {
             StopRendering();
@@ -207,8 +206,10 @@ public sealed partial class FeelPage
         }
 
         StopRendering();
-        _trial.Throw(velocity, _session.Current.ToFeelPreset(), _session.Current.SnapRadius);
-        StartFlight();
+        if (_trial.Release(velocity, _session.Current.ToFeelPreset(), _session.Current.SnapRadius))
+        {
+            StartFlight();
+        }
     }
 
     // 動きを減らす設定がオンなら、アニメーションせずに止まる先へ直ちに移る。

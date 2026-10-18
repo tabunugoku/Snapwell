@@ -15,6 +15,17 @@
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
             <Setter Property="VerticalContentAlignment" Value="Stretch" />
         </Style>
+        <Style x:Key="ChipButtonStyle" TargetType="Button" BasedOn="{StaticResource SnapwellButtonStyle}">
+            <Setter Property="Padding" Value="12,5" />
+            <Setter Property="FontSize" Value="13" />
+        </Style>
+        <Style x:Key="SelectedChipButtonStyle" TargetType="Button" BasedOn="{StaticResource SnapwellButtonStyle}">
+            <Setter Property="Padding" Value="11,4" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Foreground" Value="{ThemeResource SnapwellInkBrush}" />
+            <Setter Property="BorderBrush" Value="{ThemeResource SnapwellInkBrush}" />
+            <Setter Property="BorderThickness" Value="2" />
+        </Style>
         <Style x:Key="SelectedFeelCardButtonStyle" TargetType="Button" BasedOn="{StaticResource FeelCardButtonStyle}">
             <Setter Property="Padding" Value="11" />
             <Setter Property="BorderBrush" Value="{ThemeResource SnapwellInkBrush}" />
@@ -147,13 +158,14 @@
                         </Border>
                     </Canvas>
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                        <ToggleButton x:Name="TrialZonesButton" Content="区画" IsChecked="True"
-                                      Click="TrialMode_Click" Tag="Zones" />
-                        <ToggleButton x:Name="TrialCornersButton" Content="四隅" Click="TrialMode_Click"
-                                      Tag="Corners" />
-                        <Button x:Name="TrialThrowButton" Content="ランダムに投げる" Click="TrialThrow_Click" />
+                        <Button x:Name="TrialZonesButton" Content="区画" Click="TrialMode_Click" Tag="Zones"
+                                Style="{StaticResource SelectedChipButtonStyle}" />
+                        <Button x:Name="TrialCornersButton" Content="四隅" Click="TrialMode_Click" Tag="Corners"
+                                Style="{StaticResource ChipButtonStyle}" />
+                        <Button x:Name="TrialThrowButton" Content="ランダムに投げる" Click="TrialThrow_Click"
+                                Style="{StaticResource ChipButtonStyle}" />
                     </StackPanel>
-                    <TextBlock Text="ウィンドウをつかんで投げます。いまの 5 つの値で動きます（離した速さが 150 px/s 未満だと吸着しません）"
+                    <TextBlock Text="ウィンドウをつかんで投げます。いまの 5 つの値で動き、止まる先は本体と同じ規則で決まります（離した速さが 150 px/s 未満だと吸着しません。区画では、中央から上へ強く投げると最大化になります）"
                                Style="{StaticResource SnapwellRowDescriptionStyle}" TextWrapping="Wrap" />
                 </StackPanel>
             </Border>
