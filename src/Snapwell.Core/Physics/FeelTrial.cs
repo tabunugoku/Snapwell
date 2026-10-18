@@ -195,12 +195,34 @@ public sealed class FeelTrial
             return false;
         }
 
+        Finish();
+        return true;
+    }
+
+    /// <summary>
+    /// 動いている最中なら、選ばれた吸着先へ直ちに確定して飛行を終える（動きを減らす設定用）。
+    /// 計算時間の上限では代用しない: 収束しない値でも、位置・大きさ・種類を吸着先どおりにする。
+    /// </summary>
+    public void Settle()
+    {
+        if (_body is null)
+        {
+            return;
+        }
+
+        var target = ToRect(_pending!.Value.Target);
+        Center = new(target.X + target.W / 2, target.Y + target.H / 2);
+        Size = new(target.W, target.H);
+        Finish();
+    }
+
+    private void Finish()
+    {
         var target = ToRect(_pending!.Value.Target);
         Kind = _pending.Value.Kind;
         GuideIndex = Array.FindIndex(_guides, guide => guide == target) is var index and >= 0 ? index : null;
         _body = null;
         _pending = null;
-        return true;
     }
 
     private static RectD ToRect(PixelRect rect) => new(rect.X, rect.Y, rect.Width, rect.Height);

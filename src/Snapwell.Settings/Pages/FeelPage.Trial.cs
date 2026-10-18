@@ -13,9 +13,9 @@ namespace Snapwell.Settings.Pages;
 /// <summary>操作感を試す領域。カードの動きは Core の FeelTrial（本体と同じ磁石場）が決める。</summary>
 public sealed partial class FeelPage
 {
-    private const double SampleWindowSeconds = 0.1;
     private const double KeyThrowSpeed = 2200;
 
+    private const double SampleWindowSeconds = 0.1;
     private readonly List<(double Time, Vec2 Point)> _samples = [];
     private readonly List<Rectangle> _zoneShapes = [];
     private readonly Stopwatch _clock = Stopwatch.StartNew();
@@ -224,10 +224,7 @@ public sealed partial class FeelPage
     {
         if (_session.Current.ReduceMotion)
         {
-            for (var i = 0; i < 60 * 12 && !_trial!.Advance(1.0 / 60); i++)
-            {
-            }
-
+            _trial!.Settle();
             PaintTrial();
             return;
         }
