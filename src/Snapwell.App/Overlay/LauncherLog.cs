@@ -8,34 +8,14 @@ namespace Snapwell.App.Overlay;
 internal static class LauncherLog
 {
     internal const int MaxBytes = 64 * 1024;
-    private static readonly Channel<Entry> _entries = Channel.CreateBounded<Entry>(new BoundedChannelOptions(128)
-    {
-        FullMode = BoundedChannelFullMode.DropOldest,
-        SingleReader = true,
-        AllowSynchronousContinuations = false,
-    });
-    private static readonly Task _writer = Task.Run(WriteEntries);
+    private static readonly LauncherLogWriter _writer = new();
 
     /// <summary>通常の成功では呼ばず、呼び出し側ではファイルも例外の本文も扱わない。</summary>
     internal static void Write(long generation, string state, Exception? exception) =>
-        _entries.Writer.TryWrite(new(DateTimeOffset.Now, generation, state, exception));
+        _writer.Write(generation, state, exception);
 
-    private static async Task WriteEntries()
-    {
-        var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "Snapwell", "launcher.log");
-        await foreach (var entry in _entries.Reader.ReadAllAsync())
-        {
-            try
-            {
-                Append(path, Format(entry.Time, entry.Generation, entry.State, entry.Exception));
-            }
-            catch (Exception)
-            {
-                // ログ保存に失敗しても表示の回復や OS 設定の復元は止めない。
-            }
-        }
-    }
+    /// <summary>終了時だけキューを完了し、指定した上限まで保存の完了を待つ。</summary>
+    internal static bool Flush(TimeSpan timeout) => _writer.Flush(timeout);
 
     /// <summary>既知の固定メッセージだけを記録し、パスやタイトルを含み得る本文は伏せる。</summary>
     internal static string Format(DateTimeOffset time, long generation, string state, Exception? exception)
@@ -93,6 +73,51 @@ internal static class LauncherLog
 
         file.Position = file.Length;
         file.Write(bytes);
+    }
+}
+
+/// <summary>終了時に排出でき、保存先と書き込み処理を差し替えられるログのキュー。</summary>
+internal sealed class LauncherLogWriter
+{
+    private readonly Channel<Entry> _entries = Channel.CreateBounded<Entry>(new BoundedChannelOptions(128)
+    {
+        FullMode = BoundedChannelFullMode.DropOldest,
+        SingleReader = true,
+        AllowSynchronousContinuations = false,
+    });
+    private readonly Task _writer;
+
+    internal LauncherLogWriter(string? path = null, Action<string, string>? append = null)
+    {
+        _writer = Task.Run(async () =>
+        {
+            await foreach (var entry in _entries.Reader.ReadAllAsync())
+            {
+                try
+                {
+                    // 保存先の取得も呼び出し側の描画スレッドには持ち込まない。
+                    path ??= Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                        "Snapwell", "launcher.log");
+                    (append ?? LauncherLog.Append)(path,
+                        LauncherLog.Format(entry.Time, entry.Generation, entry.State, entry.Exception));
+                }
+                catch (Exception)
+                {
+                    // ログ保存に失敗しても表示の回復や OS 設定の復元は止めない。
+                }
+            }
+        });
+    }
+
+    /// <summary>終了の完了後の通知は捨て、呼び出し側では保存を待たない。</summary>
+    internal void Write(long generation, string state, Exception? exception) =>
+        _entries.Writer.TryWrite(new(DateTimeOffset.Now, generation, state, exception));
+
+    /// <summary>受付を終了し、保存処理が止まっていても指定した上限で戻る。</summary>
+    internal bool Flush(TimeSpan timeout)
+    {
+        _entries.Writer.TryComplete();
+        return _writer.Wait(timeout);
     }
 
     private sealed record Entry(DateTimeOffset Time, long Generation, string State, Exception? Exception);

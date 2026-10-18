@@ -321,6 +321,98 @@ public sealed class OverlaySessionTests
         Assert.Contains("recovery-requested", diagnostics);
     }
 
+    /// <summary>閉じる起床通知の失敗でも入力を戻し、次回は新しい世代で表示する。</summary>
+    [Theory]
+    [InlineData("close")]
+    [InlineData("cancel")]
+    [InlineData("accept")]
+    [InlineData("pointer")]
+    public void HideWakeFailureRestoresBindingsAndRecovers(string operation)
+    {
+        var broken = new FakeOverlay();
+        var recovered = new FakeOverlay();
+        var attempts = 0;
+        using var session = new OverlaySession(true, _ =>
+        {
+            var fake = Interlocked.Increment(ref attempts) == 1 ? broken : recovered;
+            return new(() => (fake, fake));
+        });
+        var normal = HotkeyBindingsBuilder.Build(new PortableSettings().Hotkeys).Bindings;
+        IReadOnlyList<HotkeyBinding> applied = [];
+        var placements = 0;
+        using var launcher = new LauncherController(new FakeInspector(), new FakeMonitors(), () => new(),
+            session, (_, _, _) => placements++, value => applied = value, normal, 999,
+            () => OverlayTheme.Light);
+        launcher.Open();
+        Assert.True(broken.Drawn.Wait(3000));
+        broken.ThrowNextWake = true;
+        var exception = Record.Exception(() =>
+        {
+            switch (operation)
+            {
+                case "close":
+                    launcher.Close();
+                    break;
+                case "pointer":
+                    broken.Raise(new(OverlayPointerKind.RightDown, new(10, 10)));
+                    break;
+                default:
+                    launcher.Handle(new((int)(operation == "accept" ? LauncherInput.Accept : LauncherInput.Cancel)));
+                    break;
+            }
+        });
+        Assert.Null(exception);
+        Assert.False(launcher.IsOpen);
+        Assert.Equal(normal, applied);
+        Assert.Equal(operation == "accept" ? 1 : 0, placements);
+        Assert.False(session.IsAvailable);
+        Assert.True(broken.Disposed.Wait(2000));
+        launcher.Open();
+        Assert.True(recovered.Drawn.Wait(3000));
+        Assert.True(launcher.IsOpen);
+        Assert.Equal(2, attempts);
+        Assert.Contains(applied, binding => binding.Id == (int)LauncherInput.Accept);
+    }
+
+    /// <summary>Hide の失敗通知ではセッションのロックを解放し、一度だけ通知する。</summary>
+    [Fact]
+    public void HideWakeFailureNotifiesOutsideSessionLock()
+    {
+        var fake = new FakeOverlay();
+        using var session = new OverlaySession(false, _ => new(() => (fake, fake)));
+        var notifications = 0;
+        session.Faulted += () =>
+        {
+            Assert.True(Task.Run(session.Hide).Wait(1000));
+            notifications++;
+        };
+        session.Request(new(0, 0, 1, 1), () => OverlayPainter.Create(1, 1));
+        Assert.True(fake.Drawn.Wait(2000));
+        fake.ThrowNextWake = true;
+        session.Hide();
+        Assert.True(fake.Disposed.Wait(2000));
+        Assert.Equal(1, notifications);
+    }
+
+    /// <summary>失敗通知自体が例外を出しても、選択を消した時点の割り当てを必ず戻す。</summary>
+    [Fact]
+    public void HideFailureNotificationCannotSkipBindingRestoration()
+    {
+        var fake = new FakeOverlay();
+        using var session = new OverlaySession(true, _ => new(() => (fake, fake)));
+        session.Faulted += () => throw new InvalidOperationException();
+        var normal = HotkeyBindingsBuilder.Build(new PortableSettings().Hotkeys).Bindings;
+        IReadOnlyList<HotkeyBinding> applied = [];
+        using var launcher = new LauncherController(new FakeInspector(), new FakeMonitors(), () => new(),
+            session, (_, _, _) => { }, value => applied = value, normal, 999, () => OverlayTheme.Light);
+        launcher.Open();
+        Assert.True(fake.Drawn.Wait(3000));
+        fake.ThrowNextWake = true;
+        Assert.Throws<InvalidOperationException>(launcher.Close);
+        Assert.False(launcher.IsOpen);
+        Assert.Equal(normal, applied);
+    }
+
     /// <summary>250 ms で停止を打ち切った旧世代が後から失敗しても、新しい表示を守る。</summary>
     [Fact]
     public void TimedOutGenerationDoesNotAffectNextOpen()
@@ -381,7 +473,8 @@ public sealed class OverlaySessionTests
         internal ConcurrentQueue<PixelRect> Shown { get; } = new();
         internal ManualResetEventSlim Drawn { get; } = new(false);
         internal ManualResetEventSlim Disposed { get; } = new(false);
-        public event Action<OverlayPointer>? Pointer { add { } remove { } }
+        public event Action<OverlayPointer>? Pointer;
+        internal void Raise(OverlayPointer pointer) => Pointer?.Invoke(pointer);
         public void Show(PixelRect bounds, OverlayFrame frame)
         {
             if (ThrowOnShow)
