@@ -49,9 +49,11 @@ internal sealed class MotionEngine : IMotionEngine
             if (_entries.TryGetValue(request.Handle, out var entry))
             {
                 entry.Body.Retarget(target);
-                if (entry.Body.Walls != walls || entry.Body.Feel != request.Feel)
+                if (entry.Body.Walls != walls || entry.Body.Feel != request.Feel || request.Stops is not null ||
+                    entry.Body.Stops is not null)
                 {
-                    entry.Body = new(entry.Body.State, target, walls, request.Feel, velocity: entry.Body.Velocity);
+                    entry.Body = new(entry.Body.State, target, walls, request.Feel, velocity: entry.Body.Velocity,
+                        stops: request.Stops, clickRadius: request.ClickRadius);
                 }
 
                 entry.Resize = request.Resize;
@@ -61,7 +63,8 @@ internal sealed class MotionEngine : IMotionEngine
             else
             {
                 _entries[request.Handle] = new(new(RectD.FromPixelRect(request.Current), target, walls,
-                    request.Feel, velocity: request.Velocity), request.Resize, _clock.Seconds);
+                    request.Feel, velocity: request.Velocity, stops: request.Stops,
+                    clickRadius: request.ClickRadius), request.Resize, _clock.Seconds);
             }
 
             Monitor.PulseAll(_gate);

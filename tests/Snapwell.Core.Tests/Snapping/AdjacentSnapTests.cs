@@ -8,7 +8,8 @@ namespace Snapwell.Core.Tests.Snapping;
 /// <summary>隣の辺への吸着と区画選択の優先順位を確かめる。</summary>
 public sealed class AdjacentSnapTests
 {
-    private static readonly FeelPreset _feel = new(1, 1, 0.8, 0.25);
+    // 惰性で止まる距離の係数 m/c がちょうど 0.25 秒になる。
+    private static readonly FeelPreset _feel = new(1, 1 / Math.PI, 1);
     private static readonly PixelRect _area = new(0, 0, 1000, 1000);
 
     /// <summary>四辺とも論理間隔と拡大率を反映し、サイズを維持する。</summary>
