@@ -120,9 +120,62 @@ public sealed class TrayMenuLayoutTests
         Assert.Throws<ArgumentOutOfRangeException>(() => TrayMenuLayout.Create(new(0, 0, 1, 1),
             new(0, 0, 1920, 1080), TrayTaskbarEdge.Bottom, scale));
 
-    /// <summary>小さすぎる作業領域へは表示しない。</summary>
+    /// <summary>幅も高さも不足する場合は作業領域まで切り詰める。</summary>
     [Fact]
-    public void UnusableWorkAreaFailsInsteadOfOpeningOffScreen() =>
-        Assert.Throws<ArgumentException>(() => TrayMenuLayout.Create(new(0, 0, 1, 1),
-            new(0, 0, 300, 200), TrayTaskbarEdge.Bottom, 1));
+    public void SmallWorkAreaClipsInsteadOfThrowing()
+    {
+        var work = new PixelRect(0, 0, 300, 200);
+        var layout = TrayMenuLayout.Create(new(0, 0, 1, 1), work, TrayTaskbarEdge.Bottom, 1);
+        Assert.True(work.Contains(layout.Bounds));
+        Assert.True(work.Contains(layout.Panel));
+        Assert.True(layout.IsCompact);
+        Assert.True(layout.MaxScrollOffset > 0);
+        Assert.True(layout.EnsureVisible(5).ItemsViewport.Contains(layout.EnsureVisible(5).Rows[4]));
+    }
+
+    /// <summary>小さい作業領域、100〜250% の拡大率、状態案内の有無を組み合わせる。</summary>
+    public static IEnumerable<object[]> SmallWorkAreas()
+    {
+        foreach (var height in new[] { 400, 500, 600 })
+        {
+            foreach (var scale in new[] { 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5 })
+            {
+                foreach (var status in new[] { false, true })
+                {
+                    yield return [height, scale, status];
+                }
+            }
+        }
+    }
+
+    /// <summary>余白の圧縮を先に行い、スクロール後もすべての項目と終了を選べる。</summary>
+    [Theory]
+    [MemberData(nameof(SmallWorkAreas))]
+    public void SmallWorkAreasAlwaysAllowSelectingExit(int height, double scale, bool status)
+    {
+        var work = new PixelRect(-1200, -700, 1200, height);
+        var layout = TrayMenuLayout.Create(new(-100, work.Bottom, 24, 24), work,
+            TrayTaskbarEdge.Bottom, scale, status);
+        var compact = Math.Round((status ? 290 : 266) * scale) > height;
+        Assert.Equal(compact, layout.IsCompact);
+        Assert.Equal(Math.Min(height, (int)Math.Round((compact ? (status ? 248 : 224)
+            : (status ? 290 : 266)) * scale)), layout.Panel.Height);
+        Assert.True(work.Contains(layout.Bounds));
+        Assert.True(work.Contains(layout.Panel));
+        var items = TrayMenuModel.Create(true, launcherAvailable: true);
+        for (var selected = 1; selected <= items.Count; selected++)
+        {
+            layout = layout.EnsureVisible(selected);
+            Assert.True(layout.ItemsViewport.Contains(layout.Rows[selected - 1]));
+            Assert.Equal(selected, TrayMenuModel.HitTest(layout, items, layout.Rows[selected - 1].Center));
+        }
+
+        Assert.Equal(TrayMenuCommand.Exit, TrayMenuModel.CommandAt(items, 5));
+        Assert.Equal(layout.MaxScrollOffset, layout.ScrollOffset);
+        layout = layout.WithScrollOffset(int.MinValue);
+        Assert.Equal(0, layout.ScrollOffset);
+        Assert.Equal(-1, TrayMenuModel.HitTest(layout, items,
+            new(layout.Rows[0].Center.X, layout.ItemsViewport.Bottom)));
+        Assert.Equal(layout.MaxScrollOffset, layout.WithScrollOffset(int.MaxValue).ScrollOffset);
+    }
 }

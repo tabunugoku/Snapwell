@@ -42,13 +42,27 @@ internal sealed class TrayMenuController(ITrayMenuView view, Action<uint> comman
             return;
         }
 
-        _snapshot = snapshot;
+        _snapshot = _snapshot is { } previous
+            ? snapshot with { Layout = snapshot.Layout.WithScrollOffset(previous.Layout.ScrollOffset) } : snapshot;
         if (TrayMenuModel.CommandAt(snapshot.Items, _selected) is null)
         {
             _selected = _keyboard ? TrayMenuModel.Move(snapshot.Items, _selected, 1) : -1;
         }
 
         _pressed = -1;
+        Paint();
+    }
+
+    internal void Wheel(int delta)
+    {
+        if (_snapshot is not { } snapshot || delta == 0) { return; }
+        var offset = snapshot.Layout.ScrollOffset - delta * snapshot.Layout.Px(32) / 120;
+        var layout = snapshot.Layout.WithScrollOffset(offset);
+        if (layout.ScrollOffset == snapshot.Layout.ScrollOffset) { return; }
+        _snapshot = snapshot with { Layout = layout };
+        _selected = -1;
+        _pressed = -1;
+        _keyboard = false;
         Paint();
     }
 
@@ -162,6 +176,16 @@ internal sealed class TrayMenuController(ITrayMenuView view, Action<uint> comman
 
         try
         {
+            if (_keyboard)
+            {
+                var layout = snapshot.Layout.EnsureVisible(_selected);
+                if (!ReferenceEquals(layout, snapshot.Layout))
+                {
+                    snapshot = snapshot with { Layout = layout };
+                    _snapshot = snapshot;
+                }
+            }
+
             view.Show(snapshot, _selected, _keyboard);
         }
         catch (Exception exception)

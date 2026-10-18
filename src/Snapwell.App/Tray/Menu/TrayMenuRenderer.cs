@@ -26,7 +26,7 @@ internal sealed class TrayMenuRenderer : IDisposable
             var shadow = OverlayPainter.CreatePanelShadow(panel.Width, panel.Height, layout.Scale);
             OverlayPainter.Composite(_background, shadow.Frame, panel.X + shadow.Bounds.X, panel.Y + shadow.Bounds.Y);
             Box(_background, layout.Panel, _palette.Surface, _palette.Border, 8);
-            foreach (var separator in layout.Separators)
+            foreach (var separator in layout.Separators.Take(2))
             {
                 OverlayPainter.Fill(_background, Local(separator), _palette.Border);
             }
@@ -51,11 +51,16 @@ internal sealed class TrayMenuRenderer : IDisposable
             OverlayPainter.FillRounded(_background, Local(layout.Rect(snapshot.Enabled ? 286 : 266, 21, 12, 12)),
                 snapshot.Enabled ? (dark ? new(17, 17, 17, 255) : new(255, 255, 255, 255)) : _palette.Muted,
                 6, layout.Scale);
-            Text(_background, $"モニター構成: {snapshot.MonitorCount} 画面", layout.Rect(17, 58, 286, 22),
-                11.5, _palette.Muted);
+            if (!layout.IsCompact)
+            {
+                Text(_background, $"モニター構成: {snapshot.MonitorCount} 画面", layout.Rect(17, 58, 286, 22),
+                    11.5, _palette.Muted);
+            }
             if (snapshot.Status is { } status)
             {
-                Text(_background, status, layout.Rect(17, 80, 286, 24), 11.5, _palette.Muted);
+                Text(_background, status, layout.Rect(17, layout.IsCompact ? 54 : 80, 286,
+                    layout.IsCompact ? 22 : 24),
+                    11.5, _palette.Muted);
             }
 
             _rows = snapshot.Items.Select((item, index) =>
@@ -92,23 +97,38 @@ internal sealed class TrayMenuRenderer : IDisposable
     {
         var layout = _snapshot.Layout;
         var result = _background with { Pixels = (byte[])_background.Pixels.Clone() };
+        var viewport = layout.ItemsViewport;
+        var items = OverlayPainter.Create(viewport.Width, viewport.Height);
+        PixelRect InViewport(PixelRect rect) =>
+            new(rect.X - viewport.X, rect.Y - viewport.Y, rect.Width, rect.Height);
+        OverlayPainter.Fill(items, InViewport(layout.Separators[2]), _palette.Border);
         if (selected > 0)
         {
-            OverlayPainter.FillRounded(result, Local(layout.Rows[selected - 1]), _palette.Surface2, 4, layout.Scale);
+            OverlayPainter.FillRounded(items, InViewport(layout.Rows[selected - 1]),
+                _palette.Surface2, 4, layout.Scale);
         }
 
         if (selected >= 0 && keyboard)
         {
-            OverlayPainter.StrokeRounded(result, Local(selected == 0 ? layout.Toggle : layout.Rows[selected - 1]),
-                _palette.BlueText, 4, 1, layout.Scale);
+            if (selected == 0)
+            {
+                OverlayPainter.StrokeRounded(result, Local(layout.Toggle), _palette.BlueText, 4, 1, layout.Scale);
+            }
+            else
+            {
+                OverlayPainter.StrokeRounded(items, InViewport(layout.Rows[selected - 1]),
+                    _palette.BlueText, 4, 1, layout.Scale);
+            }
         }
 
         for (var index = 0; index < _rows.Length; index++)
         {
-            var row = Local(layout.Rows[index]);
-            OverlayPainter.Composite(result, _rows[index], row.X, row.Y);
+            var row = InViewport(layout.Rows[index]);
+            OverlayPainter.Composite(items, _rows[index], row.X, row.Y);
         }
 
+        var destination = Local(viewport);
+        OverlayPainter.Composite(result, items, destination.X, destination.Y);
         return result;
     }
 
