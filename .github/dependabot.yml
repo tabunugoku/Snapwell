@@ -4,10 +4,21 @@ updates:
     directory: /
     schedule:
       interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]
+  # 同じパッケージを複数のプロジェクトが参照するため、プロジェクトごとの PR にならないよう、
+  # directories でまとめ、グループごとに 1 本の PR にする
   - package-ecosystem: nuget
-    directory: /
+    directories:
+      - /src/*
+      - /tests/*
     schedule:
       interval: monthly
     groups:
       windows-app-sdk:
         patterns: ["Microsoft.WindowsAppSDK*", "Microsoft.Windows.SDK.BuildTools"]
+      test-tools:
+        patterns: ["xunit*", "Microsoft.NET.Test.Sdk", "coverlet.*"]
+      other:
+        patterns: ["*"]
