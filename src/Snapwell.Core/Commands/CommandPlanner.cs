@@ -9,8 +9,10 @@ public static class CommandPlanner
 {
     /// <summary>対象モニター内で計算し、実行できない操作は null を返す。</summary>
     public static PixelRect? Plan(WindowCommand command, PixelRect currentVisual, bool canResize,
-        IReadOnlyList<MonitorArea> monitors, GridPlan plan, Spacing spacing)
+        IReadOnlyList<MonitorArea> monitors, GridPlan plan, Spacing spacing,
+        ResizeSettings? resize = null)
     {
+        resize ??= new();
         if (monitors.Count == 0 ||
             command is WindowCommand.ToggleEnabled or WindowCommand.ArrangeGrid or
                 WindowCommand.ArrangeColumns or WindowCommand.ArrangeRows or WindowCommand.ArrangeMainAndStack ||
@@ -48,10 +50,10 @@ public static class CommandPlanner
             };
             target = command switch
             {
-                WindowCommand.GrowRight => grid.Resize(currentVisual, 1, 0, ResizeAnchor.TopLeft),
-                WindowCommand.GrowDown => grid.Resize(currentVisual, 0, 1, ResizeAnchor.TopLeft),
-                WindowCommand.ShrinkLeft => grid.Resize(currentVisual, -1, 0, ResizeAnchor.TopLeft),
-                WindowCommand.ShrinkUp => grid.Resize(currentVisual, 0, -1, ResizeAnchor.TopLeft),
+                WindowCommand.GrowRight => grid.Resize(currentVisual, resize.Step, 0, resize.Anchor),
+                WindowCommand.GrowDown => grid.Resize(currentVisual, 0, resize.Step, resize.Anchor),
+                WindowCommand.ShrinkLeft => grid.Resize(currentVisual, -resize.Step, 0, resize.Anchor),
+                WindowCommand.ShrinkUp => grid.Resize(currentVisual, 0, -resize.Step, resize.Anchor),
                 WindowCommand.MoveCellLeft => grid.Move(currentVisual, -1, 0),
                 WindowCommand.MoveCellRight => grid.Move(currentVisual, 1, 0),
                 WindowCommand.MoveCellUp => grid.Move(currentVisual, 0, -1),

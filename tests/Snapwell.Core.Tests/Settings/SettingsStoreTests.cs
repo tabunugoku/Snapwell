@@ -1,3 +1,4 @@
+using Snapwell.Core.Layout;
 using Snapwell.Core.Settings;
 
 namespace Snapwell.Core.Tests.Settings;
@@ -68,6 +69,45 @@ public sealed class SettingsStoreTests : IDisposable
         });
         Assert.Equal(expectedMilliseconds, normalized.LongPressMilliseconds);
         Assert.Equal(expectedDistance, normalized.LongPressDistance);
+    }
+
+    /// <summary>版 4 の既存ファイルではサイズ変更の設定が既定になり、保存した値は往復する。</summary>
+    [Fact]
+    public void ResizeSettingsDefaultForOldFilesAndRoundTrip()
+    {
+        var defaults = new PortableSettings();
+        Assert.Equal(1, defaults.ResizeStep);
+        Assert.Equal(ResizeAnchor.TopLeft, defaults.ResizeAnchor);
+
+        var path = Path.Combine(_directory, "resize.json");
+        File.WriteAllText(path, "{\"SchemaVersion\":4}");
+        var store = SettingsStores.Portable(path);
+        var initial = store.Load();
+        Assert.False(initial.IsReadOnly);
+        Assert.Equal(1, initial.Value.ResizeStep);
+        Assert.Equal(ResizeAnchor.TopLeft, initial.Value.ResizeAnchor);
+
+        store.Save(new() { ResizeStep = 3, ResizeAnchor = ResizeAnchor.NearEdge });
+        var loaded = store.Load().Value;
+        Assert.Equal(3, loaded.ResizeStep);
+        Assert.Equal(ResizeAnchor.NearEdge, loaded.ResizeAnchor);
+        Assert.Contains("\"NearEdge\"", File.ReadAllText(path));
+    }
+
+    /// <summary>1 回の幅は 1〜4 に収め、未定義の固定位置は左上へ戻す。</summary>
+    [Theory]
+    [InlineData(1, ResizeAnchor.Center, 1, ResizeAnchor.Center)]
+    [InlineData(4, ResizeAnchor.NearEdge, 4, ResizeAnchor.NearEdge)]
+    [InlineData(0, (ResizeAnchor)99, 1, ResizeAnchor.TopLeft)]
+    [InlineData(-5, (ResizeAnchor)(-1), 1, ResizeAnchor.TopLeft)]
+    [InlineData(5, ResizeAnchor.TopLeft, 4, ResizeAnchor.TopLeft)]
+    [InlineData(int.MaxValue, ResizeAnchor.TopLeft, 4, ResizeAnchor.TopLeft)]
+    public void ResizeSettingsNormalizeBounds(int step, ResizeAnchor anchor, int expectedStep,
+        ResizeAnchor expectedAnchor)
+    {
+        var normalized = SettingsTransfer.Normalize(new() { ResizeStep = step, ResizeAnchor = anchor });
+        Assert.Equal(expectedStep, normalized.ResizeStep);
+        Assert.Equal(expectedAnchor, normalized.ResizeAnchor);
     }
 
     [Fact]

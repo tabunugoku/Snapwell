@@ -24,6 +24,8 @@ public sealed record PortableSettings
     public bool ShowZonePreview { get; set; } = true;
     public int LongPressMilliseconds { get; set; } = 450;
     public double LongPressDistance { get; set; } = 6;
+    public int ResizeStep { get; set; } = 1;
+    public ResizeAnchor ResizeAnchor { get; set; } = ResizeAnchor.TopLeft;
     public Dictionary<WindowCommand, KeyChordSpec> Hotkeys { get; set; } = DefaultHotkeys.Create();
 
     /// <summary>物理モデルのプリセットを返す。</summary>
@@ -40,6 +42,9 @@ public sealed record PortableSettings
 
     /// <summary>DIP 単位の間隔を返す。</summary>
     public Spacing ToSpacing() => new(Gap, Edge);
+
+    /// <summary>区画単位のサイズ変更の設定を返す。</summary>
+    public ResizeSettings ToResizeSettings() => new ResizeSettings(ResizeStep, ResizeAnchor).Normalize();
 
     internal PortableSettings Normalize()
     {
@@ -65,6 +70,8 @@ public sealed record PortableSettings
             LongPressDistance = double.IsFinite(LongPressDistance) && LongPressDistance is >= 2 and <= 32
                 ? LongPressDistance
                 : defaults.LongPressDistance,
+            ResizeStep = ToResizeSettings().Step,
+            ResizeAnchor = ToResizeSettings().Anchor,
             Hotkeys = hotkeys,
         };
     }
