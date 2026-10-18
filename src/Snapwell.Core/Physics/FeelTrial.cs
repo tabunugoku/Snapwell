@@ -143,6 +143,15 @@ public sealed class FeelTrial
         return true;
     }
 
+    /// <summary>つかんでいる最中か。</summary>
+    public bool IsGrabbed => _grabbed;
+
+    /// <summary>
+    /// 入力が取り消された（キャンセル・キャプチャの喪失）ときに、投げずにつかみだけを解く。
+    /// カードはその場に置き、吸着もしない。つかんでいなければ何もしない。
+    /// </summary>
+    public void Cancel() => _grabbed = false;
+
     /// <summary>つかんだカードを動かす。中心は舞台の中に収める。つかんでいなければ何もしない。</summary>
     public void Move(Vec2 point)
     {
