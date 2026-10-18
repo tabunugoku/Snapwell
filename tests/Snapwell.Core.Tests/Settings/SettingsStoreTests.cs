@@ -110,6 +110,35 @@ public sealed class SettingsStoreTests : IDisposable
         Assert.Equal(expectedAnchor, normalized.ResizeAnchor);
     }
 
+    /// <summary>固定する位置の未知の値や型違いは、その項目だけ左上に戻り、ほかの設定と隔離を保つ。</summary>
+    [Theory]
+    [InlineData("\"Bogus\"")]
+    [InlineData("99")]
+    [InlineData("{\"a\":[1,2]}")]
+    [InlineData("true")]
+    [InlineData("null")]
+    public void UnknownResizeAnchorFallsBackWithoutResettingOtherSettings(string anchorJson)
+    {
+        var path = Path.Combine(_directory, "anchor.json");
+        File.WriteAllText(path, "{\"SchemaVersion\":4,\"Gap\":21,\"ResizeStep\":3,\"ResizeAnchor\":" + anchorJson + "}");
+        var result = SettingsStores.Portable(path).Load();
+        Assert.False(result.ResetToDefaults);
+        Assert.False(result.IsReadOnly);
+        Assert.Equal(21, result.Value.Gap);
+        Assert.Equal(3, result.Value.ResizeStep);
+        Assert.Equal(ResizeAnchor.TopLeft, result.Value.ResizeAnchor);
+        Assert.Empty(Directory.GetFiles(_directory, "anchor.json.broken-*"));
+    }
+
+    /// <summary>名前の大文字小文字が違っても、定義済みの固定位置は読める。</summary>
+    [Fact]
+    public void ResizeAnchorReadsKnownNamesCaseInsensitively()
+    {
+        var path = Path.Combine(_directory, "anchor2.json");
+        File.WriteAllText(path, "{\"SchemaVersion\":4,\"ResizeAnchor\":\"nearedge\"}");
+        Assert.Equal(ResizeAnchor.NearEdge, SettingsStores.Portable(path).Load().Value.ResizeAnchor);
+    }
+
     [Fact]
     public void FutureSchemaArrivingBeforeReplacementIsRestoredByteForByteAndMakesStoreReadOnly()
     {
