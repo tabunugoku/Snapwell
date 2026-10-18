@@ -1,6 +1,7 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
+using Snapwell.Core.Layout;
 using Snapwell.Core.Settings;
 using Windows.Globalization.NumberFormatting;
 
@@ -46,6 +47,8 @@ public sealed partial class GridPage : Page
             { Columns: 6, Rows: 4 } => 2,
             _ => 3,
         };
+        ResizeStepBox.SelectedIndex = value.ToResizeSettings().Step - ResizeSettings.MinStep;
+        ResizeAnchorBox.SelectedIndex = (int)value.ToResizeSettings().Anchor;
         UpdateChips(value.Grid);
         RenderPreview(value);
         _refreshing = false;
@@ -261,5 +264,25 @@ public sealed partial class GridPage : Page
         }
 
         Refresh();
+    }
+
+    private void ResizeStep_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_refreshing && ResizeStepBox.SelectedItem is ComboBoxItem { Tag: string tag } &&
+            int.TryParse(tag, out var step))
+        {
+            _session.Update(_session.Current with { ResizeStep = step });
+            Refresh();
+        }
+    }
+
+    private void ResizeAnchor_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_refreshing && ResizeAnchorBox.SelectedItem is ComboBoxItem { Tag: string tag } &&
+            Enum.TryParse<ResizeAnchor>(tag, out var anchor))
+        {
+            _session.Update(_session.Current with { ResizeAnchor = anchor });
+            Refresh();
+        }
     }
 }
