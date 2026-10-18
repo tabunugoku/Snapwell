@@ -44,7 +44,6 @@ public sealed class TrayMenuControllerTests
         Assert.True(menu.IsOpen);
         var paused = snapshot with { Enabled = false, Items = TrayMenuModel.Create(false) };
         menu.Update(paused);
-        Assert.Same(paused, view.Snapshot);
         Assert.False(view.Snapshot!.Enabled);
         Assert.False(view.Snapshot.Items[0].Enabled);
     }
@@ -173,6 +172,101 @@ public sealed class TrayMenuControllerTests
     private static TrayMenuSnapshot Snapshot(bool enabled) =>
         new(TrayMenuLayout.Create(new(1000, 900, 24, 24), new(0, 0, 1200, 900), TrayTaskbarEdge.Bottom, 1),
             TrayMenuModel.Create(enabled), enabled, null, 2, OverlayTheme.Light);
+
+    /// <summary>小さい作業領域と状態案内を組み合わせる。</summary>
+    public static IEnumerable<object[]> SmallWorkAreas()
+    {
+        foreach (var height in new[] { 400, 500, 600 })
+        {
+            foreach (var scale in new[] { 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5 })
+            {
+                foreach (var status in new[] { false, true })
+                {
+                    foreach (var wheel in new[] { false, true })
+                    {
+                        yield return [height, scale, status, wheel];
+                    }
+                }
+            }
+        }
+    }
+
+    /// <summary>低い作業領域でも矢印とホイールのどちらからも終了を実行できる。</summary>
+    [Theory]
+    [MemberData(nameof(SmallWorkAreas))]
+    public void SmallWorkAreaAllowsExitByKeyboardAndWheel(int height, double scale, bool status, bool wheel)
+    {
+        var view = new FakeView();
+        var commands = new List<uint>();
+        using var menu = new TrayMenuController(view, commands.Add, Fail);
+        var snapshot = Snapshot(true) with
+        {
+            Layout = TrayMenuLayout.Create(new(1100, height, 24, 24), new(0, 0, 1200, height),
+                TrayTaskbarEdge.Bottom, scale, status),
+            Status = status ? "状態の案内" : null,
+        };
+        menu.Open(snapshot);
+        if (wheel)
+        {
+            // 連続したホイールで末尾へ進み、途中の押下状態を引き継がない。
+            menu.Down(snapshot.Layout.Rows[0].Center);
+            for (var step = 0; step < 20; step++) { menu.Wheel(-120); }
+            var layout = view.Snapshot!.Layout;
+            Assert.Equal(layout.MaxScrollOffset, layout.ScrollOffset);
+            Assert.True(layout.ItemsViewport.Contains(layout.Rows[4]));
+            menu.Down(layout.Rows[4].Center);
+            menu.Up(layout.Rows[4].Center);
+        }
+        else
+        {
+            for (var step = 0; step < 6 && view.Selected != 5; step++) { menu.Key(0x28); }
+            Assert.Equal(5, view.Selected);
+            Assert.True(view.Snapshot!.Layout.ItemsViewport.Contains(view.Snapshot.Layout.Rows[4]));
+            menu.Key(0x0D);
+        }
+
+        Assert.Equal([(uint)TrayMenuCommand.Exit], commands);
+        Assert.False(menu.IsOpen);
+    }
+
+    /// <summary>状態案内の追加と削除でも、選択中の終了を表示し続ける。</summary>
+    [Fact]
+    public void StatusUpdatesKeepKeyboardSelectionVisibleAndWheelResetsPressedItem()
+    {
+        var view = new FakeView();
+        var commands = new List<uint>();
+        using var menu = new TrayMenuController(view, commands.Add, Fail);
+        var snapshot = Snapshot(true) with
+        {
+            Layout = TrayMenuLayout.Create(new(1100, 400, 24, 24), new(0, 0, 1200, 400),
+                TrayTaskbarEdge.Bottom, 2.5),
+        };
+        menu.Open(snapshot);
+        menu.Key(0x23);
+        foreach (var status in new[] { true, false })
+        {
+            menu.Update(snapshot with
+            {
+                Layout = TrayMenuLayout.Create(new(1100, 400, 24, 24), new(0, 0, 1200, 400),
+                    TrayTaskbarEdge.Bottom, 2.5, status),
+                Status = status ? "状態の案内" : null,
+            });
+            Assert.Equal(5, view.Selected);
+            Assert.True(view.Snapshot!.Layout.ItemsViewport.Contains(view.Snapshot.Layout.Rows[4]));
+        }
+
+        menu.Down(view.Snapshot!.Layout.Rows[4].Center);
+        menu.Wheel(120);
+        menu.Up(view.Snapshot!.Layout.Rows[4].Center);
+        Assert.Empty(commands);
+        for (var step = 0; step < 20; step++) { menu.Wheel(120); }
+        Assert.Equal(0, view.Snapshot!.Layout.ScrollOffset);
+        menu.Key(0x24);
+        Assert.Equal(0, view.Selected);
+        menu.Key(0x26);
+        Assert.Equal(5, view.Selected);
+        Assert.True(view.Snapshot!.Layout.ItemsViewport.Contains(view.Snapshot.Layout.Rows[4]));
+    }
 
     private static void Fail(Exception exception) => Assert.Fail(exception.ToString());
 

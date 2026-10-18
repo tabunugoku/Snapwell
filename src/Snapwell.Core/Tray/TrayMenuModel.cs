@@ -57,11 +57,13 @@ public static class TrayMenuModel
     /// <summary>描画と同じ矩形で判定し、区切り線や無効な項目を除く。</summary>
     public static int HitTest(TrayMenuLayout layout, IReadOnlyList<TrayMenuEntry> items, Vec2 point)
     {
+        if (!layout.Panel.Contains(point)) { return -1; }
         if (layout.Toggle.Contains(point))
         {
             return 0;
         }
 
+        if (!layout.ItemsViewport.Contains(point)) { return -1; }
         for (var index = 0; index < items.Count; index++)
         {
             if (items[index].Enabled && layout.Rows[index].Contains(point))
