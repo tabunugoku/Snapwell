@@ -429,6 +429,7 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
 .row .t { color: var(--ink); }
 .row .d { font-size: 12.5px; color: var(--muted); }
 .row .ctl { display: flex; align-items: center; gap: 8px; }
+.row .numbox { width: 84px; padding: 4px 8px; font: 13px var(--font-mono); color: var(--text); background: transparent; border: 1px solid var(--border-strong, var(--border)); border-radius: 6px; }
 .switch { position: relative; width: 40px; height: 20px; flex: none; }
 .switch input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
 .switch span { position: absolute; inset: 0; border-radius: 9999px; border: 1px solid var(--muted); background: transparent; pointer-events: none; }
@@ -980,18 +981,24 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 const svgNS = 'http://www.w3.org/2000/svg';
 
-// 操作感のプリセット。feel の語彙に合わせた名前。tau は空走の時定数 (予測点 = x + v·tau)
+// 操作感のプリセット。feel の語彙（runtime/feel.js の words()）から導いた値。magnet は磁石の強さ
+// (airy, slightly magnetic は 0.5、磁石の語がなければ 0.6)。tau は手を離したあとの惰性の係数 m/c (予測点 = x + v·tau)
 const FEELS = {
-  airy: { name: 'airy', words: 'airy, slightly magnetic', m: 1, f: 1.6, z: 0.78, tau: 0.22 },
-  snappy: { name: 'snappy', words: 'snappy, precise', m: 1, f: 2.6, z: 0.9, tau: 0.16 },
-  heavy: { name: 'heavy', words: 'heavy, settled', m: 3, f: 1.35, z: 0.74, tau: 0.3 },
-  bouncy: { name: 'bouncy', words: 'light, playful', m: 1, f: 1.9, z: 0.5, tau: 0.2 },
+  airy: { name: 'airy', words: 'airy, slightly magnetic', m: 0.35, f: 2.2, z: 0.55, magnet: 0.5 },
+  snappy: { name: 'snappy', words: 'snappy, precise', m: 1, f: Math.sqrt(3.4 * 4.5), z: 0.91, magnet: 0.6 },
+  heavy: { name: 'heavy', words: 'heavy, settled', m: 3, f: 1.35, z: 0.74, magnet: 0.6 },
+  bouncy: { name: 'bouncy', words: 'light, playful', m: 0.45, f: Math.sqrt(3 * 2.6), z: 0.535, magnet: 0.6 },
 };
 const springOf = (p) => {
   const k = p.m * Math.pow(2 * Math.PI * p.f, 2);
   const c = 2 * p.z * Math.sqrt(k * p.m);
   return { m: p.m, k, c };
 };
+
+for (const f of Object.values(FEELS)) {
+  const sp = springOf(f);
+  f.tau = sp.m / sp.c;
+}
 
 // 全物体で 1 つのフレームループを共有し、すべて止まったらループも止める
 const bodies = new Set();
@@ -1809,14 +1816,16 @@ function initFeelPage() {
     const sp = springOf(f);
     $('#feelAdvanced').innerHTML = [
       ['質量 m', f.m, '重いほど手から遅れ、遠くまで滑ります'],
-      ['固有振動数 f', `${f.f} Hz`, '大きいほど素早く吸着します'],
-      ['減衰比 ζ', f.z, '1 に近いほど行き過ぎません'],
-      ['磁石の強さ', '0.6', '区画の近くで吸い寄せる力'],
-      ['吸着半径', '28 px', 'この距離に入ると吸着します'],
+      ['固有振動数 f', `${+f.f.toFixed(2)} Hz`, '大きいほど素早く吸着します'],
+      ['減衰比 ζ', +f.z.toFixed(3), '1 に近いほど行き過ぎません'],
     ].map(([t, v, d]) => `<div class="row"><div><div class="t">${t}</div><div class="d">${d}</div></div>`
       + `<div class="ctl mono">${v}</div></div>`).join('')
       + `<div class="row"><div><div class="t">導かれる値</div><div class="d">k = m(2πf)², c = 2ζ√(km)</div></div>`
-      + `<div class="ctl mono">k ${sp.k.toFixed(0)} · c ${sp.c.toFixed(1)}</div></div>`;
+      + `<div class="ctl mono">k ${sp.k.toFixed(0)} · c ${sp.c.toFixed(1)}</div></div>`
+      + `<div class="row"><div><div class="t">磁石の強さ</div><div class="d">停止点へ吸い寄せる力。操作感の語から決まる値で、大きいほど強く引きます (0〜2)</div></div>`
+      + `<div class="ctl"><input class="numbox" type="number" min="0" max="2" step="0.05" value="${f.magnet}" aria-label="磁石の強さ"></div></div>`
+      + `<div class="row"><div><div class="t">吸着半径</div><div class="d">強く吸い込まれる距離 (px)</div></div>`
+      + `<div class="ctl"><input class="numbox" type="number" min="8" max="96" step="1" value="28" aria-label="吸着半径 (px)"></div></div>`;
   };
   box.addEventListener('click', (ev) => {
     const b = ev.target.closest('.feel-card');
