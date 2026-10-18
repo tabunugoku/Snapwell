@@ -3,7 +3,7 @@ using Snapwell.Core.Physics;
 
 namespace Snapwell.Core.Tests.Physics;
 
-/// <summary>ばねの応答と壁・サイズ・中断の境界を検証する。</summary>
+/// <summary>ばねの応答と壁・中断の境界を検証する。</summary>
 public sealed class WindowBodyTests
 {
     private static readonly RectD _distantWalls = new(-10000, -10000, 20000, 20000);
@@ -76,36 +76,21 @@ public sealed class WindowBodyTests
         body.Settle();
         Assert.Equal(target, body.State);
         Assert.Equal(default, body.Velocity);
-        Assert.Equal(default, body.SizeVelocity);
     }
 
-    /// <summary>滑らかな変更は幅と高さもばねで目標に近づける。</summary>
+    /// <summary>移動中の目標変更では位置と速度を保つ。</summary>
     [Fact]
-    public void SmoothSizeApproachesTargetBeforeLanding()
+    public void RetargetPreservesStateAndVelocity()
     {
         var body = new WindowBody(new(0, 0, 100, 100), new(500, 300, 400, 300), _distantWalls,
-            FeelPreset.Airy, SizeMode.Smooth);
-        Simulator.Advance(body, 0.05);
-        Assert.InRange(body.State.W, 100.01, 399.99);
-        Assert.InRange(body.State.H, 100.01, 299.99);
-        Assert.True(body.SizeVelocity.Length > 0);
-    }
-
-    /// <summary>移動中の目標変更では位置とすべての速度を保つ。</summary>
-    [Fact]
-    public void RetargetPreservesStateAndBothVelocities()
-    {
-        var body = new WindowBody(new(0, 0, 100, 100), new(500, 300, 400, 300), _distantWalls,
-            FeelPreset.Airy, SizeMode.Smooth, new(100, 200));
+            FeelPreset.Airy, new(100, 200));
         body.Step(1.0 / 240);
         var state = body.State;
         var velocity = body.Velocity;
-        var sizeVelocity = body.SizeVelocity;
         var target = new RectD(-300, -400, 200, 200);
         body.Retarget(target);
         Assert.Equal(state, body.State);
         Assert.Equal(velocity, body.Velocity);
-        Assert.Equal(sizeVelocity, body.SizeVelocity);
         Assert.Equal(target, body.Target);
     }
 
@@ -161,17 +146,16 @@ public sealed class WindowBodyTests
     public void JumpToTargetStopsAllMotionAndAppliesSize()
     {
         var body = new WindowBody(new(0, 0, 100, 100), new(500, 300, 400, 300), _distantWalls,
-            FeelPreset.Airy, SizeMode.Smooth, new(100, 200), new(30, 40));
+            FeelPreset.Airy, new(100, 200));
         body.JumpToTarget();
         Assert.Equal(body.Target, body.State);
         Assert.Equal(default, body.Velocity);
-        Assert.Equal(default, body.SizeVelocity);
         Assert.True(body.IsSettled);
     }
 
-    /// <summary>静止判定は feel の値（速さ 4、位置 0.25）で、上限を含まない。サイズ誤差は 0.5。</summary>
+    /// <summary>静止判定は feel の値（速さ 4、位置 0.25）で、上限を含まない。</summary>
     [Fact]
-    public void SettledThresholdsAreStrictAndIncludeSmoothSizeError()
+    public void SettledThresholdsAreStrict()
     {
         Assert.False(new WindowBody(default, default, _distantWalls, FeelPreset.Airy,
             velocity: new(4, 0)).IsSettled);
@@ -179,9 +163,5 @@ public sealed class WindowBodyTests
             FeelPreset.Airy).IsSettled);
         Assert.True(new WindowBody(new(0.24, 0, 10, 10), new(0, 0, 10, 10), _distantWalls,
             FeelPreset.Airy, velocity: new(3.9, 0)).IsSettled);
-        Assert.False(new WindowBody(new(0, 0, 10.5, 10), new(0, 0, 10, 10), _distantWalls,
-            FeelPreset.Airy, SizeMode.Smooth).IsSettled);
-        Assert.True(new WindowBody(new(0.17, 0.17, 10.49, 10.49), new(0, 0, 10, 10), _distantWalls,
-            FeelPreset.Airy, SizeMode.Smooth, new(2, 3)).IsSettled);
     }
 }

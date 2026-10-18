@@ -77,22 +77,20 @@ public sealed class FeelTuningTests : IDisposable
         Assert.Null(store.Load().Value.MagnetStrength);
     }
 
-    /// <summary>吸着半径は隣の辺への吸着距離で、拡大率で換算し、境界を含む。</summary>
+    /// <summary>隣の辺への吸着距離は吸着半径に左右されない（feel にない独自の固定値 24 論理 px）。</summary>
     [Theory]
-    [InlineData(40, 1, 40, true)]
-    [InlineData(40, 1, 41, false)]
-    [InlineData(10, 1, 10, true)]
-    [InlineData(10, 1, 11, false)]
-    [InlineData(40, 1.5, 60, true)]
-    [InlineData(40, 1.5, 61, false)]
-    public void SnapRadiusSetsAdjacentDistance(double radius, double scale, int distance, bool adjacent)
+    [InlineData(8, 24, true)]
+    [InlineData(96, 24, true)]
+    [InlineData(8, 25, false)]
+    [InlineData(96, 25, false)]
+    public void AdjacentDistanceIsIndependentOfSnapRadius(double radius, int distance, bool adjacent)
     {
         // 惰性で止まる距離の係数 m/c がちょうど 0.25 秒。
         var feel = new FeelPreset(1, 1 / Math.PI, 1);
         var neighbor = new PixelRect(400, 400, 200, 200);
         var current = new PixelRect(600 + distance - 50, 450, 100, 100);
         var result = SnapResolver.Resolve(current, new(200, 0), feel, SnapMode.Zones, new Spacing(0, 0),
-            [new("main", new(0, 0, 1000, 1000), scale)], neighbors: [neighbor], snapRadius: radius);
+            [new("main", new(0, 0, 1000, 1000), 1)], neighbors: [neighbor], snapRadius: radius);
         Assert.Equal(adjacent, result!.Value.Kind == SnapTargetKind.AdjacentRight);
     }
 

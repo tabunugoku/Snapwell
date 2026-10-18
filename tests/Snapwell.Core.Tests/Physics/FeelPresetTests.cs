@@ -138,4 +138,30 @@ public sealed class FeelPresetTests
     {
         Assert.Equal(expected, FeelPreset.Airy.WithMagnetStrength(strength).MagnetStrength);
     }
+
+    /// <summary>閉形式の階段応答は、始点が 0・終点が 1 で、不足減衰では行き過ぎが理論どおり。</summary>
+    [Fact]
+    public void StepPositionStartsAtZeroEndsAtOneAndOvershootsAsTheoryPredicts()
+    {
+        var feel = FeelPreset.Heavy;
+        Assert.Equal(0, feel.StepPosition(0), 12);
+        Assert.Equal(1, feel.StepPosition(30), 9);
+        var peak = Enumerable.Range(0, 3000).Max(i => feel.StepPosition(i / 1000.0));
+        var theoretical = Math.Exp(-feel.DampingRatio * Math.PI / Math.Sqrt(1 - feel.DampingRatio * feel.DampingRatio));
+        Assert.Equal(1 + theoretical, peak, 3);
+    }
+
+    /// <summary>臨界減衰と過減衰も 0 から 1 へ行き過ぎずに収束する。</summary>
+    [Theory]
+    [InlineData(1.0)]
+    [InlineData(1.2)]
+    public void StepPositionDoesNotOvershootWhenCriticalOrOverdamped(double zeta)
+    {
+        var feel = new FeelPreset(1, 1.5, zeta);
+        Assert.Equal(0, feel.StepPosition(0), 12);
+        for (var i = 1; i < 3000; i++)
+        {
+            Assert.InRange(feel.StepPosition(i / 1000.0), 0, 1 + 1e-9);
+        }
+    }
 }

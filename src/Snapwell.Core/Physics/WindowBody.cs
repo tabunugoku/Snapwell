@@ -24,21 +24,13 @@ public sealed class WindowBody
     /// <param name="target">吸着先の矩形。</param>
     /// <param name="walls">移動を制限する作業領域。</param>
     /// <param name="feel">物理パラメーター。</param>
-    /// <param name="sizeMode">サイズ変更の方式。</param>
     /// <param name="velocity">位置の初速度。</param>
-    /// <param name="sizeVelocity">サイズの初速度。</param>
     /// <param name="stops">磁石場の停止点（左上の座標）。null なら目標へのばねで動く。</param>
     /// <param name="clickRadius">磁石場の吸着半径。物理ピクセル。</param>
     public WindowBody(RectD current, RectD target, RectD walls, FeelPreset feel,
-        SizeMode sizeMode = SizeMode.OnLanding, Vec2 velocity = default, Vec2 sizeVelocity = default,
-        IReadOnlyList<Vec2>? stops = null, double clickRadius = DefaultClickRadius)
+        Vec2 velocity = default, IReadOnlyList<Vec2>? stops = null, double clickRadius = DefaultClickRadius)
     {
         ArgumentNullException.ThrowIfNull(feel);
-        if (!Enum.IsDefined(sizeMode))
-        {
-            throw new ArgumentOutOfRangeException(nameof(sizeMode));
-        }
-
         if (!double.IsFinite(clickRadius) || clickRadius <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(clickRadius));
@@ -53,9 +45,7 @@ public sealed class WindowBody
         Target = target;
         Walls = walls;
         Feel = feel;
-        SizeMode = sizeMode;
         Velocity = velocity;
-        SizeVelocity = sizeMode == SizeMode.Smooth ? sizeVelocity : default;
         ClickRadius = clickRadius;
         _stops = stops?.ToArray();
     }
@@ -66,9 +56,6 @@ public sealed class WindowBody
     /// <summary>位置の速度。単位は px/s。</summary>
     public Vec2 Velocity { get; private set; }
 
-    /// <summary>幅と高さの速度。単位は px/s。</summary>
-    public Vec2 SizeVelocity { get; private set; }
-
     /// <summary>吸着先の位置とサイズ。</summary>
     public RectD Target { get; private set; }
 
@@ -78,24 +65,19 @@ public sealed class WindowBody
     /// <summary>物理パラメーター。</summary>
     public FeelPreset Feel { get; }
 
-    /// <summary>サイズ変更の方式。</summary>
-    public SizeMode SizeMode { get; }
-
     /// <summary>磁石場の吸着半径。物理ピクセル。</summary>
     public double ClickRadius { get; }
 
     /// <summary>磁石場の停止点。null なら目標へのばねで動く。</summary>
     public IReadOnlyList<Vec2>? Stops => _stops;
 
-    /// <summary>静止と見なせる速さ・位置誤差・サイズ誤差になったか。</summary>
+    /// <summary>静止と見なせる速さと位置誤差になったか。</summary>
     public bool IsSettled
     {
         get
         {
             var rest = Rest(State.X, State.Y);
-            return Velocity.Length < RestSpeed && (rest - new Vec2(State.X, State.Y)).Length < RestDistance &&
-                (SizeMode == SizeMode.OnLanding ||
-                (Math.Abs(State.W - Target.W) < 0.5 && Math.Abs(State.H - Target.H) < 0.5));
+            return Velocity.Length < RestSpeed && (rest - new Vec2(State.X, State.Y)).Length < RestDistance;
         }
     }
 
@@ -123,14 +105,13 @@ public sealed class WindowBody
         }
     }
 
-    /// <summary>最寄りの停止点（目標のばねなら目標）に正確に合わせ、位置とサイズの速度をゼロにする。</summary>
+    /// <summary>最寄りの停止点（目標のばねなら目標）に正確に合わせて速度をゼロにし、サイズは目標に合わせる。</summary>
     public void Settle()
     {
         var rest = Rest(State.X, State.Y);
         State = new(rest.X, rest.Y, Target.W, Target.H);
         Target = State;
         Velocity = default;
-        SizeVelocity = default;
     }
 
     /// <summary>モーション削減のため直ちに目標を確定する。</summary>
@@ -153,7 +134,7 @@ public sealed class WindowBody
     /// <summary>現在の速度のまま磁石場が止める停止点（左上）を返す。上限は既定で 6 秒。</summary>
     public Vec2 PredictRest(double horizonSeconds = 6)
     {
-        var ghost = new WindowBody(State, Target, Walls, Feel, SizeMode, Velocity, SizeVelocity, _stops, ClickRadius);
+        var ghost = new WindowBody(State, Target, Walls, Feel, Velocity, _stops, ClickRadius);
         for (var t = 0.0; t < horizonSeconds; t += 1.0 / 60)
         {
             ghost.Step(1.0 / 60);
@@ -206,15 +187,6 @@ public sealed class WindowBody
         var a4 = Acceleration(p + v3 * h, v4);
         var position = p + (v + v2 * 2 + v3 * 2 + v4) * (h / 6);
         Velocity = v + (a1 + a2 * 2 + a3 * 2 + a4) * (h / 6);
-
-        if (SizeMode == SizeMode.Smooth)
-        {
-            var force = (new Vec2(Target.W, Target.H) - size) * Feel.Stiffness - SizeVelocity * Feel.Damping;
-            SizeVelocity += force * (h / mass);
-            size += SizeVelocity * h;
-            // 小さい目標への行き過ぎでも寸法は負にしない。
-            size = new(Math.Max(0, size.X), Math.Max(0, size.Y));
-        }
 
         State = new(position.X, position.Y, size.X, size.Y);
     }

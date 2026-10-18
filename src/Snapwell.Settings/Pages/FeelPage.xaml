@@ -210,7 +210,7 @@
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
                             <TextBlock Text="吸着半径" Style="{StaticResource SnapwellRowTitleStyle}" />
-                            <TextBlock Text="強く吸い込まれる距離。隣のウィンドウの辺にも、この距離まで近づくと吸着します (px)" Style="{StaticResource SnapwellRowDescriptionStyle}" />
+                            <TextBlock Text="強く吸い込まれる距離 (px)" Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
                         <NumberBox x:Name="SnapRadiusBox" Grid.Column="1" Width="140" VerticalAlignment="Center"
                                    Minimum="8" Maximum="96" SmallChange="1" LargeChange="8"

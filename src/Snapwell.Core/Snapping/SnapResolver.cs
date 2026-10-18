@@ -14,9 +14,12 @@ public static class SnapResolver
     // タスクバー上のカーソルも端とみなすため、外側は作業領域の高さの十パーセントまで許す。
     private const double PointerOutsideBandRatio = 0.1;
 
+    // 隣の辺を狙う操作に余裕を持たせ、拡大率によらず同じ論理距離で吸着する。feel にない Snapwell 独自の値で、吸着半径とは別。
+    private const double AdjacentDistance = 24;
+
     /// <summary>
     /// 論理ピクセルの間隔と吸着半径を対象モニターで換算し、低速時やモニターがなければ null を返す。
-    /// 吸着半径は隣の辺への吸着にだけ効く（区画と四隅は半径に関係なく最寄りへ吸着する）。
+    /// 吸着半径は磁石場の半径（物理ピクセルに換算して SnapResult に載せる）。
     /// </summary>
     public static SnapResult? Resolve(PixelRect current, Vec2 velocity, FeelPreset feel, SnapMode mode,
         Spacing spacing, IReadOnlyList<MonitorArea> monitors, bool canResize = true, Vec2? pointer = null,
@@ -50,7 +53,7 @@ public static class SnapResolver
             : SelectZone(current, predicted, center, monitor, physicalSpacing, canResize, pointerBand);
         if (mode == SnapMode.Zones && selection.Kind != SnapTargetKind.Maximize && pointerBand is null &&
             neighbors is { Count: > 0 } &&
-            SelectAdjacent(current, predicted, monitor, physicalSpacing, neighbors, snapRadius) is { } adjacent)
+            SelectAdjacent(current, predicted, monitor, physicalSpacing, neighbors) is { } adjacent)
         {
             selection = adjacent;
         }
@@ -195,8 +198,7 @@ public static class SnapResolver
     }
 
     private static (PixelRect Target, SnapTargetKind Kind)? SelectAdjacent(PixelRect current, Vec2 predicted,
-        MonitorArea monitor, PhysicalSpacing spacing, IReadOnlyList<PixelRect> neighbors,
-        double snapRadius)
+        MonitorArea monitor, PhysicalSpacing spacing, IReadOnlyList<PixelRect> neighbors)
     {
         var area = monitor.WorkArea;
         var gap = spacing.Gap;
@@ -230,7 +232,7 @@ public static class SnapResolver
         void Consider(double x, double y, SnapTargetKind kind, int priority)
         {
             var distance = Math.Abs(x - predicted.X) + Math.Abs(y - predicted.Y);
-            if (distance > snapRadius * monitor.Scale || distance > bestDistance ||
+            if (distance > AdjacentDistance * monitor.Scale || distance > bestDistance ||
                 (distance == bestDistance && priority >= bestPriority) ||
                 x < area.X + edge || x + current.Width > area.Right - edge || y < area.Y + edge ||
                 y + current.Height > area.Bottom - edge)
