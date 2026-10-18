@@ -56,3 +56,5 @@ GetWindow
 IsWindowVisible
 SetWindowPos
 HWND_TOPMOST
+WindowFromPoint
+GetAncestor
