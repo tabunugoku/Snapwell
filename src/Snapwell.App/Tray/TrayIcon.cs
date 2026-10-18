@@ -61,6 +61,7 @@ internal sealed unsafe class TrayIcon(IAppLog log, ISettingsLauncher? settings =
                 lpfnWndProc = &WindowProcedure,
                 hInstance = _module,
                 lpszClassName = name,
+                hCursor = PInvoke.LoadCursor(default, PInvoke.IDC_ARROW),
             };
             if (PInvoke.RegisterClass(in windowClass) == 0)
             {
