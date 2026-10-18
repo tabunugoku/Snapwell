@@ -31,6 +31,8 @@ public sealed class SettingsStore<T>(string path, JsonTypeInfo<T> typeInfo, Func
     private readonly int _currentSchemaVersion = 1;
     private readonly Func<T, double, T>? _migrate;
 
+    internal string FilePath => _path;
+
     /// <summary>ストアごとの現在の版と、元の JSON の版を受け取る移行を指定する。</summary>
     public SettingsStore(string path, JsonTypeInfo<T> typeInfo, Func<T> defaults, Func<T, T> normalize,
         int currentSchemaVersion, Func<T, double, T>? migrate = null) : this(path, typeInfo, defaults, normalize)
@@ -186,9 +188,18 @@ public static class SettingsStores
         () => new(), value => value.Normalize(), PortableSettings.CurrentSchemaVersion, SettingsSchema.Migrate);
 
     /// <summary>指定パスまたは LocalAppData の端末状態ストアを作る。</summary>
-    public static SettingsStore<DeviceState> Device(string? path = null) => new(
-        path ?? DevicePath(), SettingsJsonContext.Default.DeviceState,
-        () => new(), value => value with { SchemaVersion = 1 });
+    public static SettingsStore<DeviceState> Device(string? path = null, string? portablePath = null)
+    {
+        var devicePath = path ?? DevicePath();
+        portablePath ??= path is null ? PortablePath()
+            : Path.Combine(Path.GetDirectoryName(Path.GetFullPath(path))!, "settings.json");
+        // 端末状態がまだない旧版や、破損を退避した既存の利用者にも案内を出さない。
+        var existingUser = File.Exists(devicePath) || File.Exists(portablePath);
+        return new(devicePath, SettingsJsonContext.Default.DeviceState,
+            () => new() { SetupCompleted = existingUser },
+            value => value with { SchemaVersion = DeviceState.CurrentSchemaVersion },
+            DeviceState.CurrentSchemaVersion, DeviceState.Migrate);
+    }
 
     /// <summary>ポータブル設定の既定のパス。</summary>
     public static string PortablePath() => Path.Combine(
