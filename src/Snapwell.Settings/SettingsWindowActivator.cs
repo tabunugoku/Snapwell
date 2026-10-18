@@ -8,10 +8,18 @@ namespace Snapwell.Settings;
 /// <summary>同じユーザーが開いている設定画面だけを復元して前面化する。</summary>
 internal static partial class SettingsWindowActivator
 {
-    internal static void Activate(string sid, bool setup = false)
+    internal static void Activate(string sid)
+    {
+        if (!Activate(sid, "Snapwell の設定"))
+        {
+            Activate(sid, "Snapwell の初回セットアップ");
+        }
+    }
+
+    private static bool Activate(string sid, string title)
     {
         nint window = 0;
-        while ((window = FindWindowEx(0, window, null, setup ? "Snapwell の初回セットアップ" : "Snapwell の設定")) != 0)
+        while ((window = FindWindowEx(0, window, null, title)) != 0)
         {
             GetWindowThreadProcessId(window, out var processId);
             if (!IsSameUser(processId, sid))
@@ -26,8 +34,9 @@ internal static partial class SettingsWindowActivator
 
             // OS の前面化制限により成功しない場合がある。実機未確認。
             SetForegroundWindow(window);
-            return;
+            return true;
         }
+        return false;
     }
 
     private static bool IsSameUser(uint processId, string sid)
