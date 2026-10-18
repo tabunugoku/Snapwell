@@ -457,6 +457,22 @@ table.list tr:last-child td { border-bottom: 0; }
 .feel-card svg { width: 100%; height: 54px; margin-top: 8px; }
 .feel-card svg path.c { fill: none; stroke: var(--ink); stroke-width: 1.5; }
 .feel-card svg line { stroke: var(--border-strong); stroke-dasharray: 3 3; }
+.feel-state { margin-left: 8px; padding: 1px 8px; border: 1px solid var(--border-strong); border-radius: 9999px; font-weight: 500; font-size: 11.5px; color: var(--muted); }
+.feel-state.custom { border-color: var(--ink); color: var(--ink); }
+.feel-reset { margin-left: 8px; padding: 1px 10px; font-size: 11.5px; }
+.feel-try { border: 1px solid var(--border); border-radius: 8px; background: var(--surface); padding: 12px; }
+.feel-stage { position: relative; height: 260px; border-radius: 6px; background: var(--wall); overflow: hidden; touch-action: none; }
+.feel-stage .fz { position: absolute; border: 1px dashed var(--cell-border); border-radius: 4px; transition: background-color .12s; }
+.feel-stage .fz.on { background: var(--surface-2); border-style: solid; border-color: var(--ink); }
+.feel-stage .fz-dot { position: absolute; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; background: var(--muted); opacity: .6; }
+.fs-card { position: absolute; left: 0; top: 0; display: grid; place-items: center; background: var(--surface); border: 1px solid var(--border-strong); border-radius: 6px; font: 11px var(--font-mono); color: var(--muted); cursor: grab; user-select: none; will-change: transform; }
+.fs-card:active { cursor: grabbing; }
+.fs-card:focus-visible { outline: 2px solid var(--blue-tx); outline-offset: 2px; }
+.feel-try-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.feel-try-hint { font-size: 12px; color: var(--muted); }
+.row .ctl.tune { gap: 10px; }
+.row .ctl.tune input[type="range"] { width: 200px; accent-color: var(--ink); }
+.row .ctl.tune .unit { width: 22px; font-size: 12px; color: var(--muted); }
 .corner-demo { display: flex; gap: 16px; flex-wrap: wrap; }
 .corner-demo .cd { width: 150px; height: 96px; border: 1px solid var(--border-strong); background: var(--surface); display: grid; place-items: center; font-size: 12px; color: var(--muted); }
 
@@ -796,9 +812,24 @@ table.list tr:last-child td { border-bottom: 0; }
           <!-- 操作感 -->
           <div class="spage" data-page="feel">
             <h3>操作感</h3>
-            <p class="lead">投げたときの動き方です。言葉で選ぶと、質量・振動数・減衰比が決まります。曲線は手を離してから止まるまでの位置です。</p>
+            <p class="lead">投げたときの動き方です。4 つはプリセットで、選ぶと下の 5 つの値がその値になります。値を自由に変えると「カスタム」になります。曲線は手を離してから止まるまでの位置です。</p>
             <div class="feel-cards" id="feelCards"></div>
-            <div class="group-title">詳細</div>
+            <div class="group-title">試す</div>
+            <div class="feel-try">
+              <div class="feel-stage" id="feelStage" aria-label="操作感を試す領域">
+                <div class="fs-zones" id="feelZones"></div>
+                <div class="fs-card" id="feelCard" tabindex="0" aria-label="試すウィンドウ。ドラッグして投げる。矢印キーで投げる"><span>Window</span></div>
+              </div>
+              <div class="feel-try-bar">
+                <div class="chips" role="group" aria-label="吸着の方式">
+                  <button class="chip" type="button" data-mode="corners" aria-pressed="false">四隅</button>
+                  <button class="chip" type="button" data-mode="zones" aria-pressed="true">区画</button>
+                </div>
+                <button class="chip" type="button" id="feelThrow">ランダムに投げる</button>
+                <span class="feel-try-hint">ウィンドウをつかんで投げます。いまの 5 つの値で動きます（離した速さが 150 px/s 未満だと吸着しません）</span>
+              </div>
+            </div>
+            <div class="group-title">詳細 <span class="feel-state" id="feelState"></span><button class="chip feel-reset" type="button" id="feelReset" hidden>プリセットに戻す</button></div>
             <div class="rows" id="feelAdvanced"></div>
             <div class="group-title">アクセシビリティ</div>
             <div class="rows">
@@ -1804,33 +1835,287 @@ function curvePath(p, w, h) {
   }
   return d;
 }
+// 操作感の 5 つの値。範囲は feel のデモ（rig.js の dial）に合わせた: 質量 0.15–8（対数）、振動数 0.4–7 Hz（対数）、
+// 減衰比 0.1–1.6。磁石の強さ 0–2 と吸着半径 8–96 px は Snapwell の設定（feel では語彙と click radius から決まる）
+const TUNE = [
+  { key: 'm', name: '質量 m', desc: '重いほど手から遅れ、遠くまで滑ります', min: 0.15, max: 8, log: true, step: 0.01, digits: 2, unit: '', tol: 0.005 },
+  { key: 'f', name: '固有振動数 f', desc: '大きいほど素早く吸着します', min: 0.4, max: 7, log: true, step: 0.01, digits: 2, unit: 'Hz', tol: 0.005 },
+  { key: 'z', name: '減衰比 ζ', desc: '1 に近いほど行き過ぎません', min: 0.1, max: 1.6, log: false, step: 0.01, digits: 2, unit: '', tol: 0.005 },
+  { key: 'magnet', name: '磁石の強さ', desc: '停止点へ吸い寄せる力。大きいほど強く引きます', min: 0, max: 2, log: false, step: 0.05, digits: 2, unit: '', tol: 0.005 },
+  { key: 'radius', name: '吸着半径', desc: '強く吸い込まれる距離', min: 8, max: 96, log: false, step: 1, digits: 0, unit: 'px', tol: 0.5 },
+];
+const tuneClamp = (t, v) => Math.min(t.max, Math.max(t.min, Number.isFinite(v) ? v : t.min));
+const toSlider = (t, v) => 1000 * (t.log ? Math.log(v / t.min) / Math.log(t.max / t.min) : (v - t.min) / (t.max - t.min));
+const fromSlider = (t, x) => {
+  const r = x / 1000;
+  return t.log ? t.min * Math.pow(t.max / t.min, r) : t.min + r * (t.max - t.min);
+};
+
+/** feel の磁石場（二段のばね・壁・RK4）で、試す領域のウィンドウ 1 枚を動かす。固定の継続時間やイージングは使わない */
+function initFeelTry(getTune) {
+  const stage = $('#feelStage');
+  const card = $('#feelCard');
+  const zonesBox = $('#feelZones');
+  const CARD_W = 120;
+  const CARD_H = 76;
+  const GAP = 6;
+  let mode = 'zones';
+  let stops = [];
+  let zones = [];
+  let size = { w: CARD_W, h: CARD_H };
+  let c = { x: 0, y: 0, vx: 0, vy: 0 };
+  let flying = false;
+  let dragging = false;
+  let rafId = 0;
+  let lastT = 0;
+  const smooth = (e) => (e <= 0 ? 0 : e >= 1 ? 1 : e * e * (3 - 2 * e));
+
+  const layout = () => {
+    const W = stage.clientWidth;
+    const H = stage.clientHeight;
+    if (!W) return;
+    if (mode === 'zones') {
+      const zr = (x, y, w, h) => ({ x: x * W + GAP / 2, y: y * H + GAP / 2, w: w * W - GAP, h: h * H - GAP });
+      zones = [zr(0, 0, 0.5, 1), zr(0.5, 0, 0.5, 1), zr(0, 0, 0.5, 0.5), zr(0.5, 0, 0.5, 0.5), zr(0, 0.5, 0.5, 0.5), zr(0.5, 0.5, 0.5, 0.5), zr(0, 0, 1, 1)];
+      stops = zones.map((z) => ({ x: z.x + z.w / 2, y: z.y + z.h / 2 }));
+    } else {
+      const ix = CARD_W / 2 + 12;
+      const iy = CARD_H / 2 + 12;
+      zones = [];
+      stops = [{ x: ix, y: iy }, { x: W - ix, y: iy }, { x: W - ix, y: H - iy }, { x: ix, y: H - iy }];
+    }
+    zonesBox.innerHTML = zones.map((z, i) => `<div class="fz" data-i="${i}" style="left:${z.x}px;top:${z.y}px;width:${z.w}px;height:${z.h}px"></div>`).join('')
+      + stops.map((s) => `<div class="fz-dot" style="left:${s.x}px;top:${s.y}px"></div>`).join('');
+    if (!flying && !dragging) place(W / 2, H / 2, CARD_W, CARD_H);
+  };
+  const place = (x, y, w, h) => {
+    c = { x, y, vx: 0, vy: 0 };
+    size = { w, h };
+    paint(0);
+  };
+  const paint = (lift) => {
+    card.style.width = `${size.w}px`;
+    card.style.height = `${size.h}px`;
+    card.style.transform = `translate(${(c.x - size.w / 2).toFixed(2)}px, ${(c.y - size.h / 2).toFixed(2)}px) scale(${(1 + 0.05 * lift).toFixed(4)})`;
+    card.style.boxShadow = `0 1px 2px rgba(16,16,20,.08), 0 ${(4 + 16 * lift).toFixed(1)}px ${(12 + 28 * lift).toFixed(1)}px rgba(16,16,20,${(0.12 + 0.12 * lift).toFixed(3)})`;
+  };
+  const nearest = (x, y) => {
+    let best = 0;
+    let bd = Infinity;
+    stops.forEach((s, i) => {
+      const d = (s.x - x) ** 2 + (s.y - y) ** 2;
+      if (d < bd) { bd = d; best = i; }
+    });
+    return best;
+  };
+
+  // feel の力則: F = −c·v − [kFar + kNear·smoothstep(1 − |u|/R)]·u （u = 位置 − 最寄りの停止点）＋ 壁
+  const accel = (x, y, vx, vy, t) => {
+    const m = t.m;
+    const k = m * Math.pow(2 * Math.PI * t.f, 2);
+    const cc = 2 * t.z * Math.sqrt(k * m);
+    const s = stops[nearest(x, y)];
+    const ux = x - s.x;
+    const uy = y - s.y;
+    const kFar = m * Math.pow(2 * Math.PI * (0.6 + 0.5 * t.magnet), 2);
+    const kNear = m * Math.pow(2 * Math.PI * (3 + 4 * t.magnet), 2);
+    const kk = kFar + kNear * smooth(1 - Math.hypot(ux, uy) / t.radius);
+    const kw = m * Math.pow(2 * Math.PI * 8, 2);
+    const cw = 2 * 0.9 * Math.sqrt(kw * m);
+    const wall = (p, v, lo, hi) => (p < lo ? -kw * (p - lo) - (v < 0 ? cw * v : 0) : p > hi ? -kw * (p - hi) - (v > 0 ? cw * v : 0) : 0);
+    const W = stage.clientWidth;
+    const H = stage.clientHeight;
+    return {
+      x: (-cc * vx - kk * ux + wall(x, vx, Math.min(0, ...stops.map((q) => q.x)), Math.max(W, ...stops.map((q) => q.x)))) / m,
+      y: (-cc * vy - kk * uy + wall(y, vy, Math.min(0, ...stops.map((q) => q.y)), Math.max(H, ...stops.map((q) => q.y)))) / m,
+    };
+  };
+  const rk4 = (h, t) => {
+    const a1 = accel(c.x, c.y, c.vx, c.vy, t);
+    const v2x = c.vx + a1.x * h / 2;
+    const v2y = c.vy + a1.y * h / 2;
+    const a2 = accel(c.x + c.vx * h / 2, c.y + c.vy * h / 2, v2x, v2y, t);
+    const v3x = c.vx + a2.x * h / 2;
+    const v3y = c.vy + a2.y * h / 2;
+    const a3 = accel(c.x + v2x * h / 2, c.y + v2y * h / 2, v3x, v3y, t);
+    const v4x = c.vx + a3.x * h;
+    const v4y = c.vy + a3.y * h;
+    const a4 = accel(c.x + v3x * h, c.y + v3y * h, v4x, v4y, t);
+    c.x += (c.vx + 2 * v2x + 2 * v3x + v4x) * h / 6;
+    c.y += (c.vy + 2 * v2y + 2 * v3y + v4y) * h / 6;
+    c.vx += (a1.x + 2 * a2.x + 2 * a3.x + a4.x) * h / 6;
+    c.vy += (a1.y + 2 * a2.y + 2 * a3.y + a4.y) * h / 6;
+  };
+  const loop = (now) => {
+    const t = getTune();
+    let acc = Math.min(1 / 30, (now - lastT) / 1000);
+    lastT = now;
+    while (acc > 1e-9) {
+      const h = Math.min(1 / 240, acc);
+      rk4(h, t);
+      acc -= h;
+    }
+    const s = stops[nearest(c.x, c.y)];
+    if (Math.hypot(c.vx, c.vy) < 4 && Math.hypot(c.x - s.x, c.y - s.y) < 0.25) {
+      settle(nearest(c.x, c.y));
+      return;
+    }
+    paint(Math.min(1, Math.hypot(c.vx, c.vy) / 3000));
+    rafId = requestAnimationFrame(loop);
+  };
+  const settle = (i) => {
+    flying = false;
+    rafId = 0;
+    const z = zones[i];
+    if (mode === 'zones') place(z.x + z.w / 2, z.y + z.h / 2, z.w, z.h);
+    else place(stops[i].x, stops[i].y, CARD_W, CARD_H);
+    $$('.fz', zonesBox).forEach((el) => el.classList.toggle('on', mode === 'zones' && +el.dataset.i === i));
+  };
+  const launch = (vx, vy) => {
+    if (reducedMotion()) {
+      const s = nearest(c.x + vx * 0.25, c.y + vy * 0.25);
+      settle(s);
+      return;
+    }
+    c.vx = vx;
+    c.vy = vy;
+    flying = true;
+    lastT = performance.now();
+    cancelAnimationFrame(rafId);
+    rafId = requestAnimationFrame(loop);
+  };
+  // 標準のドラッグと投げを分ける Snapwell の足切り: 離した速さが 150 px/s 未満なら吸着せず、その場に置く
+  const release = (vx, vy) => {
+    if (Math.hypot(vx, vy) < 150) { paint(0); return; }
+    launch(vx, vy);
+  };
+
+  let grab = null;
+  let samples = [];
+  card.addEventListener('pointerdown', (ev) => {
+    cancelAnimationFrame(rafId);
+    flying = false;
+    dragging = true;
+    $$('.fz', zonesBox).forEach((el) => el.classList.remove('on'));
+    const r = stage.getBoundingClientRect();
+    // つかんだら元の大きさに戻し、つかんだ位置をカードの中心にそろえる
+    size = { w: CARD_W, h: CARD_H };
+    grab = { dx: 0, dy: 0 };
+    c = { x: ev.clientX - r.left, y: ev.clientY - r.top, vx: 0, vy: 0 };
+    samples = [{ t: ev.timeStamp, x: c.x, y: c.y }];
+    card.setPointerCapture(ev.pointerId);
+    paint(0.4);
+  });
+  card.addEventListener('pointermove', (ev) => {
+    if (!dragging) return;
+    const r = stage.getBoundingClientRect();
+    c.x = Math.min(r.width, Math.max(0, ev.clientX - r.left));
+    c.y = Math.min(r.height, Math.max(0, ev.clientY - r.top));
+    samples.push({ t: ev.timeStamp, x: c.x, y: c.y });
+    while (samples.length > 2 && ev.timeStamp - samples[0].t > 100) samples.shift();
+    paint(0.4);
+  });
+  const up = (ev) => {
+    if (!dragging) return;
+    dragging = false;
+    grab = null;
+    const a = samples[0];
+    const b = samples[samples.length - 1];
+    const dt = Math.max(0.016, (b.t - a.t) / 1000);
+    release((b.x - a.x) / dt, (b.y - a.y) / dt);
+  };
+  card.addEventListener('pointerup', up);
+  card.addEventListener('pointercancel', up);
+  card.addEventListener('keydown', (ev) => {
+    const v = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[ev.key];
+    if (!v) return;
+    ev.preventDefault();
+    launch(v[0] * 2200, v[1] * 2200);
+  });
+  $('#feelThrow').addEventListener('click', () => {
+    const a = Math.random() * Math.PI * 2;
+    const sp = 1200 + Math.random() * 2400;
+    launch(Math.cos(a) * sp, Math.sin(a) * sp);
+  });
+  $$('[data-mode]').forEach((b) => b.addEventListener('click', () => {
+    mode = b.dataset.mode;
+    $$('[data-mode]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    cancelAnimationFrame(rafId);
+    flying = false;
+    layout();
+  }));
+  new ResizeObserver(layout).observe(stage);
+  layout();
+}
+
 function initFeelPage() {
   const box = $('#feelCards');
+  const tune = {};
+  let base = 'airy';
+  const params = () => tune;
+  initFeelTry(params);
+
   box.innerHTML = Object.entries(FEELS).map(([key, f]) => `<button type="button" class="feel-card" data-k="${key}">`
     + `<div class="fname">${f.name}</div><div class="fwords">${f.words}</div>`
     + `<svg viewBox="0 0 160 54" preserveAspectRatio="none"><line x1="0" x2="160" y1="12" y2="12"/>`
     + `<path class="c" d="${curvePath(f, 160, 54)}"/></svg></button>`).join('');
-  const select = (key) => {
-    $$('.feel-card', box).forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.k === key)));
-    const f = FEELS[key];
-    const sp = springOf(f);
-    $('#feelAdvanced').innerHTML = [
-      ['質量 m', f.m, '重いほど手から遅れ、遠くまで滑ります'],
-      ['固有振動数 f', `${+f.f.toFixed(2)} Hz`, '大きいほど素早く吸着します'],
-      ['減衰比 ζ', +f.z.toFixed(3), '1 に近いほど行き過ぎません'],
-    ].map(([t, v, d]) => `<div class="row"><div><div class="t">${t}</div><div class="d">${d}</div></div>`
-      + `<div class="ctl mono">${v}</div></div>`).join('')
-      + `<div class="row"><div><div class="t">導かれる値</div><div class="d">k = m(2πf)², c = 2ζ√(km)</div></div>`
-      + `<div class="ctl mono">k ${sp.k.toFixed(0)} · c ${sp.c.toFixed(1)}</div></div>`
-      + `<div class="row"><div><div class="t">磁石の強さ</div><div class="d">停止点へ吸い寄せる力。操作感の語から決まる値で、大きいほど強く引きます (0〜2)</div></div>`
-      + `<div class="ctl"><input class="numbox" type="number" min="0" max="2" step="0.05" value="${f.magnet}" aria-label="磁石の強さ"></div></div>`
-      + `<div class="row"><div><div class="t">吸着半径</div><div class="d">強く吸い込まれる距離 (px)</div></div>`
-      + `<div class="ctl"><input class="numbox" type="number" min="8" max="96" step="1" value="28" aria-label="吸着半径 (px)"></div></div>`;
+
+  $('#feelAdvanced').innerHTML = TUNE.map((t) => `<div class="row" data-key="${t.key}"><div><div class="t">${t.name}</div><div class="d">${t.desc}</div></div>`
+    + `<div class="ctl tune"><input type="range" min="0" max="1000" step="1" aria-label="${t.name}（スライダー）">`
+    + `<input class="numbox" type="number" min="${t.min}" max="${t.max}" step="${t.step}" aria-label="${t.name}">`
+    + `<span class="unit">${t.unit}</span></div></div>`).join('')
+    + `<div class="row"><div><div class="t">導かれる値</div><div class="d">k = m(2πf)², c = 2ζ√(km)、惰性 m/c</div></div><div class="ctl mono" id="feelDerived"></div></div>`;
+
+  const isCustom = () => TUNE.some((t) => Math.abs(tune[t.key] - (t.key === 'radius' ? 28 : FEELS[base][t.key])) > t.tol);
+  const refresh = (from) => {
+    for (const t of TUNE) {
+      const row = $(`.row[data-key="${t.key}"]`);
+      if (from !== t.key) {
+        $('input[type="range"]', row).value = toSlider(t, tune[t.key]);
+        $('.numbox', row).value = tune[t.key].toFixed(t.digits);
+      }
+    }
+    const k = tune.m * Math.pow(2 * Math.PI * tune.f, 2);
+    const cc = 2 * tune.z * Math.sqrt(k * tune.m);
+    $('#feelDerived').textContent = `k ${k.toFixed(0)} · c ${cc.toFixed(1)} · m/c ${(tune.m / cc).toFixed(2)} s`;
+    const custom = isCustom();
+    const state = $('#feelState');
+    state.textContent = custom ? `カスタム（${FEELS[base].name} から変更）` : `プリセット: ${FEELS[base].name}`;
+    state.classList.toggle('custom', custom);
+    $('#feelReset').hidden = !custom;
+    $$('.feel-card', box).forEach((b) => b.setAttribute('aria-pressed', String(!custom && b.dataset.k === base)));
   };
+  const select = (key) => {
+    base = key;
+    const f = FEELS[key];
+    Object.assign(tune, { m: f.m, f: f.f, z: f.z, magnet: f.magnet, radius: 28 });
+    refresh();
+  };
+  $('#feelAdvanced').addEventListener('input', (ev) => {
+    const row = ev.target.closest('.row[data-key]');
+    if (!row) return;
+    const t = TUNE.find((x) => x.key === row.dataset.key);
+    if (ev.target.type === 'range') {
+      let v = fromSlider(t, +ev.target.value);
+      v = t.step >= 1 ? Math.round(v) : Math.round(v / t.step) * t.step;
+      tune[t.key] = tuneClamp(t, v);
+      $('.numbox', row).value = tune[t.key].toFixed(t.digits);
+      refresh(t.key);
+    } else if (ev.target.value !== '') {
+      tune[t.key] = tuneClamp(t, +ev.target.value);
+      $('input[type="range"]', row).value = toSlider(t, tune[t.key]);
+      refresh(t.key);
+    }
+  });
+  // 範囲を超えた入力は、入力を終えた時点で範囲内に丸めて表示し直す
+  $('#feelAdvanced').addEventListener('change', (ev) => {
+    if (ev.target.classList.contains('numbox')) refresh();
+  });
   box.addEventListener('click', (ev) => {
     const b = ev.target.closest('.feel-card');
     if (b) select(b.dataset.k);
   });
+  $('#feelReset').addEventListener('click', () => select(base));
   select('airy');
 }
 
