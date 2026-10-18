@@ -10,6 +10,10 @@ internal sealed class AppHost
     // 未処理の例外のハンドラーやセッションの終了を無限に止めないための上限。
     private static readonly TimeSpan _shutdownWait = TimeSpan.FromSeconds(2);
 
+    // 保存直後の短い共有違反が解消する猶予を 200 ms 取り、トレイを塞がず 3 回だけ再試行する。
+    private static readonly TimeSpan _deviceReloadInterval = TimeSpan.FromMilliseconds(200);
+    private const int DeviceReloadRetryLimit = 3;
+
     private readonly object _gate = new();
     private readonly ISingleInstance _instance;
     private readonly ISnapGuard _guard;
@@ -24,6 +28,8 @@ internal sealed class AppHost
     private readonly ISettingsWatcher? _watcher;
     private readonly ISettingsWatcher? _deviceWatcher;
     private readonly Action? _openSetup;
+    private readonly Func<TimeSpan, CancellationToken, Task> _retryDelay;
+    private readonly CancellationTokenSource _deviceReloadStop = new();
     private readonly CancellationTokenSource _deliveryStop = new();
     private readonly ManualResetEventSlim _shutdownDone = new(false);
     private IAppRuntime? _runtime;
@@ -34,6 +40,8 @@ internal sealed class AppHost
     private bool _hooksStarted;
     private bool _startupRecoveryFailed;
     private bool _deviceReadOnly;
+    private bool _pausePending;
+    private int _deviceReloadVersion;
     private bool _started;
     private bool _enabled;
     private int _shutdown;
@@ -41,11 +49,14 @@ internal sealed class AppHost
     private bool _needsFinalRestore;
     private string? _status;
     private string? _reloadStatus;
+    private string? _deviceSaveStatus;
+    private string? _deviceReloadStatus;
 
     internal AppHost(ISingleInstance instance, ISnapGuard guard, ISettingsStore<PortableSettings> portableStore,
         ISettingsStore<DeviceState> deviceStore, IHookService hooks, ITrayService tray, IConsentPrompt consent,
         IAppLog log, Action restoreCorners, RuntimeFactory createRuntime, ISettingsWatcher? watcher = null,
-        Action? openSetup = null, ISettingsWatcher? deviceWatcher = null)
+        Action? openSetup = null, ISettingsWatcher? deviceWatcher = null,
+        Func<TimeSpan, CancellationToken, Task>? retryDelay = null)
     {
         _instance = instance;
         _guard = guard;
@@ -60,6 +71,7 @@ internal sealed class AppHost
         _watcher = watcher;
         _openSetup = openSetup;
         _deviceWatcher = deviceWatcher;
+        _retryDelay = retryDelay ?? Task.Delay;
         if (_deviceWatcher is not null)
         {
             _deviceWatcher.Changed += OnDeviceChanged;
@@ -203,28 +215,78 @@ internal sealed class AppHost
     {
         lock (_gate)
         {
-            if (!CanOperate())
+            ReloadDevice(0, ++_deviceReloadVersion);
+        }
+    }
+
+    private void ReloadDevice(int attempt, int version)
+    {
+        lock (_gate)
+        {
+            if (!CanOperate() || version != _deviceReloadVersion)
             {
                 return;
             }
 
-            Cleanup(() =>
+            try
             {
                 var loaded = _deviceStore.TryReload();
                 if (loaded is null)
                 {
+                    RetryDeviceReload(new IOException("端末状態を再読み込みできない。"), attempt, version);
                     return;
                 }
 
+                _deviceReloadStatus = null;
                 _deviceReadOnly = loaded.IsReadOnly;
-                if (loaded.IsReadOnly || loaded.Value == _device)
+                if (!loaded.IsReadOnly)
                 {
-                    return;
+                    // 保存できなかった一時停止は、古いディスクの有効状態では解除しない。
+                    var device = WithPendingPause(loaded.Value);
+                    if (device != _device)
+                    {
+                        ApplyDevice(device);
+                    }
                 }
 
-                ApplyDevice(loaded.Value);
                 _tray.Update(State());
-            });
+            }
+            catch (Exception exception)
+            {
+                RetryDeviceReload(exception, attempt, version);
+            }
+        }
+    }
+
+    private void RetryDeviceReload(Exception exception, int attempt, int version)
+    {
+        Log(exception);
+        _deviceReloadStatus = attempt < DeviceReloadRetryLimit
+            ? "端末状態を再読み込みできません。再試行しています"
+            : "端末状態を再読み込みできませんでした。次の変更で再試行します";
+        _tray.Update(State());
+        if (attempt < DeviceReloadRetryLimit)
+        {
+            _ = RetryDeviceReloadAsync(attempt + 1, version);
+        }
+    }
+
+    private async Task RetryDeviceReloadAsync(int attempt, int version)
+    {
+        try
+        {
+            await _retryDelay(_deviceReloadInterval, _deviceReloadStop.Token).ConfigureAwait(false);
+            if (!_deviceReloadStop.IsCancellationRequested)
+            {
+                _tray.Post(() => ReloadDevice(attempt, version));
+            }
+        }
+        catch (OperationCanceledException) when (_deviceReloadStop.IsCancellationRequested)
+        {
+        }
+        catch (Exception exception)
+        {
+            Log(exception);
         }
     }
 
@@ -350,8 +412,16 @@ internal sealed class AppHost
                 return;
             }
 
+            var enabled = !_enabled;
+            if (!enabled)
+            {
+                // 読込や保存の待機・失敗にかかわらず、停止と OS 設定の復元を先に完了する。
+                _pausePending = true;
+                ApplyDevice(_device with { Enabled = false });
+                _tray.Update(State());
+            }
             ReloadDevice();
-            SaveDevice(current => current with { Enabled = !current.Enabled });
+            SaveDevice(current => current with { Enabled = enabled });
             _tray.Update(State());
         }
     }
@@ -444,6 +514,7 @@ internal sealed class AppHost
 
     private void ShutdownCore()
     {
+        Cleanup(_deviceReloadStop.Cancel);
         if (_deviceWatcher is not null)
         {
             _deviceWatcher.Changed -= OnDeviceChanged;
@@ -588,8 +659,12 @@ internal sealed class AppHost
         Log(new IOException(SnapRestoreFailureStatus, exception));
     }
 
-    private TrayState State() => new(_enabled, _device.DisableStandardSnap,
-        _status is null ? _reloadStatus : _reloadStatus is null ? _status : $"{_status} / {_reloadStatus}");
+    private TrayState State()
+    {
+        var status = string.Join(" / ", new[] { _status, _reloadStatus, _deviceSaveStatus, _deviceReloadStatus }
+            .Where(value => value is not null));
+        return new(_enabled, _device.DisableStandardSnap, status.Length == 0 ? null : status);
+    }
 
     private void ApplyDevice(DeviceState device)
     {
@@ -602,46 +677,47 @@ internal sealed class AppHost
             if (previouslyDisabled || pausing)
             {
                 // 移動の取り消しが固まっても、OS 設定は先に戻しておく。
-                RestoreSnap();
+                Cleanup(RestoreSnap);
             }
         }
         else
         {
             DisableIfRequested();
         }
-        _runtime?.SetEnabled(_enabled && _hooksStarted);
+        Cleanup(() => _runtime?.SetEnabled(_enabled && _hooksStarted));
         if (pausing)
         {
-            _runtime?.CancelAll();
+            Cleanup(() => _runtime?.CancelAll());
         }
     }
 
     private void SaveDevice(Func<DeviceState, DeviceState> update)
     {
-        Cleanup(() =>
+        try
         {
             // 読み取り専用なら従来どおり、この起動中の操作だけに反映する。
-            var device = _deviceReadOnly ? update(_device) : Save();
+            var device = _deviceReadOnly ? update(_device)
+                : DeviceStateChanges.Update(_deviceStore, current => update(WithPendingPause(current)));
+            _pausePending = _deviceReadOnly && !device.Enabled;
+            _deviceSaveStatus = null;
             // 保存待ちの間に終了した場合は、復元済みの OS や Runtime を再び有効にしない。
             if (CanOperate())
             {
                 ApplyDevice(device);
             }
-        });
-
-        DeviceState Save()
+        }
+        catch (Exception exception)
         {
-            try
-            {
-                return DeviceStateChanges.Update(_deviceStore, update);
-            }
-            catch (InvalidOperationException)
+            if (exception is InvalidOperationException)
             {
                 _deviceReadOnly = true;
-                throw;
             }
+            Log(exception);
+            _deviceSaveStatus = "端末状態を保存できませんでした。この起動中だけの状態です";
         }
     }
+
+    private DeviceState WithPendingPause(DeviceState device) => _pausePending ? device with { Enabled = false } : device;
 
     private void Cleanup(Action action)
     {

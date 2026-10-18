@@ -15,6 +15,206 @@ namespace Snapwell.App.Tests.Lifecycle;
 
 public sealed class AppHostTests
 {
+    /// <summary>保存例外でも停止は保存前に完了し、再読込や保存失敗では解除されない。</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void FailedPauseSaveKeepsRuntimeStoppedUntilResumeIsSaved(bool accessDenied)
+    {
+        using var fixture = new Fixture(new() { DisableStandardSnap = true, StandardSnapConsentGiven = true });
+        Assert.True(fixture.Host.Start());
+        fixture.Calls.Clear();
+        fixture.Device.SaveException = accessDenied ? new UnauthorizedAccessException("save") : new IOException("save");
+        fixture.Device.BeforeSave = () =>
+        {
+            Assert.False(fixture.Host.Enabled);
+            Assert.False(fixture.Runtime.Enabled);
+            Assert.Equal(1, fixture.Runtime.Cancels);
+            Assert.Contains("restore", fixture.Calls);
+        };
+
+        fixture.Tray.RequestToggle();
+
+        Assert.False(fixture.Host.Enabled);
+        Assert.False(fixture.Runtime.Enabled);
+        Assert.True(fixture.Device.Value.Enabled);
+        Assert.False(fixture.Tray.State!.Enabled);
+        Assert.Contains("保存できません", fixture.Tray.State.Status);
+        Assert.Same(fixture.Device.SaveException, Assert.Single(fixture.Log.Errors));
+        fixture.Device.BeforeSave = null;
+        fixture.Host.ReloadDevice();
+        Assert.False(fixture.Host.Enabled);
+        Assert.Contains("保存できません", fixture.Tray.State!.Status);
+        fixture.Host.ToggleEnabled();
+        Assert.False(fixture.Host.Enabled);
+        Assert.DoesNotContain("disable", fixture.Calls);
+
+        // 失敗後の再開でも、ディスクで取り消された同意を復活させない。
+        fixture.Device.ReloadResult = new(new() { SetupCompleted = true });
+        fixture.Device.SaveException = null;
+        fixture.Host.ToggleEnabled();
+        Assert.True(fixture.Host.Enabled);
+        Assert.True(fixture.Runtime.Enabled);
+        Assert.False(fixture.Device.Value.StandardSnapConsentGiven);
+        Assert.False(fixture.Device.Value.DisableStandardSnap);
+        Assert.True(fixture.Device.Value.SetupCompleted);
+        Assert.DoesNotContain("disable", fixture.Calls);
+        Assert.Null(fixture.Tray.State!.Status);
+        Assert.Equal(0, fixture.Consent.Calls);
+    }
+
+    /// <summary>別の書き手の Mutex がタイムアウトしても、待機前に停止と復元を済ませる。</summary>
+    [Fact]
+    public async Task PauseRestoresBeforeDeviceWriteMutexTimesOut()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "Snapwell-pause-mutex-" + Guid.NewGuid());
+        Directory.CreateDirectory(directory);
+        try
+        {
+            var store = SettingsStores.Device(Path.Combine(directory, "device.json"));
+            store.Save(new() { DisableStandardSnap = true, StandardSnapConsentGiven = true });
+            using var fixture = new Fixture(deviceStore: store);
+            Assert.True(fixture.Host.Start());
+            fixture.Calls.Clear();
+            using var entered = new ManualResetEventSlim();
+            using var release = new ManualResetEventSlim();
+            var writer = Task.Run(() => DeviceStateChanges.Update(store, current =>
+            {
+                entered.Set();
+                Assert.True(release.Wait(TimeSpan.FromSeconds(15)));
+                return current;
+            }));
+            try
+            {
+                Assert.True(entered.Wait(TimeSpan.FromSeconds(5)));
+                var pause = Task.Run(fixture.Host.ToggleEnabled);
+                try
+                {
+                    Assert.True(SpinWait.SpinUntil(() => fixture.Runtime.Cancels == 1, 1000));
+                    Assert.False(fixture.Runtime.Enabled);
+                    Assert.Contains("restore", fixture.Calls);
+                    await pause.WaitAsync(TimeSpan.FromSeconds(10));
+                    Assert.False(fixture.Host.Enabled);
+                    Assert.True(store.Load().Value.Enabled);
+                    Assert.Contains("保存できません", fixture.Tray.State!.Status);
+                    Assert.Contains("ほかのプロセス", Assert.Single(fixture.Log.Errors).Message);
+                    Assert.DoesNotContain("disable", fixture.Calls);
+                }
+                finally
+                {
+                    release.Set();
+                    await pause.WaitAsync(TimeSpan.FromSeconds(10));
+                }
+            }
+            finally
+            {
+                release.Set();
+                await writer.WaitAsync(TimeSpan.FromSeconds(10));
+            }
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    /// <summary>同意取り消し後の初回読込だけ失敗しても、次の通知なしでトレイ上の再試行が復元する。</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void RevokedConsentIsRetriedOnTrayWithoutAnotherFileChange(bool throws)
+    {
+        var delay = new FakeRetryDelay();
+        using var fixture = new Fixture(new() { DisableStandardSnap = true, StandardSnapConsentGiven = true },
+            watchDevice: true, retryDelay: delay.WaitAsync);
+        Assert.True(fixture.Host.Start());
+        fixture.Tray.QueuePosts = true;
+        fixture.Calls.Clear();
+        var reloads = fixture.Device.Reloads;
+        fixture.Device.ReloadResult = null;
+        fixture.Device.ReloadException = throws ? new IOException("sharing") : null;
+        fixture.Device.AfterReload = () =>
+        {
+            fixture.Device.ReloadResult = new(new() { SetupCompleted = true });
+            fixture.Device.ReloadException = null;
+            fixture.Device.AfterReload = null;
+        };
+
+        fixture.DeviceWatcher.Notify();
+        fixture.Tray.Flush();
+
+        Assert.Equal(reloads + 1, fixture.Device.Reloads);
+        Assert.Contains("再試行しています", fixture.Tray.State!.Status);
+        Assert.DoesNotContain("restore", fixture.Calls);
+        Assert.Single(delay.Pending);
+        delay.CompleteNext();
+        Assert.True(SpinWait.SpinUntil(() => !fixture.Tray.Posted.IsEmpty, 5000));
+        Assert.DoesNotContain("restore", fixture.Calls);
+        fixture.Tray.Flush();
+
+        Assert.Equal(reloads + 2, fixture.Device.Reloads);
+        Assert.Contains("restore", fixture.Calls);
+        Assert.False(fixture.Tray.State!.DisableStandardSnap);
+        Assert.Null(fixture.Tray.State.Status);
+        Assert.Empty(delay.Pending);
+        Assert.Equal(0, fixture.Device.Saves);
+    }
+
+    /// <summary>読込失敗が続いても再試行を打ち切り、新しい通知では再び試行できる。</summary>
+    [Fact]
+    public void DeviceReloadRetriesAreBoundedAndANewNotificationCanRecover()
+    {
+        var delay = new FakeRetryDelay();
+        using var fixture = new Fixture(watchDevice: true, retryDelay: delay.WaitAsync);
+        Assert.True(fixture.Host.Start());
+        fixture.Tray.QueuePosts = true;
+        var reloads = fixture.Device.Reloads;
+        fixture.Device.ReloadResult = null;
+        fixture.DeviceWatcher.Notify();
+        fixture.Tray.Flush();
+        for (var i = 0; i < 3; i++)
+        {
+            delay.CompleteNext();
+            Assert.True(SpinWait.SpinUntil(() => !fixture.Tray.Posted.IsEmpty, 5000));
+            fixture.Tray.Flush();
+        }
+        Assert.Equal(reloads + 4, fixture.Device.Reloads);
+        Assert.Empty(delay.Pending);
+        Assert.Contains("次の変更", fixture.Tray.State!.Status);
+        fixture.Device.ReloadResult = new(fixture.Device.Value);
+        fixture.DeviceWatcher.Notify();
+        fixture.Tray.Flush();
+        Assert.Null(fixture.Tray.State!.Status);
+    }
+
+    /// <summary>遅延中・トレイ配送済みの再試行は、終了後に読込や OS の変更を行わない。</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ShutdownCancelsDelayedAndPostedDeviceReloadRetries(bool alreadyPosted)
+    {
+        var delay = new FakeRetryDelay();
+        using var fixture = new Fixture(watchDevice: true, retryDelay: delay.WaitAsync);
+        Assert.True(fixture.Host.Start());
+        fixture.Tray.QueuePosts = true;
+        fixture.Device.ReloadResult = null;
+        fixture.DeviceWatcher.Notify();
+        fixture.Tray.Flush();
+        var reloads = fixture.Device.Reloads;
+        if (alreadyPosted)
+        {
+            delay.CompleteNext();
+            Assert.True(SpinWait.SpinUntil(() => !fixture.Tray.Posted.IsEmpty, 5000));
+        }
+        fixture.Host.Shutdown();
+        Assert.True(delay.Token.IsCancellationRequested);
+        fixture.Device.ReloadResult = new(new() { DisableStandardSnap = true, StandardSnapConsentGiven = true });
+        fixture.Tray.Flush();
+        Assert.Equal(reloads, fixture.Device.Reloads);
+        Assert.Empty(fixture.Tray.Posted);
+        Assert.True(fixture.DeviceWatcher.Disposed);
+    }
+
     /// <summary>再読込と保存の間の同意取り消しを保持し、キャッシュと OS にも反映する。</summary>
     [Theory]
     [InlineData(false)]
@@ -891,7 +1091,8 @@ public sealed class AppHostTests
         internal List<IAppRuntime> Created { get; } = [];
         internal List<PortableSettings> SettingsSeen { get; } = [];
 
-        internal Fixture(DeviceState? state = null, bool watchDevice = false)
+        internal Fixture(DeviceState? state = null, bool watchDevice = false,
+            ISettingsStore<DeviceState>? deviceStore = null, Func<TimeSpan, CancellationToken, Task>? retryDelay = null)
         {
             Instance = new(Calls);
             Guard = new(Calls);
@@ -901,13 +1102,13 @@ public sealed class AppHostTests
             Tray = new(Calls);
             Runtime = new(Calls);
             Host = new(Instance, Guard, Portable,
-                Device, Hooks, Tray, Consent, Log, () => Calls.Enqueue("corners"), (settings, _, _) =>
+                deviceStore ?? Device, Hooks, Tray, Consent, Log, () => Calls.Enqueue("corners"), (settings, _, _) =>
                 {
                     var runtime = Factory?.Invoke(settings) ?? (Created.Count == 0 ? Runtime : new FakeRuntime(Calls));
                     Created.Add(runtime);
                     SettingsSeen.Add(settings);
                     return runtime;
-                }, Watcher, () => SetupOpens++, watchDevice ? DeviceWatcher : null);
+                }, Watcher, () => SetupOpens++, watchDevice ? DeviceWatcher : null, retryDelay);
         }
 
         public void Dispose() => Host.Shutdown();
@@ -950,12 +1151,17 @@ public sealed class AppHostTests
         internal int Reloads;
         internal SettingsLoadResult<T>? ReloadResult = new(value);
         internal Action? AfterReload;
+        internal Exception? ReloadException;
+        internal Exception? SaveException;
+        internal Action? BeforeSave;
         public SettingsLoadResult<T>? TryReload()
         {
             Reloads++;
             var result = ReloadResult is null ? null
                 : ReloadResult with { IsReadOnly = ReadOnly || ReloadResult.IsReadOnly };
+            var exception = ReloadException;
             AfterReload?.Invoke();
+            if (exception is not null) { throw exception; }
             return result;
         }
         internal bool ReadOnly;
@@ -970,7 +1176,9 @@ public sealed class AppHostTests
         public void Save(T updated)
         {
             SaveEntered = true;
+            BeforeSave?.Invoke();
             BlockSave?.Wait();
+            if (SaveException is { } exception) { throw exception; }
             Value = updated;
             ReloadResult = new(updated, IsReadOnly: ReadOnly);
             Saves++;
@@ -1017,7 +1225,7 @@ public sealed class AppHostTests
         public void Update(TrayState state) => State = state;
         public void Remove() => calls.Enqueue("tray.remove");
         internal bool QueuePosts;
-        internal Queue<Action> Posted { get; } = new();
+        internal ConcurrentQueue<Action> Posted { get; } = new();
         public void Post(Action action)
         {
             if (QueuePosts) { Posted.Enqueue(action); }
@@ -1034,6 +1242,27 @@ public sealed class AppHostTests
         internal void RequestArrange() => ArrangeRequested?.Invoke();
         internal void RequestExit() => ExitRequested?.Invoke();
         internal void EndSession() => SessionEnding?.Invoke();
+    }
+
+    private sealed class FakeRetryDelay
+    {
+        internal ConcurrentQueue<TaskCompletionSource> Pending { get; } = new();
+        internal CancellationToken Token;
+
+        internal Task WaitAsync(TimeSpan interval, CancellationToken cancellationToken)
+        {
+            Assert.True(interval > TimeSpan.Zero && interval < TimeSpan.FromSeconds(1));
+            Token = cancellationToken;
+            var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            Pending.Enqueue(completion);
+            return completion.Task.WaitAsync(cancellationToken);
+        }
+
+        internal void CompleteNext()
+        {
+            Assert.True(Pending.TryDequeue(out var completion));
+            completion.SetResult();
+        }
     }
 
     private sealed class FakeConsent : IConsentPrompt
