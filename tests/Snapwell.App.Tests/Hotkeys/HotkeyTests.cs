@@ -13,6 +13,16 @@ namespace Snapwell.App.Tests.Hotkeys;
 
 public sealed class HotkeyTests
 {
+    /// <summary>開くキーが矢印に割り当てられていても、表示中の選択操作を優先する。</summary>
+    [Fact]
+    public void LauncherInputKeepsPriorityOverReopenBinding()
+    {
+        var matcher = new HotkeyMatcher();
+        matcher.SetBindings(HotkeyBindingsBuilder.Launcher(
+            [new((int)WindowCommand.OpenLauncher, KeyModifiers.None, 0x25)]));
+        Assert.Equal((int)LauncherInput.Left, matcher.ProcessKey(0x25, true).Id);
+    }
+
     /// <summary>ランチャーは配置コマンドとして実行せず、専用の呼び出しへ渡す。</summary>
     [Fact]
     public void OpenLauncherInvokesCallbackWithoutMovingWindow()

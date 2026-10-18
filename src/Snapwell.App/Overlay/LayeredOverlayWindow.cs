@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Snapwell.Core.Geometry;
@@ -18,6 +19,9 @@ internal sealed unsafe class LayeredOverlayWindow : IOverlaySurface, IOverlayLoo
     private static LayeredOverlayWindow? _current;
     private readonly HINSTANCE _module;
     private readonly bool _interactive;
+    private readonly HCURSOR _arrow;
+    private readonly uint _threadId;
+    private Exception? _callbackFailure;
     private HWND _window;
     private HDC _memory;
     private HBITMAP _bitmap;
@@ -31,6 +35,13 @@ internal sealed unsafe class LayeredOverlayWindow : IOverlaySurface, IOverlayLoo
     internal LayeredOverlayWindow(bool interactive)
     {
         _interactive = interactive;
+        _threadId = PInvoke.GetCurrentThreadId();
+        _arrow = PInvoke.LoadCursor(default, PInvoke.IDC_ARROW);
+        if (_arrow.IsNull)
+        {
+            throw new Win32Exception(Marshal.GetLastWin32Error(), "矢印カーソルを読み込めない。");
+        }
+
         _current = this;
         _module = new(PInvoke.GetModuleHandle(default(PCWSTR)).Value);
         fixed (char* name = ClassName)
@@ -40,11 +51,13 @@ internal sealed unsafe class LayeredOverlayWindow : IOverlaySurface, IOverlayLoo
                 lpfnWndProc = &WindowProcedure,
                 hInstance = _module,
                 lpszClassName = name,
+                hCursor = _arrow,
             };
             // 同一プロセスのもう一つの STA もこのクラスを使う。クラスはプロセス終了時に解放される。
             if (PInvoke.RegisterClass(in windowClass) == 0 && Marshal.GetLastWin32Error() != 1410)
             {
-                throw new InvalidOperationException("オーバーレイのクラスを登録できない。");
+                _current = null;
+                throw new Win32Exception(Marshal.GetLastWin32Error(), "オーバーレイのクラスを登録できない。");
             }
 
             var style = WINDOW_EX_STYLE.WS_EX_LAYERED | WINDOW_EX_STYLE.WS_EX_TOPMOST |
@@ -60,7 +73,8 @@ internal sealed unsafe class LayeredOverlayWindow : IOverlaySurface, IOverlayLoo
 
         if (_window.IsNull)
         {
-            throw new InvalidOperationException("オーバーレイを作れない。");
+            _current = null;
+            throw new Win32Exception(Marshal.GetLastWin32Error(), "オーバーレイを作れない。");
         }
     }
 
@@ -70,6 +84,11 @@ internal sealed unsafe class LayeredOverlayWindow : IOverlaySurface, IOverlayLoo
 
     public void Show(PixelRect bounds, OverlayFrame frame)
     {
+        if (!PInvoke.IsWindow(_window))
+        {
+            throw new InvalidOperationException("オーバーレイのウィンドウが失われた。");
+        }
+
         if (frame.Width != bounds.Width || frame.Height != bounds.Height ||
             frame.Pixels.Length != checked(frame.Width * frame.Height * 4))
         {
@@ -143,7 +162,7 @@ internal sealed unsafe class LayeredOverlayWindow : IOverlaySurface, IOverlayLoo
             if (!PInvoke.UpdateLayeredWindow(_window, screen, destination, size, _memory,
                 source, default, blend, UPDATE_LAYERED_WINDOW_FLAGS.ULW_ALPHA))
             {
-                throw new InvalidOperationException("オーバーレイを更新できない。");
+                throw new Win32Exception(Marshal.GetLastWin32Error(), "オーバーレイを更新できない。");
             }
 
             PInvoke.ShowWindow(_window, SHOW_WINDOW_CMD.SW_SHOWNOACTIVATE);
@@ -168,25 +187,41 @@ internal sealed unsafe class LayeredOverlayWindow : IOverlaySurface, IOverlayLoo
         ReleaseBitmap();
     }
 
-    public void Wake() => PInvoke.PostMessage(_window, WakeMessage, default, default);
+    public void Wake()
+    {
+        if (!PInvoke.PostMessage(_window, WakeMessage, default, default))
+        {
+            var error = Marshal.GetLastWin32Error();
+            // HWND が失われても、旧スレッドのメッセージ待ちを終了できるようにする。
+            PInvoke.PostThreadMessage(_threadId, 0x0012, default, default);
+            throw new Win32Exception(error, "オーバーレイの起床通知を送れない。");
+        }
+    }
 
     public void Run(Func<bool> process)
     {
-        if (!process())
-        {
-            return;
-        }
+        // 最初の重い描画より先に GetMessage を通す。起動中カーソルの解除は実機未確認。
+        Wake();
 
         while (true)
         {
             var result = PInvoke.GetMessage(out var message, default, 0, 0).Value;
-            if (result <= 0)
+            if (result < 0)
+            {
+                throw new Win32Exception(Marshal.GetLastWin32Error(), "オーバーレイのメッセージを取得できない。");
+            }
+
+            if (result == 0)
             {
                 return;
             }
 
             PInvoke.TranslateMessage(in message);
             PInvoke.DispatchMessage(in message);
+            if (_callbackFailure is { } failure)
+            {
+                throw new InvalidOperationException("オーバーレイの入力処理に失敗した。", failure);
+            }
             // 移動一件ごとには描かず、キューの起床通知まで入力をまとめる。
             if (message.message == WakeMessage && !process())
             {
@@ -237,6 +272,18 @@ internal sealed unsafe class LayeredOverlayWindow : IOverlaySurface, IOverlayLoo
 
     private LRESULT HandleMessage(HWND window, uint message, WPARAM wParam, LPARAM lParam)
     {
+        if (message == 0x0020) // WM_SETCURSOR
+        {
+            PInvoke.SetCursor(_arrow);
+            return new(1);
+        }
+
+        if (message == 0x0002) // WM_DESTROY
+        {
+            PInvoke.PostQuitMessage(0);
+            return default;
+        }
+
         if (message == 0x0021)
         {
             return new(3); // MA_NOACTIVATE。対象のフライアウトが閉じないことは実機未確認。
@@ -284,9 +331,15 @@ internal sealed unsafe class LayeredOverlayWindow : IOverlaySurface, IOverlayLoo
             return _current?.HandleMessage(window, message, wParam, lParam) ??
                 PInvoke.DefWindowProc(window, message, wParam, lParam);
         }
-        catch (Exception)
+        catch (Exception exception)
         {
-            // managed 例外を Win32 のコールバックへ越境させない。
+            // 越境を防いだ例外もループ側へ伝え、壊れた表示を生存扱いにしない。
+            if (_current is { } current)
+            {
+                current._callbackFailure ??= exception;
+                PInvoke.PostMessage(window, WakeMessage, default, default);
+            }
+
             return PInvoke.DefWindowProc(window, message, wParam, lParam);
         }
     }
