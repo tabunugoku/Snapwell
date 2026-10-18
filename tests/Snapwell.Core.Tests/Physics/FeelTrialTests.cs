@@ -231,4 +231,21 @@ public sealed class FeelTrialTests
         trial.Settle();
         Assert.Equal(SnapTargetKind.RightHalf, trial.Kind);
     }
+
+    /// <summary>動かしたあと 500ms 止めてから離すと、本体と同じ速度の推定で 0 になり、吸着せずその場に置かれる。</summary>
+    [Fact]
+    public void ReleasingAfterPausingUsesZeroVelocity()
+    {
+        var trial = new FeelTrial(640, 260, SnapMode.Zones);
+        var tracker = new VelocityTracker();
+        Assert.True(trial.Grab(new(320, 100)));
+        tracker.AddSample(new(320, 100), 0);
+        trial.Move(new(420, 100));
+        tracker.AddSample(new(420, 100), 0.05);
+        Assert.NotEqual(default, tracker.Release(0.06 - 0.0001));
+        var velocity = tracker.Release(0.55);
+        Assert.Equal(default, velocity);
+        Assert.False(trial.Release(velocity, FeelPreset.Airy, 28));
+        Assert.False(trial.IsFlying);
+    }
 }
