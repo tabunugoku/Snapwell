@@ -143,7 +143,7 @@
                             PointerPressed="TrialStage_PointerPressed" PointerMoved="TrialStage_PointerMoved"
                             PointerReleased="TrialStage_PointerReleased"
                             PointerCanceled="TrialStage_PointerReleased">
-                        <Border x:Name="TrialCard" IsTabStop="True" IsHitTestVisible="False" CornerRadius="8"
+                        <Border x:Name="TrialCard" IsTabStop="True" CornerRadius="8"
                                 BorderThickness="1" Background="{ThemeResource SnapwellSurfaceBrush}"
                                 BorderBrush="{ThemeResource SnapwellBorderStrongBrush}"
                                 AutomationProperties.Name="試すウィンドウ。タイトルバーをドラッグして投げる。矢印キーで投げる"
