@@ -429,12 +429,11 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
 .row .t { color: var(--ink); }
 .row .d { font-size: 12.5px; color: var(--muted); }
 .row .ctl { display: flex; align-items: center; gap: 8px; }
-.switch { position: relative; width: 40px; height: 20px; flex: none; }
+.switch { position: relative; width: 40px; height: 20px; flex: none; touch-action: pan-y; }
 .switch input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
-.switch span { position: absolute; inset: 0; border-radius: 9999px; border: 1px solid var(--muted); background: transparent; pointer-events: none; }
-.switch span::after { content: ''; position: absolute; width: 12px; height: 12px; left: 3px; top: 3px; border-radius: 50%; background: var(--muted); }
-.switch input:checked + span { background: var(--ink); border-color: var(--ink); }
-.switch input:checked + span::after { left: 23px; background: var(--ink-text); }
+.switch span { position: absolute; inset: 0; border-radius: 9999px; border: 1px solid color-mix(in srgb, var(--ink) calc(var(--f, 0) * 100%), var(--muted)); background: color-mix(in srgb, var(--ink) calc(var(--f, 0) * 100%), transparent); pointer-events: none; }
+/* つまみの位置・塗り・伸びは JS のばねが --x --f --sx --sy に書く (makeSwitch)。transition は使わない */
+.switch span::after { content: ''; position: absolute; width: 12px; height: 12px; left: 3px; top: 3px; border-radius: 50%; background: color-mix(in srgb, var(--ink-text) calc(var(--f, 0) * 100%), var(--muted)); transform: translateX(calc(var(--x, 0) * 1px)) scale(var(--sx, 1), var(--sy, 1)); }
 .switch input:focus-visible + span { outline: 2px solid var(--blue-tx); outline-offset: 2px; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip { border: 1px solid var(--border); background: var(--surface); border-radius: 6px; padding: 5px 12px; cursor: pointer; font-size: 13px; }
@@ -1936,6 +1935,141 @@ $('#themeToggle').addEventListener('click', () => {
   try { localStorage.setItem('snapwell-mock-theme', THEMES[themeIdx][0]); } catch (err) { /* 無視 */ }
 });
 applyTheme();
+// ---------- スイッチ ----------
+// つまみは feel の heavy-toggle と同じ物体 (質量 3 のばね + 壁 + ハンドばね)。"stiff, heavy" の数値は feel の語彙から:
+// 質量 3、固有振動数 = √(4.6 × 1.35) ≈ 2.492 Hz、減衰比 = (0.9 + 0.74) / 2 = 0.82。継続時間やイージングは持たない。
+// 式は diip3sh/feel (MIT, THIRD_PARTY_NOTICES.md) と src/Snapwell.Core/Physics/SpringSwitch.cs に合わせる。
+const SWITCH_FEEL = (() => {
+  const m = 3, w = 2 * Math.PI * Math.sqrt(4.6 * 1.35), z = (0.9 + 0.74) / 2;
+  const k = m * w * w;
+  return { m, k, c: 2 * z * Math.sqrt(k * m) };
+})();
+const SWITCH_TRAVEL = 20;
+const SWITCH_STEP = 1 / 240;
+const SWITCH_HAND_W = 2 * Math.PI * 6;
+const SWITCH_WALL_W = 2 * Math.PI * 8;
+
+const switchLoop = (() => {
+  const active = new Set();
+  let raf = 0, last = 0;
+  const frame = (t) => {
+    const dt = last ? Math.min((t - last) / 1000, 1 / 30) : 1 / 60;
+    last = t;
+    for (const sw of [...active]) if (sw.advance(dt)) active.delete(sw);
+    raf = active.size ? requestAnimationFrame(frame) : 0;
+    if (!raf) last = 0;
+  };
+  return { add(sw) { active.add(sw); if (!raf) raf = requestAnimationFrame(frame); } };
+})();
+
+function makeSwitch(label) {
+  const input = $('input', label), track = $('span', label);
+  const { m, k, c } = SWITCH_FEEL;
+  const sw = { x: 0, v: 0, target: 0, hand: null };
+  const wall = (x, v) => {
+    const kw = m * SWITCH_WALL_W ** 2, cw = 2 * 0.9 * Math.sqrt(kw * m);
+    if (x < 0) return -kw * x - (v < 0 ? cw * v : 0);
+    if (x > SWITCH_TRAVEL) return -kw * (x - SWITCH_TRAVEL) - (v > 0 ? cw * v : 0);
+    return 0;
+  };
+  const accel = (x, v) => {
+    let f = -c * v + wall(x, v);
+    if (sw.hand) {
+      const kh = SWITCH_HAND_W ** 2, ch = 2 * Math.sqrt(kh * m);
+      f += kh * (sw.hand.x - x) + ch * (sw.hand.v - v);
+    } else {
+      f -= k * (x - sw.target);
+    }
+    return f / m;
+  };
+  const step = (h) => {
+    const { x, v } = sw;
+    const k1v = accel(x, v), k1x = v;
+    const k2v = accel(x + h / 2 * k1x, v + h / 2 * k1v), k2x = v + h / 2 * k1v;
+    const k3v = accel(x + h / 2 * k2x, v + h / 2 * k2v), k3x = v + h / 2 * k2v;
+    const k4v = accel(x + h * k3x, v + h * k3v), k4x = v + h * k3v;
+    sw.x = x + h / 6 * (k1x + 2 * k2x + 2 * k3x + k4x);
+    sw.v = v + h / 6 * (k1v + 2 * k2v + 2 * k3v + k4v);
+  };
+  const settled = () => !sw.hand && Math.abs(sw.v) < 4 && Math.abs(sw.x - sw.target) < 0.25;
+  const paint = () => {
+    const stretch = 1 + Math.min(0.22, Math.abs(sw.v) / (2600 * Math.sqrt(m)));
+    const fill = Math.max(0, Math.min(1, sw.x / SWITCH_TRAVEL));
+    track.style.setProperty('--x', sw.x.toFixed(3));
+    track.style.setProperty('--f', fill.toFixed(4));
+    track.style.setProperty('--sx', stretch.toFixed(4));
+    track.style.setProperty('--sy', (1 / Math.sqrt(stretch)).toFixed(4));
+  };
+  sw.advance = (dt) => {
+    let rest = dt;
+    while (rest > 0) { const h = Math.min(rest, SWITCH_STEP); step(h); rest -= h; }
+    if (settled()) { sw.x = sw.target; sw.v = 0; paint(); return true; }
+    paint();
+    return false;
+  };
+  const setTarget = (on) => {
+    sw.target = on ? SWITCH_TRAVEL : 0;
+    if (reducedMotion() && !sw.hand) { sw.x = sw.target; sw.v = 0; paint(); return; }
+    switchLoop.add(sw);
+  };
+  const decide = () => {
+    // 手を離したあとは、勢いのまま進む先 x + v·m/c が中央のどちら側かで決める
+    const projected = sw.x + sw.v * m / c;
+    return projected > SWITCH_TRAVEL / 2;
+  };
+  const clampHand = (x) => Math.max(0, Math.min(SWITCH_TRAVEL, x));
+  const setChecked = (on) => {
+    if (input.checked === on) return;
+    input.checked = on;
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  };
+
+  input.addEventListener('change', () => setTarget(input.checked));
+  // マウス・タッチの click は pointerup で処理するので止める。キーボード (detail 0) だけ標準の切替に任せる
+  label.addEventListener('click', (e) => { if (e.detail > 0) e.preventDefault(); }, true);
+
+  let press = null;
+  label.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0 || input.disabled || press) return;
+    label.setPointerCapture(e.pointerId);
+    press = { id: e.pointerId, x0: e.clientX, from: sw.x, dragging: false };
+  });
+  label.addEventListener('pointermove', (e) => {
+    if (!press || e.pointerId !== press.id) return;
+    const dx = e.clientX - press.x0;
+    if (!press.dragging && Math.abs(dx) < 4) return;
+    const hx = clampHand(press.from + dx), t = e.timeStamp / 1000;
+    if (!press.dragging) {
+      press.dragging = true;
+      sw.hand = { x: hx, v: 0, t };
+      switchLoop.add(sw);
+    } else {
+      const dt = t - sw.hand.t;
+      if (dt > 0) sw.hand.v = sw.hand.v * 0.35 + (hx - sw.hand.x) / dt * 0.65;
+      sw.hand.x = hx; sw.hand.t = t;
+    }
+  });
+  const finish = (e, commit) => {
+    if (!press || e.pointerId !== press.id) return;
+    const p = press;
+    press = null;
+    if (p.dragging) {
+      sw.hand = null;
+      const on = decide();
+      sw.target = on ? SWITCH_TRAVEL : 0;
+      setChecked(on);
+      setTarget(on);
+    } else if (commit) {
+      setChecked(!input.checked);
+    }
+  };
+  label.addEventListener('pointerup', (e) => finish(e, true));
+  label.addEventListener('pointercancel', (e) => finish(e, false));
+
+  sw.x = sw.target = input.checked ? SWITCH_TRAVEL : 0;
+  paint();
+}
+$$('.switch').forEach(makeSwitch);
 </script>
 </body>
 </html>
