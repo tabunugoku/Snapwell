@@ -223,8 +223,14 @@ public static class SpringToggle
 
         private void Root_PointerPressed(object sender, PointerRoutedEventArgs e)
         {
+            // マウスは左ボタンだけ。右・中ボタンは押下状態を作らず、通常の処理（コンテキストメニューなど）に任せる。
+            if (_root is null || !e.GetCurrentPoint(_root).Properties.IsLeftButtonPressed)
+            {
+                return;
+            }
+
             e.Handled = true;
-            if (_body is null || _root is null || !_toggle.IsEnabled || _pressed)
+            if (_body is null || !_toggle.IsEnabled || _pressed)
             {
                 return;
             }
