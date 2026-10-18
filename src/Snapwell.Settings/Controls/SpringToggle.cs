@@ -18,7 +18,7 @@ public static class SpringToggle
             typeof(SpringToggle),
             new PropertyMetadata(false, OnEnabledChanged));
 
-    private static readonly DependencyProperty AttachmentProperty =
+    internal static readonly DependencyProperty AttachmentProperty =
         DependencyProperty.RegisterAttached(
             "Attachment",
             typeof(object),
@@ -45,7 +45,7 @@ public static class SpringToggle
         // 横ドラッグと見なす移動量。これ未満はタップ。
         private const double DragSlop = 4;
 
-        private static readonly UISettings SystemSettings = new();
+        private static readonly UISettings _systemSettings = new();
 
         private readonly ToggleSwitch _toggle;
         private SpringSwitch? _body;
@@ -74,7 +74,7 @@ public static class SpringToggle
         }
 
         // 動きを減らす設定（Windows の「アニメーション効果」）がオフなら、ばねを使わず直ちに静止する。
-        private static bool ReduceMotion => !SystemSettings.AnimationsEnabled;
+        private static bool ReduceMotion => !_systemSettings.AnimationsEnabled;
 
         /// <summary>1 フレーム進める。静止したら true。</summary>
         public bool Step(double seconds)
@@ -315,18 +315,18 @@ public static class SpringToggle
     /// <summary>動いているスイッチを描画のたびに進める共通の駆動。全部が静止したらフレームの購読を止める。</summary>
     private static class SpringDriver
     {
-        private static readonly List<Attachment> Active = [];
+        private static readonly List<Attachment> _active = [];
         private static TimeSpan _last;
 
         public static void Add(Attachment attachment)
         {
-            if (Active.Contains(attachment))
+            if (_active.Contains(attachment))
             {
                 return;
             }
 
-            Active.Add(attachment);
-            if (Active.Count == 1)
+            _active.Add(attachment);
+            if (_active.Count == 1)
             {
                 _last = TimeSpan.Zero;
                 CompositionTarget.Rendering += OnRendering;
@@ -335,7 +335,7 @@ public static class SpringToggle
 
         public static void Remove(Attachment attachment)
         {
-            if (Active.Remove(attachment) && Active.Count == 0)
+            if (_active.Remove(attachment) && _active.Count == 0)
             {
                 CompositionTarget.Rendering -= OnRendering;
             }
@@ -346,11 +346,11 @@ public static class SpringToggle
             var time = ((RenderingEventArgs)e).RenderingTime;
             var seconds = _last == TimeSpan.Zero ? 1.0 / 60 : (time - _last).TotalSeconds;
             _last = time;
-            for (var i = Active.Count - 1; i >= 0; i--)
+            for (var i = _active.Count - 1; i >= 0; i--)
             {
-                if (Active[i].Step(seconds))
+                if (_active[i].Step(seconds))
                 {
-                    Remove(Active[i]);
+                    Remove(_active[i]);
                 }
             }
         }
