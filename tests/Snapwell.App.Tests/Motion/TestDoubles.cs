@@ -62,6 +62,15 @@ internal sealed class FakeMover : IWindowMover
 {
     internal ConcurrentQueue<(nint Handle, int X, int Y)> Moves { get; } = new();
     internal ConcurrentQueue<(nint Handle, PixelRect Bounds)> Bounds { get; } = new();
+    internal ConcurrentQueue<(WindowPlacement[] Placements, bool PositionOnly)> Batches { get; } = new();
+    internal ConcurrentQueue<nint> Reads { get; } = new();
+    internal ConcurrentQueue<string> Calls { get; } = new();
+    private readonly ConcurrentDictionary<nint, PixelRect> _visualBounds = new();
+    internal bool BatchSuccess = true;
+    internal bool ThrowBatch;
+    internal IReadOnlyList<nint> FailedBatchHandles = [];
+    internal Action? OnBatch;
+    internal Func<nint, PixelRect?>? GetBoundsResult;
     internal nint FailingHandle;
     internal nint ThrowingHandle;
     internal ManualResetEventSlim? Block;
@@ -69,6 +78,7 @@ internal sealed class FakeMover : IWindowMover
     internal Func<PixelRect, PixelRect?>? SetBoundsResult;
     public bool MoveVisual(nint handle, int x, int y)
     {
+        Calls.Enqueue($"move:{handle}");
         Moves.Enqueue((handle, x, y));
         Entered.Set();
         Block?.Wait();
@@ -82,11 +92,36 @@ internal sealed class FakeMover : IWindowMover
 
     public PixelRect? SetVisualBounds(nint handle, PixelRect visualBounds)
     {
+        Calls.Enqueue($"bounds:{handle}");
         Bounds.Enqueue((handle, visualBounds));
         return SetBoundsResult is null ? visualBounds : SetBoundsResult(visualBounds);
     }
 
-    public bool ApplyBatch(IReadOnlyList<WindowPlacement> placements) => throw new NotSupportedException();
+    public PixelRect? GetVisualBounds(nint handle)
+    {
+        Reads.Enqueue(handle);
+        return GetBoundsResult is null ? _visualBounds[handle] : GetBoundsResult(handle);
+    }
+
+    public bool ApplyBatch(IReadOnlyList<WindowPlacement> placements, bool positionOnly,
+        out IReadOnlyList<nint> failedHandles, Func<nint, bool>? isCurrent = null)
+    {
+        Calls.Enqueue("batch");
+        Batches.Enqueue(([.. placements], positionOnly));
+        OnBatch?.Invoke();
+        if (ThrowBatch)
+        {
+            throw new InvalidOperationException("batch failed");
+        }
+
+        failedHandles = FailedBatchHandles;
+        foreach (var placement in placements)
+        {
+            _visualBounds[placement.Handle] = placement.VisualBounds;
+        }
+
+        return BatchSuccess;
+    }
 }
 
 internal sealed class FakePreference(bool reduceMotion = false) : IMotionPreference

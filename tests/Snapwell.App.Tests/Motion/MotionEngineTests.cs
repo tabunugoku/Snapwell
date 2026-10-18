@@ -196,7 +196,7 @@ public sealed class MotionEngineTests
     public void FailedWindowIsRemovedWhileAnotherContinues()
     {
         using var frames = new ControlledFrames();
-        var mover = new FakeMover { FailingHandle = 1 };
+        var mover = new FakeMover { FailingHandle = 1, BatchSuccess = false };
         using var engine = new MotionEngine(frames, frames, mover, new FakePreference());
         engine.Request(Request(1));
         engine.Request(Request(2));
@@ -270,7 +270,7 @@ public sealed class MotionEngineTests
     public void ThrowingWindowIsRemovedWhileAnotherSettles()
     {
         using var frames = new ControlledFrames();
-        var mover = new FakeMover { ThrowingHandle = 1 };
+        var mover = new FakeMover { ThrowingHandle = 1, BatchSuccess = false };
         using var engine = new MotionEngine(frames, frames, mover, new FakePreference());
         engine.Request(Request(1));
         engine.Request(Request(2));
