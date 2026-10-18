@@ -154,6 +154,36 @@ public sealed class WindowTests
         Assert.Empty(failed);
     }
 
+    /// <summary>無効な対象は復元も失敗報告もせず、全員が外れたらネイティブ API を呼ばない。</summary>
+    [Fact]
+    public void BatchWithNoCurrentWindowsSkipsPreparationAndNativeCall()
+    {
+        var inspector = new FakeInspector { Current = CreateWindow() with { IsMaximized = true } };
+        var api = new FakePositionApi(inspector);
+        var mover = new WindowMover(inspector, api);
+        Assert.True(mover.ApplyBatch([new(1, default), new(2, default)], false, out var failed, _ => false));
+        Assert.Empty(failed);
+        Assert.Equal(0, api.RestoreCount);
+        Assert.Equal(0, api.BatchCalls);
+    }
+
+    /// <summary>復元中に無効になった準備済みの位置やサイズも、失敗扱いにせず適用から外す。</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void BatchRechecksPreparedWindowsBeforeNativeCall(bool positionOnly)
+    {
+        var inspector = new FakeInspector { Current = CreateWindow() with { IsMaximized = true } };
+        var current = true;
+        var api = new FakePositionApi(inspector) { OnRestore = () => current = false };
+        var mover = new WindowMover(inspector, api);
+        Assert.True(mover.ApplyBatch([new(1, new(10, 20, 300, 400))], positionOnly,
+            out var failed, _ => current));
+        Assert.Empty(failed);
+        Assert.Equal(1, api.RestoreCount);
+        Assert.Equal(0, api.BatchCalls);
+    }
+
     /// <summary>実矩形の再読み込みと、読み込めない場合の結果を確認する。</summary>
     [Fact]
     public void GetVisualBoundsReadsActualBoundsWithoutRestoring()
@@ -207,11 +237,13 @@ public sealed class WindowTests
         internal IReadOnlyList<NativeWindowPlacement> Batch { get; private set; } = [];
         internal bool Success { get; set; } = true;
         internal int BatchCalls { get; private set; }
+        internal Action? OnRestore { get; init; }
 
         public bool Restore(nint handle)
         {
             RestoreCount++;
             inspector.Current = CreateWindow();
+            OnRestore?.Invoke();
             return Success;
         }
 
