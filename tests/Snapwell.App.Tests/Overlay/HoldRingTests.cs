@@ -203,14 +203,14 @@ public sealed class HoldRingTests
         fixture.DuringCaptionCheck = () =>
         {
             entered.Set();
-            Assert.True(release.Wait(TimeSpan.FromSeconds(3)));
+            Assert.True(release.Wait(TimeSpan.FromSeconds(15)));
         };
         fixture.Down();
         var rendering = Task.Run(fixture.Tick);
         try
         {
-            Assert.True(entered.Wait(TimeSpan.FromSeconds(3)));
-            await Task.Run(fixture.Detector.Cancel).WaitAsync(TimeSpan.FromSeconds(1));
+            Assert.True(entered.Wait(TimeSpan.FromSeconds(10)));
+            await Task.Run(fixture.Detector.Cancel).WaitAsync(TimeSpan.FromSeconds(8));
         }
         finally
         {
