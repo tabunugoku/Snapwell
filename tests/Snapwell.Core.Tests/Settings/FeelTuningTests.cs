@@ -103,4 +103,23 @@ public sealed class FeelTuningTests : IDisposable
         Assert.Equal(60, result.ClickRadius);
         Assert.Equal([new Vec2(result.Target.X, result.Target.Y)], result.Stops);
     }
+
+    /// <summary>四つのプリセット名はそれぞれ別の物理値になり、正規化・保存・読み込みを経ても保たれる。</summary>
+    [Theory]
+    [InlineData("Airy")]
+    [InlineData("Snappy")]
+    [InlineData("Heavy")]
+    [InlineData("Bouncy")]
+    public void EveryPresetNameSurvivesNormalizeSaveAndLoad(string name)
+    {
+        var expected = new PortableSettings { Feel = name }.ToFeelPreset();
+        var path = Path.Combine(_directory, "preset.json");
+        var store = SettingsStores.Portable(path);
+        store.Save(SettingsTransfer.Normalize(new() { Feel = name }));
+        var loaded = SettingsTransfer.Normalize(store.Load().Value);
+        Assert.Equal(name, loaded.Feel);
+        Assert.Equal(expected, loaded.ToFeelPreset());
+        Assert.NotEmpty(SettingsTransfer.GetDifferences(new PortableSettings { Feel = name == "Airy" ? "Heavy" : "Airy" },
+            loaded));
+    }
 }
