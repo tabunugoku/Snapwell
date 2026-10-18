@@ -7,9 +7,9 @@ public sealed class SingleInstance : IDisposable
 
     private SingleInstance(Mutex mutex) => _mutex = mutex;
 
-    /// <summary>ユーザーの SID から、本体とは別の Mutex 名を返す。</summary>
+    /// <summary>起動の種類によらず、ユーザーの SID から設定画面共通の Mutex 名を返す。</summary>
     public static string GetMutexName(string userSid, bool setup = false) =>
-        (setup ? @"Local\Snapwell.Setup." : @"Local\Snapwell.Settings.") + userSid;
+        @"Local\Snapwell.Settings." + userSid;
 
     /// <summary>同名のオブジェクトがなければ、解放まで Mutex を保持するインスタンスを返す。</summary>
     public static SingleInstance? TryAcquire(string userSid, bool setup = false)

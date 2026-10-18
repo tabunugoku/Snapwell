@@ -27,7 +27,8 @@ public partial class App : Application
         _instance = SingleInstance.TryAcquire(sid, setup);
         if (_instance is null)
         {
-            SettingsWindowActivator.Activate(sid, setup);
+            // 通常画面に当たった --setup は、未完了のまま次の起動に案内を残す。
+            SettingsWindowActivator.Activate(sid);
             Exit();
             return;
         }
