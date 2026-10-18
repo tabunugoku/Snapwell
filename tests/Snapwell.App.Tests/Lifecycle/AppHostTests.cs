@@ -44,26 +44,29 @@ public sealed class AppHostTests
         Assert.Equal(["Ctrl", "Alt", "A"], items.Single(item => item.Command == TrayMenuCommand.Arrange).Keys);
     }
 
-    /// <summary>対象を現在の Runtime へ渡し、再読込後は交換先だけへ渡す。</summary>
+    /// <summary>対象と選択時刻を現在の Runtime へ渡し、再読込後は交換先だけへ渡す。</summary>
     [Fact]
     public void TrayLauncherRequestPreservesTargetAndUsesReplacementRuntime()
     {
         using var fixture = new Fixture();
-        fixture.Tray.RequestLauncher(41);
+        fixture.Tray.RequestLauncher(41, 100);
         Assert.Empty(fixture.Runtime.LauncherTargets);
         Assert.True(fixture.Host.Start());
-        fixture.Tray.RequestLauncher(42);
+        fixture.Tray.RequestLauncher(42, uint.MaxValue - 1);
         Assert.Equal([(nint)42], fixture.Runtime.LauncherTargets);
+        Assert.Equal([uint.MaxValue - 1], fixture.Runtime.LauncherCutoffs);
         fixture.Portable.ReloadResult = new(new() { Gap = 19 });
         fixture.Host.ReloadSettings();
         var replacement = Assert.IsType<FakeRuntime>(fixture.Created[1]);
-        fixture.Tray.RequestLauncher(43);
+        fixture.Tray.RequestLauncher(43, 5);
         Assert.Equal([(nint)42], fixture.Runtime.LauncherTargets);
+        Assert.Equal([uint.MaxValue - 1], fixture.Runtime.LauncherCutoffs);
         Assert.Equal([(nint)43], replacement.LauncherTargets);
+        Assert.Equal([5u], replacement.LauncherCutoffs);
         fixture.Host.Shutdown();
         Assert.Equal(0, fixture.Tray.LauncherSubscriptions);
-        fixture.Tray.RequestLauncher(44);
-        fixture.Host.OpenLauncher(45);
+        fixture.Tray.RequestLauncher(44, 103);
+        fixture.Host.OpenLauncher(45, 104);
         Assert.Equal([(nint)43], replacement.LauncherTargets);
     }
 
@@ -1307,7 +1310,7 @@ public sealed class AppHostTests
         public event Action? RestoreRequested;
         public event Action? ArrangeRequested;
         internal int ArrangementSubscriptions => ArrangeRequested?.GetInvocationList().Length ?? 0;
-        public event Action<nint>? LauncherRequested;
+        public event Action<nint, uint>? LauncherRequested;
         internal int LauncherSubscriptions => LauncherRequested?.GetInvocationList().Length ?? 0;
         public event Action? ExitRequested;
         public event Action? SessionEnding;
@@ -1331,7 +1334,7 @@ public sealed class AppHostTests
         internal void RequestStandardSnap() => StandardSnapRequested?.Invoke();
         internal void RequestRestore() => RestoreRequested?.Invoke();
         internal void RequestArrange() => ArrangeRequested?.Invoke();
-        internal void RequestLauncher(nint target) => LauncherRequested?.Invoke(target);
+        internal void RequestLauncher(nint target, uint timeMs = 100) => LauncherRequested?.Invoke(target, timeMs);
         internal void RequestExit() => ExitRequested?.Invoke();
         internal void EndSession() => SessionEnding?.Invoke();
     }
@@ -1382,6 +1385,7 @@ public sealed class AppHostTests
         internal int Disposals;
         internal int Arrangements;
         internal List<nint> LauncherTargets { get; } = [];
+        internal List<uint> LauncherCutoffs { get; } = [];
         internal ManualResetEventSlim? BlockDispose;
         internal Action? OnDispose;
         internal Action<bool>? OnSetEnabled;
@@ -1405,7 +1409,11 @@ public sealed class AppHostTests
         }
         public void CancelAll() => Cancels++;
         public void ArrangeCurrentMonitor() => Arrangements++;
-        public void OpenLauncher(nint target) => LauncherTargets.Add(target);
+        public void OpenLauncher(nint target, uint ignorePointerUpToMs)
+        {
+            LauncherTargets.Add(target);
+            LauncherCutoffs.Add(ignorePointerUpToMs);
+        }
         public void Dispose()
         {
             Disposals++;

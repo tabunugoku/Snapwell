@@ -56,7 +56,7 @@ internal interface IAppRuntime : IDisposable
     void Handle(HookEvent value);
     void ArrangeCurrentMonitor();
     /// <summary>指定した対象でランチャーを開く。</summary>
-    void OpenLauncher(nint target);
+    void OpenLauncher(nint target, uint ignorePointerUpToMs);
     void CancelAll();
 }
 
@@ -71,7 +71,7 @@ internal interface ITrayService
     event Action? StandardSnapRequested;
     event Action? RestoreRequested;
     event Action? ArrangeRequested;
-    event Action<nint>? LauncherRequested;
+    event Action<nint, uint>? LauncherRequested;
     event Action? ExitRequested;
     event Action? SessionEnding;
     void Show(TrayState state);
