@@ -6,6 +6,26 @@ namespace Snapwell.App.Tests.Tray;
 
 public sealed class TrayIconPolicyTests
 {
+    /// <summary>接続済みのランチャーと渡されたキーを状態どおり表示する。</summary>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ConnectedLauncherUsesAvailabilityAndSuppliedShortcutParts(bool enabled)
+    {
+        var shortcuts = new Dictionary<TrayMenuCommand, IReadOnlyList<string>>
+        {
+            [TrayMenuCommand.Launcher] = ["Ctrl", "Alt", "Space"],
+            [TrayMenuCommand.Toggle] = ["Ctrl", "Alt", "Pause"],
+            [TrayMenuCommand.Arrange] = ["Ctrl", "Alt", "A"],
+        };
+        var items = TrayIconPolicy.MenuItems(new(enabled, false, LauncherAvailable: true, Shortcuts: shortcuts));
+        Assert.Equal(enabled, items.Single(item => item.Command == TrayMenuCommand.Launcher).Enabled);
+        foreach (var (command, keys) in shortcuts)
+        {
+            Assert.Equal(keys, items.Single(item => item.Command == command).Keys);
+        }
+    }
+
     /// <summary>モックアップの順で並べ、一時停止中と未接続の操作を選択不可にする。</summary>
     [Theory]
     [InlineData(true)]
