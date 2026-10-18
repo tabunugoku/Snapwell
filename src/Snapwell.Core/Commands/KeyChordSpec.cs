@@ -47,6 +47,10 @@ public static class DefaultHotkeys
             [WindowCommand.ArrangeRows] = new(shifted, 0x56),
             [WindowCommand.ArrangeMainAndStack] = new(shifted, 0x4D),
             [WindowCommand.ArrangeAllMonitors] = new(shifted, 0x41),
+            [WindowCommand.SnapAdjacentLeft] = new(shifted, 0x4A),
+            [WindowCommand.SnapAdjacentRight] = new(shifted, 0x4C),
+            [WindowCommand.SnapAdjacentUp] = new(shifted, 0x49),
+            [WindowCommand.SnapAdjacentDown] = new(shifted, 0x4B),
         };
     }
 }

@@ -73,7 +73,7 @@ public sealed class CommandPlannerTests
     public void ArrangeCommandsPreserveEnumerationValuesAndHaveDefaultBindings()
     {
         var hotkeys = DefaultHotkeys.Create();
-        Assert.Equal(22, hotkeys.Count);
+        Assert.Equal(26, hotkeys.Count);
         Assert.Equal(new KeyChordSpec(ChordModifiers.Control | ChordModifiers.Alt, 0x41),
             hotkeys[WindowCommand.ArrangeGrid]);
         Assert.True(hotkeys.ContainsKey(WindowCommand.ArrangeColumns));
@@ -92,7 +92,9 @@ public sealed class CommandPlannerTests
     {
         foreach (var command in Enum.GetValues<WindowCommand>().Where(c =>
             c is not (WindowCommand.ToggleEnabled or WindowCommand.ArrangeGrid or
-                WindowCommand.ArrangeColumns or WindowCommand.ArrangeRows or WindowCommand.ArrangeMainAndStack)))
+                WindowCommand.ArrangeColumns or WindowCommand.ArrangeRows or WindowCommand.ArrangeMainAndStack or
+                WindowCommand.SnapAdjacentLeft or WindowCommand.SnapAdjacentRight or
+                WindowCommand.SnapAdjacentUp or WindowCommand.SnapAdjacentDown)))
         {
             var result = CommandPlanner.Plan(command, _current, false, _monitors, GridPlan.EightByEight, new(8, 8));
             Assert.Equal(_current.Width, result!.Value.Width);
@@ -207,13 +209,21 @@ public sealed class CommandPlannerTests
     }
 
     [Fact]
-    public void DefaultsAreUniqueAndDoNotUseWindowsKey()
+    public void DefaultsAreUniqueAndNeverUseWindowsKey()
     {
         var defaults = DefaultHotkeys.Create();
-        Assert.DoesNotContain(defaults.Values, value => value.Modifiers.HasFlag(ChordModifiers.Win));
+        Assert.DoesNotContain(defaults.Values, chord => chord.Modifiers.HasFlag(ChordModifiers.Win));
         Assert.Equal(defaults.Count, defaults.Values.Distinct().Count());
         Assert.DoesNotContain(WindowCommand.MoveCellLeft, defaults.Keys);
     }
+
+    /// <summary>隣の一覧を持たない汎用プランナーでは隣接吸着を計画しない。</summary>
+    [Theory]
+    [InlineData(WindowCommand.SnapAdjacentLeft)]
+    [InlineData(WindowCommand.SnapAdjacentRight)]
+    [InlineData(WindowCommand.SnapAdjacentUp)]
+    [InlineData(WindowCommand.SnapAdjacentDown)]
+    public void AdjacentCommandsReturnNullWithoutNeighbors(WindowCommand command) => Assert.Null(Plan(command));
 
     private static PixelRect? Plan(WindowCommand command, GridPlan? plan = null) =>
         CommandPlanner.Plan(command, _current, true, _monitors, plan ?? GridPlan.EightByEight, new(8, 8));

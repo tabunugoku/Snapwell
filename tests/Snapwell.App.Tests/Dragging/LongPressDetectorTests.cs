@@ -323,7 +323,7 @@ public sealed class LongPressDetectorTests
         Assert.Empty(fixture.Opened);
     }
 
-    /// <summary>クライアント・枠・失敗では長押しにしない。</summary>
+    /// <summary>上端の帯の外ではクライアント・枠・失敗を長押しにしない。</summary>
     [Theory]
     [InlineData(1)]
     [InlineData(10)]
@@ -333,9 +333,94 @@ public sealed class LongPressDetectorTests
     {
         using var fixture = new Fixture();
         fixture.IsCaption = hit == 2;
-        fixture.Down();
+        fixture.Cursor = new(300, 250);
+        fixture.Down(300, 250);
         fixture.Timer.Advance(450);
         Assert.Empty(fixture.Opened);
+    }
+
+    /// <summary>ヒットテストが失敗しても上端の帯では判定時間に一度だけ発火する。</summary>
+    [Theory]
+    [InlineData(96, 131, true)]
+    [InlineData(96, 132, false)]
+    [InlineData(144, 147, true)]
+    [InlineData(144, 148, false)]
+    public void NonCaptionTopBandUsesMonitorScale(uint dpi, int y, bool opens)
+    {
+        using var fixture = new Fixture(dpi);
+        fixture.IsCaption = false;
+        fixture.Cursor = new(200, y);
+        fixture.Down(200, y);
+        Assert.Null(fixture.HitPosition);
+        fixture.Timer.Advance(449);
+        Assert.Empty(fixture.Opened);
+        fixture.Timer.Advance(1);
+        fixture.Timer.FireEvenIfCanceled(0);
+        Assert.Equal(opens ? 1 : 0, fixture.Opened.Count);
+        Assert.Equal(new Vec2(200, y), fixture.HitPosition);
+        if (opens)
+        {
+            Assert.True(Assert.Single(fixture.Opened).InTopBand);
+        }
+    }
+
+    /// <summary>作業領域を覆う矩形は上端の補助対象にせず、通常のタイトルバー判定だけを使う。</summary>
+    [Theory]
+    [InlineData(1040, false, false)]
+    [InlineData(1080, false, false)]
+    [InlineData(1040, true, true)]
+    public void MaximizedOrFullscreenWindowDoesNotUseTopBand(int height, bool isCaption, bool opens)
+    {
+        using var fixture = new Fixture();
+        fixture.Inspector.Window = fixture.Inspector.Window with
+        {
+            VisualBounds = new(0, 0, 1920, height),
+        };
+        fixture.IsCaption = isCaption;
+        fixture.Cursor = new(200, 10);
+        fixture.Down(200, 10);
+        fixture.Timer.Advance(450);
+        Assert.Equal(opens ? 1 : 0, fixture.Opened.Count);
+        if (opens)
+        {
+            Assert.False(Assert.Single(fixture.Opened).InTopBand);
+        }
+    }
+
+    /// <summary>帯の補助判定でも、移動通知の欠落時には発火直前の半径を再確認する。</summary>
+    [Theory]
+    [InlineData(6, true)]
+    [InlineData(7, false)]
+    public void TopBandStillChecksFinalCursorRadius(int distance, bool opens)
+    {
+        using var fixture = new Fixture();
+        fixture.IsCaption = false;
+        fixture.Down();
+        fixture.Cursor = new(100 + distance, 100);
+        fixture.Timer.Advance(450);
+        Assert.Equal(opens ? 1 : 0, fixture.Opened.Count);
+    }
+
+    /// <summary>モニターをまたぐ矩形では、押下位置ではなく矩形から選んだモニターの DPI を使う。</summary>
+    [Theory]
+    [InlineData(-254, true)]
+    [InlineData(-252, false)]
+    public void SpanningWindowUsesSelectedMonitorAtNegativeCoordinates(int y, bool opens)
+    {
+        var monitors = new FixedMonitors([
+            new("left", new(-1920, -500, 1920, 1080), new(-1920, -500, 1920, 1040), 144, 144, false),
+            new("main", new(0, -500, 1920, 1080), new(0, -500, 1920, 1040), 96, 96, true),
+        ]);
+        using var fixture = new Fixture(monitorSource: monitors);
+        fixture.Inspector.Window = fixture.Inspector.Window with
+        {
+            VisualBounds = new(-600, -300, 1000, 300),
+        };
+        fixture.IsCaption = false;
+        fixture.Cursor = new(100, y);
+        fixture.Down(100, y);
+        fixture.Timer.Advance(450);
+        Assert.Equal(opens ? 1 : 0, fixture.Opened.Count);
     }
 
     /// <summary>カーソル取得失敗でも発火しない。</summary>
@@ -417,6 +502,7 @@ public sealed class LongPressDetectorTests
     private sealed class Fixture : IDisposable
     {
         internal ControlledLongPressTimer Timer { get; } = new();
+        internal FakeInspector Inspector { get; } = new();
         internal LongPressDetector Detector { get; }
         internal List<LongPressCandidate> Opened { get; } = [];
         internal List<bool> Tracking { get; } = [];
@@ -426,9 +512,9 @@ public sealed class LongPressDetectorTests
         internal Action? DuringHitTest;
 
         internal Fixture(uint dpi = 96, Func<PortableSettings>? settings = null,
-            Func<nint, Vec2, bool>? hitTest = null)
+            Func<nint, Vec2, bool>? hitTest = null, IMonitorSource? monitorSource = null)
         {
-            Detector = new(new FakeInspector(), new ScaledMonitors(dpi), (handle, position) =>
+            Detector = new(Inspector, monitorSource ?? new ScaledMonitors(dpi), (handle, position) =>
             {
                 HitPosition = position;
                 DuringHitTest?.Invoke();
@@ -443,7 +529,8 @@ public sealed class LongPressDetectorTests
             };
         }
 
-        internal void Down() => Detector.Handle(new MouseButton(MouseButtonKind.Left, true, 100, 100, 0), true);
+        internal void Down(int x = 100, int y = 100) =>
+            Detector.Handle(new MouseButton(MouseButtonKind.Left, true, x, y, 0), true);
         public void Dispose() => Detector.Dispose();
     }
 
@@ -466,6 +553,11 @@ public sealed class LongPressDetectorTests
     {
         public IReadOnlyList<MonitorInfo> GetMonitors() =>
             [new("main", new(0, 0, 1920, 1040), new(0, 0, 1920, 1040), dpi, dpi, true)];
+    }
+
+    private sealed class FixedMonitors(IReadOnlyList<MonitorInfo> monitors) : IMonitorSource
+    {
+        public IReadOnlyList<MonitorInfo> GetMonitors() => monitors;
     }
 }
 

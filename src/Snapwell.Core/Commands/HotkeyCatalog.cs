@@ -91,6 +91,10 @@ public static class HotkeyCatalog
         WindowCommand.ArrangeRows => "現在のモニターを縦一列に整列",
         WindowCommand.ArrangeMainAndStack => "現在のモニターをメインとスタックで整列",
         WindowCommand.ArrangeAllMonitors => "全モニターを整列 (グリッド)",
+        WindowCommand.SnapAdjacentLeft => "左の隣へ寄せる",
+        WindowCommand.SnapAdjacentRight => "右の隣へ寄せる",
+        WindowCommand.SnapAdjacentUp => "上の隣へ寄せる",
+        WindowCommand.SnapAdjacentDown => "下の隣へ寄せる",
         _ => command.ToString(),
     };
 

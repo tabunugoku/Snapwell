@@ -20,10 +20,11 @@ public sealed class ArrangementHotkeyMigrationTests : IDisposable
 
     /// <summary>古い版は保存と取り込みのどちらでも整列キーを補い、現行の空設定は保つ。</summary>
     [Theory]
-    [InlineData(1, true, 6)]
-    [InlineData(2, true, 5)]
-    [InlineData(3, true, 4)]
-    [InlineData(4, false, 0)]
+    [InlineData(1, true, 10)]
+    [InlineData(2, true, 9)]
+    [InlineData(3, true, 8)]
+    [InlineData(4, false, 4)]
+    [InlineData(5, false, 0)]
     public void StoreAndImportAddOnlyMissingDefaultsForOlderVersions(int version, bool added, int count)
     {
         File.WriteAllText(SettingsPath, $$$"""{"SchemaVersion":{{{version}}},"Hotkeys":{}}""");
@@ -44,7 +45,8 @@ public sealed class ArrangementHotkeyMigrationTests : IDisposable
         Assert.Empty(HotkeyCatalog.FindConflicts(stored.Hotkeys));
         store.Save(stored);
         using var document = JsonDocument.Parse(File.ReadAllText(SettingsPath));
-        Assert.Equal(4, document.RootElement.GetProperty("SchemaVersion").GetInt32());
+        Assert.Equal(PortableSettings.CurrentSchemaVersion,
+            document.RootElement.GetProperty("SchemaVersion").GetInt32());
     }
 
     /// <summary>競合する既定キーも既存の独自キーも上書きしない。</summary>
@@ -69,17 +71,17 @@ public sealed class ArrangementHotkeyMigrationTests : IDisposable
             Assert.Equal(chord, stored.Hotkeys[assigned]);
             Assert.Equal(customAssignment, stored.Hotkeys.ContainsKey(command));
             Assert.Empty(HotkeyCatalog.FindConflicts(stored.Hotkeys));
-            Assert.Equal(4, stored.Hotkeys.Count);
+            Assert.Equal(8, stored.Hotkeys.Count);
         }
     }
 
     /// <summary>null は既定値に戻し、未来の版は保存で壊さない。</summary>
     [Fact]
-    public void NullHotkeysUseDefaultsAndVersionFiveRemainsReadOnly()
+    public void NullHotkeysUseDefaultsAndVersionSixRemainsReadOnly()
     {
         File.WriteAllText(SettingsPath, """{"SchemaVersion":3,"Hotkeys":null}""");
         Assert.Equal(DefaultHotkeys.Create(), SettingsStores.Portable(SettingsPath).Load().Value.Hotkeys);
-        const string future = """{"SchemaVersion":5,"Future":"keep"}""";
+        const string future = """{"SchemaVersion":6,"Future":"keep"}""";
         File.WriteAllText(SettingsPath, future);
         var store = SettingsStores.Portable(SettingsPath);
         var loaded = store.Load();
