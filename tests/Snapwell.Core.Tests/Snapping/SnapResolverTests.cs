@@ -28,9 +28,9 @@ public sealed class SnapResolverTests
 
     /// <summary>右下・上中央・横向きの投げは対応する区画に入る。</summary>
     [Theory]
-    [InlineData(600, 500, 5000, 5000, SnapTargetKind.BottomRight)]
+    [InlineData(600, 500, 12000, 12000, SnapTargetKind.BottomRight)]
     [InlineData(1080, 100, 0, -3000, SnapTargetKind.Maximize)]
-    [InlineData(600, 500, 5000, 0, SnapTargetKind.RightHalf)]
+    [InlineData(600, 500, 12000, 0, SnapTargetKind.RightHalf)]
     [InlineData(600, 500, -5000, 0, SnapTargetKind.LeftHalf)]
     [InlineData(200, 200, -1000, -1000, SnapTargetKind.TopLeft)]
     [InlineData(1800, 200, 1000, -1000, SnapTargetKind.TopRight)]
@@ -339,9 +339,9 @@ public sealed class SnapResolverTests
 
     /// <summary>固定サイズは選んだ区画内で投げた側の角へ寄せる。</summary>
     [Theory]
-    [InlineData(5000, 5000, SnapTargetKind.BottomRight)]
+    [InlineData(12000, 12000, SnapTargetKind.BottomRight)]
     [InlineData(-3000, -1000, SnapTargetKind.TopLeft)]
-    [InlineData(5000, 0, SnapTargetKind.RightHalf)]
+    [InlineData(12000, 0, SnapTargetKind.RightHalf)]
     public void FixedSizeFitsSelectedZone(double vx, double vy, SnapTargetKind kind)
     {
         var current = new PixelRect(600, 500, 400, 300);
@@ -368,7 +368,7 @@ public sealed class SnapResolverTests
     public void OversizedFixedWindowKeepsSizeAndUsesZoneTopLeft()
     {
         var current = new PixelRect(0, 0, 3000, 2000);
-        var result = Resolve(current, new(5000, 5000), false)!.Value;
+        var result = Resolve(current, new(12000, 12000), false)!.Value;
         var zone = ZoneRect(SnapTargetKind.BottomRight, _area, _spacing.ToPhysical(1));
         Assert.Equal(new PixelRect(zone.X, zone.Y, current.Width, current.Height), result.Target);
         Assert.False(result.Resized);
