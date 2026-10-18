@@ -17,6 +17,70 @@ namespace Snapwell.App.Tests.Lifecycle;
 
 public sealed class ResidentRuntimeTests
 {
+    /// <summary>前面を読み直さず指定対象で開き、保留した長押しとプレビューを取り消す。</summary>
+    [Fact]
+    public void OpenLauncherUsesExplicitTargetAndCancelsPendingHoldWithoutOpeningTwice()
+    {
+        using var fixture = new OverlayFixture(withLongPress: true);
+        fixture.Runtime.Handle(new MouseButton(MouseButtonKind.Left, true, 100, 100, 0));
+        fixture.Inspector.Foreground = 99;
+        var hides = fixture.PreviewPresenter.Hides;
+        fixture.Runtime.OpenLauncher(1);
+        Assert.True(fixture.Launcher.IsOpen);
+        Assert.False(fixture.Drag.Enabled);
+        Assert.True(fixture.PreviewPresenter.Hides > hides);
+        Assert.Single(fixture.Presenter.Requests);
+        fixture.Runtime.OpenLauncher(99);
+        fixture.Timer.FireEvenIfCanceled(0);
+        Assert.Single(fixture.Presenter.Requests);
+        fixture.Runtime.Handle(new KeyChord((int)LauncherInput.Accept));
+        Assert.Equal((nint)1, Assert.Single(fixture.Motion.Requests).Handle);
+    }
+
+    /// <summary>一時停止や破棄のあとに表示要求を通さない。</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void OpenLauncherDoesNotOpenWhenPausedOrDisposed(bool dispose)
+    {
+        using var fixture = new OverlayFixture();
+        if (dispose) { fixture.Runtime.Dispose(); }
+        else { fixture.Runtime.SetEnabled(false); }
+        fixture.Runtime.OpenLauncher(1);
+        Assert.False(fixture.Launcher.IsOpen);
+        Assert.Empty(fixture.Presenter.Requests);
+    }
+
+    /// <summary>選択までに閉じた対象や最小化・除外された対象では何も表示しない。</summary>
+    [Theory]
+    [InlineData("closed")]
+    [InlineData("minimized")]
+    [InlineData("own")]
+    [InlineData("taskbar")]
+    public void OpenLauncherRejectsUnavailableOrExcludedExplicitTargets(string reason)
+    {
+        using var fixture = new OverlayFixture();
+        fixture.Inspector.Exists = reason != "closed";
+        fixture.Inspector.Window = fixture.Inspector.Window with
+        {
+            IsMinimized = reason == "minimized",
+            ClassName = reason == "taskbar" ? "Shell_TrayWnd" : "Editor",
+        };
+        fixture.Runtime.OpenLauncher(reason == "own" ? 99 : 1);
+        Assert.False(fixture.Launcher.IsOpen);
+        Assert.Empty(fixture.Presenter.Requests);
+    }
+
+    /// <summary>ランチャーのない Runtime でも表示要求を安全に無視する。</summary>
+    [Fact]
+    public void OpenLauncherWithoutLauncherDoesNothing()
+    {
+        var fixture = new Fixture();
+        using var runtime = fixture.Runtime;
+        runtime.OpenLauncher(1);
+        Assert.Null(fixture.Applied);
+    }
+
     /// <summary>整列要求を実行役へ一度だけ渡し、一時停止・破棄後は止める。</summary>
     [Fact]
     public void CurrentMonitorArrangementReachesExecutorOnceAndStopsWhenPausedOrDisposed()

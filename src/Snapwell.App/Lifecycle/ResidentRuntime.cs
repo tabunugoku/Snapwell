@@ -211,6 +211,26 @@ internal sealed class ResidentRuntime : IAppRuntime
         }
     }
 
+    /// <summary>入力配送と停止に対して直列化し、指定した対象でランチャーを開く。</summary>
+    public void OpenLauncher(nint target)
+    {
+        lock (_gate)
+        {
+            if (_disposed || !_enabled || _launcher is null || _launcher.IsOpen)
+            {
+                return;
+            }
+
+            _longPress?.Cancel();
+            _preview?.Hide();
+            _launcher.Open(target);
+            if (_launcher.IsOpen)
+            {
+                _drag.Enabled = false;
+            }
+        }
+    }
+
     public void CancelAll() => _motion.CancelAll();
 
     public void Dispose()
