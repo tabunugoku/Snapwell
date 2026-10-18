@@ -1,6 +1,7 @@
 using Snapwell.App.Dragging;
 using Snapwell.App.Tests.Motion;
 using Snapwell.Core.Geometry;
+using Snapwell.Core.Input;
 using Snapwell.Core.Settings;
 using Snapwell.Platform.Hooks;
 using Snapwell.Platform.Monitors;
@@ -10,6 +11,29 @@ namespace Snapwell.App.Tests.Dragging;
 /// <summary>時間と入力を制御して長押しの境界と古い候補の無効化を検証する。</summary>
 public sealed class LongPressDetectorTests
 {
+    /// <summary>子のタイトルバーで判定しても、押下座標とランチャーの対象はトップレベルのまま保つ。</summary>
+    [Theory]
+    [InlineData(100, 100)]
+    [InlineData(-1200, -30)]
+    public void ChildCaptionKeepsRootTargetAndScreenPosition(int x, int y)
+    {
+        var api = new ChildCaptionApi();
+        var hitTest = new CaptionHitTest(api);
+        using var fixture = new Fixture(hitTest: hitTest.IsCaption);
+        fixture.Cursor = new(x, y);
+        fixture.Detector.Handle(new MouseButton(MouseButtonKind.Left, true, x, y, 0), true);
+        Assert.Empty(api.Hits);
+
+        fixture.Timer.Advance(450);
+
+        var opened = Assert.Single(fixture.Opened);
+        Assert.Equal((nint)1, opened.Handle);
+        Assert.Equal(new Vec2(x, y), opened.Position);
+        Assert.Equal(new (nint, Vec2)[] { (1, opened.Position), (2, opened.Position) }, api.Hits);
+        Assert.True(fixture.Detector.OwnsLauncherFor(1));
+        Assert.False(fixture.Detector.OwnsLauncherFor(2));
+    }
+
     /// <summary>表示の所有を破棄しても、対応する終了通知までは移動ループの記録を保つ。</summary>
     [Theory]
     [InlineData(false)]
@@ -401,13 +425,14 @@ public sealed class LongPressDetectorTests
         internal bool IsCaption = true;
         internal Action? DuringHitTest;
 
-        internal Fixture(uint dpi = 96, Func<PortableSettings>? settings = null)
+        internal Fixture(uint dpi = 96, Func<PortableSettings>? settings = null,
+            Func<nint, Vec2, bool>? hitTest = null)
         {
-            Detector = new(new FakeInspector(), new ScaledMonitors(dpi), (_, position) =>
+            Detector = new(new FakeInspector(), new ScaledMonitors(dpi), (handle, position) =>
             {
                 HitPosition = position;
                 DuringHitTest?.Invoke();
-                return IsCaption;
+                return hitTest?.Invoke(handle, position) ?? IsCaption;
             }, () => Cursor, Tracking.Add, Timer.Schedule, settings);
             Detector.CandidateReady += candidate =>
             {
@@ -420,6 +445,21 @@ public sealed class LongPressDetectorTests
 
         internal void Down() => Detector.Handle(new MouseButton(MouseButtonKind.Left, true, 100, 100, 0), true);
         public void Dispose() => Detector.Dispose();
+    }
+
+    private sealed class ChildCaptionApi : ICaptionHitTestApi
+    {
+        internal List<(nint Handle, Vec2 Position)> Hits { get; } = [];
+
+        public nint GetWindowAt(Vec2 position) => 2;
+
+        public nint GetRootWindow(nint handle) => handle == 2 ? 1 : 0;
+
+        public int? HitTest(nint handle, Vec2 position)
+        {
+            Hits.Add((handle, position));
+            return handle == 2 ? 2 : 1;
+        }
     }
 
     private sealed class ScaledMonitors(uint dpi) : IMonitorSource
