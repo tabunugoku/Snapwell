@@ -36,11 +36,11 @@ public sealed class FeelTrialTests
     public void SlowReleaseStaysWhereDropped()
     {
         var trial = new FeelTrial(640, 260, SnapMode.Zones);
-        trial.Grab(new(200, 100));
-        trial.Move(new(210, 100));
+        Assert.True(trial.Grab(new(320, 100)));
+        trial.Move(new(330, 100));
         Assert.False(trial.Release(new(149, 0), FeelPreset.Airy, 28));
         Assert.False(trial.IsFlying);
-        Assert.Equal(new Vec2(210, 100), trial.Center);
+        Assert.Equal(new Vec2(330, 129), trial.Center);
         Assert.Equal(FeelTrial.DefaultSize, trial.Size);
     }
 
@@ -75,7 +75,8 @@ public sealed class FeelTrialTests
     public void ThrowingUpFromTheSideDoesNotMaximize()
     {
         var trial = new FeelTrial(640, 260, SnapMode.Zones);
-        trial.Grab(new(80, 130));
+        Assert.True(trial.Grab(new(320, 100)));
+        trial.Move(new(80, 100));
         Assert.True(trial.Release(new(0, -3000), FeelPreset.Airy, 28));
         Assert.True(Fly(trial));
         Assert.NotEqual(SnapTargetKind.Maximize, trial.Kind);
@@ -105,9 +106,8 @@ public sealed class FeelTrialTests
         var trial = new FeelTrial(640, 260, SnapMode.Zones);
         trial.Release(new(1500, 0), FeelPreset.Airy, 28);
         Assert.True(trial.IsFlying);
-        trial.Grab(new(100, 50));
+        Assert.True(trial.Grab(new(320, 100)));
         Assert.False(trial.IsFlying);
-        Assert.Equal(new Vec2(100, 50), trial.Center);
         Assert.Equal(FeelTrial.DefaultSize, trial.Size);
     }
 
@@ -148,7 +148,70 @@ public sealed class FeelTrialTests
     public void DraggingIsClampedToTheStage()
     {
         var trial = new FeelTrial(640, 260, SnapMode.Zones);
-        trial.Grab(new(-50, 999));
+        Assert.True(trial.Grab(new(320, 100)));
+        trial.Move(new(-500, 999));
         Assert.Equal(new Vec2(0, 260), trial.Center);
+    }
+
+    // 最初のカードは中央（320, 130）、大きさ 132×88。左 254、右 386、上 86、タイトルバーは上 86〜116。
+
+    /// <summary>タイトルバーの内側と、各辺の境界（左と上は含み、右と下は含まない）。マウスは広げない。</summary>
+    [Theory]
+    [InlineData(254, 86, true)]
+    [InlineData(320, 100, true)]
+    [InlineData(385.9, 115.9, true)]
+    [InlineData(386, 100, false)]
+    [InlineData(320, 116, false)]
+    [InlineData(253.9, 100, false)]
+    [InlineData(320, 85.9, false)]
+    public void MouseHitsTheTitleBarOnly(double x, double y, bool expected)
+    {
+        var trial = new FeelTrial(640, 260, SnapMode.Zones);
+        Assert.Equal(expected, trial.HitsTitleBar(new(x, y)));
+    }
+
+    /// <summary>タイトルバーより下の本体をつかんでも動かさない。</summary>
+    [Fact]
+    public void GrabbingTheBodyDoesNothing()
+    {
+        var trial = new FeelTrial(640, 260, SnapMode.Zones);
+        Assert.False(trial.Grab(new(320, 150)));
+        Assert.Equal(new Vec2(320, 130), trial.Center);
+        trial.Move(new(10, 10));
+        Assert.Equal(new Vec2(320, 130), trial.Center);
+    }
+
+    /// <summary>タッチとペンは四方へ 8 px 広がる。広げすぎず、本体の奥は含まない。</summary>
+    [Theory]
+    [InlineData(TrialPointerKind.Touch)]
+    [InlineData(TrialPointerKind.Pen)]
+    public void TouchAndPenHaveTheTitleBarSlop(TrialPointerKind kind)
+    {
+        var trial = new FeelTrial(640, 260, SnapMode.Zones);
+        Assert.True(trial.HitsTitleBar(new(320, 123.9), kind));
+        Assert.False(trial.HitsTitleBar(new(320, 124), kind));
+        Assert.True(trial.HitsTitleBar(new(246, 100), kind));
+        Assert.False(trial.HitsTitleBar(new(245.9, 100), kind));
+        Assert.True(trial.HitsTitleBar(new(320, 78), kind));
+        Assert.False(trial.HitsTitleBar(new(320, 150), kind));
+        Assert.False(trial.HitsTitleBar(new(320, 123.9)));
+        Assert.True(trial.Grab(new(320, 120), kind));
+    }
+
+    /// <summary>区画の大きさに止まったカードのタイトルバー（その区画の上端）をつかむと元の大きさに戻り、つかんだ点はタイトルバーの上に残る。</summary>
+    [Fact]
+    public void GrabbingASettledZoneKeepsThePointerOnTheTitleBar()
+    {
+        var trial = new FeelTrial(640, 260, SnapMode.Zones);
+        trial.Release(new(1500, 0), FeelPreset.Airy, 28);
+        Assert.True(Fly(trial));
+        var zone = trial.Guides[trial.GuideIndex!.Value];
+        var point = new Vec2(zone.X + zone.W * 0.75, zone.Y + 10);
+        Assert.False(trial.HitsTitleBar(new(zone.X + 5, zone.Y + 60)));
+        Assert.True(trial.Grab(point));
+        Assert.Equal(FeelTrial.DefaultSize, trial.Size);
+        Assert.True(trial.HitsTitleBar(point));
+        Assert.Equal(point.X, trial.Center.X - trial.Size.X / 2 + 0.75 * trial.Size.X, 6);
+        Assert.Equal(point.Y, trial.Center.Y - trial.Size.Y / 2 + FeelTrial.TitleBarHeight / 2, 6);
     }
 }

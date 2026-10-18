@@ -12,7 +12,13 @@ namespace Snapwell.Core.Physics;
 public sealed class FeelTrial
 {
     /// <summary>カードの既定の寸法。</summary>
-    public static readonly Vec2 DefaultSize = new(120, 76);
+    public static readonly Vec2 DefaultSize = new(132, 88);
+
+    /// <summary>タイトルバーの高さ。実物より大きめにして、つかみやすくする。</summary>
+    public const double TitleBarHeight = 30;
+
+    /// <summary>タッチとペンは指先や筆先が大きいため、タイトルバーの判定を四方へこの分だけ広げる。</summary>
+    public const double TouchSlop = 8;
 
     private const double Gap = 6;
 
@@ -20,6 +26,8 @@ public sealed class FeelTrial
     private SnapResult? _pending;
     private PixelRect _area;
     private RectD[] _guides = [];
+    private Vec2 _grabOffset;
+    private bool _grabbed;
 
     /// <summary>舞台の大きさと吸着の方式から試す領域を作り、カードを中央に置く。</summary>
     public FeelTrial(double width, double height, SnapMode mode)
@@ -98,19 +106,51 @@ public sealed class FeelTrial
         Layout(_area.Width, _area.Height);
     }
 
-    /// <summary>カードをつかむ。動いていれば止め、元の大きさに戻して、つかんだ点を中心にする。</summary>
-    public void Grab(Vec2 point)
+    /// <summary>
+    /// 点が、いまのカードのタイトルバーの上か。本体のウィンドウをタイトルバーのドラッグで動かすのと同じく、
+    /// 本体（タイトルバーより下）は含まない。左と上の辺は含み、右と下の辺は含まない。
+    /// タッチとペンは四方へ <see cref="TouchSlop"/> だけ広げる。
+    /// </summary>
+    public bool HitsTitleBar(Vec2 point, TrialPointerKind kind = TrialPointerKind.Mouse)
     {
+        var slop = kind == TrialPointerKind.Mouse ? 0 : TouchSlop;
+        var left = Center.X - Size.X / 2;
+        var top = Center.Y - Size.Y / 2;
+        return point.X >= left - slop && point.X < left + Size.X + slop &&
+            point.Y >= top - slop && point.Y < top + Math.Min(TitleBarHeight, Size.Y) + slop;
+    }
+
+    /// <summary>
+    /// タイトルバーをつかむ。つかめたら、動いていても止め、元の大きさに戻して true を返す。
+    /// つかんだ点はタイトルバーの上に残り、カードはそれに付いて動く。タイトルバー以外なら何もせず false。
+    /// </summary>
+    public bool Grab(Vec2 point, TrialPointerKind kind = TrialPointerKind.Mouse)
+    {
+        if (!HitsTitleBar(point, kind))
+        {
+            return false;
+        }
+
+        var fraction = Math.Clamp((point.X - (Center.X - Size.X / 2)) / Size.X, 0, 1);
         _body = null;
         _pending = null;
         Kind = null;
         GuideIndex = null;
         Size = DefaultSize;
-        Center = Clamp(point);
+        _grabOffset = new(fraction * Size.X, TitleBarHeight / 2);
+        _grabbed = true;
+        Move(point);
+        return true;
     }
 
-    /// <summary>つかんだカードを動かす。</summary>
-    public void Move(Vec2 point) => Center = Clamp(point);
+    /// <summary>つかんだカードを動かす。中心は舞台の中に収める。つかんでいなければ何もしない。</summary>
+    public void Move(Vec2 point)
+    {
+        if (_grabbed)
+        {
+            Center = Clamp(point - _grabOffset + new Vec2(Size.X / 2, Size.Y / 2));
+        }
+    }
 
     /// <summary>
     /// 離す、または投げ出す。本体の <see cref="SnapResolver"/> が吸着先を選べば、その停止点の磁石場の中を
@@ -119,6 +159,7 @@ public sealed class FeelTrial
     public bool Release(Vec2 velocity, FeelPreset feel, double clickRadius)
     {
         ArgumentNullException.ThrowIfNull(feel);
+        _grabbed = false;
         var left = Center.X - Size.X / 2;
         var top = Center.Y - Size.Y / 2;
         var current = new PixelRect((int)Math.Round(left), (int)Math.Round(top), (int)Math.Round(Size.X),
@@ -165,4 +206,10 @@ public sealed class FeelTrial
     private static RectD ToRect(PixelRect rect) => new(rect.X, rect.Y, rect.Width, rect.Height);
 
     private Vec2 Clamp(Vec2 point) => new(Math.Clamp(point.X, 0, _area.Width), Math.Clamp(point.Y, 0, _area.Height));
+}
+
+/// <summary>試す領域で使う入力の種類。タッチとペンは判定を広げる。</summary>
+public enum TrialPointerKind
+{
+    Mouse, Touch, Pen,
 }

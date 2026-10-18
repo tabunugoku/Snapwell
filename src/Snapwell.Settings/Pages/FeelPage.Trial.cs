@@ -143,24 +143,31 @@ public sealed partial class FeelPage
         }
     }
 
-    private void TrialCard_PointerPressed(object sender, PointerRoutedEventArgs e)
+    private void TrialStage_PointerPressed(object sender, PointerRoutedEventArgs e)
     {
-        if (_trial is null)
+        var point = Position(e);
+        var kind = e.Pointer.PointerDeviceType switch
+        {
+            Microsoft.UI.Input.PointerDeviceType.Touch => TrialPointerKind.Touch,
+            Microsoft.UI.Input.PointerDeviceType.Pen => TrialPointerKind.Pen,
+            _ => TrialPointerKind.Mouse,
+        };
+        // タイトルバー以外（本体や舞台の背景）では、動いている最中のカードも止めない。
+        if (_trial is null || !_trial.HitsTitleBar(point, kind))
         {
             return;
         }
 
         StopRendering();
+        _trial.Grab(point, kind);
         _dragging = true;
-        TrialCard.CapturePointer(e.Pointer);
-        var point = Position(e);
-        _trial.Grab(point);
+        TrialStage.CapturePointer(e.Pointer);
         _samples.Clear();
         _samples.Add((_clock.Elapsed.TotalSeconds, point));
         PaintTrial();
     }
 
-    private void TrialCard_PointerMoved(object sender, PointerRoutedEventArgs e)
+    private void TrialStage_PointerMoved(object sender, PointerRoutedEventArgs e)
     {
         if (!_dragging || _trial is null)
         {
@@ -175,7 +182,7 @@ public sealed partial class FeelPage
         PaintTrial();
     }
 
-    private void TrialCard_PointerReleased(object sender, PointerRoutedEventArgs e)
+    private void TrialStage_PointerReleased(object sender, PointerRoutedEventArgs e)
     {
         if (!_dragging || _trial is null)
         {
@@ -183,7 +190,7 @@ public sealed partial class FeelPage
         }
 
         _dragging = false;
-        TrialCard.ReleasePointerCapture(e.Pointer);
+        TrialStage.ReleasePointerCapture(e.Pointer);
         var first = _samples[0];
         var last = _samples[^1];
         var seconds = Math.Max(0.016, last.Time - first.Time);
