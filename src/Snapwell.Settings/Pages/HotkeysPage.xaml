@@ -8,37 +8,6 @@
     <Page.Resources>
         <Style x:Key="DemoSwitchStyle" TargetType="ToggleSwitch"
                BasedOn="{StaticResource SnapwellDemoSwitchStyle}" />
-        <Style x:Key="DemoKeyBorderStyle" TargetType="Border">
-            <Setter Property="Background" Value="{ThemeResource SnapwellSurface2Brush}" />
-            <Setter Property="BorderBrush" Value="{ThemeResource SnapwellBorderStrongBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="4" />
-            <Setter Property="Padding" Value="6,0" />
-            <Setter Property="MinWidth" Value="22" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-        </Style>
-        <Style x:Key="DemoKeyTextStyle" TargetType="TextBlock" BasedOn="{StaticResource SnapwellMonoTextStyle}">
-            <Setter Property="FontSize" Value="11.5" />
-            <Setter Property="LineHeight" Value="20" />
-            <Setter Property="HorizontalAlignment" Value="Center" />
-        </Style>
-        <Style x:Key="KbdBorderStyle" TargetType="Border">
-            <Setter Property="Background" Value="{ThemeResource SnapwellSurface2Brush}" />
-            <Setter Property="BorderBrush" Value="{ThemeResource SnapwellBorderStrongBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="4" />
-            <Setter Property="Padding" Value="6,0" />
-            <Setter Property="MinWidth" Value="22" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-        </Style>
-        <Style x:Key="KbdTextStyle" TargetType="TextBlock">
-            <Setter Property="FontFamily" Value="{StaticResource SnapwellMonoFontFamily}" />
-            <Setter Property="FontSize" Value="11.5" />
-            <Setter Property="LineHeight" Value="20" />
-            <Setter Property="Foreground" Value="{ThemeResource SnapwellTextBrush}" />
-            <Setter Property="HorizontalAlignment" Value="Center" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-        </Style>
     </Page.Resources>
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
         <StackPanel Padding="32,28,32,40" HorizontalAlignment="Stretch">
@@ -86,24 +55,24 @@
                                                TextWrapping="Wrap" VerticalAlignment="Center" />
                                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4"
                                                 VerticalAlignment="Center">
-                                        <Border Style="{StaticResource KbdBorderStyle}">
-                                            <TextBlock Text="{x:Bind Key1}" Style="{StaticResource KbdTextStyle}" />
+                                        <Border Style="{StaticResource SnapwellKbdBorderStyle}">
+                                            <TextBlock Text="{x:Bind Key1}" Style="{StaticResource SnapwellKbdTextStyle}" />
                                         </Border>
-                                        <Border Style="{StaticResource KbdBorderStyle}"
+                                        <Border Style="{StaticResource SnapwellKbdBorderStyle}"
                                                 Visibility="{x:Bind Key2Visibility}">
-                                            <TextBlock Text="{x:Bind Key2}" Style="{StaticResource KbdTextStyle}" />
+                                            <TextBlock Text="{x:Bind Key2}" Style="{StaticResource SnapwellKbdTextStyle}" />
                                         </Border>
-                                        <Border Style="{StaticResource KbdBorderStyle}"
+                                        <Border Style="{StaticResource SnapwellKbdBorderStyle}"
                                                 Visibility="{x:Bind Key3Visibility}">
-                                            <TextBlock Text="{x:Bind Key3}" Style="{StaticResource KbdTextStyle}" />
+                                            <TextBlock Text="{x:Bind Key3}" Style="{StaticResource SnapwellKbdTextStyle}" />
                                         </Border>
-                                        <Border Style="{StaticResource KbdBorderStyle}"
+                                        <Border Style="{StaticResource SnapwellKbdBorderStyle}"
                                                 Visibility="{x:Bind Key4Visibility}">
-                                            <TextBlock Text="{x:Bind Key4}" Style="{StaticResource KbdTextStyle}" />
+                                            <TextBlock Text="{x:Bind Key4}" Style="{StaticResource SnapwellKbdTextStyle}" />
                                         </Border>
-                                        <Border Style="{StaticResource KbdBorderStyle}"
+                                        <Border Style="{StaticResource SnapwellKbdBorderStyle}"
                                                 Visibility="{x:Bind Key5Visibility}">
-                                            <TextBlock Text="{x:Bind Key5}" Style="{StaticResource KbdTextStyle}" />
+                                            <TextBlock Text="{x:Bind Key5}" Style="{StaticResource SnapwellKbdTextStyle}" />
                                         </Border>
                                     </StackPanel>
                                     <Border Grid.Column="2" Visibility="{x:Bind ConflictVisibility}"
@@ -214,27 +183,17 @@
                         Padding="12,10"
                         BorderThickness="0,0,0,1"
                         BorderBrush="{ThemeResource SnapwellBorderBrush}">
-                        <RichTextBlock FontSize="13" LineHeight="20.8" Foreground="{ThemeResource SnapwellTextBrush}">
-                            <Paragraph Margin="0">
-                                <InlineUIContainer>
-                                    <Border Style="{StaticResource DemoKeyBorderStyle}">
-                                        <TextBlock Text="Ctrl" Style="{StaticResource DemoKeyTextStyle}" />
-                                    </Border>
-                                </InlineUIContainer>
-                                <Run Text=" " />
-                                <InlineUIContainer>
-                                    <Border Style="{StaticResource DemoKeyBorderStyle}">
-                                        <TextBlock Text="Alt" Style="{StaticResource DemoKeyTextStyle}" />
-                                    </Border>
-                                </InlineUIContainer>
-                                <Run Text=" " />
-                                <InlineUIContainer>
-                                    <Border Style="{StaticResource DemoKeyBorderStyle}">
-                                        <TextBlock Text="Space" Style="{StaticResource DemoKeyTextStyle}" />
-                                    </Border>
-                                </InlineUIContainer>
-                            </Paragraph>
-                        </RichTextBlock>
+                        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                            <Border Style="{StaticResource SnapwellKbdBorderStyle}">
+                                <TextBlock Text="Ctrl" Style="{StaticResource SnapwellKbdTextStyle}" />
+                            </Border>
+                            <Border Style="{StaticResource SnapwellKbdBorderStyle}">
+                                <TextBlock Text="Alt" Style="{StaticResource SnapwellKbdTextStyle}" />
+                            </Border>
+                            <Border Style="{StaticResource SnapwellKbdBorderStyle}">
+                                <TextBlock Text="Space" Style="{StaticResource SnapwellKbdTextStyle}" />
+                            </Border>
+                        </StackPanel>
                     </Border>
                     <Border
                         Grid.Row="1"
@@ -270,42 +229,28 @@
                         Padding="12,10"
                         BorderThickness="0,0,0,1"
                         BorderBrush="{ThemeResource SnapwellBorderBrush}">
-                        <RichTextBlock FontSize="13" LineHeight="20.8" Foreground="{ThemeResource SnapwellTextBrush}">
-                            <Paragraph Margin="0">
-                                <InlineUIContainer>
-                                    <Border Style="{StaticResource DemoKeyBorderStyle}">
-                                        <TextBlock Text="Ctrl" Style="{StaticResource DemoKeyTextStyle}" />
-                                    </Border>
-                                </InlineUIContainer>
-                                <Run Text=" " />
-                                <InlineUIContainer>
-                                    <Border Style="{StaticResource DemoKeyBorderStyle}">
-                                        <TextBlock Text="Alt" Style="{StaticResource DemoKeyTextStyle}" />
-                                    </Border>
-                                </InlineUIContainer>
-                                <Run Text=" " />
-                                <InlineUIContainer>
-                                    <Border Style="{StaticResource DemoKeyBorderStyle}">
-                                        <TextBlock Text="←" Style="{StaticResource DemoKeyTextStyle}" />
-                                    </Border>
-                                </InlineUIContainer>
-                                <InlineUIContainer>
-                                    <Border Style="{StaticResource DemoKeyBorderStyle}">
-                                        <TextBlock Text="→" Style="{StaticResource DemoKeyTextStyle}" />
-                                    </Border>
-                                </InlineUIContainer>
-                                <InlineUIContainer>
-                                    <Border Style="{StaticResource DemoKeyBorderStyle}">
-                                        <TextBlock Text="↑" Style="{StaticResource DemoKeyTextStyle}" />
-                                    </Border>
-                                </InlineUIContainer>
-                                <InlineUIContainer>
-                                    <Border Style="{StaticResource DemoKeyBorderStyle}">
-                                        <TextBlock Text="↓" Style="{StaticResource DemoKeyTextStyle}" />
-                                    </Border>
-                                </InlineUIContainer>
-                            </Paragraph>
-                        </RichTextBlock>
+                        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                            <Border Style="{StaticResource SnapwellKbdBorderStyle}">
+                                <TextBlock Text="Ctrl" Style="{StaticResource SnapwellKbdTextStyle}" />
+                            </Border>
+                            <Border Style="{StaticResource SnapwellKbdBorderStyle}">
+                                <TextBlock Text="Alt" Style="{StaticResource SnapwellKbdTextStyle}" />
+                            </Border>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Border Style="{StaticResource SnapwellKbdBorderStyle}">
+                                    <TextBlock Text="←" Style="{StaticResource SnapwellKbdTextStyle}" />
+                                </Border>
+                                <Border Style="{StaticResource SnapwellKbdBorderStyle}">
+                                    <TextBlock Text="→" Style="{StaticResource SnapwellKbdTextStyle}" />
+                                </Border>
+                                <Border Style="{StaticResource SnapwellKbdBorderStyle}">
+                                    <TextBlock Text="↑" Style="{StaticResource SnapwellKbdTextStyle}" />
+                                </Border>
+                                <Border Style="{StaticResource SnapwellKbdBorderStyle}">
+                                    <TextBlock Text="↓" Style="{StaticResource SnapwellKbdTextStyle}" />
+                                </Border>
+                            </StackPanel>
+                        </StackPanel>
                     </Border>
                     <Border
                         Grid.Row="2"
@@ -341,42 +286,28 @@
                         Padding="12,10"
                         BorderThickness="0,0,0,1"
                         BorderBrush="{ThemeResource SnapwellBorderBrush}">
-                        <RichTextBlock FontSize="13" LineHeight="20.8" Foreground="{ThemeResource SnapwellTextBrush}">
-                            <Paragraph Margin="0">
-                                <InlineUIContainer>
-                                    <Border Style="{StaticResource DemoKeyBorderStyle}">
-                                        <TextBlock Text="Ctrl" Style="{StaticResource DemoKeyTextStyle}" />
-                                    </Border>
-                                </InlineUIContainer>
-                                <Run Text=" " />
-                                <InlineUIContainer>
-                                    <Border Style="{StaticResource DemoKeyBorderStyle}">
-                                        <TextBlock Text="Alt" Style="{StaticResource DemoKeyTextStyle}" />
-                                    </Border>
-                                </InlineUIContainer>
-                                <Run Text=" " />
-                                <InlineUIContainer>
-                                    <Border Style="{StaticResource DemoKeyBorderStyle}">
-                                        <TextBlock Text="U" Style="{StaticResource DemoKeyTextStyle}" />
-                                    </Border>
-                                </InlineUIContainer>
-                                <InlineUIContainer>
-                                    <Border Style="{StaticResource DemoKeyBorderStyle}">
-                                        <TextBlock Text="I" Style="{StaticResource DemoKeyTextStyle}" />
-                                    </Border>
-                                </InlineUIContainer>
-                                <InlineUIContainer>
-                                    <Border Style="{StaticResource DemoKeyBorderStyle}">
-                                        <TextBlock Text="J" Style="{StaticResource DemoKeyTextStyle}" />
-                                    </Border>
-                                </InlineUIContainer>
-                                <InlineUIContainer>
-                                    <Border Style="{StaticResource DemoKeyBorderStyle}">
-                                        <TextBlock Text="K" Style="{StaticResource DemoKeyTextStyle}" />
-                                    </Border>
-                                </InlineUIContainer>
-                            </Paragraph>
-                        </RichTextBlock>
+                        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                            <Border Style="{StaticResource SnapwellKbdBorderStyle}">
+                                <TextBlock Text="Ctrl" Style="{StaticResource SnapwellKbdTextStyle}" />
+                            </Border>
+                            <Border Style="{StaticResource SnapwellKbdBorderStyle}">
+                                <TextBlock Text="Alt" Style="{StaticResource SnapwellKbdTextStyle}" />
+                            </Border>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Border Style="{StaticResource SnapwellKbdBorderStyle}">
+                                    <TextBlock Text="U" Style="{StaticResource SnapwellKbdTextStyle}" />
+                                </Border>
+                                <Border Style="{StaticResource SnapwellKbdBorderStyle}">
+                                    <TextBlock Text="I" Style="{StaticResource SnapwellKbdTextStyle}" />
+                                </Border>
+                                <Border Style="{StaticResource SnapwellKbdBorderStyle}">
+                                    <TextBlock Text="J" Style="{StaticResource SnapwellKbdTextStyle}" />
+                                </Border>
+                                <Border Style="{StaticResource SnapwellKbdBorderStyle}">
+                                    <TextBlock Text="K" Style="{StaticResource SnapwellKbdTextStyle}" />
+                                </Border>
+                            </StackPanel>
+                        </StackPanel>
                     </Border>
                     <Border
                         Grid.Row="3"
@@ -412,28 +343,18 @@
                         Padding="12,10"
                         BorderThickness="0,0,0,1"
                         BorderBrush="{ThemeResource SnapwellBorderBrush}">
-                        <RichTextBlock FontSize="13" LineHeight="20.8" Foreground="{ThemeResource SnapwellTextBrush}">
-                            <Paragraph Margin="0">
-                                <InlineUIContainer>
-                                    <Border Style="{StaticResource DemoKeyBorderStyle}">
-                                        <TextBlock Text="Ctrl" Style="{StaticResource DemoKeyTextStyle}" />
-                                    </Border>
-                                </InlineUIContainer>
-                                <Run Text=" " />
-                                <InlineUIContainer>
-                                    <Border Style="{StaticResource DemoKeyBorderStyle}">
-                                        <TextBlock Text="Alt" Style="{StaticResource DemoKeyTextStyle}" />
-                                    </Border>
-                                </InlineUIContainer>
-                                <Run Text=" " />
-                                <InlineUIContainer>
-                                    <Border Style="{StaticResource DemoKeyBorderStyle}">
-                                        <TextBlock Text="Shift" Style="{StaticResource DemoKeyTextStyle}" />
-                                    </Border>
-                                </InlineUIContainer>
-                                <Run Text=" + 矢印" />
-                            </Paragraph>
-                        </RichTextBlock>
+                        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                            <Border Style="{StaticResource SnapwellKbdBorderStyle}">
+                                <TextBlock Text="Ctrl" Style="{StaticResource SnapwellKbdTextStyle}" />
+                            </Border>
+                            <Border Style="{StaticResource SnapwellKbdBorderStyle}">
+                                <TextBlock Text="Alt" Style="{StaticResource SnapwellKbdTextStyle}" />
+                            </Border>
+                            <Border Style="{StaticResource SnapwellKbdBorderStyle}">
+                                <TextBlock Text="Shift" Style="{StaticResource SnapwellKbdTextStyle}" />
+                            </Border>
+                            <TextBlock Text="+ 矢印" Style="{StaticResource SnapwellKbdCompanionTextStyle}" />
+                        </StackPanel>
                     </Border>
                     <Border
                         Grid.Row="4"
@@ -469,28 +390,18 @@
                         Padding="12,10"
                         BorderThickness="0,0,0,1"
                         BorderBrush="{ThemeResource SnapwellBorderBrush}">
-                        <RichTextBlock FontSize="13" LineHeight="20.8" Foreground="{ThemeResource SnapwellTextBrush}">
-                            <Paragraph Margin="0">
-                                <InlineUIContainer>
-                                    <Border Style="{StaticResource DemoKeyBorderStyle}">
-                                        <TextBlock Text="Ctrl" Style="{StaticResource DemoKeyTextStyle}" />
-                                    </Border>
-                                </InlineUIContainer>
-                                <Run Text=" " />
-                                <InlineUIContainer>
-                                    <Border Style="{StaticResource DemoKeyBorderStyle}">
-                                        <TextBlock Text="Alt" Style="{StaticResource DemoKeyTextStyle}" />
-                                    </Border>
-                                </InlineUIContainer>
-                                <Run Text=" " />
-                                <InlineUIContainer>
-                                    <Border Style="{StaticResource DemoKeyBorderStyle}">
-                                        <TextBlock Text="Win" Style="{StaticResource DemoKeyTextStyle}" />
-                                    </Border>
-                                </InlineUIContainer>
-                                <Run Text=" + 矢印" />
-                            </Paragraph>
-                        </RichTextBlock>
+                        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                            <Border Style="{StaticResource SnapwellKbdBorderStyle}">
+                                <TextBlock Text="Ctrl" Style="{StaticResource SnapwellKbdTextStyle}" />
+                            </Border>
+                            <Border Style="{StaticResource SnapwellKbdBorderStyle}">
+                                <TextBlock Text="Alt" Style="{StaticResource SnapwellKbdTextStyle}" />
+                            </Border>
+                            <Border Style="{StaticResource SnapwellKbdBorderStyle}">
+                                <TextBlock Text="Win" Style="{StaticResource SnapwellKbdTextStyle}" />
+                            </Border>
+                            <TextBlock Text="+ 矢印" Style="{StaticResource SnapwellKbdCompanionTextStyle}" />
+                        </StackPanel>
                     </Border>
                     <Border
                         Grid.Row="5"
@@ -522,27 +433,17 @@
                         Padding="12,10"
                         BorderThickness="0,0,0,1"
                         BorderBrush="{ThemeResource SnapwellBorderBrush}">
-                        <RichTextBlock FontSize="13" LineHeight="20.8" Foreground="{ThemeResource SnapwellTextBrush}">
-                            <Paragraph Margin="0">
-                                <InlineUIContainer>
-                                    <Border Style="{StaticResource DemoKeyBorderStyle}">
-                                        <TextBlock Text="Ctrl" Style="{StaticResource DemoKeyTextStyle}" />
-                                    </Border>
-                                </InlineUIContainer>
-                                <Run Text=" " />
-                                <InlineUIContainer>
-                                    <Border Style="{StaticResource DemoKeyBorderStyle}">
-                                        <TextBlock Text="Alt" Style="{StaticResource DemoKeyTextStyle}" />
-                                    </Border>
-                                </InlineUIContainer>
-                                <Run Text=" " />
-                                <InlineUIContainer>
-                                    <Border Style="{StaticResource DemoKeyBorderStyle}">
-                                        <TextBlock Text="A" Style="{StaticResource DemoKeyTextStyle}" />
-                                    </Border>
-                                </InlineUIContainer>
-                            </Paragraph>
-                        </RichTextBlock>
+                        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                            <Border Style="{StaticResource SnapwellKbdBorderStyle}">
+                                <TextBlock Text="Ctrl" Style="{StaticResource SnapwellKbdTextStyle}" />
+                            </Border>
+                            <Border Style="{StaticResource SnapwellKbdBorderStyle}">
+                                <TextBlock Text="Alt" Style="{StaticResource SnapwellKbdTextStyle}" />
+                            </Border>
+                            <Border Style="{StaticResource SnapwellKbdBorderStyle}">
+                                <TextBlock Text="A" Style="{StaticResource SnapwellKbdTextStyle}" />
+                            </Border>
+                        </StackPanel>
                     </Border>
                     <Border
                         Grid.Row="6"
@@ -578,32 +479,22 @@
                         Padding="12,10"
                         BorderThickness="0,0,0,1"
                         BorderBrush="{ThemeResource SnapwellBorderBrush}">
-                        <RichTextBlock FontSize="13" LineHeight="20.8" Foreground="{ThemeResource SnapwellTextBrush}">
-                            <Paragraph Margin="0">
-                                <InlineUIContainer>
-                                    <Border Style="{StaticResource DemoKeyBorderStyle}">
-                                        <TextBlock Text="Ctrl" Style="{StaticResource DemoKeyTextStyle}" />
-                                    </Border>
-                                </InlineUIContainer>
-                                <Run Text=" " />
-                                <InlineUIContainer>
-                                    <Border Style="{StaticResource DemoKeyBorderStyle}">
-                                        <TextBlock Text="Alt" Style="{StaticResource DemoKeyTextStyle}" />
-                                    </Border>
-                                </InlineUIContainer>
-                                <Run Text=" " />
-                                <InlineUIContainer>
-                                    <Border Style="{StaticResource DemoKeyBorderStyle}">
-                                        <TextBlock Text="PgUp" Style="{StaticResource DemoKeyTextStyle}" />
-                                    </Border>
-                                </InlineUIContainer>
-                                <InlineUIContainer>
-                                    <Border Style="{StaticResource DemoKeyBorderStyle}">
-                                        <TextBlock Text="PgDn" Style="{StaticResource DemoKeyTextStyle}" />
-                                    </Border>
-                                </InlineUIContainer>
-                            </Paragraph>
-                        </RichTextBlock>
+                        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                            <Border Style="{StaticResource SnapwellKbdBorderStyle}">
+                                <TextBlock Text="Ctrl" Style="{StaticResource SnapwellKbdTextStyle}" />
+                            </Border>
+                            <Border Style="{StaticResource SnapwellKbdBorderStyle}">
+                                <TextBlock Text="Alt" Style="{StaticResource SnapwellKbdTextStyle}" />
+                            </Border>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Border Style="{StaticResource SnapwellKbdBorderStyle}">
+                                    <TextBlock Text="PgUp" Style="{StaticResource SnapwellKbdTextStyle}" />
+                                </Border>
+                                <Border Style="{StaticResource SnapwellKbdBorderStyle}">
+                                    <TextBlock Text="PgDn" Style="{StaticResource SnapwellKbdTextStyle}" />
+                                </Border>
+                            </StackPanel>
+                        </StackPanel>
                     </Border>
                     <Border
                         Grid.Row="7"
@@ -639,27 +530,17 @@
                         Padding="12,10"
                         BorderThickness="0,0,0,0"
                         BorderBrush="{ThemeResource SnapwellBorderBrush}">
-                        <RichTextBlock FontSize="13" LineHeight="20.8" Foreground="{ThemeResource SnapwellTextBrush}">
-                            <Paragraph Margin="0">
-                                <InlineUIContainer>
-                                    <Border Style="{StaticResource DemoKeyBorderStyle}">
-                                        <TextBlock Text="Ctrl" Style="{StaticResource DemoKeyTextStyle}" />
-                                    </Border>
-                                </InlineUIContainer>
-                                <Run Text=" " />
-                                <InlineUIContainer>
-                                    <Border Style="{StaticResource DemoKeyBorderStyle}">
-                                        <TextBlock Text="Alt" Style="{StaticResource DemoKeyTextStyle}" />
-                                    </Border>
-                                </InlineUIContainer>
-                                <Run Text=" " />
-                                <InlineUIContainer>
-                                    <Border Style="{StaticResource DemoKeyBorderStyle}">
-                                        <TextBlock Text="Pause" Style="{StaticResource DemoKeyTextStyle}" />
-                                    </Border>
-                                </InlineUIContainer>
-                            </Paragraph>
-                        </RichTextBlock>
+                        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                            <Border Style="{StaticResource SnapwellKbdBorderStyle}">
+                                <TextBlock Text="Ctrl" Style="{StaticResource SnapwellKbdTextStyle}" />
+                            </Border>
+                            <Border Style="{StaticResource SnapwellKbdBorderStyle}">
+                                <TextBlock Text="Alt" Style="{StaticResource SnapwellKbdTextStyle}" />
+                            </Border>
+                            <Border Style="{StaticResource SnapwellKbdBorderStyle}">
+                                <TextBlock Text="Pause" Style="{StaticResource SnapwellKbdTextStyle}" />
+                            </Border>
+                        </StackPanel>
                     </Border>
                     <Border
                         Grid.Row="8"
@@ -701,10 +582,12 @@
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
                             <StackPanel Orientation="Horizontal" Spacing="4">
-                                <Border Style="{StaticResource DemoKeyBorderStyle}">
-                                    <TextBlock Text="Win" Style="{StaticResource DemoKeyTextStyle}" />
+                                <Border Style="{StaticResource SnapwellKbdBorderStyle}">
+                                    <TextBlock Text="Win" Style="{StaticResource SnapwellKbdTextStyle}" />
                                 </Border>
-                                <TextBlock Text=" + 矢印 を Snapwell で使う" Style="{StaticResource SnapwellRowTitleStyle}" />
+                                <TextBlock Text=" + 矢印 を Snapwell で使う"
+                                           Style="{StaticResource SnapwellRowTitleStyle}"
+                                           VerticalAlignment="Center" />
                             </StackPanel>
                             <TextBlock
                                 Text="標準のスナップを止めているときだけ使えます（「標準機能」のページ）"

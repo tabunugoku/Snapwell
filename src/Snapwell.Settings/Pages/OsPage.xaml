@@ -7,20 +7,6 @@
     <Page.Resources>
         <Style x:Key="DemoSwitchStyle" TargetType="ToggleSwitch"
                BasedOn="{StaticResource SnapwellDemoSwitchStyle}" />
-        <Style x:Key="DemoKeyBorderStyle" TargetType="Border">
-            <Setter Property="Background" Value="{ThemeResource SnapwellSurface2Brush}" />
-            <Setter Property="BorderBrush" Value="{ThemeResource SnapwellBorderStrongBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="4" />
-            <Setter Property="Padding" Value="6,0" />
-            <Setter Property="MinWidth" Value="22" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-        </Style>
-        <Style x:Key="DemoKeyTextStyle" TargetType="TextBlock" BasedOn="{StaticResource SnapwellMonoTextStyle}">
-            <Setter Property="FontSize" Value="11.5" />
-            <Setter Property="LineHeight" Value="20" />
-            <Setter Property="HorizontalAlignment" Value="Center" />
-        </Style>
     </Page.Resources>
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
         <StackPanel Padding="32,28,32,40" HorizontalAlignment="Stretch">
@@ -130,10 +116,11 @@
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
                             <StackPanel Orientation="Horizontal" Spacing="4">
-                                <Border Style="{StaticResource DemoKeyBorderStyle}">
-                                    <TextBlock Text="Win" Style="{StaticResource DemoKeyTextStyle}" />
+                                <Border Style="{StaticResource SnapwellKbdBorderStyle}">
+                                    <TextBlock Text="Win" Style="{StaticResource SnapwellKbdTextStyle}" />
                                 </Border>
-                                <TextBlock Text=" + 矢印" Style="{StaticResource SnapwellRowTitleStyle}" />
+                                <TextBlock Text=" + 矢印" Style="{StaticResource SnapwellRowTitleStyle}"
+                                           VerticalAlignment="Center" />
                                 <Border Style="{StaticResource SnapwellTagPendingStyle}">
                                     <TextBlock Text="準備中" Style="{StaticResource SnapwellTagPendingTextStyle}" />
                                 </Border>
