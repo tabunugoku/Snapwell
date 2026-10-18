@@ -8,7 +8,8 @@ namespace Snapwell.Core.Settings;
 /// <summary>選んで取り込める設定の種類。</summary>
 public enum SettingsField
 {
-    Grid, Gap, Edge, Feel, SnapMode, ReduceMotion, ShowZonePreview, LongPressMilliseconds, LongPressDistance, Hotkey,
+    Grid, Gap, Edge, Feel, SnapMode, ReduceMotion, ShowZonePreview, LongPressMilliseconds, LongPressDistance,
+    MagnetStrength, SnapRadius, Hotkey,
 }
 
 /// <summary>ホットキーはコマンドごと、それ以外は項目ごとに識別する。</summary>
@@ -158,6 +159,8 @@ public static class SettingsTransfer
                     LongPressMilliseconds = imported.LongPressMilliseconds,
                 },
                 SettingsField.LongPressDistance => value with { LongPressDistance = imported.LongPressDistance },
+                SettingsField.MagnetStrength => value with { MagnetStrength = imported.MagnetStrength },
+                SettingsField.SnapRadius => value with { SnapRadius = imported.SnapRadius },
                 _ => value,
             };
             if (key.Field == SettingsField.Hotkey && key.Command is { } command)
@@ -198,6 +201,9 @@ public static class SettingsTransfer
             Milliseconds(imported.LongPressMilliseconds));
         Add(SettingsField.LongPressDistance, "長押し中に動いてよい距離", Pixels(current.LongPressDistance),
             Pixels(imported.LongPressDistance));
+        Add(SettingsField.MagnetStrength, "磁石の強さ", $"{current.MagnetStrength:0.##}",
+            $"{imported.MagnetStrength:0.##}");
+        Add(SettingsField.SnapRadius, "吸着半径", Pixels(current.SnapRadius), Pixels(imported.SnapRadius));
         foreach (var command in current.Hotkeys.Keys.Union(imported.Hotkeys.Keys).OrderBy(HotkeyCatalog.GetDisplayOrder))
         {
             current.Hotkeys.TryGetValue(command, out var before);

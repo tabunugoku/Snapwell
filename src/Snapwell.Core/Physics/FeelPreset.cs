@@ -50,6 +50,33 @@ public sealed record FeelPreset
     /// <summary>減衰比と剛性から導く減衰係数。</summary>
     public double Damping => 2 * DampingRatio * Math.Sqrt(Stiffness * Mass);
 
+    /// <summary>磁石の強さの既定値。DESIGN.md §5.1 の feel の値。</summary>
+    public const double DefaultMagnetStrength = 0.6;
+
+    /// <summary>磁石の強さの下限と上限。</summary>
+    public const double MinimumMagnetStrength = 0;
+
+    /// <summary>磁石の強さの上限。</summary>
+    public const double MaximumMagnetStrength = 1;
+
+    /// <summary>
+    /// 磁石の強さで吸い寄せの固有振動数を変えた操作感を返す。
+    /// 吸着の振動数 3 + 4×強さ（§5.1）の、既定値に対する比を掛ける。質量と減衰比は保つ。
+    /// </summary>
+    public FeelPreset WithMagnetStrength(double strength)
+    {
+        strength = double.IsFinite(strength)
+            ? Math.Clamp(strength, MinimumMagnetStrength, MaximumMagnetStrength)
+            : DefaultMagnetStrength;
+        if (strength == DefaultMagnetStrength)
+        {
+            return this;
+        }
+
+        var ratio = (3 + 4 * strength) / (3 + 4 * DefaultMagnetStrength);
+        return new(Mass, Frequency * ratio, DampingRatio, Tau);
+    }
+
     /// <summary>airy, slightly magnetic に対応する操作感。</summary>
     public static FeelPreset Airy { get; } = new(1, 1.6, 0.78, 0.22);
 

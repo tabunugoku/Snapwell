@@ -44,12 +44,12 @@ public sealed class AdjacentSnapTests
         }
     }
 
-    /// <summary>許容距離は論理二十四ピクセルで、境界を含む。</summary>
+    /// <summary>許容距離は既定で論理二十八ピクセルで、境界を含む。</summary>
     [Theory]
-    [InlineData(1, 24, true)]
-    [InlineData(1, 25, false)]
-    [InlineData(1.5, 36, true)]
-    [InlineData(1.5, 37, false)]
+    [InlineData(1, 28, true)]
+    [InlineData(1, 29, false)]
+    [InlineData(1.5, 42, true)]
+    [InlineData(1.5, 43, false)]
     public void DistanceThresholdIsInclusiveAndScaled(double scale, int distance, bool adjacent)
     {
         var predicted = new PixelRect(600 + distance, 450, 100, 100);

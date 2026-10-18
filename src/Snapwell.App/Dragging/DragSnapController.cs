@@ -111,7 +111,7 @@ internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSou
                     var areas = monitors.GetMonitors().Select(monitor => monitor.ToMonitorArea()).ToArray();
                     var result = SnapResolver.Resolve(current.VisualBounds, velocity, options.ToFeelPreset(),
                         options.SnapMode, options.ToSpacing(), areas,
-                        WindowClassifier.CanResize(current, ownProcessId), pointer, dragNeighbors);
+                        WindowClassifier.CanResize(current, ownProcessId), pointer, dragNeighbors, options.SnapRadius);
                     if (result is { } snap)
                     {
                         var walls = areas.First(area => area.Id == snap.MonitorId).WorkArea;
@@ -155,7 +155,7 @@ internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSou
             checked(_startBounds.Y + (int)offset.Y), _startBounds.Width, _startBounds.Height);
         var areas = monitors.GetMonitors().Select(monitor => monitor.ToMonitorArea()).ToArray();
         var result = SnapResolver.Resolve(current, _velocity!.Release(seconds), options.ToFeelPreset(),
-            options.SnapMode, options.ToSpacing(), areas, _canResize, point, _neighbors);
+            options.SnapMode, options.ToSpacing(), areas, _canResize, point, _neighbors, options.SnapRadius);
         if (result is { } snap)
         {
             _preview.Show(snap.Target);
