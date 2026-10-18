@@ -1,0 +1,246 @@
+using Snapwell.Core.Physics;
+
+namespace Snapwell.Core.Tests.Physics;
+
+/// <summary>トグルスイッチのつまみの物理とドラッグでの左右の決定を検証する。</summary>
+public sealed class SpringSwitchTests
+{
+    private const double Travel = 20;
+    private const double Frame = 1.0 / 60;
+
+    /// <summary>stiff, heavy は feel の語彙の質量・固有振動数・減衰比と一致する。</summary>
+    [Fact]
+    public void StiffHeavyMatchesFeelVocabulary()
+    {
+        var feel = FeelPreset.StiffHeavy;
+        Assert.Equal(3, feel.Mass, 10);
+        Assert.Equal(2.4919871588754225, feel.Frequency, 10);
+        Assert.Equal(0.82, feel.DampingRatio, 10);
+        Assert.Equal(735.4829199691789, feel.Stiffness, 6);
+        Assert.Equal(77.03547614344518, feel.Damping, 6);
+    }
+
+    /// <summary>タップは目標を反対側にするだけで、ばねが運んで静止する。壁を越えない。</summary>
+    [Fact]
+    public void TapMovesToTheOtherSideAndSettlesWithoutCrossingTheWall()
+    {
+        var sw = new SpringSwitch(Travel, FeelPreset.StiffHeavy, false);
+        sw.Toggle();
+        var peak = 0.0;
+        var elapsed = 0.0;
+        while (!sw.Advance(Frame) && elapsed < 3)
+        {
+            peak = Math.Max(peak, sw.Position);
+            elapsed += Frame;
+        }
+
+        Assert.True(sw.IsOn);
+        Assert.Equal(Travel, sw.Position);
+        Assert.Equal(0, sw.Velocity);
+        Assert.InRange(peak, 0, Travel + 0.5);
+        // 壁を含めた収束は、ばね単体の 0.25 秒前後。
+        Assert.InRange(elapsed, 0.05, 0.5);
+    }
+
+    /// <summary>feel の Body（stiff, heavy、壁 0〜20）を同じ刻みで 0.2 秒進めた値と一致する。</summary>
+    [Fact]
+    public void MatchesFeelReferenceTrajectory()
+    {
+        var sw = new SpringSwitch(Travel, FeelPreset.StiffHeavy, false);
+        sw.Toggle();
+        for (var i = 0; i < 12; i++)
+        {
+            sw.Advance(Frame);
+        }
+
+        Assert.Equal(18.193145354776142, sw.Position, 6);
+        Assert.Equal(40.93846711336364, sw.Velocity, 6);
+    }
+
+    /// <summary>オンからオフへも同じく反対側に静止する。</summary>
+    [Fact]
+    public void TapFromOnSettlesAtOff()
+    {
+        var sw = new SpringSwitch(Travel, FeelPreset.StiffHeavy, true);
+        sw.Toggle();
+        Run(sw, 2);
+        Assert.False(sw.IsOn);
+        Assert.Equal(0, sw.Position);
+        Assert.True(sw.IsSettled);
+    }
+
+    /// <summary>ゆっくり中央より先まで引いて離すと、その位置の側に決まる。</summary>
+    [Theory]
+    [InlineData(14, true)]
+    [InlineData(6, false)]
+    public void SlowDragDecidesBySideOfCenter(double handTarget, bool expectedOn)
+    {
+        var sw = new SpringSwitch(Travel, FeelPreset.StiffHeavy, false);
+        var time = 0.0;
+        sw.Grab(0, time);
+        for (var i = 1; i <= 120; i++)
+        {
+            time += Frame;
+            // 1 秒で手を目標まで動かし、さらに 1 秒止めて勢いを使い切る。
+            sw.Move(handTarget * Math.Min(1, i * Frame), time);
+            sw.Advance(Frame);
+        }
+
+        sw.Release();
+        Run(sw, 2);
+        Assert.Equal(expectedOn, sw.IsOn);
+        Assert.Equal(expectedOn ? Travel : 0, sw.Position);
+    }
+
+    /// <summary>中央に届く前に速く離すと、予測位置（x + v·m/c）で決まる。</summary>
+    [Fact]
+    public void ReleaseDecidesByProjectedPositionNotCurrentPosition()
+    {
+        var sw = new SpringSwitch(Travel, FeelPreset.StiffHeavy, false);
+        var time = 0.0;
+        sw.Grab(0, time);
+        for (var i = 1; i <= 6; i++)
+        {
+            time += Frame;
+            sw.Move(i * 2.5, time);
+            sw.Advance(Frame);
+        }
+
+        Assert.True(sw.Position < Travel / 2);
+        Assert.True(sw.Projected > Travel / 2);
+        sw.Release();
+        Assert.True(sw.IsOn);
+        Run(sw, 2);
+        Assert.Equal(Travel, sw.Position);
+    }
+
+    /// <summary>オンから反対向きに素早くはじくと、中央を越えていなくてもオフに決まる。</summary>
+    [Fact]
+    public void FlickTheWrongWayReturnsToOff()
+    {
+        var sw = new SpringSwitch(Travel, FeelPreset.StiffHeavy, true);
+        var time = 0.0;
+        sw.Grab(Travel, time);
+        for (var i = 1; i <= 6; i++)
+        {
+            time += Frame;
+            sw.Move(Travel - i * 2.5, time);
+            sw.Advance(Frame);
+        }
+
+        Assert.True(sw.Position > Travel / 2);
+        Assert.True(sw.Projected < Travel / 2);
+        sw.Release();
+        Assert.False(sw.IsOn);
+        Run(sw, 2);
+        Assert.Equal(0, sw.Position);
+    }
+
+    /// <summary>動いている途中で握り直しても、位置と速度は跳ばない。</summary>
+    [Fact]
+    public void RegrabKeepsPositionAndVelocity()
+    {
+        var sw = new SpringSwitch(Travel, FeelPreset.StiffHeavy, false);
+        sw.Toggle();
+        for (var i = 0; i < 6; i++)
+        {
+            sw.Advance(Frame);
+        }
+
+        var position = sw.Position;
+        var velocity = sw.Velocity;
+        Assert.True(velocity > 50);
+
+        sw.Grab(position, 1);
+        Assert.Equal(position, sw.Position);
+        Assert.Equal(velocity, sw.Velocity);
+
+        // 次の刻みでも連続している。握った直後の 1 刻みで、ハンドばねが変える速度は 4 割以内。
+        sw.Advance(1.0 / 240);
+        Assert.InRange(sw.Velocity, velocity * 0.6, velocity * 1.4);
+        Assert.InRange(sw.Position, position, position + velocity / 240 * 1.4);
+    }
+
+    /// <summary>手を遠くまで引いても、つまみはトラックの外へ出ない。</summary>
+    [Fact]
+    public void DragFarBeyondTheEndStaysInsideTheWalls()
+    {
+        var sw = new SpringSwitch(Travel, FeelPreset.StiffHeavy, false);
+        var time = 0.0;
+        sw.Grab(0, time);
+        var peak = 0.0;
+        var trough = 0.0;
+        for (var i = 1; i <= 180; i++)
+        {
+            time += Frame;
+            sw.Move(i < 90 ? i * 20 : -i * 20, time);
+            sw.Advance(Frame);
+            peak = Math.Max(peak, sw.Position);
+            trough = Math.Min(trough, sw.Position);
+        }
+
+        Assert.InRange(peak, 0, Travel + 0.5);
+        Assert.InRange(trough, -0.5, 0);
+    }
+
+    /// <summary>動きを減らす設定では、タップ直後に目標へ静止する。</summary>
+    [Fact]
+    public void SettleNowJumpsToTargetImmediately()
+    {
+        var sw = new SpringSwitch(Travel, FeelPreset.StiffHeavy, false);
+        sw.Toggle();
+        sw.Advance(Frame);
+        sw.SettleNow();
+        Assert.Equal(Travel, sw.Position);
+        Assert.Equal(0, sw.Velocity);
+        Assert.True(sw.IsSettled);
+    }
+
+    /// <summary>握っている間は動きを減らす設定でも位置を奪わない。</summary>
+    [Fact]
+    public void SettleNowDoesNotTakeAHeldKnob()
+    {
+        var sw = new SpringSwitch(Travel, FeelPreset.StiffHeavy, false);
+        sw.Grab(0, 0);
+        sw.Move(10, Frame);
+        sw.Advance(Frame);
+        var position = sw.Position;
+        sw.SettleNow();
+        Assert.Equal(position, sw.Position);
+        Assert.True(sw.IsHeld);
+    }
+
+    /// <summary>塗りは位置から、伸びは速さから決まり、静止すると元に戻る。</summary>
+    [Fact]
+    public void FillFollowsPositionAndStretchFollowsSpeed()
+    {
+        var sw = new SpringSwitch(Travel, FeelPreset.StiffHeavy, false);
+        Assert.Equal(0, sw.Fill);
+        Assert.Equal(1, sw.Stretch);
+        sw.Toggle();
+        sw.Advance(Frame * 4);
+        Assert.InRange(sw.Fill, 0.05, 1);
+        Assert.InRange(sw.Stretch, 1.0001, 1.22);
+        Run(sw, 2);
+        Assert.Equal(1, sw.Fill);
+        Assert.Equal(1, sw.Stretch);
+    }
+
+    /// <summary>不正な可動幅と非有限の刻みを拒否する。</summary>
+    [Fact]
+    public void InvalidInputsAreRejected()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new SpringSwitch(0, FeelPreset.StiffHeavy, false));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new SpringSwitch(double.NaN, FeelPreset.StiffHeavy, false));
+        var sw = new SpringSwitch(Travel, FeelPreset.StiffHeavy, false);
+        Assert.Throws<ArgumentOutOfRangeException>(() => sw.Advance(double.NaN));
+    }
+
+    private static void Run(SpringSwitch sw, double seconds)
+    {
+        for (var t = 0.0; t < seconds; t += Frame)
+        {
+            sw.Advance(Frame);
+        }
+    }
+}

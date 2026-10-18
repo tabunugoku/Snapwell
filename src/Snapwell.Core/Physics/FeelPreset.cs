@@ -61,4 +61,17 @@ public sealed record FeelPreset
 
     /// <summary>light, playful に対応する操作感。</summary>
     public static FeelPreset Bouncy { get; } = new(1, 1.9, 0.5, 0.2);
+
+    /// <summary>stiff, heavy に対応する操作感（トグルスイッチ用）。周波数は stiff 4.6 Hz と heavy 1.35 Hz の幾何平均、減衰比は平均。</summary>
+    public static FeelPreset StiffHeavy { get; } = CreateStiffHeavy();
+
+    private static FeelPreset CreateStiffHeavy()
+    {
+        const double mass = 3;
+        const double dampingRatio = (0.9 + 0.74) / 2;
+        var frequency = Math.Sqrt(4.6 * 1.35);
+        var stiffness = mass * Math.Pow(2 * Math.PI * frequency, 2);
+        // 空走の時定数は m/c（手を離した後の予測 x + v·m/c と同じ）。
+        return new(mass, frequency, dampingRatio, mass / (2 * dampingRatio * Math.Sqrt(stiffness * mass)));
+    }
 }
