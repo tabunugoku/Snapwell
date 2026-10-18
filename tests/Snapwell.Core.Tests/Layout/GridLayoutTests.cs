@@ -145,6 +145,33 @@ public sealed class GridLayoutTests
         Assert.Equal(current, grid.Resize(current, int.MinValue, int.MinValue, ResizeAnchor.Center));
     }
 
+    /// <summary>近い辺の固定は、作業領域の前半なら先頭側、後半なら末尾側の辺を保つ。</summary>
+    [Fact]
+    public void NearEdgeResizeKeepsTheEdgeNearerToTheWorkAreaBoundary()
+    {
+        var grid = CreateGrid();
+        var left = grid.SpanRect(1, 1, 2, 2);
+        Assert.Equal(grid.SpanRect(1, 1, 3, 3), grid.Resize(left, 1, 1, ResizeAnchor.NearEdge));
+        var right = grid.SpanRect(9, 3, 10, 4);
+        Assert.Equal(grid.SpanRect(8, 2, 10, 4), grid.Resize(right, 1, 1, ResizeAnchor.NearEdge));
+        Assert.Equal(grid.SpanRect(10, 4, 10, 4), grid.Resize(right, -1, -1, ResizeAnchor.NearEdge));
+        // 中央をまたぐ幅は、区画の数で先頭側か末尾側かを決める（列は偶数なので真ん中は先頭側）。
+        var middle = grid.SpanRect(3, 0, 8, 5);
+        Assert.Equal(grid.SpanRect(3, 0, 7, 5), grid.Resize(middle, -1, 0, ResizeAnchor.NearEdge));
+    }
+
+    /// <summary>近い辺の固定は軸ごとに決まり、端でも区画数が領域を越えない。</summary>
+    [Fact]
+    public void NearEdgeResizeIsPerAxisAndClampsAtTheBoundary()
+    {
+        var grid = CreateGrid();
+        var current = grid.SpanRect(9, 0, 10, 1);
+        Assert.Equal(grid.SpanRect(0, 0, 10, 5),
+            grid.Resize(current, int.MaxValue, int.MaxValue, ResizeAnchor.NearEdge));
+        Assert.Equal(grid.SpanRect(10, 0, 10, 0),
+            grid.Resize(current, int.MinValue, int.MinValue, ResizeAnchor.NearEdge));
+    }
+
     /// <summary>区画数を保った移動は領域の端で止まる。</summary>
     [Fact]
     public void MovePreservesSpanAndClampsAtEdges()
