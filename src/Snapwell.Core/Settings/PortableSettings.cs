@@ -1,3 +1,5 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Snapwell.Core.Commands;
 using Snapwell.Core.Layout;
 using Snapwell.Core.Physics;
@@ -24,6 +26,9 @@ public sealed record PortableSettings
     public bool ShowZonePreview { get; set; } = true;
     public int LongPressMilliseconds { get; set; } = 450;
     public double LongPressDistance { get; set; } = 6;
+    public int ResizeStep { get; set; } = 1;
+    [JsonConverter(typeof(ResizeAnchorJsonConverter))]
+    public ResizeAnchor ResizeAnchor { get; set; } = ResizeAnchor.TopLeft;
     public Dictionary<WindowCommand, KeyChordSpec> Hotkeys { get; set; } = DefaultHotkeys.Create();
 
     /// <summary>物理モデルのプリセットを返す。</summary>
@@ -40,6 +45,9 @@ public sealed record PortableSettings
 
     /// <summary>DIP 単位の間隔を返す。</summary>
     public Spacing ToSpacing() => new(Gap, Edge);
+
+    /// <summary>区画単位のサイズ変更の設定を返す。</summary>
+    public ResizeSettings ToResizeSettings() => new ResizeSettings(ResizeStep, ResizeAnchor).Normalize();
 
     internal PortableSettings Normalize()
     {
@@ -65,7 +73,38 @@ public sealed record PortableSettings
             LongPressDistance = double.IsFinite(LongPressDistance) && LongPressDistance is >= 2 and <= 32
                 ? LongPressDistance
                 : defaults.LongPressDistance,
+            ResizeStep = ToResizeSettings().Step,
+            ResizeAnchor = ToResizeSettings().Anchor,
             Hotkeys = hotkeys,
         };
     }
+}
+
+/// <summary>未知の値で設定ファイル全体が読めなくならないよう、固定する位置だけ左上へ戻す。</summary>
+internal sealed class ResizeAnchorJsonConverter : JsonConverter<ResizeAnchor>
+{
+    public override ResizeAnchor Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        var anchor = ResizeAnchor.TopLeft;
+        switch (reader.TokenType)
+        {
+            case JsonTokenType.String
+                when Enum.TryParse<ResizeAnchor>(reader.GetString(), ignoreCase: true, out var named) &&
+                    Enum.IsDefined(named):
+                anchor = named;
+                break;
+            case JsonTokenType.Number when reader.TryGetInt32(out var number) &&
+                Enum.IsDefined(typeof(ResizeAnchor), number):
+                anchor = (ResizeAnchor)number;
+                break;
+            case JsonTokenType.StartObject or JsonTokenType.StartArray:
+                reader.Skip();
+                break;
+        }
+
+        return anchor;
+    }
+
+    public override void Write(Utf8JsonWriter writer, ResizeAnchor value, JsonSerializerOptions options) =>
+        writer.WriteStringValue(value.ToString());
 }

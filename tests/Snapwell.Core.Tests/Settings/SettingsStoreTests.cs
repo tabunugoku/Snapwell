@@ -1,3 +1,4 @@
+using Snapwell.Core.Layout;
 using Snapwell.Core.Settings;
 
 namespace Snapwell.Core.Tests.Settings;
@@ -68,6 +69,74 @@ public sealed class SettingsStoreTests : IDisposable
         });
         Assert.Equal(expectedMilliseconds, normalized.LongPressMilliseconds);
         Assert.Equal(expectedDistance, normalized.LongPressDistance);
+    }
+
+    /// <summary>版 4 の既存ファイルではサイズ変更の設定が既定になり、保存した値は往復する。</summary>
+    [Fact]
+    public void ResizeSettingsDefaultForOldFilesAndRoundTrip()
+    {
+        var defaults = new PortableSettings();
+        Assert.Equal(1, defaults.ResizeStep);
+        Assert.Equal(ResizeAnchor.TopLeft, defaults.ResizeAnchor);
+
+        var path = Path.Combine(_directory, "resize.json");
+        File.WriteAllText(path, "{\"SchemaVersion\":4}");
+        var store = SettingsStores.Portable(path);
+        var initial = store.Load();
+        Assert.False(initial.IsReadOnly);
+        Assert.Equal(1, initial.Value.ResizeStep);
+        Assert.Equal(ResizeAnchor.TopLeft, initial.Value.ResizeAnchor);
+
+        store.Save(new() { ResizeStep = 3, ResizeAnchor = ResizeAnchor.NearEdge });
+        var loaded = store.Load().Value;
+        Assert.Equal(3, loaded.ResizeStep);
+        Assert.Equal(ResizeAnchor.NearEdge, loaded.ResizeAnchor);
+        Assert.Contains("\"NearEdge\"", File.ReadAllText(path));
+    }
+
+    /// <summary>1 回の幅は 1〜4 に収め、未定義の固定位置は左上へ戻す。</summary>
+    [Theory]
+    [InlineData(1, ResizeAnchor.Center, 1, ResizeAnchor.Center)]
+    [InlineData(4, ResizeAnchor.NearEdge, 4, ResizeAnchor.NearEdge)]
+    [InlineData(0, (ResizeAnchor)99, 1, ResizeAnchor.TopLeft)]
+    [InlineData(-5, (ResizeAnchor)(-1), 1, ResizeAnchor.TopLeft)]
+    [InlineData(5, ResizeAnchor.TopLeft, 4, ResizeAnchor.TopLeft)]
+    [InlineData(int.MaxValue, ResizeAnchor.TopLeft, 4, ResizeAnchor.TopLeft)]
+    public void ResizeSettingsNormalizeBounds(int step, ResizeAnchor anchor, int expectedStep,
+        ResizeAnchor expectedAnchor)
+    {
+        var normalized = SettingsTransfer.Normalize(new() { ResizeStep = step, ResizeAnchor = anchor });
+        Assert.Equal(expectedStep, normalized.ResizeStep);
+        Assert.Equal(expectedAnchor, normalized.ResizeAnchor);
+    }
+
+    /// <summary>固定する位置の未知の値や型違いは、その項目だけ左上に戻り、ほかの設定と隔離を保つ。</summary>
+    [Theory]
+    [InlineData("\"Bogus\"")]
+    [InlineData("99")]
+    [InlineData("{\"a\":[1,2]}")]
+    [InlineData("true")]
+    [InlineData("null")]
+    public void UnknownResizeAnchorFallsBackWithoutResettingOtherSettings(string anchorJson)
+    {
+        var path = Path.Combine(_directory, "anchor.json");
+        File.WriteAllText(path, "{\"SchemaVersion\":4,\"Gap\":21,\"ResizeStep\":3,\"ResizeAnchor\":" + anchorJson + "}");
+        var result = SettingsStores.Portable(path).Load();
+        Assert.False(result.ResetToDefaults);
+        Assert.False(result.IsReadOnly);
+        Assert.Equal(21, result.Value.Gap);
+        Assert.Equal(3, result.Value.ResizeStep);
+        Assert.Equal(ResizeAnchor.TopLeft, result.Value.ResizeAnchor);
+        Assert.Empty(Directory.GetFiles(_directory, "anchor.json.broken-*"));
+    }
+
+    /// <summary>名前の大文字小文字が違っても、定義済みの固定位置は読める。</summary>
+    [Fact]
+    public void ResizeAnchorReadsKnownNamesCaseInsensitively()
+    {
+        var path = Path.Combine(_directory, "anchor2.json");
+        File.WriteAllText(path, "{\"SchemaVersion\":4,\"ResizeAnchor\":\"nearedge\"}");
+        Assert.Equal(ResizeAnchor.NearEdge, SettingsStores.Portable(path).Load().Value.ResizeAnchor);
     }
 
     [Fact]
