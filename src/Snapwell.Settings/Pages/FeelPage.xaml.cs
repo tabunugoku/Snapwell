@@ -13,7 +13,7 @@ namespace Snapwell.Settings.Pages;
 public sealed partial class FeelPage : Page
 {
     private readonly SettingsSession _session;
-    private readonly bool _refreshing = true;
+    private bool _refreshing = true;
 
     /// <summary>現在の値を標準コントロールへ設定する。</summary>
     public FeelPage(SettingsSession session)
@@ -33,7 +33,7 @@ public sealed partial class FeelPage : Page
         MagnetStrengthBox.NumberFormatter = new DecimalFormatter { FractionDigits = 2, IntegerDigits = 1 };
         SnapRadiusBox.NumberFormatter = new DecimalFormatter { FractionDigits = 0 };
         MagnetStrengthBox.IsEnabled = SnapRadiusBox.IsEnabled = !session.IsReadOnly;
-        MagnetStrengthBox.Value = value.MagnetStrength;
+        MagnetStrengthBox.Value = value.ToFeelPreset().MagnetStrength;
         SnapRadiusBox.Value = value.SnapRadius;
         RefreshFeelDetails();
         _refreshing = false;
@@ -99,8 +99,10 @@ public sealed partial class FeelPage : Page
     {
         if (!_refreshing && FeelBox.SelectedItem is ComboBoxItem { Tag: string feel })
         {
-            _session.Update(_session.Current with { Feel = feel });
+            // 操作感を選び直すと、磁石の強さはその語から決まる値に戻る。
+            _session.Update(_session.Current with { Feel = feel, MagnetStrength = null });
             RefreshFeelDetails();
+            ShowMagnetStrength();
         }
     }
 
@@ -117,9 +119,25 @@ public sealed partial class FeelPage : Page
     {
         if (!_refreshing)
         {
-            _session.Update(_session.Current with { MagnetStrength = args.NewValue });
+            if (double.IsFinite(args.NewValue))
+            {
+                _session.Update(_session.Current with { MagnetStrength = args.NewValue });
+            }
             RefreshFeelDetails();
-            MagnetStrengthBox.Value = _session.Current.MagnetStrength;
+            ShowMagnetStrength();
+        }
+    }
+
+    private void ShowMagnetStrength()
+    {
+        _refreshing = true;
+        try
+        {
+            MagnetStrengthBox.Value = _session.Current.ToFeelPreset().MagnetStrength;
+        }
+        finally
+        {
+            _refreshing = false;
         }
     }
 
@@ -128,7 +146,9 @@ public sealed partial class FeelPage : Page
         if (!_refreshing)
         {
             _session.Update(_session.Current with { SnapRadius = args.NewValue });
+            _refreshing = true;
             SnapRadiusBox.Value = _session.Current.SnapRadius;
+            _refreshing = false;
         }
     }
 
