@@ -1,6 +1,7 @@
 using Snapwell.Core.Geometry;
 using Snapwell.Core.Layout;
 using Snapwell.Core.Physics;
+using Snapwell.Core.Settings;
 
 namespace Snapwell.Core.Snapping;
 
@@ -13,13 +14,16 @@ public static class SnapResolver
     // タスクバー上のカーソルも端とみなすため、外側は作業領域の高さの十パーセントまで許す。
     private const double PointerOutsideBandRatio = 0.1;
 
-    // 隣の辺を狙う操作に余裕を持たせ、拡大率によらず同じ論理距離で吸着する。
+    // 隣の辺を狙う操作に余裕を持たせ、拡大率によらず同じ論理距離で吸着する。feel にない Snapwell 独自の値で、吸着半径とは別。
     private const double AdjacentDistance = 24;
 
-    /// <summary>論理ピクセルの間隔を対象モニターで換算し、低速時やモニターがなければ null を返す。</summary>
+    /// <summary>
+    /// 論理ピクセルの間隔と吸着半径を対象モニターで換算し、低速時やモニターがなければ null を返す。
+    /// 吸着半径は磁石場の半径（物理ピクセルに換算して SnapResult に載せる）。
+    /// </summary>
     public static SnapResult? Resolve(PixelRect current, Vec2 velocity, FeelPreset feel, SnapMode mode,
         Spacing spacing, IReadOnlyList<MonitorArea> monitors, bool canResize = true, Vec2? pointer = null,
-        IReadOnlyList<PixelRect>? neighbors = null)
+        IReadOnlyList<PixelRect>? neighbors = null, double snapRadius = PortableSettings.DefaultSnapRadius)
     {
         ArgumentNullException.ThrowIfNull(feel);
         ArgumentNullException.ThrowIfNull(monitors);
@@ -38,14 +42,16 @@ public static class SnapResolver
             return null;
         }
 
-        var predicted = new Vec2(current.X, current.Y) + velocity * feel.Tau;
+        var predicted = new Vec2(current.X, current.Y) + velocity * feel.CoastTime;
         var center = predicted + new Vec2(current.Width / 2.0, current.Height / 2.0);
         var monitor = SelectMonitor(monitors, center);
         var physicalSpacing = spacing.ToPhysical(monitor.Scale);
         var pointerBand = mode == SnapMode.Zones ? SelectPointerBand(monitor, monitors, pointer) : null;
+        var clickRadius = snapRadius * monitor.Scale;
         var selection = mode == SnapMode.Corners
-            ? SelectCorner(current, predicted, monitor.WorkArea, physicalSpacing.Edge)
-            : SelectZone(current, predicted, center, monitor, physicalSpacing, canResize, pointerBand);
+            ? SelectCorner(current, velocity, feel, monitor.WorkArea, physicalSpacing.Edge, clickRadius)
+            : SelectZone(current, velocity, feel, predicted, center, monitor, physicalSpacing, canResize, pointerBand,
+                clickRadius);
         if (mode == SnapMode.Zones && selection.Kind != SnapTargetKind.Maximize && pointerBand is null &&
             neighbors is { Count: > 0 } &&
             SelectAdjacent(current, predicted, monitor, physicalSpacing, neighbors) is { } adjacent)
@@ -53,8 +59,12 @@ public static class SnapResolver
             selection = adjacent;
         }
 
+        // 区画と隣の辺は選んだ一点の磁石場、四隅は feel と同じく四つの停止点の磁石場で止める。
+        var stops = mode == SnapMode.Corners
+            ? CornerPositions(current, monitor.WorkArea, physicalSpacing.Edge).Select(corner => corner.Position).ToArray()
+            : [new Vec2(selection.Target.X, selection.Target.Y)];
         return new(selection.Target, selection.Kind, monitor.Id, predicted,
-            selection.Target.Width != current.Width || selection.Target.Height != current.Height);
+            selection.Target.Width != current.Width || selection.Target.Height != current.Height, stops, clickRadius);
     }
 
     private static MonitorArea SelectMonitor(IReadOnlyList<MonitorArea> monitors, Vec2 center)
@@ -81,25 +91,36 @@ public static class SnapResolver
         return best;
     }
 
-    private static (PixelRect Target, SnapTargetKind Kind) SelectCorner(PixelRect current, Vec2 predicted,
-        PixelRect area, int edge)
+    // 時計回りに左上・右上・右下・左下。
+    private static (Vec2 Position, SnapTargetKind Kind)[] CornerPositions(PixelRect current, PixelRect area, int edge)
     {
         var left = checked(area.X + edge);
         var top = checked(area.Y + edge);
         var right = checked(area.Right - edge - current.Width);
         var bottom = checked(area.Bottom - edge - current.Height);
-        (int X, int Y, SnapTargetKind Kind)[] corners =
+        return
         [
-            (left, top, SnapTargetKind.CornerTopLeft),
-            (right, top, SnapTargetKind.CornerTopRight),
-            (right, bottom, SnapTargetKind.CornerBottomRight),
-            (left, bottom, SnapTargetKind.CornerBottomLeft),
+            (new(left, top), SnapTargetKind.CornerTopLeft),
+            (new(right, top), SnapTargetKind.CornerTopRight),
+            (new(right, bottom), SnapTargetKind.CornerBottomRight),
+            (new(left, bottom), SnapTargetKind.CornerBottomLeft),
         ];
+    }
+
+    // 四隅は feel の corner-card と同じ。投げた速度のまま磁石場の中を動かし、止まった角を選ぶ。
+    private static (PixelRect Target, SnapTargetKind Kind) SelectCorner(PixelRect current, Vec2 velocity,
+        FeelPreset feel, PixelRect area, int edge, double clickRadius)
+    {
+        var corners = CornerPositions(current, area, edge);
+        var body = new WindowBody(RectD.FromPixelRect(current), RectD.FromPixelRect(current),
+            RectD.FromPixelRect(area), feel, velocity: velocity, stops: corners.Select(c => c.Position).ToArray(),
+            clickRadius: clickRadius);
+        var rest = body.PredictRest();
         var best = corners[0];
         var bestDistance = double.PositiveInfinity;
         foreach (var corner in corners)
         {
-            var distance = (new Vec2(corner.X, corner.Y) - predicted).Length;
+            var distance = (corner.Position - rest).Length;
             if (distance < bestDistance)
             {
                 bestDistance = distance;
@@ -107,52 +128,62 @@ public static class SnapResolver
             }
         }
 
-        return (new(best.X, best.Y, current.Width, current.Height), best.Kind);
+        return (new((int)best.Position.X, (int)best.Position.Y, current.Width, current.Height), best.Kind);
     }
 
-    private static (PixelRect Target, SnapTargetKind Kind) SelectZone(PixelRect current, Vec2 predicted,
-        Vec2 predictedCenter, MonitorArea monitor, PhysicalSpacing spacing, bool canResize, double? pointerBand)
+    // 最大化・上下の行・カーソルの帯は Snapwell 独自のルールで絞る。左右の二候補は feel の磁石場で決める。
+    private static (PixelRect Target, SnapTargetKind Kind) SelectZone(PixelRect current, Vec2 velocity,
+        FeelPreset feel, Vec2 predicted, Vec2 predictedCenter, MonitorArea monitor, PhysicalSpacing spacing,
+        bool canResize, double? pointerBand, double clickRadius)
     {
         var area = monitor.WorkArea;
         var center = ClampCenter(predictedCenter, area);
         var grid = new GridLayout(area, new(2, 2), spacing);
-        var right = center.X >= area.Center.X;
-        var column = right ? 1 : 0;
         var selectionY = pointerBand ?? center.Y;
-        PixelRect target;
-        SnapTargetKind kind;
         if (predicted.Y <= area.Y - current.Height * 0.25 &&
             Math.Abs(center.X - area.Center.X) <= area.Width * 0.25)
         {
-            target = grid.SpanRect(0, 0, 1, 1);
-            kind = SnapTargetKind.Maximize;
-        }
-        else if (selectionY < area.Y + area.Height * 0.3)
-        {
-            target = grid.CellRect(column, 0);
-            kind = right ? SnapTargetKind.TopRight : SnapTargetKind.TopLeft;
-        }
-        else if (selectionY > area.Y + area.Height * 0.7)
-        {
-            target = grid.CellRect(column, 1);
-            kind = right ? SnapTargetKind.BottomRight : SnapTargetKind.BottomLeft;
-        }
-        else
-        {
-            target = grid.SpanRect(column, 0, column, 1);
-            kind = right ? SnapTargetKind.RightHalf : SnapTargetKind.LeftHalf;
+            return (ZoneTarget(grid.SpanRect(0, 0, 1, 1), false), SnapTargetKind.Maximize);
         }
 
-        if (!canResize)
+        var row = selectionY < area.Y + area.Height * 0.3 ? 0 : selectionY > area.Y + area.Height * 0.7 ? 1 : 2;
+        (PixelRect Target, SnapTargetKind Kind) Zone(int column)
         {
+            var right = column == 1;
+            var (target, kind) = row switch
+            {
+                0 => (grid.CellRect(column, 0), right ? SnapTargetKind.TopRight : SnapTargetKind.TopLeft),
+                1 => (grid.CellRect(column, 1), right ? SnapTargetKind.BottomRight : SnapTargetKind.BottomLeft),
+                _ => (grid.SpanRect(column, 0, column, 1), right ? SnapTargetKind.RightHalf : SnapTargetKind.LeftHalf),
+            };
+            return (ZoneTarget(target, right), kind);
+        }
+
+        PixelRect ZoneTarget(PixelRect target, bool right)
+        {
+            if (canResize)
+            {
+                return target;
+            }
+
             // 収まらないウィンドウは、負の寄せ量を作らず区画の左上に置く。
             var fits = current.Width <= target.Width && current.Height <= target.Height;
             var x = fits && right ? target.Right - current.Width : target.X;
             var y = fits && center.Y >= area.Center.Y ? target.Bottom - current.Height : target.Y;
-            target = new(x, y, current.Width, current.Height);
+            return new(x, y, current.Width, current.Height);
         }
 
-        return (target, kind);
+        // 左右の二候補は、窓の中心を投げた速度のまま二つの区画の中心を停止点とする場で動かし、止まった側を選ぶ。
+        // 候補が一つの場合（最大化・隣の辺）はこの経路を通らず、ルールの結果がそのまま選ばれる。
+        var candidates = new[] { Zone(0), Zone(1) };
+        var stops = candidates.Select(candidate => candidate.Target.Center).ToArray();
+        var start = current.Center;
+        var walls = new RectD(Math.Min(area.X, start.X), Math.Min(area.Y, start.Y),
+            Math.Max(area.Right, start.X) - Math.Min(area.X, start.X),
+            Math.Max(area.Bottom, start.Y) - Math.Min(area.Y, start.Y));
+        var rest = new WindowBody(new(start.X, start.Y, 0, 0), new(start.X, start.Y, 0, 0), walls, feel,
+            velocity, stops, clickRadius).PredictRest();
+        return (rest - stops[0]).Length <= (rest - stops[1]).Length ? candidates[0] : candidates[1];
     }
 
     private static double? SelectPointerBand(MonitorArea monitor, IReadOnlyList<MonitorArea> monitors, Vec2? pointer)

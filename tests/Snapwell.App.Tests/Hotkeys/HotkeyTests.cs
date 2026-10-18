@@ -62,7 +62,7 @@ public sealed class HotkeyTests
     }
 
     [Fact]
-    public void DefaultsUseNoWindowsModifierAndSuppressChords()
+    public void DefaultsNeverUseWindowsModifierAndSuppressChords()
     {
         var result = HotkeyBindingsBuilder.Build(new PortableSettings().Hotkeys);
         Assert.Empty(result.Dropped);
@@ -71,6 +71,119 @@ public sealed class HotkeyTests
             Assert.False(binding.Modifiers.HasFlag(KeyModifiers.Win));
             Assert.True(binding.Suppress);
         });
+    }
+
+    /// <summary>隣の一覧は前面のハンドルで取得し、各方向で一度だけ位置の移動を要求する。</summary>
+    [Theory]
+    [InlineData(WindowCommand.SnapAdjacentLeft, -100, 100, 150, 300, 58, 100)]
+    [InlineData(WindowCommand.SnapAdjacentRight, 700, 100, 100, 300, 292, 100)]
+    [InlineData(WindowCommand.SnapAdjacentUp, 100, -100, 400, 150, 100, 58)]
+    [InlineData(WindowCommand.SnapAdjacentDown, 100, 600, 400, 100, 100, 292)]
+    public void AdjacentCommandRequestsExpectedPositionOnce(WindowCommand command,
+        int x, int y, int width, int height, int expectedX, int expectedY)
+    {
+        var calls = 0;
+        var fixture = new Fixture(handle =>
+        {
+            Assert.Equal((nint)1, handle);
+            calls++;
+            return [new(x, y, width, height)];
+        });
+        fixture.Executor.Handle(new((int)command));
+        var request = Assert.Single(fixture.Motion.Requests);
+        Assert.Equal(1, calls);
+        Assert.Equal(new PixelRect(expectedX, expectedY, 400, 300), request.Target);
+        Assert.Equal(fixture.Inspector.Window.VisualBounds, request.Current);
+        Assert.Equal(new PixelRect(0, 0, 1920, 1040), request.Walls);
+        Assert.False(request.Resize);
+    }
+
+    /// <summary>隣の取得関数が省略されても各方向の作業領域端へ動く。</summary>
+    [Theory]
+    [InlineData(WindowCommand.SnapAdjacentLeft, 8, 100)]
+    [InlineData(WindowCommand.SnapAdjacentRight, 1512, 100)]
+    [InlineData(WindowCommand.SnapAdjacentUp, 100, 8)]
+    [InlineData(WindowCommand.SnapAdjacentDown, 100, 732)]
+    public void AdjacentCommandWithoutNeighborSourceUsesInsetEdge(WindowCommand command, int x, int y)
+    {
+        var fixture = new Fixture();
+        fixture.Executor.Handle(new((int)command));
+        var request = Assert.Single(fixture.Motion.Requests);
+        Assert.Equal(new PixelRect(x, y, 400, 300), request.Target);
+        Assert.Equal(new PixelRect(0, 0, 1920, 1040), request.Walls);
+        Assert.False(request.Resize);
+    }
+
+    /// <summary>隣接吸着の壁は画面外の直交軸も保ち、現在・目標・作業領域を最小の範囲で含む。</summary>
+    [Theory]
+    [InlineData(WindowCommand.SnapAdjacentLeft, 100, -100, 400, 300, 8, -100, 0, -100, 1920, 1140)]
+    [InlineData(WindowCommand.SnapAdjacentRight, 100, 900, 400, 300, 1512, 900, 0, 0, 1920, 1200)]
+    [InlineData(WindowCommand.SnapAdjacentUp, -100, 100, 400, 300, -100, 8, -100, 0, 2020, 1040)]
+    [InlineData(WindowCommand.SnapAdjacentDown, 1700, 100, 400, 300, 1700, 732, 0, 0, 2100, 1040)]
+    [InlineData(WindowCommand.SnapAdjacentLeft, 100, -100, 2000, 1200, 8, -100, 0, -100, 2100, 1200)]
+    [InlineData(WindowCommand.SnapAdjacentLeft, -100, -100, 2000, 1200, 8, -100, -100, -100, 2108, 1200)]
+    public void AdjacentCommandWallsContainCurrentTargetAndWorkArea(WindowCommand command,
+        int x, int y, int width, int height, int targetX, int targetY,
+        int wallsX, int wallsY, int wallsWidth, int wallsHeight)
+    {
+        var fixture = new Fixture();
+        var current = new PixelRect(x, y, width, height);
+        fixture.Inspector.Window = fixture.Inspector.Window with { VisualBounds = current };
+        fixture.Executor.Handle(new((int)command));
+        var request = Assert.Single(fixture.Motion.Requests);
+        Assert.Equal(current, request.Current);
+        Assert.Equal(new PixelRect(targetX, targetY, width, height), request.Target);
+        Assert.Equal(new PixelRect(wallsX, wallsY, wallsWidth, wallsHeight), request.Walls);
+        Assert.True(request.Walls.Contains(current));
+        Assert.True(request.Walls.Contains(request.Target));
+        Assert.True(request.Walls.Contains(new PixelRect(0, 0, 1920, 1040)));
+        Assert.False(request.Resize);
+    }
+
+    /// <summary>サイズ固定の前面ウィンドウも隣へ位置だけ動かす。</summary>
+    [Fact]
+    public void AdjacentCommandAllowsFixedSizeWindow()
+    {
+        var fixture = new Fixture(_ => [new(700, 100, 100, 300)]);
+        fixture.Inspector.Window = fixture.Inspector.Window with { Style = 0 };
+        fixture.Executor.Handle(new((int)WindowCommand.SnapAdjacentRight));
+        var request = Assert.Single(fixture.Motion.Requests);
+        Assert.Equal(new PixelRect(292, 100, 400, 300), request.Target);
+        Assert.False(request.Resize);
+    }
+
+    /// <summary>一時停止中は隣を取得せず、移動も要求しない。</summary>
+    [Fact]
+    public void DisabledAdjacentCommandDoesNotReadNeighborsOrRequestMotion()
+    {
+        var fixture = new Fixture(_ => throw new InvalidOperationException()) { Enabled = false };
+        fixture.Executor.Handle(new((int)WindowCommand.SnapAdjacentRight));
+        Assert.Empty(fixture.Motion.Requests);
+    }
+
+    /// <summary>端に揃っている場合は移動を要求しない。</summary>
+    [Fact]
+    public void AdjacentCommandAtInsetEdgeDoesNotRequestMotion()
+    {
+        var fixture = new Fixture();
+        fixture.Inspector.Window = fixture.Inspector.Window with { VisualBounds = new(1512, 100, 400, 300) };
+        fixture.Executor.Handle(new((int)WindowCommand.SnapAdjacentRight));
+        Assert.Empty(fixture.Motion.Requests);
+    }
+
+    /// <summary>最大化を解除して取り直した通常の寸法から、隣への移動を計画する。</summary>
+    [Fact]
+    public void AdjacentCommandUsesSharedMaximizedRestoration()
+    {
+        using var fixture = new BlockingRestoreFixture(_ => [new(700, 100, 100, 300)]);
+        fixture.Executor.Handle(new((int)WindowCommand.SnapAdjacentRight));
+        Assert.Empty(fixture.Requests);
+        fixture.CompleteRestore();
+        var request = Assert.Single(fixture.Requests);
+        Assert.Equal(new PixelRect(100, 100, 400, 300), request.Current);
+        Assert.Equal(new PixelRect(292, 100, 400, 300), request.Target);
+        Assert.False(request.Resize);
+        Assert.Equal(1, fixture.RestoreCalls);
     }
 
     [Fact]
@@ -227,9 +340,10 @@ public sealed class HotkeyTests
         internal int RestoreCalls;
         internal string Failure = "";
 
-        internal BlockingRestoreFixture() => Executor = new(this, new FakeMonitors(), this, this,
-            () => Failure == "settings" ? throw new InvalidOperationException() : new(),
-            () => Volatile.Read(ref Enabled), () => Toggles++, 999);
+        internal BlockingRestoreFixture(Func<nint, IReadOnlyList<PixelRect>>? neighbors = null) =>
+            Executor = new(this, new FakeMonitors(), this, this,
+                () => Failure == "settings" ? throw new InvalidOperationException() : new(),
+                () => Volatile.Read(ref Enabled), () => Toggles++, 999, neighbors: neighbors);
 
         public bool TryInspect(nint handle, [NotNullWhen(true)] out WindowSnapshot? snapshot)
         {
@@ -272,7 +386,8 @@ public sealed class HotkeyTests
         public void Cancel(nint handle) { }
         public void CancelAll() { }
         public bool SetBounds(nint handle, PixelRect bounds, bool positionOnly) => throw new NotSupportedException();
-        public bool ApplyBatch(IReadOnlyList<NativeWindowPlacement> placements) => throw new NotSupportedException();
+        public bool ApplyBatch(IReadOnlyList<NativeWindowPlacement> placements, bool positionOnly) =>
+            throw new NotSupportedException();
         public void Dispose()
         {
             Executor.Stop();
@@ -304,11 +419,11 @@ public sealed class HotkeyTests
         internal int Toggles;
         internal HotkeyCommandExecutor Executor { get; }
 
-        internal Fixture()
+        internal Fixture(Func<nint, IReadOnlyList<PixelRect>>? neighbors = null)
         {
             Position = new(Inspector);
             Executor = new(Inspector, new FakeMonitors(), Motion, Position, () => new(),
-                () => Enabled, () => Toggles++, 999);
+                () => Enabled, () => Toggles++, 999, neighbors: neighbors);
         }
     }
 
@@ -323,6 +438,7 @@ public sealed class HotkeyTests
         }
 
         public bool SetBounds(nint handle, PixelRect bounds, bool positionOnly) => throw new NotSupportedException();
-        public bool ApplyBatch(IReadOnlyList<NativeWindowPlacement> placements) => throw new NotSupportedException();
+        public bool ApplyBatch(IReadOnlyList<NativeWindowPlacement> placements, bool positionOnly) =>
+            throw new NotSupportedException();
     }
 }

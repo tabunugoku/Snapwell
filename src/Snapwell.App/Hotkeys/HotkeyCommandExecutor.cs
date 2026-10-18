@@ -15,7 +15,7 @@ namespace Snapwell.App.Hotkeys;
 internal sealed class HotkeyCommandExecutor(IWindowInspector inspector, IMonitorSource monitors,
     IMotionEngine motion, IWindowPositionApi positionApi, Func<PortableSettings> settings,
     Func<bool> enabled, Action toggleEnabled, uint ownProcessId, Action? openLauncher = null,
-    Func<Vec2?>? cursorPosition = null)
+    Func<Vec2?>? cursorPosition = null, Func<nint, IReadOnlyList<PixelRect>>? neighbors = null)
 {
     private readonly object _gate = new();
     private readonly HashSet<nint> _restoring = [];
@@ -279,14 +279,51 @@ internal sealed class HotkeyCommandExecutor(IWindowInspector inspector, IMonitor
     {
         var options = settings();
         var areas = monitors.GetMonitors().Select(monitor => monitor.ToMonitorArea()).ToArray();
-        var target = selected ?? CommandPlanner.Plan(command, window.VisualBounds,
-            WindowClassifier.CanResize(window, ownProcessId), areas, options.ToGridPlan(), options.ToSpacing());
+        var direction = command switch
+        {
+            WindowCommand.SnapAdjacentLeft => AdjacentDirection.Left,
+            WindowCommand.SnapAdjacentRight => AdjacentDirection.Right,
+            WindowCommand.SnapAdjacentUp => AdjacentDirection.Up,
+            WindowCommand.SnapAdjacentDown => AdjacentDirection.Down,
+            _ => (AdjacentDirection?)null,
+        };
+        PixelRect? target;
+        if (selected is null && direction is { } adjacent)
+        {
+            if (areas.Length == 0)
+            {
+                return;
+            }
+
+            var monitor = CommandPlanner.SelectMonitor(window.VisualBounds, areas);
+            target = AdjacentSnapPlanner.Plan(adjacent, window.VisualBounds, neighbors?.Invoke(window.Handle) ?? [],
+                monitor, options.ToSpacing().ToPhysical(monitor.Scale));
+            area ??= monitor.WorkArea;
+        }
+        else
+        {
+            target = selected ?? CommandPlanner.Plan(command, window.VisualBounds,
+                WindowClassifier.CanResize(window, ownProcessId), areas, options.ToGridPlan(), options.ToSpacing(),
+                options.ToResizeSettings());
+        }
+
         if (target is not { } bounds)
         {
             return;
         }
 
         var walls = area ?? CommandPlanner.SelectMonitor(bounds, areas).WorkArea;
+        if (selected is null && direction is not null)
+        {
+            // モーション削減時の包含補正でも、直交軸と大きすぎる寸法を保つ。
+            var current = window.VisualBounds;
+            var left = Math.Min(walls.X, Math.Min(current.X, bounds.X));
+            var top = Math.Min(walls.Y, Math.Min(current.Y, bounds.Y));
+            var right = Math.Max(walls.Right, Math.Max(current.Right, bounds.Right));
+            var bottom = Math.Max(walls.Bottom, Math.Max(current.Bottom, bounds.Bottom));
+            walls = new(left, top, right - left, bottom - top);
+        }
+
         if (selected is not null && !WindowClassifier.CanResize(window, ownProcessId))
         {
             var current = window.VisualBounds;
