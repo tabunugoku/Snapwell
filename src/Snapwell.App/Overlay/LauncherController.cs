@@ -5,6 +5,7 @@ using Snapwell.Core.Geometry;
 using Snapwell.Core.Layout;
 using Snapwell.Core.Overlay;
 using Snapwell.Core.Settings;
+using Snapwell.Core.Tray;
 using Snapwell.Platform.Hooks;
 using Snapwell.Platform.Monitors;
 using Snapwell.Platform.Windows;
@@ -34,6 +35,7 @@ internal sealed class LauncherController : IDisposable
     private long _drawRevision;
     private ZoneSelection? _selection;
     private nint _target;
+    private uint? _ignorePointerUpToMs;
     private bool _mouseSelecting;
     private bool _enabled = true;
     private bool _disposed;
@@ -76,7 +78,7 @@ internal sealed class LauncherController : IDisposable
     internal void Open() => Open(_inspector.GetForegroundWindow());
 
     /// <summary>指定したウィンドウを対象に区画を選ぶ。</summary>
-    internal void Open(nint handle)
+    internal void Open(nint handle, uint? ignorePointerUpToMs = null)
     {
         lock (_gate)
         {
@@ -116,6 +118,7 @@ internal sealed class LauncherController : IDisposable
             }
 
             _target = handle;
+            _ignorePointerUpToMs = ignorePointerUpToMs;
             _targetTitle = DisplayTitle(window.Title);
             _scale = monitor.Scale;
             _mouseSelecting = false;
@@ -176,6 +179,11 @@ internal sealed class LauncherController : IDisposable
     {
         lock (_gate)
         {
+            if (_ignorePointerUpToMs is { } referenceMs && PointerOrdering.IsAtOrBefore(button.TimeMs, referenceMs))
+            {
+                return;
+            }
+
             if (ValidateTargetCore() && button.IsDown && (button.Button == MouseButtonKind.Right ||
                 !_selection!.WorkArea.Contains(new Vec2(button.X, button.Y))))
             {
@@ -421,6 +429,7 @@ internal sealed class LauncherController : IDisposable
         }
 
         _selection = null;
+        _ignorePointerUpToMs = null;
         _target = 0;
         _targetTitle = "";
         _panelLayout = null;

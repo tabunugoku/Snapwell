@@ -40,11 +40,13 @@ internal sealed unsafe class TrayIcon(IAppLog log, ISettingsLauncher? settings =
     private HICON _shownIcon;
     private string _shownTip = "";
     private TrayMenuController? _menu;
+    private nint _launcherTarget;
 
     public event Action? ToggleRequested;
     public event Action? StandardSnapRequested;
     public event Action? RestoreRequested;
     public event Action? ArrangeRequested;
+    public event Action<nint, uint>? LauncherRequested;
     public event Action? ExitRequested;
     public event Action? SessionEnding;
 
@@ -245,6 +247,8 @@ internal sealed unsafe class TrayIcon(IAppLog log, ISettingsLauncher? settings =
                 return;
             }
 
+            // メニューの Activate が前面を奪う前の対象を保持する。実機未確認。
+            _launcherTarget = PInvoke.GetForegroundWindow();
             var snapshot = MenuSnapshot();
             if (_menu is null)
             {
@@ -323,6 +327,9 @@ internal sealed unsafe class TrayIcon(IAppLog log, ISettingsLauncher? settings =
             case 4: ExitRequested?.Invoke(); break;
             case 5: _settings.Open(); break;
             case 6 when Volatile.Read(ref _state).Enabled: ArrangeRequested?.Invoke(); break;
+            case 7 when Volatile.Read(ref _state) is { Enabled: true, LauncherAvailable: true }:
+                LauncherRequested?.Invoke(_launcherTarget, unchecked((uint)Environment.TickCount));
+                break;
         }
     }
 
