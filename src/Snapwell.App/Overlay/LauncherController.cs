@@ -427,8 +427,15 @@ internal sealed class LauncherController : IDisposable
         _planMenuOpen = false;
         _drawRevision++;
         _mouseSelecting = false;
-        _presenter.Hide();
-        ApplyCurrentBindings();
+        try
+        {
+            _presenter.Hide();
+        }
+        finally
+        {
+            // 選択を消した後は失敗通知で閉じ直せないため、ここで必ず割り当てを戻す。
+            ApplyCurrentBindings();
+        }
     }
 
     private void CloseIfUnavailable()

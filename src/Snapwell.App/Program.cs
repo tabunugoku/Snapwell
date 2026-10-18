@@ -99,6 +99,8 @@ internal static class Program
         finally
         {
             host.Shutdown();
+            // OS 設定の復元とオーバーレイ停止の記録が終わってから、保存を短時間だけ待つ。
+            LauncherLog.Flush(TimeSpan.FromMilliseconds(500));
             AppDomain.CurrentDomain.UnhandledException -= unhandled;
             TaskScheduler.UnobservedTaskException -= unobserved;
         }
@@ -202,9 +204,26 @@ internal sealed class OverlaySession(bool interactive, Func<bool, OverlayThread>
 
     public void Hide()
     {
+        OverlayThread? stopped = null;
         lock (_gate)
         {
-            _thread?.Hide();
+            try
+            {
+                _thread?.Hide();
+            }
+            catch (Exception exception)
+            {
+                diagnostic?.Invoke(_thread?.Generation ?? 0, "hide-failed", exception);
+                stopped = Detach();
+                RecordFailure();
+            }
+        }
+
+        // 停止の待機と Launcher への通知は、セッションのロックを持たずに行う。
+        if (stopped is not null)
+        {
+            stopped.Dispose();
+            Faulted?.Invoke();
         }
     }
 
