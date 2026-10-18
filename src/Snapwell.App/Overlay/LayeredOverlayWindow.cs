@@ -21,6 +21,8 @@ internal sealed unsafe class LayeredOverlayWindow : IOverlaySurface, IOverlayLoo
     private readonly bool _interactive;
     private readonly HCURSOR _arrow;
     private readonly uint _threadId;
+    private readonly Win32OverlayZOrderApi _zOrderApi;
+    private readonly OverlayZOrder _zOrder;
     private Exception? _callbackFailure;
     private HWND _window;
     private HDC _memory;
@@ -32,7 +34,8 @@ internal sealed unsafe class LayeredOverlayWindow : IOverlaySurface, IOverlayLoo
     private OverlayFrame? _lastFrame;
     private long _lastRevision;
 
-    internal LayeredOverlayWindow(bool interactive)
+    internal LayeredOverlayWindow(bool interactive, long generation,
+        Action<long, string, Exception?>? diagnostic)
     {
         _interactive = interactive;
         _threadId = PInvoke.GetCurrentThreadId();
@@ -76,6 +79,9 @@ internal sealed unsafe class LayeredOverlayWindow : IOverlaySurface, IOverlayLoo
             _current = null;
             throw new Win32Exception(Marshal.GetLastWin32Error(), "オーバーレイを作れない。");
         }
+
+        _zOrderApi = new(_window);
+        _zOrder = new(_zOrderApi, generation, diagnostic ?? LauncherLog.Write);
     }
 
     public event Action<OverlayPointer>? Pointer;
@@ -165,7 +171,9 @@ internal sealed unsafe class LayeredOverlayWindow : IOverlaySurface, IOverlayLoo
                 throw new Win32Exception(Marshal.GetLastWin32Error(), "オーバーレイを更新できない。");
             }
 
-            PInvoke.ShowWindow(_window, SHOW_WINDOW_CMD.SW_SHOWNOACTIVATE);
+            // 表示の開始時だけ必ず昇格し、以降は Z オーダーの脱落を確認してから戻す。
+            _zOrder.Show();
+            PInvoke.ShowWindow(_window, SHOW_WINDOW_CMD.SW_SHOWNA);
         }
         finally
         {
@@ -184,6 +192,7 @@ internal sealed unsafe class LayeredOverlayWindow : IOverlaySurface, IOverlayLoo
         }
 
         PInvoke.ShowWindow(_window, SHOW_WINDOW_CMD.SW_HIDE);
+        _zOrder.Hide();
         ReleaseBitmap();
     }
 
@@ -235,6 +244,7 @@ internal sealed unsafe class LayeredOverlayWindow : IOverlaySurface, IOverlayLoo
         if (!_window.IsNull)
         {
             Hide();
+            _zOrderApi.Dispose();
             PInvoke.DestroyWindow(_window);
             _window = default;
         }
