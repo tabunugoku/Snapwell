@@ -465,8 +465,8 @@ table.list tr:last-child td { border-bottom: 0; }
 .feel-stage .fz { position: absolute; border: 1px dashed var(--cell-border); border-radius: 4px; }
 .feel-stage .fz.on { background: var(--surface-2); border-style: solid; border-color: var(--ink); }
 .feel-stage .fz-dot { position: absolute; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; background: var(--muted); opacity: .6; }
-.fs-card { position: absolute; left: 0; top: 0; display: grid; place-items: center; background: var(--surface); border: 1px solid var(--border-strong); border-radius: 6px; font: 11px var(--font-mono); color: var(--muted); cursor: grab; user-select: none; will-change: transform; }
-.fs-card:active { cursor: grabbing; }
+.fs-card { position: absolute; left: 0; top: 0; display: flex; flex-direction: column; overflow: hidden; background: var(--surface); border: 1px solid var(--border-strong); border-radius: 8px; user-select: none; will-change: transform; pointer-events: none; }
+.fs-card .win-title { cursor: inherit; }
 .fs-card:focus-visible { outline: 2px solid var(--blue-tx); outline-offset: 2px; }
 .feel-try-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
 .feel-try-hint { font-size: 12px; color: var(--muted); }
@@ -818,7 +818,7 @@ table.list tr:last-child td { border-bottom: 0; }
             <div class="feel-try">
               <div class="feel-stage" id="feelStage" aria-label="操作感を試す領域">
                 <div class="fs-zones" id="feelZones"></div>
-                <div class="fs-card" id="feelCard" tabindex="0" aria-label="試すウィンドウ。ドラッグして投げる。矢印キーで投げる"><span>Window</span></div>
+                <div class="fs-card" id="feelCard" tabindex="0" aria-label="試すウィンドウ。タイトルバーをドラッグして投げる。矢印キーで投げる"></div>
               </div>
               <div class="feel-try-bar">
                 <div class="chips" role="group" aria-label="吸着の方式">
@@ -826,7 +826,7 @@ table.list tr:last-child td { border-bottom: 0; }
                   <button class="chip" type="button" data-mode="zones" aria-pressed="true">区画</button>
                 </div>
                 <button class="chip" type="button" id="feelThrow">ランダムに投げる</button>
-                <span class="feel-try-hint">ウィンドウをつかんで投げます。いまの 5 つの値で動き、止まる先は本体と同じ規則で決まります（離した速さが 150 px/s 未満だと吸着しません。区画では、中央から上へ強く投げると最大化になります）</span>
+                <span class="feel-try-hint">ウィンドウのタイトルバーをつかんで投げます（本体をつかんでも動きません）。いまの 5 つの値で動き、止まる先は本体と同じ規則で決まります（離した速さが 150 px/s 未満だと吸着しません。区画では、中央から上へ強く投げると最大化になります）</span>
               </div>
             </div>
             <div class="group-title">詳細 <span class="feel-state" id="feelState"></span><button class="chip feel-reset" type="button" id="feelReset" hidden>プリセットに戻す</button></div>
@@ -1860,9 +1860,14 @@ function initFeelTry(getTune) {
   const stage = $('#feelStage');
   const card = $('#feelCard');
   const guideBox = $('#feelZones');
-  const CARD_W = 120;
-  const CARD_H = 76;
+  const CARD_W = 132;
+  const CARD_H = 88;
+  // タイトルバーは実物より大きめにして、つかみやすくする。タッチとペンは判定を四方へ広げる（Core の FeelTrial と同じ値）
+  const TITLE_H = 30;
+  const TOUCH_SLOP = 8;
   const GAP = 6;
+  card.innerHTML = `<div class="win-title"><span class="ico"></span><span class="name">Window</span>${CAPS_SVG}</div>`
+    + '<div class="win-body"><div class="sk" style="width:80%"></div><div class="sk" style="width:56%"></div><div class="sk" style="width:68%"></div></div>';
   let mode = 'zones';
   let guides = [];
   let corners = [];
@@ -2058,26 +2063,48 @@ function initFeelTry(getTune) {
     rafId = requestAnimationFrame(loop);
   };
 
+  // 本体のウィンドウをタイトルバーのドラッグで動かすのと同じく、タイトルバーの上だけがつかめる。
+  // 左と上の辺は含み、右と下の辺は含まない
+  const hitsTitle = (px, py, pointerType) => {
+    const slop = pointerType === 'touch' || pointerType === 'pen' ? TOUCH_SLOP : 0;
+    return px >= c.x - slop && px < c.x + size.w + slop && py >= c.y - slop && py < c.y + Math.min(TITLE_H, size.h) + slop;
+  };
   let samples = [];
-  card.addEventListener('pointerdown', (ev) => {
+  let grab = null;
+  const stagePoint = (ev) => {
+    const r = stage.getBoundingClientRect();
+    return { x: ev.clientX - r.left, y: ev.clientY - r.top };
+  };
+  stage.addEventListener('pointerdown', (ev) => {
+    const p = stagePoint(ev);
+    // タイトルバー以外では、動いている最中のカードも止めない
+    if (!hitsTitle(p.x, p.y, ev.pointerType)) return;
     cancelAnimationFrame(rafId);
     flight = null;
     dragging = true;
     $$('.fz', guideBox).forEach((el) => el.classList.remove('on'));
-    const r = stage.getBoundingClientRect();
-    // つかんだら元の大きさに戻し、つかんだ位置をカードの中心にそろえる
+    // つかんだら元の大きさに戻し、つかんだ点はタイトルバーの上に残す
+    const fraction = Math.min(1, Math.max(0, (p.x - c.x) / size.w));
     size = { w: CARD_W, h: CARD_H };
-    c = { x: ev.clientX - r.left - CARD_W / 2, y: ev.clientY - r.top - CARD_H / 2, vx: 0, vy: 0 };
+    grab = { x: fraction * CARD_W, y: TITLE_H / 2 };
+    c = { x: p.x - grab.x, y: p.y - grab.y, vx: 0, vy: 0 };
     samples = [{ t: ev.timeStamp, x: c.x, y: c.y }];
-    card.setPointerCapture(ev.pointerId);
+    stage.setPointerCapture(ev.pointerId);
+    stage.style.cursor = 'grabbing';
     paint(0.4);
   });
-  card.addEventListener('pointermove', (ev) => {
-    if (!dragging) return;
-    const r = stage.getBoundingClientRect();
+  stage.addEventListener('pointermove', (ev) => {
+    const p = stagePoint(ev);
+    if (!dragging) {
+      stage.style.cursor = hitsTitle(p.x, p.y, ev.pointerType) ? 'grab' : '';
+      return;
+    }
     const { W, H } = area();
-    c.x = Math.min(W, Math.max(0, ev.clientX - r.left)) - CARD_W / 2;
-    c.y = Math.min(H, Math.max(0, ev.clientY - r.top)) - CARD_H / 2;
+    // カードの中心は舞台の中に収める
+    const cx = Math.min(W, Math.max(0, p.x - grab.x + CARD_W / 2));
+    const cy = Math.min(H, Math.max(0, p.y - grab.y + CARD_H / 2));
+    c.x = cx - CARD_W / 2;
+    c.y = cy - CARD_H / 2;
     samples.push({ t: ev.timeStamp, x: c.x, y: c.y });
     while (samples.length > 2 && ev.timeStamp - samples[0].t > 100) samples.shift();
     paint(0.4);
@@ -2085,13 +2112,14 @@ function initFeelTry(getTune) {
   const up = () => {
     if (!dragging) return;
     dragging = false;
+    stage.style.cursor = '';
     const a = samples[0];
     const b = samples[samples.length - 1];
     const dt = Math.max(0.016, (b.t - a.t) / 1000);
     release((b.x - a.x) / dt, (b.y - a.y) / dt);
   };
-  card.addEventListener('pointerup', up);
-  card.addEventListener('pointercancel', up);
+  stage.addEventListener('pointerup', up);
+  stage.addEventListener('pointercancel', up);
   card.addEventListener('keydown', (ev) => {
     const v = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[ev.key];
     if (!v) return;
