@@ -283,10 +283,11 @@ public static class SpringToggle
             }
 
             // 先に確定する。キャプチャを外すと PointerCaptureLost が来て、取り消しとして扱われるため。
+            // 入力面の内外で確定を分けるのはタップだけ。ドラッグは端を越えて離しても、予測位置で決める。
             // 押したまま入力面の外へ出して離したタップは取り消す（捕捉しているので外でも Released が来る）。
             var position = e.GetCurrentPoint(_root).Position;
             var inside = SpringSwitch.IsTapRelease(position.X, position.Y, _root.ActualWidth, _root.ActualHeight);
-            Finish(commit: inside);
+            Finish(commit: _dragging || inside);
             _root.ReleasePointerCapture(e.Pointer);
         }
 

@@ -2070,9 +2070,9 @@ function makeSwitch(label) {
     }
   };
   label.addEventListener('pointerup', (e) => {
-    // 押したまま外へ出して離したタップは取り消す
+    // 内外で分けるのはタップだけ。ドラッグは端を越えて離しても予測位置で決める
     const r = label.getBoundingClientRect();
-    finish(e, e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom);
+    finish(e, (press && press.dragging) || e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom);
   });
   label.addEventListener('pointercancel', (e) => finish(e, false));
 
