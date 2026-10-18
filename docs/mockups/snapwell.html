@@ -1965,7 +1965,7 @@ const switchLoop = (() => {
 function makeSwitch(label) {
   const input = $('input', label), track = $('span', label);
   const { m, k, c } = SWITCH_FEEL;
-  const sw = { x: 0, v: 0, target: 0, hand: null };
+  const sw = { x: 0, v: 0, target: 0, hand: null, since: 0 };
   const wall = (x, v) => {
     const kw = m * SWITCH_WALL_W ** 2, cw = 2 * 0.9 * Math.sqrt(kw * m);
     if (x < 0) return -kw * x - (v < 0 ? cw * v : 0);
@@ -1976,13 +1976,16 @@ function makeSwitch(label) {
     let f = -c * v + wall(x, v);
     if (sw.hand) {
       const kh = SWITCH_HAND_W ** 2, ch = 2 * Math.sqrt(kh * m);
-      f += kh * (sw.hand.x - x) + ch * (sw.hand.v - v);
+      // 入力が止まった手は動いていない。最後に測った速度を力として残さない
+      const hv = sw.since > 0.06 ? 0 : sw.hand.v;
+      f += kh * (sw.hand.x - x) + ch * (hv - v);
     } else {
       f -= k * (x - sw.target);
     }
     return f / m;
   };
   const step = (h) => {
+    sw.since += h;
     const { x, v } = sw;
     const k1v = accel(x, v), k1x = v;
     const k2v = accel(x + h / 2 * k1x, v + h / 2 * k1v), k2x = v + h / 2 * k1v;
@@ -2042,18 +2045,24 @@ function makeSwitch(label) {
     if (!press.dragging) {
       press.dragging = true;
       sw.hand = { x: hx, v: 0, t };
+      sw.since = 0;
       switchLoop.add(sw);
     } else {
       const dt = t - sw.hand.t;
       if (dt > 0) sw.hand.v = sw.hand.v * 0.35 + (hx - sw.hand.x) / dt * 0.65;
       sw.hand.x = hx; sw.hand.t = t;
+      sw.since = 0;
     }
   });
   const finish = (e, commit) => {
     if (!press || e.pointerId !== press.id) return;
     const p = press;
     press = null;
-    if (p.dragging) {
+    if (p.dragging && !commit) {
+      // 取り消しは状態を変えず、今の側へ戻す
+      sw.hand = null;
+      setTarget(input.checked);
+    } else if (p.dragging) {
       sw.hand = null;
       const on = decide();
       sw.target = on ? SWITCH_TRAVEL : 0;
