@@ -51,3 +51,8 @@ IDC_ARROW
 SetCursor
 IsWindow
 PostThreadMessage
+GetWindowLong
+GetWindow
+IsWindowVisible
+SetWindowPos
+HWND_TOPMOST
