@@ -91,7 +91,8 @@ internal sealed unsafe partial class GdiOverlayText : IDisposable
             var pixels = new Span<byte>(bits, checked(bounds.Width * bounds.Height * 4));
             pixels.Clear();
             var rect = new NativeRect { Right = bounds.Width, Bottom = bounds.Height };
-            var flags = 0x20u | 0x4u | 0x800u | 0x8000u | (text.Center ? 1u : 0u);
+            // 省略は配置側で対象名にだけ行う。案内に DT_END_ELLIPSIS を付けない。
+            var flags = 0x20u | 0x4u | 0x800u | (text.Center ? 1u : 0u);
             if (text.LetterSpacing > 0)
             {
                 DrawSpaced(text, rect, flags);

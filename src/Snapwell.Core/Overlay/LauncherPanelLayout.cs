@@ -1,3 +1,4 @@
+using System.Globalization;
 using Snapwell.Core.Geometry;
 using Snapwell.Core.Layout;
 
@@ -12,7 +13,26 @@ public sealed record LauncherText(string Value, PixelRect Bounds, double Size,
     bool Bold = false, double LetterSpacing = 0);
 
 /// <summary>プリセットの面とアイコンとラベルの配置。</summary>
-public sealed record LauncherPresetButton(int Index, PixelRect Bounds, PixelRect Icon, bool Enabled);
+public sealed record LauncherPresetButton(int Index, PixelRect Bounds, LauncherIconRect Icon, bool Enabled)
+{
+    /// <summary>SVG の背景の枠線の中心。</summary>
+    public LauncherIconRect IconBorder => Icon.Map(.5, .5, 17, 11);
+
+    /// <summary>割合の境界を保ち、外周に接する辺だけを枠線の内端まで延ばした塗り。</summary>
+    public LauncherIconRect IconFill
+    {
+        get
+        {
+            var preset = LauncherPreset.All[Index];
+            // SVG の 0.5 px の余白が拡大率によって隙間になるため、外周だけを連続させる。
+            var left = preset.X0 == 0 ? 1 : 1.5 + preset.X0 * 15;
+            var top = preset.Y0 == 0 ? 1 : 1.5 + preset.Y0 * 9;
+            var right = preset.X1 == 1 ? 17 : 1.5 + preset.X1 * 15;
+            var bottom = preset.Y1 == 1 ? 11 : 1.5 + preset.Y1 * 9;
+            return Icon.Map(left, top, right - left, bottom - top);
+        }
+    }
+}
 
 /// <summary>作業領域と CSS の論理 px から求めるランチャーの配置。</summary>
 public sealed class LauncherPanelLayout
@@ -63,13 +83,18 @@ public sealed class LauncherPanelLayout
         }
 
         measure ??= (text, size, mono, bold) => text.Sum(c => c > 255 ? size : size * (mono ? .6 : .55));
-        double Width(string text, double size, bool mono = false, bool bold = false) => measure(text, size, mono, bold);
+        // 各ラベルを独立に切り上げ、配置の端数で一画素狭くなることを防ぐ。
+        double Width(string text, double size, bool mono = false, bool bold = false) =>
+            Math.Ceiling(measure(text, size, mono, bold) * scale) / scale;
         var result = new LauncherPanelLayout();
         var area = selection.WorkArea;
         int Px(double value) => (int)Math.Round(value * scale);
         PixelRect Rect(double x, double y, double w, double h) =>
-            new(area.X + Px(x), area.Y + Px(y), Math.Max(0, Px(x + w) - Px(x)), Math.Max(0, Px(y + h) - Px(y)));
-        var width = Math.Min(560, area.Width / scale - 28);
+            new(area.X + Px(x), area.Y + Px(y), Math.Max(0, (int)Math.Ceiling(w * scale - 1e-7)),
+                Math.Max(0, Px(y + h) - Px(y)));
+        var minimum = Math.Max(LauncherPreset.All.Max(p => 42 + Width(p.Name, 12)),
+            Math.Max(4 * 22 + Width(" 移動", 11.5), Width("Shift", 11.5, true) + 14 + Width(" + 矢印 範囲", 11.5)));
+        var width = Math.Min(Math.Max(560, minimum + 30), area.Width / scale - 28);
         var left = (area.Width / scale - width) / 2;
         var inner = width - 30;
         // 全体を表示できない高さではパネルだけを省く。区画のキー操作は続けられる。
@@ -86,7 +111,8 @@ public sealed class LauncherPanelLayout
             var planWidth = Math.Max(Plans.Max(p => Width(PlanName(p), 12)) + 34, 78);
             result.Plan = Rect(x + inner - planWidth, y, planWidth, TopHeight);
             result.Target = Rect(x + tagWidth + 10, y, Math.Max(0, inner - tagWidth - planWidth - 20), TopHeight);
-            result._text.Add(new(target, result.Target, 12.5));
+            result._text.Add(new(Ellipsize(target, result.Target.Width / scale,
+                value => Width(value, 12.5)), result.Target, 12.5));
             result._text.Add(new(PlanName(selection.Grid.Plan),
                 Rect(x + inner - planWidth + 6, y, planWidth - 26, TopHeight), 12));
             y += TopHeight + 10;
@@ -96,7 +122,7 @@ public sealed class LauncherPanelLayout
             for (var index = 0; index < LauncherPreset.All.Count; index++)
             {
                 var preset = LauncherPreset.All[index];
-                var buttonWidth = Math.Min(inner, 42 + Width(preset.Name, 12));
+                var buttonWidth = 42 + Width(preset.Name, 12);
                 if (used > 0 && used + buttonWidth > inner)
                 {
                     used = 0;
@@ -105,7 +131,8 @@ public sealed class LauncherPanelLayout
 
                 var enabled = preset.RangeFor(selection.Grid.Plan) is not null;
                 var buttonBounds = Rect(x + used, y, buttonWidth, ButtonHeight);
-                result._presets.Add(new(index, buttonBounds, Rect(x + used + 9, y + 8.6, 18, 12), enabled));
+                result._presets.Add(new(index, buttonBounds,
+                    new(area.X + (x + used + 9) * scale, area.Y + (y + 8.6) * scale, 18 * scale, 12 * scale), enabled));
                 result._text.Add(new(preset.Name, Rect(x + used + 33, y + 5, buttonWidth - 42, 19.2),
                     12, enabled ? LauncherTextKind.Text : LauncherTextKind.Disabled));
                 used += buttonWidth + 6;
@@ -164,10 +191,33 @@ public sealed class LauncherPanelLayout
             }
         }
 
+        return result.WithSelection(selection, scale, measure);
+    }
+
+    /// <summary>静的なパネルの配置を保ち、選択中央のラベルだけを更新する。</summary>
+    public LauncherPanelLayout WithSelection(ZoneSelection selection, double scale,
+        Func<string, double, bool, bool, double> measure)
+    {
+        var result = new LauncherPanelLayout
+        {
+            Panel = Panel,
+            Top = Top,
+            Tag = Tag,
+            Target = Target,
+            Plan = Plan,
+            PresetsBounds = PresetsBounds,
+            KeysBounds = KeysBounds,
+        };
+        result._text.AddRange(_text.Where(text => text.Kind != LauncherTextKind.Ink));
+        result._presets.AddRange(_presets);
+        result._keys.AddRange(_keys);
+        result._options.AddRange(_options);
+        var area = selection.WorkArea;
+        int Px(double value) => (int)Math.Ceiling(value * scale);
         var range = selection.Range;
         var bounds = selection.Bounds;
         var label = $"{range.Columns} × {range.Rows} 区画 · {bounds.Width} × {bounds.Height}";
-        var labelWidth = Math.Min(area.Width, Px(Width(label, 12, true) + 22));
+        var labelWidth = Math.Min(area.Width, Px(measure(label, 12, true, false) + 22));
         var labelHeight = Math.Min(area.Height, Px(29.2));
         result.SelectionLabel = new((int)Math.Clamp(bounds.Center.X - labelWidth / 2.0,
             area.X, area.Right - labelWidth), (int)Math.Clamp(bounds.Center.Y - labelHeight / 2.0,
@@ -199,4 +249,36 @@ public sealed class LauncherPanelLayout
 
     /// <summary>分割案をモックアップと同じ表記にする。</summary>
     public static string PlanName(GridPlan plan) => $"{plan.Columns} × {plan.Rows}";
+
+    private static string Ellipsize(string value, double available, Func<string, double> measure)
+    {
+        if (measure(value) <= available)
+        {
+            return value;
+        }
+
+        if (measure("…") > available)
+        {
+            return "";
+        }
+
+        var elements = StringInfo.ParseCombiningCharacters(value);
+        var low = 0;
+        var high = elements.Length;
+        while (low < high)
+        {
+            var middle = (low + high + 1) / 2;
+            var end = middle == elements.Length ? value.Length : elements[middle];
+            if (measure(value[..end] + "…") <= available)
+            {
+                low = middle;
+            }
+            else
+            {
+                high = middle - 1;
+            }
+        }
+
+        return value[..(low == elements.Length ? value.Length : elements[low])] + "…";
+    }
 }

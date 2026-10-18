@@ -19,6 +19,14 @@ internal sealed unsafe class LayeredOverlayWindow : IOverlaySurface, IOverlayLoo
     private readonly HINSTANCE _module;
     private readonly bool _interactive;
     private HWND _window;
+    private HDC _memory;
+    private HBITMAP _bitmap;
+    private HGDIOBJ _previousBitmap;
+    private void* _bits;
+    private int _width;
+    private int _height;
+    private OverlayFrame? _lastFrame;
+    private long _lastRevision;
 
     internal LayeredOverlayWindow(bool interactive)
     {
@@ -58,6 +66,8 @@ internal sealed unsafe class LayeredOverlayWindow : IOverlaySurface, IOverlayLoo
 
     public event Action<OverlayPointer>? Pointer;
 
+    internal long RetainedPixelBytes => (long)_width * _height * 4 + (_lastFrame?.Pixels.LongLength ?? 0);
+
     public void Show(PixelRect bounds, OverlayFrame frame)
     {
         if (frame.Width != bounds.Width || frame.Height != bounds.Height ||
@@ -67,34 +77,59 @@ internal sealed unsafe class LayeredOverlayWindow : IOverlaySurface, IOverlayLoo
         }
 
         var screen = PInvoke.GetDC(default);
-        var memory = default(HDC);
-        var bitmap = default(HBITMAP);
-        var previous = default(HGDIOBJ);
         try
         {
-            memory = PInvoke.CreateCompatibleDC(screen);
-            var info = new BITMAPINFO
+            if (_width != frame.Width || _height != frame.Height)
             {
-                bmiHeader = new()
+                ReleaseBitmap();
+                _memory = PInvoke.CreateCompatibleDC(screen);
+                var info = new BITMAPINFO
                 {
-                    biSize = (uint)sizeof(BITMAPINFOHEADER),
-                    biWidth = frame.Width,
-                    biHeight = -frame.Height,
-                    biPlanes = 1,
-                    biBitCount = 32,
-                    biCompression = (uint)BI_COMPRESSION.BI_RGB,
-                },
-            };
-            void* bits = null;
-            bitmap = PInvoke.CreateDIBSection(memory, &info, DIB_USAGE.DIB_RGB_COLORS,
-                &bits, default(HANDLE), 0);
-            if (memory.IsNull || bitmap.IsNull || bits is null)
-            {
-                throw new InvalidOperationException("オーバーレイの DIB を作れない。");
+                    bmiHeader = new()
+                    {
+                        biSize = (uint)sizeof(BITMAPINFOHEADER),
+                        biWidth = frame.Width,
+                        biHeight = -frame.Height,
+                        biPlanes = 1,
+                        biBitCount = 32,
+                        biCompression = (uint)BI_COMPRESSION.BI_RGB,
+                    },
+                };
+                void* bits = null;
+                _bitmap = PInvoke.CreateDIBSection(_memory, &info, DIB_USAGE.DIB_RGB_COLORS,
+                    &bits, default(HANDLE), 0);
+                _bits = bits;
+                if (_memory.IsNull || _bitmap.IsNull || _bits is null)
+                {
+                    throw new InvalidOperationException("オーバーレイの DIB を作れない。");
+                }
+
+                _previousBitmap = PInvoke.SelectObject(_memory, new HGDIOBJ(_bitmap.Value));
+                _width = frame.Width;
+                _height = frame.Height;
             }
 
-            previous = PInvoke.SelectObject(memory, new HGDIOBJ(bitmap.Value));
-            frame.Pixels.AsSpan().CopyTo(new Span<byte>(bits, frame.Pixels.Length));
+            var destinationPixels = new Span<byte>(_bits, frame.Pixels.Length);
+            // 途中の版が表示されなかったときは全面をコピーし、差分の取りこぼしを防ぐ。
+            if (ReferenceEquals(_lastFrame, frame) && _lastRevision == frame.BaseRevision &&
+                frame.DirtyRegions is { } regions)
+            {
+                foreach (var region in regions)
+                {
+                    for (var y = region.Y; y < region.Bottom; y++)
+                    {
+                        var offset = (y * frame.Width + region.X) * 4;
+                        frame.Pixels.AsSpan(offset, region.Width * 4).CopyTo(destinationPixels.Slice(offset));
+                    }
+                }
+            }
+            else
+            {
+                frame.Pixels.AsSpan().CopyTo(destinationPixels);
+            }
+
+            _lastFrame = frame;
+            _lastRevision = frame.Revision;
             var destination = new System.Drawing.Point(bounds.X, bounds.Y);
             var source = new System.Drawing.Point(0, 0);
             var size = new SIZE { cx = frame.Width, cy = frame.Height };
@@ -105,7 +140,7 @@ internal sealed unsafe class LayeredOverlayWindow : IOverlaySurface, IOverlayLoo
                 AlphaFormat = (byte)PInvoke.AC_SRC_ALPHA,
             };
             // NOACTIVATE・全画面アプリ上の重なり・120 Hz の見え方は実機未確認。
-            if (!PInvoke.UpdateLayeredWindow(_window, screen, destination, size, memory,
+            if (!PInvoke.UpdateLayeredWindow(_window, screen, destination, size, _memory,
                 source, default, blend, UPDATE_LAYERED_WINDOW_FLAGS.ULW_ALPHA))
             {
                 throw new InvalidOperationException("オーバーレイを更新できない。");
@@ -115,21 +150,6 @@ internal sealed unsafe class LayeredOverlayWindow : IOverlaySurface, IOverlayLoo
         }
         finally
         {
-            if (!previous.IsNull)
-            {
-                PInvoke.SelectObject(memory, previous);
-            }
-
-            if (!bitmap.IsNull)
-            {
-                PInvoke.DeleteObject(new HGDIOBJ(bitmap.Value));
-            }
-
-            if (!memory.IsNull)
-            {
-                PInvoke.DeleteDC(memory);
-            }
-
             if (!screen.IsNull)
             {
                 PInvoke.ReleaseDC(default, screen);
@@ -145,13 +165,19 @@ internal sealed unsafe class LayeredOverlayWindow : IOverlaySurface, IOverlayLoo
         }
 
         PInvoke.ShowWindow(_window, SHOW_WINDOW_CMD.SW_HIDE);
+        ReleaseBitmap();
     }
 
     public void Wake() => PInvoke.PostMessage(_window, WakeMessage, default, default);
 
     public void Run(Func<bool> process)
     {
-        while (process())
+        if (!process())
+        {
+            return;
+        }
+
+        while (true)
         {
             var result = PInvoke.GetMessage(out var message, default, 0, 0).Value;
             if (result <= 0)
@@ -161,6 +187,11 @@ internal sealed unsafe class LayeredOverlayWindow : IOverlaySurface, IOverlayLoo
 
             PInvoke.TranslateMessage(in message);
             PInvoke.DispatchMessage(in message);
+            // 移動一件ごとには描かず、キューの起床通知まで入力をまとめる。
+            if (message.message == WakeMessage && !process())
+            {
+                return;
+            }
         }
     }
 
@@ -174,6 +205,34 @@ internal sealed unsafe class LayeredOverlayWindow : IOverlaySurface, IOverlayLoo
         }
 
         _current = null;
+        ReleaseBitmap();
+    }
+
+    private void ReleaseBitmap()
+    {
+        if (!_previousBitmap.IsNull)
+        {
+            PInvoke.SelectObject(_memory, _previousBitmap);
+        }
+
+        if (!_bitmap.IsNull)
+        {
+            PInvoke.DeleteObject(new HGDIOBJ(_bitmap.Value));
+        }
+
+        if (!_memory.IsNull)
+        {
+            PInvoke.DeleteDC(_memory);
+        }
+
+        _memory = default;
+        _bitmap = default;
+        _previousBitmap = default;
+        _bits = null;
+        _width = 0;
+        _height = 0;
+        _lastFrame = null;
+        _lastRevision = 0;
     }
 
     private LRESULT HandleMessage(HWND window, uint message, WPARAM wParam, LPARAM lParam)
