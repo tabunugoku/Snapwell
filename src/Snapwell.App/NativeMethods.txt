@@ -51,3 +51,5 @@ IDC_ARROW
 SetCursor
 IsWindow
 PostThreadMessage
+WindowFromPoint
+GetAncestor
