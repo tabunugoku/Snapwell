@@ -1,3 +1,4 @@
+using Snapwell.Core.Commands;
 using Snapwell.Core.Geometry;
 
 namespace Snapwell.Core.Tray;
@@ -12,6 +13,31 @@ public sealed record TrayMenuEntry(TrayMenuCommand Command, string Name, bool En
 /// <summary>Win32 に依存しないトレイメニューの項目と入力の判断。</summary>
 public static class TrayMenuModel
 {
+    /// <summary>
+    /// 有効な割り当てから、トレイにある操作の表示部品だけを返す。整列は対象のモニターが違う
+    /// (トレイはカーソル、キーは前面ウィンドウ) ため、同じ操作として表示しない。
+    /// </summary>
+    public static IReadOnlyDictionary<TrayMenuCommand, IReadOnlyList<string>> Shortcuts(
+        IEnumerable<KeyValuePair<WindowCommand, KeyChordSpec>> effective)
+    {
+        var shortcuts = new Dictionary<TrayMenuCommand, IReadOnlyList<string>>();
+        foreach (var (command, chord) in effective)
+        {
+            TrayMenuCommand? menuCommand = command switch
+            {
+                WindowCommand.ToggleEnabled => TrayMenuCommand.Toggle,
+                WindowCommand.OpenLauncher => TrayMenuCommand.Launcher,
+                _ => null,
+            };
+            if (menuCommand is { } mapped)
+            {
+                shortcuts[mapped] = HotkeyCatalog.FormatChordParts(chord);
+            }
+        }
+
+        return shortcuts;
+    }
+
     /// <summary>割り当てを受け取れない操作には、推測したキーを表示しない。</summary>
     public static IReadOnlyList<TrayMenuEntry> Create(bool enabled, bool launcherAvailable = false,
         IReadOnlyDictionary<TrayMenuCommand, IReadOnlyList<string>>? shortcuts = null)
