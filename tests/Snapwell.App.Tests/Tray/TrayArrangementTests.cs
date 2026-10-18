@@ -1,5 +1,6 @@
 using Snapwell.App.Lifecycle;
 using Snapwell.App.Tray;
+using Snapwell.Core.Tray;
 
 namespace Snapwell.App.Tests.Tray;
 
@@ -12,7 +13,7 @@ public sealed class TrayArrangementTests
     {
         var tray = new TrayIcon(new NoLog());
         var calls = new List<nint>();
-        tray.LauncherRequested += calls.Add;
+        tray.LauncherRequested += (target, _) => calls.Add(target);
         tray.SelectMenuItem(7);
         Assert.Empty(calls);
         tray.Update(new(true, false, LauncherAvailable: true));
@@ -29,6 +30,23 @@ public sealed class TrayArrangementTests
         tray.Remove();
         tray.SelectMenuItem(7);
         Assert.Equal(2, calls.Count);
+    }
+
+    /// <summary>メニューを選んだ時点の ms 時計を要求へ渡す。</summary>
+    [Fact]
+    public void LauncherSelectionIncludesCurrentTickCount()
+    {
+        var tray = new TrayIcon(new NoLog());
+        tray.Update(new(true, false, LauncherAvailable: true));
+        var calls = new List<uint>();
+        tray.LauncherRequested += (_, timeMs) => calls.Add(timeMs);
+        var beforeMs = unchecked((uint)Environment.TickCount);
+        tray.SelectMenuItem(7);
+        var afterMs = unchecked((uint)Environment.TickCount);
+        var selectedMs = Assert.Single(calls);
+        Assert.True(PointerOrdering.IsAtOrBefore(beforeMs, selectedMs));
+        Assert.True(PointerOrdering.IsAtOrBefore(selectedMs, afterMs));
+        tray.Remove();
     }
 
     /// <summary>有効な整列項目の選択を一度だけ通知する。</summary>

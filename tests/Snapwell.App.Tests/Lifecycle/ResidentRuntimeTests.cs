@@ -17,6 +17,29 @@ namespace Snapwell.App.Tests.Lifecycle;
 
 public sealed class ResidentRuntimeTests
 {
+    /// <summary>トレイの時刻を表示へ渡し、一周を含む先行入力だけを無視する。</summary>
+    [Theory]
+    [InlineData(100u, 99u)]
+    [InlineData(100u, 100u)]
+    [InlineData(5u, uint.MaxValue - 1)]
+    public void TrayCutoffReachesLauncherAndIsAbsentOnNextHotkeyOpen(uint referenceMs, uint eventMs)
+    {
+        using var fixture = new OverlayFixture(withLongPress: true);
+        fixture.Runtime.OpenLauncher(1, referenceMs);
+        fixture.Runtime.Handle(new MouseButton(MouseButtonKind.Left, true, -1000, 100, eventMs));
+        fixture.Runtime.Handle(new MouseButton(MouseButtonKind.Right, true, -1000, 100, eventMs));
+        fixture.Runtime.Handle(new MouseButton(MouseButtonKind.Right, false, -1000, 100, eventMs));
+        Assert.True(fixture.Launcher.IsOpen);
+        Assert.False(fixture.Drag.Enabled);
+        fixture.Runtime.Handle(new MouseButton(MouseButtonKind.Left, true, -1000, 100, referenceMs + 1));
+        Assert.False(fixture.Launcher.IsOpen);
+
+        fixture.Runtime.Handle(new KeyChord((int)WindowCommand.OpenLauncher));
+        Assert.True(fixture.Launcher.IsOpen);
+        fixture.Runtime.Handle(new MouseButton(MouseButtonKind.Left, true, -1000, 100, eventMs));
+        Assert.False(fixture.Launcher.IsOpen);
+    }
+
     /// <summary>前面を読み直さず指定対象で開き、保留した長押しとプレビューを取り消す。</summary>
     [Fact]
     public void OpenLauncherUsesExplicitTargetAndCancelsPendingHoldWithoutOpeningTwice()
@@ -25,12 +48,12 @@ public sealed class ResidentRuntimeTests
         fixture.Runtime.Handle(new MouseButton(MouseButtonKind.Left, true, 100, 100, 0));
         fixture.Inspector.Foreground = 99;
         var hides = fixture.PreviewPresenter.Hides;
-        fixture.Runtime.OpenLauncher(1);
+        fixture.Runtime.OpenLauncher(1, 100);
         Assert.True(fixture.Launcher.IsOpen);
         Assert.False(fixture.Drag.Enabled);
         Assert.True(fixture.PreviewPresenter.Hides > hides);
         Assert.Single(fixture.Presenter.Requests);
-        fixture.Runtime.OpenLauncher(99);
+        fixture.Runtime.OpenLauncher(99, 200);
         fixture.Timer.FireEvenIfCanceled(0);
         Assert.Single(fixture.Presenter.Requests);
         fixture.Runtime.Handle(new KeyChord((int)LauncherInput.Accept));
@@ -46,7 +69,7 @@ public sealed class ResidentRuntimeTests
         using var fixture = new OverlayFixture();
         if (dispose) { fixture.Runtime.Dispose(); }
         else { fixture.Runtime.SetEnabled(false); }
-        fixture.Runtime.OpenLauncher(1);
+        fixture.Runtime.OpenLauncher(1, 100);
         Assert.False(fixture.Launcher.IsOpen);
         Assert.Empty(fixture.Presenter.Requests);
     }
@@ -66,7 +89,7 @@ public sealed class ResidentRuntimeTests
             IsMinimized = reason == "minimized",
             ClassName = reason == "taskbar" ? "Shell_TrayWnd" : "Editor",
         };
-        fixture.Runtime.OpenLauncher(reason == "own" ? 99 : 1);
+        fixture.Runtime.OpenLauncher(reason == "own" ? 99 : 1, 100);
         Assert.False(fixture.Launcher.IsOpen);
         Assert.Empty(fixture.Presenter.Requests);
     }
@@ -77,7 +100,7 @@ public sealed class ResidentRuntimeTests
     {
         var fixture = new Fixture();
         using var runtime = fixture.Runtime;
-        runtime.OpenLauncher(1);
+        runtime.OpenLauncher(1, 100);
         Assert.Null(fixture.Applied);
     }
 

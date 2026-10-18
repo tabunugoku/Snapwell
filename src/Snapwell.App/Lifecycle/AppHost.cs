@@ -408,7 +408,7 @@ internal sealed class AppHost
     }
 
     /// <summary>選択時の状態を再確認し、現在の Runtime に対象を渡す。</summary>
-    internal void OpenLauncher(nint target)
+    internal void OpenLauncher(nint target, uint ignorePointerUpToMs)
     {
         lock (_gate)
         {
@@ -417,7 +417,7 @@ internal sealed class AppHost
                 return;
             }
 
-            _runtime?.OpenLauncher(target);
+            _runtime?.OpenLauncher(target, ignorePointerUpToMs);
         }
     }
 

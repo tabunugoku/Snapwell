@@ -46,7 +46,7 @@ internal sealed unsafe class TrayIcon(IAppLog log, ISettingsLauncher? settings =
     public event Action? StandardSnapRequested;
     public event Action? RestoreRequested;
     public event Action? ArrangeRequested;
-    public event Action<nint>? LauncherRequested;
+    public event Action<nint, uint>? LauncherRequested;
     public event Action? ExitRequested;
     public event Action? SessionEnding;
 
@@ -328,7 +328,7 @@ internal sealed unsafe class TrayIcon(IAppLog log, ISettingsLauncher? settings =
             case 5: _settings.Open(); break;
             case 6 when Volatile.Read(ref _state).Enabled: ArrangeRequested?.Invoke(); break;
             case 7 when Volatile.Read(ref _state) is { Enabled: true, LauncherAvailable: true }:
-                LauncherRequested?.Invoke(_launcherTarget);
+                LauncherRequested?.Invoke(_launcherTarget, unchecked((uint)Environment.TickCount));
                 break;
         }
     }
