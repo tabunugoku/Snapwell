@@ -17,6 +17,131 @@ namespace Snapwell.App.Tests.Lifecycle;
 
 public sealed class ResidentRuntimeTests
 {
+    /// <summary>トレイ操作で前面がタスクバーへ移っても、直前の操作対象を使う。</summary>
+    [Theory]
+    [InlineData(98)]
+    [InlineData(97)]
+    [InlineData(96)]
+    [InlineData(0)]
+    public void TrayLauncherUsesLastEligibleForegroundAfterTaskbarActivation(int target)
+    {
+        using var fixture = new OverlayFixture();
+        fixture.Runtime.Handle(new ForegroundChanged(1));
+        fixture.Runtime.Handle(new ForegroundChanged(target));
+        fixture.Runtime.OpenLauncher(target, 100);
+        Assert.True(fixture.Launcher.IsOpen);
+        fixture.Runtime.Handle(new KeyChord((int)LauncherInput.Accept));
+        Assert.Equal((nint)1, Assert.Single(fixture.Motion.Requests).Handle);
+    }
+
+    /// <summary>記録があっても、渡された操作可能な対象を優先する。</summary>
+    [Fact]
+    public void TrayLauncherPrefersEligibleExplicitTargetOverRecordedForeground()
+    {
+        using var fixture = new OverlayFixture();
+        fixture.Runtime.Handle(new ForegroundChanged(2));
+        fixture.Runtime.OpenLauncher(1, 100);
+        Assert.True(fixture.Launcher.IsOpen);
+        fixture.Runtime.Handle(new KeyChord((int)LauncherInput.Accept));
+        Assert.Equal((nint)1, Assert.Single(fixture.Motion.Requests).Handle);
+    }
+
+    /// <summary>除外対象しか届かず記録がなければ表示しない。</summary>
+    [Fact]
+    public void TrayLauncherDoesNothingWhenOnlyExcludedForegroundsWereObserved()
+    {
+        using var fixture = new OverlayFixture();
+        fixture.Runtime.Handle(new ForegroundChanged(98));
+        fixture.Runtime.Handle(new ForegroundChanged(99));
+        fixture.Runtime.OpenLauncher(98, 100);
+        Assert.False(fixture.Launcher.IsOpen);
+        Assert.Empty(fixture.Presenter.Requests);
+    }
+
+    /// <summary>自プロセスの前面通知では直前の操作対象を上書きしない。</summary>
+    [Fact]
+    public void OwnProcessForegroundDoesNotReplaceLastEligibleTrayTarget()
+    {
+        using var fixture = new OverlayFixture();
+        fixture.Runtime.Handle(new ForegroundChanged(1));
+        fixture.Runtime.Handle(new ForegroundChanged(99));
+        fixture.Runtime.OpenLauncher(99, 100);
+        Assert.True(fixture.Launcher.IsOpen);
+        fixture.Runtime.Handle(new KeyChord((int)LauncherInput.Accept));
+        Assert.Equal((nint)1, Assert.Single(fixture.Motion.Requests).Handle);
+    }
+
+    /// <summary>表示中の前面変更でも既存の閉じる処理を通し、次の表示には新しい対象を使う。</summary>
+    [Fact]
+    public void ForegroundChangeWhileLauncherIsOpenRecordsNewTargetAndStillClosesLauncher()
+    {
+        using var fixture = new OverlayFixture();
+        fixture.Runtime.Handle(new ForegroundChanged(1));
+        fixture.Runtime.OpenLauncher(1, 100);
+        fixture.Runtime.Handle(new ForegroundChanged(99));
+        Assert.True(fixture.Launcher.IsOpen);
+        fixture.Runtime.Handle(new ForegroundChanged(2));
+        Assert.False(fixture.Launcher.IsOpen);
+        Assert.True(fixture.Drag.Enabled);
+        fixture.Runtime.OpenLauncher(98, 200);
+        Assert.True(fixture.Launcher.IsOpen);
+        fixture.Runtime.Handle(new KeyChord((int)LauncherInput.Accept));
+        Assert.Equal((nint)2, Assert.Single(fixture.Motion.Requests).Handle);
+    }
+
+    /// <summary>記録があっても一時停止中は開かず、再開後だけ対象を引き継ぐ。</summary>
+    [Fact]
+    public void PausedTrayLauncherDoesNotOpenWithRecordedForeground()
+    {
+        using var fixture = new OverlayFixture();
+        fixture.Runtime.Handle(new ForegroundChanged(1));
+        fixture.Runtime.SetEnabled(false);
+        fixture.Runtime.OpenLauncher(98, 100);
+        Assert.False(fixture.Launcher.IsOpen);
+        Assert.Empty(fixture.Presenter.Requests);
+        fixture.Runtime.SetEnabled(true);
+        fixture.Runtime.OpenLauncher(98, 200);
+        Assert.True(fixture.Launcher.IsOpen);
+        fixture.Runtime.Handle(new KeyChord((int)LauncherInput.Accept));
+        Assert.Equal((nint)1, Assert.Single(fixture.Motion.Requests).Handle);
+    }
+
+    /// <summary>記録への切り替えでもトレイ選択以前のマウス入力を持ち越さない。</summary>
+    [Fact]
+    public void TrayFallbackPreservesPointerCutoff()
+    {
+        using var fixture = new OverlayFixture();
+        fixture.Runtime.Handle(new ForegroundChanged(1));
+        fixture.Runtime.OpenLauncher(98, 100);
+        fixture.Runtime.Handle(new MouseButton(MouseButtonKind.Left, true, -1000, 100, 100));
+        Assert.True(fixture.Launcher.IsOpen);
+        fixture.Runtime.Handle(new MouseButton(MouseButtonKind.Left, true, -1000, 100, 101));
+        Assert.False(fixture.Launcher.IsOpen);
+    }
+
+    /// <summary>記録後に閉じた・最小化・クローク・非表示となった対象の代わりを推測しない。</summary>
+    [Theory]
+    [InlineData("closed")]
+    [InlineData("minimized")]
+    [InlineData("cloaked")]
+    [InlineData("hidden")]
+    public void TrayLauncherDoesNotOpenWhenRecordedTargetBecomesUnavailable(string reason)
+    {
+        using var fixture = new OverlayFixture();
+        fixture.Runtime.Handle(new ForegroundChanged(2));
+        fixture.Runtime.Handle(new ForegroundChanged(1));
+        fixture.Inspector.Exists = reason != "closed";
+        fixture.Inspector.Window = fixture.Inspector.Window with
+        {
+            IsMinimized = reason == "minimized",
+            IsCloaked = reason == "cloaked",
+            IsVisible = reason != "hidden",
+        };
+        fixture.Runtime.OpenLauncher(98, 100);
+        Assert.False(fixture.Launcher.IsOpen);
+        Assert.Empty(fixture.Presenter.Requests);
+    }
+
     /// <summary>トレイの時刻を表示へ渡し、一周を含む先行入力だけを無視する。</summary>
     [Theory]
     [InlineData(100u, 99u)]
@@ -830,7 +955,7 @@ public sealed class ResidentRuntimeTests
                 {
                     BeforeOverlayDispose?.Invoke();
                     OverlayDisposals++;
-                })], longPress);
+                })], longPress, new ForegroundTargetTracker(inspector, 999));
         }
 
         public void Dispose() => Runtime.Dispose();
@@ -844,6 +969,25 @@ public sealed class ResidentRuntimeTests
             if (handle == 99)
             {
                 snapshot = target.Window with { Handle = handle, ProcessId = 999 };
+                return true;
+            }
+
+            if (handle is 2 or 96 or 97 or 98)
+            {
+                snapshot = target.Window with
+                {
+                    Handle = handle,
+                    ClassName = handle switch
+                    {
+                        98 => "Shell_TrayWnd",
+                        97 => "Shell_SecondaryTrayWnd",
+                        96 => "NotifyIconOverflowWindow",
+                        _ => "Editor",
+                    },
+                    IsVisible = true,
+                    IsMinimized = false,
+                    IsCloaked = false,
+                };
                 return true;
             }
 
