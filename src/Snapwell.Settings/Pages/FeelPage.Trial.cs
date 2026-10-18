@@ -108,6 +108,11 @@ public sealed partial class FeelPage
 
     private void TrialMode_Click(object sender, RoutedEventArgs e)
     {
+        if (_dragging)
+        {
+            return;
+        }
+
         _trialMode = ((Button)sender).Tag is "Corners" ? SnapMode.Corners : SnapMode.Zones;
         TrialZonesButton.Style = (Style)Resources[_trialMode == SnapMode.Zones ? "SelectedChipButtonStyle" : "ChipButtonStyle"];
         TrialCornersButton.Style = (Style)Resources[_trialMode == SnapMode.Corners ? "SelectedChipButtonStyle" : "ChipButtonStyle"];
@@ -205,7 +210,9 @@ public sealed partial class FeelPage
         TrialStage.ReleasePointerCapture(e.Pointer);
         // 本体と同じ速度の推定。止めてから離せば、最後の動きの速度は使わない
         var velocity = _velocity.Release(_clock.Elapsed.TotalSeconds);
-        if (_trial.Release(velocity, _session.Current.ToFeelPreset(), _session.Current.SnapRadius))
+        // 離した位置も渡し、本体と同じく上下端の帯で四分割を選ばせる
+        if (_trial.Release(velocity, _session.Current.ToFeelPreset(), _session.Current.SnapRadius, _dragPointerId,
+            Position(e)))
         {
             StartFlight();
         }
@@ -245,7 +252,8 @@ public sealed partial class FeelPage
 
     private void Launch(Vec2 velocity)
     {
-        if (_trial is null)
+        // ドラッグ中は、キーやボタンからの投げを受け付けない
+        if (_trial is null || _dragging)
         {
             return;
         }

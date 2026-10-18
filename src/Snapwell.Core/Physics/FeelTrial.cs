@@ -103,6 +103,11 @@ public sealed class FeelTrial
     /// <summary>吸着の方式を切り替える。カードは中央へ戻る。</summary>
     public void SetMode(SnapMode mode)
     {
+        if (_grabbed)
+        {
+            return;
+        }
+
         Mode = mode;
         Layout(_area.Width, _area.Height);
     }
@@ -176,17 +181,25 @@ public sealed class FeelTrial
     /// <summary>
     /// 離す、または投げ出す。本体の <see cref="SnapResolver"/> が吸着先を選べば、その停止点の磁石場の中を
     /// 動き始めて true を返す。速さが足りず選ばれなければその場に置き、false を返す。
+    /// <paramref name="pointer"/> は離した瞬間のポインター位置（舞台の座標）。本体と同じく、上下端の帯では
+    /// 上下の四分割の選び方に使う。キーやボタンからの投げは位置なし（null）。
+    /// ほかのポインターがつかんでいる最中の、つかんでいる以外からの呼び出しは何もせず false。
     /// </summary>
-    public bool Release(Vec2 velocity, FeelPreset feel, double clickRadius)
+    public bool Release(Vec2 velocity, FeelPreset feel, double clickRadius, long pointerId = 0, Vec2? pointer = null)
     {
         ArgumentNullException.ThrowIfNull(feel);
+        if (_grabbed && !Owns(pointerId))
+        {
+            return false;
+        }
+
         _grabbed = false;
         var left = Center.X - Size.X / 2;
         var top = Center.Y - Size.Y / 2;
         var current = new PixelRect((int)Math.Round(left), (int)Math.Round(top), (int)Math.Round(Size.X),
             (int)Math.Round(Size.Y));
         var snap = SnapResolver.Resolve(current, velocity, feel, Mode, new Spacing(Gap, Gap),
-            [new("trial", _area, 1)], snapRadius: clickRadius);
+            [new("trial", _area, 1)], pointer: pointer, snapRadius: clickRadius);
         if (snap is not { } result)
         {
             return false;

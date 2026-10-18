@@ -1,4 +1,5 @@
 using Snapwell.Core.Geometry;
+using Snapwell.Core.Layout;
 using Snapwell.Core.Physics;
 using Snapwell.Core.Snapping;
 
@@ -290,5 +291,45 @@ public sealed class FeelTrialTests
         Assert.False(trial.Owns(1));
         Assert.True(trial.Grab(new(trial.Center.X, trial.Center.Y - 30), TrialPointerKind.Touch, 2));
         Assert.True(trial.Owns(2));
+    }
+
+    /// <summary>上端の帯で離すと、本体と同じく上の四分割になる（位置なしの半分とは違う）。</summary>
+    [Fact]
+    public void ReleasingInTheTopBandPicksTheSameTargetAsTheResolver()
+    {
+        var trial = new FeelTrial(640, 260, SnapMode.Zones);
+        Assert.True(trial.Grab(new(320, 100)));
+        trial.Move(new(320, 8));
+        var feel = FeelPreset.Airy;
+        var pointer = new Vec2(320, 8);
+        var current = new PixelRect((int)Math.Round(trial.Center.X - trial.Size.X / 2),
+            (int)Math.Round(trial.Center.Y - trial.Size.Y / 2), (int)trial.Size.X, (int)trial.Size.Y);
+        var expected = SnapResolver.Resolve(current, new(1500, 800), feel, SnapMode.Zones, new Spacing(6, 6),
+            [new("trial", new PixelRect(0, 0, 640, 260), 1)], pointer: pointer, snapRadius: 28)!.Value;
+        Assert.True(trial.Release(new(1500, 800), feel, 28, 0, pointer));
+        Assert.True(Fly(trial));
+        Assert.Equal(expected.Kind, trial.Kind);
+        Assert.True(expected.Kind is SnapTargetKind.TopRight or SnapTargetKind.TopLeft);
+
+        var without = new FeelTrial(640, 260, SnapMode.Zones);
+        Assert.True(without.Grab(new(320, 100)));
+        without.Move(new(320, 8));
+        Assert.True(without.Release(new(1500, 800), feel, 28));
+        Assert.True(Fly(without));
+        Assert.NotEqual(trial.Kind, without.Kind);
+    }
+
+    /// <summary>つかんでいる最中は、別の入口（キー・ボタン）の投げや、方式の切り替えを受け付けない。</summary>
+    [Fact]
+    public void LaunchAndModeChangeAreRefusedWhileGrabbed()
+    {
+        var trial = new FeelTrial(640, 260, SnapMode.Zones);
+        Assert.True(trial.Grab(new(320, 100), TrialPointerKind.Touch, 7));
+        Assert.False(trial.Release(new(1500, 0), FeelPreset.Airy, 28, 0));
+        Assert.True(trial.IsGrabbed);
+        trial.SetMode(SnapMode.Corners);
+        Assert.Equal(SnapMode.Zones, trial.Mode);
+        Assert.True(trial.Release(new(1500, 0), FeelPreset.Airy, 28, 7));
+        Assert.False(trial.IsGrabbed);
     }
 }
