@@ -214,4 +214,21 @@ public sealed class FeelTrialTests
         Assert.Equal(point.X, trial.Center.X - trial.Size.X / 2 + 0.75 * trial.Size.X, 6);
         Assert.Equal(point.Y, trial.Center.Y - trial.Size.Y / 2 + FeelTrial.TitleBarHeight / 2, 6);
     }
+
+    /// <summary>動きを減らす設定では、収束しない値でも飛行を打ち切らず、選ばれた吸着先へ直ちに確定する。</summary>
+    [Fact]
+    public void SettleJumpsToTheChosenTargetEvenWhenThePhysicsWouldNotConverge()
+    {
+        var trial = new FeelTrial(640, 260, SnapMode.Zones);
+        var feel = FeelPreset.Airy.With(frequency: 7, dampingRatio: 1.6, magnetStrength: 0);
+        Assert.True(trial.Release(new(1500, 0), feel, 28));
+        trial.Settle();
+        Assert.False(trial.IsFlying);
+        Assert.Equal(SnapTargetKind.RightHalf, trial.Kind);
+        var guide = trial.Guides[trial.GuideIndex!.Value];
+        Assert.Equal(new Vec2(guide.X + guide.W / 2, guide.Y + guide.H / 2), trial.Center);
+        Assert.Equal(new Vec2(guide.W, guide.H), trial.Size);
+        trial.Settle();
+        Assert.Equal(SnapTargetKind.RightHalf, trial.Kind);
+    }
 }
