@@ -8,7 +8,7 @@ namespace Snapwell.App.Overlay;
 internal sealed unsafe partial class GdiOverlayText : IDisposable
 {
     private readonly nint _dc;
-    private readonly Dictionary<(int Height, bool Mono, bool Bold), nint> _fonts = [];
+    private readonly Dictionary<(int Height, bool Mono, bool Bold, bool Japanese), nint> _fonts = [];
     private readonly double _scale;
 
     internal GdiOverlayText(double scale)
@@ -31,22 +31,54 @@ internal sealed unsafe partial class GdiOverlayText : IDisposable
 
     /// <summary>縮小後も維持する元サイズの文字幅を論理 px で測る。</summary>
     internal double Measure(string text, double size, bool mono, bool bold = false)
-        => MeasurePixels(text, size, mono, bold) / _scale;
+        => SplitRuns(text, mono).Sum(run => MeasureRunPixels(run, size, mono, bold)) / _scale;
 
-    private int MeasurePixels(string text, double size, bool mono, bool bold, int samples = 1)
+    /// <summary>等幅の数字と記号を保ち、非 ASCII の連続を日本語用のフォントへ分ける。</summary>
+    internal static (string Value, bool Japanese)[] SplitRuns(string text, bool mono, bool spaced = false)
     {
         if (text.Length == 0)
         {
-            return 0;
+            return [];
         }
 
-        var previous = SelectObject(_dc, Font(size, mono, bold, samples));
+        // サイズ表示の × と · は Cascadia Mono に字形があるため、数字と同じ run に残す。
+        static bool Japanese(int value) => value > 0x7F && value is not ('×' or '·');
+
+        if (spaced)
+        {
+            return text.EnumerateRunes().Select(rune =>
+                (rune.ToString(), mono && Japanese(rune.Value))).ToArray();
+        }
+
+        if (!mono)
+        {
+            return [(text, false)];
+        }
+
+        var runs = new List<(string Value, bool Japanese)>();
+        var start = 0;
+        for (var index = 1; index <= text.Length; index++)
+        {
+            if (index == text.Length || Japanese(text[index]) != Japanese(text[start]))
+            {
+                runs.Add((text[start..index], Japanese(text[start])));
+                start = index;
+            }
+        }
+
+        return runs.ToArray();
+    }
+
+    private int MeasureRunPixels((string Value, bool Japanese) run, double size, bool mono, bool bold,
+        int samples = 1)
+    {
+        var previous = SelectObject(_dc, Font(size, mono, bold, samples, run.Japanese));
         try
         {
             var rect = new NativeRect();
-            fixed (char* value = text)
+            fixed (char* value = run.Value)
             {
-                DrawTextW(_dc, value, text.Length, &rect, 0x20 | 0x400 | 0x800);
+                DrawTextW(_dc, value, run.Value.Length, &rect, 0x20 | 0x400 | 0x800);
             }
 
             return rect.Right;
@@ -76,27 +108,26 @@ internal sealed unsafe partial class GdiOverlayText : IDisposable
         const int Samples = 4;
         var bounds = text.Bounds;
         var result = OverlayPainter.Create(bounds.Width, bounds.Height);
-        var runs = text.LetterSpacing > 0
-            ? text.Value.EnumerateRunes().Select(rune => rune.ToString()).ToArray()
-            : [text.Value];
-        var widths = runs.Select(run => MeasurePixels(run, text.Size, text.Mono, text.Bold)).ToArray();
+        var runs = SplitRuns(text.Value, text.Mono, text.LetterSpacing > 0);
+        var widths = runs.Select(run => MeasureRunPixels(run, text.Size, text.Mono, text.Bold)).ToArray();
         var spacing = text.LetterSpacing * _scale;
         var x = text.Center ? (bounds.Width - widths.Sum() - runs.Length * spacing) / 2 : 0;
         for (var index = 0; index < runs.Length; index++)
         {
             var width = widths[index];
-            var sourceWidth = MeasurePixels(runs[index], text.Size, text.Mono, text.Bold, Samples);
+            var sourceWidth = MeasureRunPixels(runs[index], text.Size, text.Mono, text.Bold, Samples);
             if (width > 0 && sourceWidth > 0)
             {
                 // 計測は元のフォントのままにし、高解像度で変わる送り幅だけを縮小時に合わせる。
                 var run = text with
                 {
-                    Value = runs[index],
+                    Value = runs[index].Value,
                     Bounds = new(0, 0, sourceWidth, checked(bounds.Height * Samples)),
                     Center = false,
                     LetterSpacing = 0,
                 };
-                var mask = Rasterize(run, color, Samples, width);
+                var font = Font(text.Size, text.Mono, text.Bold, Samples, runs[index].Japanese);
+                var mask = Rasterize(run, color, font, Samples, width);
                 var left = text.LetterSpacing > 0 ? (int)Math.Round(x) : (int)x;
                 OverlayPainter.Composite(result, mask, left, 0);
             }
@@ -107,10 +138,9 @@ internal sealed unsafe partial class GdiOverlayText : IDisposable
         return result;
     }
 
-    private OverlayFrame Rasterize(LauncherText text, OverlayColor color, int samples = 1, int? width = null)
+    private OverlayFrame Rasterize(LauncherText text, OverlayColor color, nint font, int samples, int width)
     {
         var bounds = text.Bounds;
-        var font = Font(text.Size, text.Mono, text.Bold, samples);
         var info = new BitmapHeader
         {
             Size = (uint)sizeof(BitmapHeader),
@@ -140,22 +170,15 @@ internal sealed unsafe partial class GdiOverlayText : IDisposable
             var rect = new NativeRect { Right = bounds.Width, Bottom = bounds.Height };
             // 省略は配置側で対象名にだけ行う。案内に DT_END_ELLIPSIS を付けない。
             var flags = 0x20u | 0x4u | 0x800u | (text.Center ? 1u : 0u);
-            if (text.LetterSpacing > 0)
+            fixed (char* value = text.Value)
             {
-                DrawSpaced(text, rect, flags);
-            }
-            else
-            {
-                fixed (char* value = text.Value)
-                {
-                    DrawTextW(_dc, value, text.Value.Length, &rect, flags);
-                }
+                DrawTextW(_dc, value, text.Value.Length, &rect, flags);
             }
 
             GdiFlush();
             if (samples > 1)
             {
-                return OverlayTextMask.Downsample(pixels, bounds.Width, width!.Value,
+                return OverlayTextMask.Downsample(pixels, bounds.Width, width,
                     bounds.Height / samples, samples, color);
             }
 
@@ -181,28 +204,10 @@ internal sealed unsafe partial class GdiOverlayText : IDisposable
         }
     }
 
-    private void DrawSpaced(LauncherText text, NativeRect rect, uint flags)
-    {
-        var glyphs = text.Value.EnumerateRunes().Select(rune => rune.ToString()).ToArray();
-        var widths = glyphs.Select(glyph => Measure(glyph, text.Size, text.Mono, text.Bold) * _scale).ToArray();
-        var spacing = text.LetterSpacing * _scale;
-        var x = text.Center ? (rect.Right - widths.Sum() - glyphs.Length * spacing) / 2 : 0;
-        for (var index = 0; index < glyphs.Length; index++)
-        {
-            rect.Left = (int)Math.Round(x);
-            fixed (char* value = glyphs[index])
-            {
-                DrawTextW(_dc, value, glyphs[index].Length, &rect, flags & ~1u);
-            }
-
-            x += widths[index] + spacing;
-        }
-    }
-
     /// <summary>DC に選択されていないフォントと DC を解放する。</summary>
     public void Dispose()
     {
-        foreach (var font in _fonts.Values)
+        foreach (var font in _fonts.Values.Distinct())
         {
             DeleteObject(font);
         }
@@ -211,16 +216,16 @@ internal sealed unsafe partial class GdiOverlayText : IDisposable
         DeleteDC(_dc);
     }
 
-    private nint Font(double size, bool mono, bool bold, int samples = 1)
+    private nint Font(double size, bool mono, bool bold, int samples = 1, bool japanese = false)
     {
         var height = Math.Max(1, (int)Math.Round(size * _scale * samples));
-        var key = (height, mono, bold);
+        var key = (height, mono, bold, japanese);
         if (_fonts.TryGetValue(key, out var cached))
         {
             return cached;
         }
 
-        var requested = mono ? "Cascadia Mono" : "Segoe UI Variable Text";
+        var requested = japanese ? "Yu Gothic UI" : mono ? "Cascadia Mono" : "Segoe UI Variable Text";
         var font = CreateFont(requested, height, bold);
         var previous = SelectObject(_dc, font);
         Span<char> face = stackalloc char[64];
@@ -235,6 +240,14 @@ internal sealed unsafe partial class GdiOverlayText : IDisposable
         if (!string.Equals(resolved, requested, StringComparison.OrdinalIgnoreCase))
         {
             DeleteObject(font);
+            if (japanese)
+            {
+                // 日本語用の書体がなければ従来のフォントを共有する。Dispose で重複を除いて解放する。
+                font = Font(size, mono, bold, samples);
+                _fonts.Add(key, font);
+                return font;
+            }
+
             font = CreateFont(mono ? "Consolas" : "Segoe UI", height, bold);
         }
 
