@@ -155,6 +155,8 @@ public sealed class HoldRingTests
     {
         using var fixture = new Fixture();
         fixture.IsCaption = false;
+        // 上端の帯の外（クライアント領域）を押す。
+        fixture.Position = new(200, 250);
         fixture.Down();
         fixture.Now = 200;
         fixture.Tick();
