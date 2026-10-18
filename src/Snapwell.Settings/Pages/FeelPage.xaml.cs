@@ -45,27 +45,14 @@ public sealed partial class FeelPage : Page
         const double height = 54;
         const double totalSeconds = 1.4;
         const int steps = 70;
-        const double dt = totalSeconds / steps;
-        var m = preset.Mass;
-        var k = preset.Stiffness;
-        var c = preset.Damping;
-        var x = 0.0;
-        var v = 0.0;
 
         // Points の既定値は実装によって null のことがあるため、毎回新しい集合を入れる。
         polyline.Points = new PointCollection();
         polyline.Points.Add(new Point(0, height - 4));
         for (var i = 1; i <= steps; i++)
         {
-            for (var s = 0; s < 4; s++)
-            {
-                var f = -k * (x - 1.0) - c * v;
-                v += f / m * (dt / 4.0);
-                x += v * (dt / 4.0);
-            }
-
             var px = i / (double)steps * width;
-            var py = height - 4 - x * (height - 16);
+            var py = height - 4 - preset.StepPosition(i / (double)steps * totalSeconds) * (height - 16);
             polyline.Points.Add(new Point(px, py));
         }
     }

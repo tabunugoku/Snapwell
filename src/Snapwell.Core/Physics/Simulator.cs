@@ -4,9 +4,9 @@ namespace Snapwell.Core.Physics;
 public static class Simulator
 {
     private const double FixedStep = 1.0 / 240;
-    private const double MaximumFrame = 0.05;
+    private const double MaximumFrame = 1.0 / 30;
 
-    /// <summary>最大 0.05 秒を進め、静止したら目標を確定して true を返す。</summary>
+    /// <summary>最大 1/30 秒（feel のループと同じ）を進め、静止したら目標を確定して true を返す。</summary>
     public static bool Advance(WindowBody body, double frameSeconds)
     {
         ArgumentNullException.ThrowIfNull(body);

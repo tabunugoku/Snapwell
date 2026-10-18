@@ -66,6 +66,38 @@ public sealed record FeelPreset
     /// <summary>磁石場の吸着半径の内側で効くばねの振動数 3 + 4×強さ。</summary>
     public double ClickFrequency => 3 + 4 * MagnetStrength;
 
+    /// <summary>
+    /// 0 から 1 への目標のばね（手を離して静止から）の t 秒後の位置。feel の response() の閉形式で、
+    /// 不足減衰・臨界減衰・過減衰を分ける。設定画面の曲線に使う。
+    /// </summary>
+    public double StepPosition(double seconds)
+    {
+        var w = 2 * Math.PI * Frequency;
+        var z = DampingRatio;
+        double u;
+        if (Math.Abs(z - 1) < 1e-6)
+        {
+            u = Math.Exp(-w * seconds) * (-1 - w * seconds);
+        }
+        else if (z < 1)
+        {
+            var wd = w * Math.Sqrt(1 - z * z);
+            var b = -z * w / wd;
+            u = Math.Exp(-z * w * seconds) * (-Math.Cos(wd * seconds) + b * Math.Sin(wd * seconds));
+        }
+        else
+        {
+            var q = Math.Sqrt(z * z - 1);
+            var r1 = -w * (z - q);
+            var r2 = -w * (z + q);
+            var c2 = r1 / (r2 - r1);
+            var c1 = -1 - c2;
+            u = c1 * Math.Exp(r1 * seconds) + c2 * Math.Exp(r2 * seconds);
+        }
+
+        return 1 + u;
+    }
+
     /// <summary>磁石の強さだけを変えた操作感を返す。範囲外は 0〜上限に収め、非有限は既定値にする。</summary>
     public FeelPreset WithMagnetStrength(double strength) => new(Mass, Frequency, DampingRatio,
         double.IsFinite(strength) ? Math.Clamp(strength, 0, MaximumMagnetStrength) : DefaultMagnetStrength);
