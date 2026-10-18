@@ -82,6 +82,21 @@ public sealed class HotkeyCatalogTests
         Assert.Equal("0x5D", HotkeyCatalog.FormatChord(new(ChordModifiers.None, 0x5D)));
     }
 
+    /// <summary>表示部品にも既存と同じ特殊キー名を使う。</summary>
+    [Theory]
+    [InlineData(0x20u, "Space")]
+    [InlineData(0x13u, "Pause")]
+    [InlineData(0x25u, "←")]
+    [InlineData(0x26u, "↑")]
+    [InlineData(0x27u, "→")]
+    [InlineData(0x28u, "↓")]
+    public void ChordPartsKeepModifierOrderAndSpecialKeyNames(uint key, string expected)
+    {
+        Assert.Equal(["Ctrl", "Alt", "Shift", "Win", expected], HotkeyCatalog.FormatChordParts(new(
+            ChordModifiers.Win | ChordModifiers.Shift | ChordModifiers.Alt | ChordModifiers.Control, key)));
+        Assert.Equal([expected], HotkeyCatalog.FormatChordParts(new(ChordModifiers.None, key)));
+    }
+
     [Fact]
     public void OriginalTwentyCommandsHaveJapaneseNamesAndEnumerationOrder()
     {

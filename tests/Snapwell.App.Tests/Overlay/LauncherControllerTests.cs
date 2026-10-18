@@ -14,6 +14,91 @@ namespace Snapwell.App.Tests.Overlay;
 /// <summary>ランチャーの対象・選択・入力の切り替えを検証する。</summary>
 public sealed class LauncherControllerTests
 {
+    /// <summary>トレイ選択以前の押下と解放は、別モニターから遅れて届いても表示を閉じない。</summary>
+    [Theory]
+    [InlineData(100u, 99u, true, false, -1)]
+    [InlineData(100u, 100u, true, false, -1000)]
+    [InlineData(100u, 99u, true, true, 100)]
+    [InlineData(100u, 100u, false, true, -1000)]
+    [InlineData(100u, 99u, false, false, -1000)]
+    [InlineData(5u, uint.MaxValue - 1, true, false, -1000)]
+    public void TrayOpeningIgnoresEarlierPointerEvents(uint referenceMs, uint eventMs, bool isDown, bool right, int x)
+    {
+        using var fixture = new Fixture(new TwoMonitors());
+        fixture.Launcher.Open(1, referenceMs);
+        var selection = fixture.Launcher.Selection;
+        var panel = fixture.Launcher.PanelLayout;
+        fixture.Launcher.HandleGlobalPointer(new(right ? MouseButtonKind.Right : MouseButtonKind.Left,
+            isDown, x, 100, eventMs));
+        Assert.True(fixture.Launcher.IsOpen);
+        Assert.Same(selection, fixture.Launcher.Selection);
+        Assert.Same(panel, fixture.Launcher.PanelLayout);
+        Assert.Equal(0, fixture.Presenter.Hides);
+        Assert.Empty(fixture.Placements);
+    }
+
+    /// <summary>先行入力の連打をすべて無視した後も、新しい領域外の押下では閉じる。</summary>
+    [Fact]
+    public void DelayedRepeatedClicksDoNotConsumeCutoffAndLaterOutsideClickCloses()
+    {
+        using var fixture = new Fixture();
+        fixture.Launcher.Open(1, 100);
+        foreach (var timeMs in new uint[] { 98, 99, 100, 99, 100 })
+        {
+            fixture.Launcher.HandleGlobalPointer(new(MouseButtonKind.Left, true, -1000, 100, timeMs));
+            fixture.Launcher.HandleGlobalPointer(new(MouseButtonKind.Left, false, -1000, 100, timeMs));
+            Assert.True(fixture.Launcher.IsOpen);
+        }
+
+        fixture.Launcher.HandleGlobalPointer(new(MouseButtonKind.Left, true, -1000, 100, 101));
+        Assert.False(fixture.Launcher.IsOpen);
+        Assert.Equal(fixture.Normal, fixture.Applied);
+        Assert.Equal(1, fixture.Presenter.Hides);
+    }
+
+    /// <summary>Close と Esc のどちらで閉じても、ホットキーから開く次の表示へ時刻を持ち越さない。</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ReopeningWithoutCutoffDoesNotKeepPreviousTrayCutoff(bool cancel)
+    {
+        using var fixture = new Fixture();
+        fixture.Launcher.Open(1, 100);
+        if (cancel) { fixture.Key(LauncherInput.Cancel); }
+        else { fixture.Launcher.Close(); }
+        fixture.Launcher.Open();
+        Assert.True(fixture.Launcher.IsOpen);
+        fixture.Launcher.HandleGlobalPointer(new(MouseButtonKind.Left, true, -1, 100, 99));
+        Assert.False(fixture.Launcher.IsOpen);
+    }
+
+    /// <summary>閉じずに再要求しても、開いている表示の時刻を更新しない。</summary>
+    [Fact]
+    public void AlreadyOpenRequestDoesNotReplaceCutoff()
+    {
+        using var fixture = new Fixture();
+        fixture.Launcher.Open(1, 100);
+        fixture.Launcher.Open(1, 200);
+        fixture.Launcher.HandleGlobalPointer(new(MouseButtonKind.Left, true, -1, 100, 101));
+        Assert.False(fixture.Launcher.IsOpen);
+        Assert.Single(fixture.Presenter.Requests);
+    }
+
+    /// <summary>対象がなく失敗した要求の時刻を、次の表示へ保存しない。</summary>
+    [Fact]
+    public void FailedOpenDoesNotStoreCutoff()
+    {
+        using var fixture = new Fixture();
+        fixture.Inspector.Exists = false;
+        fixture.Launcher.Open(1, 100);
+        Assert.False(fixture.Launcher.IsOpen);
+        fixture.Inspector.Exists = true;
+        fixture.Launcher.Open();
+        Assert.True(fixture.Launcher.IsOpen);
+        fixture.Launcher.HandleGlobalPointer(new(MouseButtonKind.Left, true, -1, 100, 99));
+        Assert.False(fixture.Launcher.IsOpen);
+    }
+
     /// <summary>前面でない指定対象にも配置を配送する。</summary>
     [Fact]
     public void ExplicitTargetAcceptPlacesNonForegroundWindow()
