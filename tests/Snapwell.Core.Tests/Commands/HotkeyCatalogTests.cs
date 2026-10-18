@@ -1,9 +1,39 @@
 using Snapwell.Core.Commands;
+using Snapwell.Core.Settings;
 
 namespace Snapwell.Core.Tests.Commands;
 
 public sealed class HotkeyCatalogTests
 {
+    /// <summary>広げる・縮める系の表示名は幅の設定に連動し、範囲外は効く値にそろえ、移動系は変わらない。</summary>
+    [Theory]
+    [InlineData(1, 1)]
+    [InlineData(2, 2)]
+    [InlineData(3, 3)]
+    [InlineData(4, 4)]
+    [InlineData(0, 1)]
+    [InlineData(-3, 1)]
+    [InlineData(9, 4)]
+    public void ResizeDisplayNamesFollowTheConfiguredStep(int step, int shown)
+    {
+        Assert.Equal($"右へ {shown} 区画広げる", HotkeyCatalog.GetDisplayName(WindowCommand.GrowRight, step));
+        Assert.Equal($"下へ {shown} 区画広げる", HotkeyCatalog.GetDisplayName(WindowCommand.GrowDown, step));
+        Assert.Equal($"左へ {shown} 区画縮める", HotkeyCatalog.GetDisplayName(WindowCommand.ShrinkLeft, step));
+        Assert.Equal($"上へ {shown} 区画縮める", HotkeyCatalog.GetDisplayName(WindowCommand.ShrinkUp, step));
+        Assert.Equal("左へ 1 区画移動", HotkeyCatalog.GetDisplayName(WindowCommand.MoveCellLeft, step));
+    }
+
+    /// <summary>設定の取り込みの差分一覧も、現在の幅で表示名を作る。</summary>
+    [Fact]
+    public void ImportDifferencesUseCurrentResizeStepInHotkeyNames()
+    {
+        var current = new PortableSettings { ResizeStep = 3 };
+        var imported = current with { Hotkeys = new(current.Hotkeys) };
+        imported.Hotkeys[WindowCommand.GrowRight] = new(ChordModifiers.Alt, 0x4C);
+        var difference = Assert.Single(SettingsTransfer.GetDifferences(current, imported));
+        Assert.Equal("右へ 3 区画広げる", difference.Name);
+    }
+
     [Fact]
     public void EveryCommandHasADisplayNameIncludingOpenLauncher()
     {
@@ -119,6 +149,7 @@ public sealed class HotkeyCatalogTests
         }
 
         Assert.Equal(commands, commands.Reverse().OrderBy(HotkeyCatalog.GetDisplayOrder));
+        Assert.Equal("右へ 1 区画広げる", HotkeyCatalog.GetDisplayName(WindowCommand.GrowRight));
         Assert.Equal("左半分", HotkeyCatalog.GetDisplayName(WindowCommand.LeftHalf));
         Assert.Equal("左上の四分割", HotkeyCatalog.GetDisplayName(WindowCommand.TopLeftQuarter));
         Assert.Equal("右へ 1 区画広げる", HotkeyCatalog.GetDisplayName(WindowCommand.GrowRight));

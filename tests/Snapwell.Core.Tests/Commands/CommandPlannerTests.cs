@@ -52,6 +52,23 @@ public sealed class CommandPlannerTests
         Assert.True(_monitors[0].WorkArea.Contains(result!.Value));
     }
 
+    /// <summary>設定した幅と固定する位置が段階拡大・縮小に反映され、既定は 1 区画の左上固定になる。</summary>
+    [Fact]
+    public void ResizeCommandsUseConfiguredStepAndAnchor()
+    {
+        var grid = new GridLayout(_monitors[0].WorkArea, GridPlan.EightByEight, new Spacing(8, 8).ToPhysical(_monitors[0].Scale));
+        var current = grid.SpanRect(2, 2, 3, 3);
+        var byDefault = CommandPlanner.Plan(WindowCommand.GrowRight, current, true,
+            _monitors, GridPlan.EightByEight, new(8, 8));
+        Assert.Equal(grid.SpanRect(2, 2, 4, 3), byDefault);
+        var twoSteps = CommandPlanner.Plan(WindowCommand.GrowRight, current, true,
+            _monitors, GridPlan.EightByEight, new(8, 8), new(2, ResizeAnchor.TopLeft));
+        Assert.Equal(grid.SpanRect(2, 2, 5, 3), twoSteps);
+        var shrink = CommandPlanner.Plan(WindowCommand.ShrinkUp, grid.SpanRect(2, 2, 3, 5), true,
+            _monitors, GridPlan.EightByEight, new(8, 8), new(2, ResizeAnchor.NearEdge));
+        Assert.Equal(grid.SpanRect(2, 2, 3, 3), shrink);
+    }
+
     [Fact]
     public void ArrangeCommandsPreserveEnumerationValuesAndHaveDefaultBindings()
     {
