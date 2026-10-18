@@ -2,6 +2,9 @@ using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Snapwell.App.Lifecycle;
+using Snapwell.App.Overlay;
+using Snapwell.App.Tray.Menu;
+using Snapwell.Platform.Monitors;
 using Windows.Win32;
 using Windows.Win32.Foundation;
 using Windows.Win32.UI.Shell;
@@ -36,6 +39,7 @@ internal sealed unsafe class TrayIcon(IAppLog log, ISettingsLauncher? settings =
     private bool _removed;
     private HICON _shownIcon;
     private string _shownTip = "";
+    private TrayMenuController? _menu;
 
     public event Action? ToggleRequested;
     public event Action? StandardSnapRequested;
@@ -83,7 +87,11 @@ internal sealed unsafe class TrayIcon(IAppLog log, ISettingsLauncher? settings =
     {
         Volatile.Write(ref _state, state);
         // NIM_MODIFY はトレイを作ったスレッドで行う。
-        Post(RefreshIcon);
+        Post(() =>
+        {
+            RefreshIcon();
+            RefreshMenu();
+        });
     }
 
     public void Post(Action action)
@@ -144,6 +152,8 @@ internal sealed unsafe class TrayIcon(IAppLog log, ISettingsLauncher? settings =
         }
         finally
         {
+            _menu?.Dispose();
+            _menu = null;
             Remove();
             if (!_window.IsNull)
             {
@@ -227,35 +237,73 @@ internal sealed unsafe class TrayIcon(IAppLog log, ISettingsLauncher? settings =
 
     private void ShowMenu()
     {
-        var menu = PInvoke.CreatePopupMenu();
-        if (menu.IsNull)
+        try
+        {
+            if (_menu?.IsOpen == true)
+            {
+                _menu.Close();
+                return;
+            }
+
+            var snapshot = MenuSnapshot();
+            if (_menu is null)
+            {
+                var view = new TrayMenuWindow(_window, WriteMenuError);
+                _menu = new(view, SelectMenuItem, WriteMenuError);
+                view.Controller = _menu;
+            }
+
+            _menu.Open(snapshot);
+        }
+        catch (Exception exception)
+        {
+            // メニューの位置取得や表示の失敗では、常駐と復元の手順を止めない。
+            _menu?.Close();
+            WriteMenuError(exception);
+        }
+    }
+
+    private TrayMenuSnapshot MenuSnapshot()
+    {
+        if (!OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000))
+        {
+            throw new PlatformNotSupportedException("トレイメニューには Windows 11 が必要。");
+        }
+
+        var state = Volatile.Read(ref _state);
+        var placement = TrayMenuPlacement.Read(new TrayMenuAnchor(_window), new Win32MonitorSource(),
+            state.Status is not null);
+        return new(placement.Layout, TrayIconPolicy.MenuItems(state), state.Enabled, state.Status,
+            placement.MonitorCount, OverlayThemeSource.Read());
+    }
+
+    private void RefreshMenu()
+    {
+        if (_menu?.IsOpen != true)
         {
             return;
         }
 
         try
         {
-            var state = Volatile.Read(ref _state);
-            foreach (var item in TrayIconPolicy.MenuItems(state))
-            {
-                var flags = MENU_ITEM_FLAGS.MF_STRING |
-                    (item.Enabled ? 0 : MENU_ITEM_FLAGS.MF_GRAYED) |
-                    (item.Checked ? MENU_ITEM_FLAGS.MF_CHECKED : 0);
-                AppendItem(menu, flags, item.Id, item.Text);
-            }
-
-            PInvoke.GetCursorPos(out var point);
-            PInvoke.SetForegroundWindow(_window);
-            var command = (uint)PInvoke.TrackPopupMenu(menu,
-                TRACK_POPUP_MENU_FLAGS.TPM_RETURNCMD | TRACK_POPUP_MENU_FLAGS.TPM_RIGHTBUTTON,
-                point.X, point.Y, 0, _window, null).Value;
-            // メニューを確実に閉じるため、所有ウィンドウに無害なメッセージを返す。実機未確認。
-            PInvoke.PostMessage(_window, 0, default, default);
-            SelectMenuItem(command);
+            _menu.Update(MenuSnapshot());
         }
-        finally
+        catch (Exception exception)
         {
-            PInvoke.DestroyMenu(menu);
+            _menu.Close();
+            WriteMenuError(exception);
+        }
+    }
+
+    private void WriteMenuError(Exception exception)
+    {
+        try
+        {
+            WriteError(exception);
+        }
+        catch (Exception)
+        {
+            // 記録先も使えない表示障害を、常駐の終了要求へ変換しない。
         }
     }
 
@@ -275,14 +323,6 @@ internal sealed unsafe class TrayIcon(IAppLog log, ISettingsLauncher? settings =
             case 4: ExitRequested?.Invoke(); break;
             case 5: _settings.Open(); break;
             case 6 when Volatile.Read(ref _state).Enabled: ArrangeRequested?.Invoke(); break;
-        }
-    }
-
-    private static void AppendItem(HMENU menu, MENU_ITEM_FLAGS flags, nuint id, string text)
-    {
-        fixed (char* value = text)
-        {
-            PInvoke.AppendMenu(menu, flags, id, value);
         }
     }
 
@@ -310,6 +350,7 @@ internal sealed unsafe class TrayIcon(IAppLog log, ISettingsLauncher? settings =
                 // テーマの切り替えは WM_SETTINGCHANGE ("ImmersiveColorSet") で届く。実機未確認。
                 // 文字列の中身は見ず、毎回選び直す。同じアイコンなら何もしない。
                 RefreshIcon();
+                RefreshMenu();
                 return PInvoke.DefWindowProc(window, message, wParam, lParam);
             case InvokeMessage:
                 while (!_removed && _posted.TryDequeue(out var action))
@@ -327,6 +368,7 @@ internal sealed unsafe class TrayIcon(IAppLog log, ISettingsLauncher? settings =
 
                 return message == SessionEndPolicy.WmQueryEndSession ? new(1) : default;
             case WmClose:
+                _menu?.Close();
                 ExitRequested?.Invoke();
                 PInvoke.DestroyWindow(window);
                 _window = default;
