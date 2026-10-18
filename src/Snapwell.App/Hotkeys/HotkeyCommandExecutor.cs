@@ -280,7 +280,8 @@ internal sealed class HotkeyCommandExecutor(IWindowInspector inspector, IMonitor
         var options = settings();
         var areas = monitors.GetMonitors().Select(monitor => monitor.ToMonitorArea()).ToArray();
         var target = selected ?? CommandPlanner.Plan(command, window.VisualBounds,
-            WindowClassifier.CanResize(window, ownProcessId), areas, options.ToGridPlan(), options.ToSpacing());
+            WindowClassifier.CanResize(window, ownProcessId), areas, options.ToGridPlan(), options.ToSpacing(),
+            options.ToResizeSettings());
         if (target is not { } bounds)
         {
             return;
