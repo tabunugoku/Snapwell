@@ -124,6 +124,40 @@
                 </Button>
             </Grid>
 
+            <TextBlock Text="試す" Style="{StaticResource SnapwellGroupTitleStyle}" />
+            <Border Style="{StaticResource SnapwellRowsBorderStyle}" Padding="12">
+                <StackPanel Spacing="10">
+                    <Canvas x:Name="TrialStage" Height="260" HorizontalAlignment="Stretch"
+                            Background="{ThemeResource SnapwellWallBrush}" SizeChanged="TrialStage_SizeChanged">
+                        <Border x:Name="TrialCard" IsTabStop="True" CornerRadius="6" BorderThickness="1"
+                                Background="{ThemeResource SnapwellSurfaceBrush}"
+                                BorderBrush="{ThemeResource SnapwellBorderStrongBrush}"
+                                AutomationProperties.Name="試すウィンドウ。ドラッグして投げる。矢印キーで投げる"
+                                RenderTransformOrigin="0.5,0.5"
+                                PointerPressed="TrialCard_PointerPressed" PointerMoved="TrialCard_PointerMoved"
+                                PointerReleased="TrialCard_PointerReleased"
+                                PointerCanceled="TrialCard_PointerReleased" KeyDown="TrialCard_KeyDown">
+                            <Border.RenderTransform>
+                                <CompositeTransform x:Name="TrialCardTransform" />
+                            </Border.RenderTransform>
+                            <TextBlock Text="Window" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       FontFamily="{StaticResource SnapwellMonoFontFamily}" FontSize="11"
+                                       Foreground="{ThemeResource SnapwellMutedBrush}"
+                                       IsHitTestVisible="False" />
+                        </Border>
+                    </Canvas>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <ToggleButton x:Name="TrialZonesButton" Content="区画" IsChecked="True"
+                                      Click="TrialMode_Click" Tag="Zones" />
+                        <ToggleButton x:Name="TrialCornersButton" Content="四隅" Click="TrialMode_Click"
+                                      Tag="Corners" />
+                        <Button x:Name="TrialThrowButton" Content="ランダムに投げる" Click="TrialThrow_Click" />
+                    </StackPanel>
+                    <TextBlock Text="ウィンドウをつかんで投げます。いまの 5 つの値で動きます（離した速さが 150 px/s 未満だと吸着しません）"
+                               Style="{StaticResource SnapwellRowDescriptionStyle}" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+
             <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
                 <TextBlock Text="詳細" Style="{StaticResource SnapwellGroupTitleStyle}" VerticalAlignment="Center" />
                 <TextBlock x:Name="FeelStateText" Style="{StaticResource SnapwellMonoTextStyle}"
