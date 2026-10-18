@@ -233,7 +233,7 @@
 g と e は対象モニターの DPI で物理ピクセルに換算する。隣の一覧は App の
 `NeighborWindowSource.Snapshot(handle)` から Core の `AdjacentSnapPlanner` へ渡す。
 サイズ固定も位置だけ動かし、最大化中は通常状態に復元してから計画する。移動には §5 の物理モデルを使う。
-操作は `WindowCommand` の既存の整数値を保って末尾に追加する。既定のキーは Ctrl+Alt+Win+Shift+矢印。
+操作は `WindowCommand` の既存の整数値を保って末尾に追加する。既定のキーは Ctrl+Alt+Shift+J・L・I・K（左・右・上・下。Win は付けない）。
 設定のスキーマ版は 5 とし、版 5 未満で操作が未割り当てかつ同じキーが未使用の場合だけ既定値を補う。
 
 整列時の移動にも §5 の物理モデルを使う（設定でオフにできる）。複数のウィンドウは `BeginDeferWindowPos` でまとめて確定する。
@@ -287,7 +287,7 @@ g と e は対象モニターの DPI で物理ピクセルに換算する。隣�
 | 四分割（左上・右上・左下・右下） | Ctrl+Alt+U / I / J / K |
 | 1区画ずつ拡大・縮小 | Ctrl+Alt+Shift+矢印 |
 | 区画単位で移動 | Ctrl+Alt+Win+矢印 |
-| 左／右／上／下の隣へ寄せる | Ctrl+Alt+Win+Shift+←/→/↑/↓ |
+| 左／右／上／下の隣へ寄せる | Ctrl+Alt+Shift+J / L / I / K |
 | 現在のモニターを整列 | Ctrl+Alt+A |
 | 横一列／縦一列／メインとスタックで整列 | Ctrl+Alt+Shift+H / V / M |
 | 全モニターを整列 | Ctrl+Alt+Shift+A |

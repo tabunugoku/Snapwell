@@ -22,8 +22,7 @@ public static class DefaultHotkeys
     {
         const ChordModifiers plain = ChordModifiers.Control | ChordModifiers.Alt;
         const ChordModifiers shifted = plain | ChordModifiers.Shift;
-        // 隣接吸着以外は、Win 解放時のスタートメニューの副作用を避けるため従来のキーを保つ。
-        const ChordModifiers adjacent = shifted | ChordModifiers.Win;
+        // Win 解放の抑止でスタートメニューが開く問題が未解決のため、Win は割り当てない。
         return new()
         {
             [WindowCommand.LeftHalf] = new(plain, 0x25),
@@ -48,10 +47,10 @@ public static class DefaultHotkeys
             [WindowCommand.ArrangeRows] = new(shifted, 0x56),
             [WindowCommand.ArrangeMainAndStack] = new(shifted, 0x4D),
             [WindowCommand.ArrangeAllMonitors] = new(shifted, 0x41),
-            [WindowCommand.SnapAdjacentLeft] = new(adjacent, 0x25),
-            [WindowCommand.SnapAdjacentRight] = new(adjacent, 0x27),
-            [WindowCommand.SnapAdjacentUp] = new(adjacent, 0x26),
-            [WindowCommand.SnapAdjacentDown] = new(adjacent, 0x28),
+            [WindowCommand.SnapAdjacentLeft] = new(shifted, 0x4A),
+            [WindowCommand.SnapAdjacentRight] = new(shifted, 0x4C),
+            [WindowCommand.SnapAdjacentUp] = new(shifted, 0x49),
+            [WindowCommand.SnapAdjacentDown] = new(shifted, 0x4B),
         };
     }
 }

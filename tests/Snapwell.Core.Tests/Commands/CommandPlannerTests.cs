@@ -192,14 +192,10 @@ public sealed class CommandPlannerTests
     }
 
     [Fact]
-    public void DefaultsAreUniqueAndOnlyAdjacentCommandsUseWindowsKey()
+    public void DefaultsAreUniqueAndNeverUseWindowsKey()
     {
         var defaults = DefaultHotkeys.Create();
-        Assert.Equal(new[]
-        {
-            WindowCommand.SnapAdjacentLeft, WindowCommand.SnapAdjacentRight,
-            WindowCommand.SnapAdjacentUp, WindowCommand.SnapAdjacentDown,
-        }, defaults.Where(pair => pair.Value.Modifiers.HasFlag(ChordModifiers.Win)).Select(pair => pair.Key));
+        Assert.DoesNotContain(defaults.Values, chord => chord.Modifiers.HasFlag(ChordModifiers.Win));
         Assert.Equal(defaults.Count, defaults.Values.Distinct().Count());
         Assert.DoesNotContain(WindowCommand.MoveCellLeft, defaults.Keys);
     }
