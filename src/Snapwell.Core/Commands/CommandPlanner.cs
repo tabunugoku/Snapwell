@@ -13,7 +13,9 @@ public static class CommandPlanner
     {
         if (monitors.Count == 0 ||
             command is WindowCommand.ToggleEnabled or WindowCommand.ArrangeGrid or
-                WindowCommand.ArrangeColumns or WindowCommand.ArrangeRows or WindowCommand.ArrangeMainAndStack ||
+                WindowCommand.ArrangeColumns or WindowCommand.ArrangeRows or WindowCommand.ArrangeMainAndStack or
+                WindowCommand.SnapAdjacentLeft or WindowCommand.SnapAdjacentRight or
+                WindowCommand.SnapAdjacentUp or WindowCommand.SnapAdjacentDown ||
             !Enum.IsDefined(command))
         {
             return null;

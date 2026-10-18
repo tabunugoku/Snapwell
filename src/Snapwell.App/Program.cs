@@ -62,7 +62,7 @@ internal static class Program
                 var holdRing = new HoldRing(longPress, ringSurface, monitors);
                 LauncherController? launcher = null;
                 var hotkeys = new HotkeyCommandExecutor(inspector, monitors, motion, position, () => settings,
-                    enabled, toggle, (uint)Environment.ProcessId, () => launcher?.Open());
+                    enabled, toggle, (uint)Environment.ProcessId, () => launcher?.Open(), neighbors: neighbors.Snapshot);
                 launcher = new(inspector, monitors, () => settings, launcherSurface, hotkeys.Place,
                     matcher.SetBindings, bindings.Bindings, (uint)Environment.ProcessId);
                 return new ResidentRuntime(drag, hotkeys, motion, bindings.Bindings, matcher.SetBindings,
