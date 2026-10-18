@@ -268,6 +268,97 @@ public sealed class TrayMenuControllerTests
         Assert.True(view.Snapshot!.Layout.ItemsViewport.Contains(view.Snapshot.Layout.Rows[4]));
     }
 
+    /// <summary>細粒度の連続入力と同じ合計の一括入力で、同じ位置までスクロールする。</summary>
+    [Theory]
+    [InlineData(-1, 360)]
+    [InlineData(-1, 119)]
+    [InlineData(-1, 3)]
+    [InlineData(1, 119)]
+    public void FineWheelDeltasMatchCombinedInput(int delta, int count)
+    {
+        var fineView = new FakeView();
+        var combinedView = new FakeView();
+        using var fine = new TrayMenuController(fineView, _ => { }, Fail);
+        using var combined = new TrayMenuController(combinedView, _ => { }, Fail);
+        var snapshot = ScrollableSnapshot();
+        if (delta > 0) { snapshot = snapshot with { Layout = snapshot.Layout.WithScrollOffset(100) }; }
+        fine.Open(snapshot);
+        combined.Open(snapshot);
+        for (var step = 0; step < count; step++) { fine.Wheel(delta); }
+        combined.Wheel(delta * count);
+        var expected = Math.Clamp(snapshot.Layout.ScrollOffset - delta * count * snapshot.Layout.Px(32) / 120,
+            0, snapshot.Layout.MaxScrollOffset);
+        Assert.NotEqual(snapshot.Layout.ScrollOffset, expected);
+        Assert.Equal(expected, fineView.Snapshot!.Layout.ScrollOffset);
+        Assert.Equal(expected, combinedView.Snapshot!.Layout.ScrollOffset);
+    }
+
+    /// <summary>方向反転では、それまでの端数を次の方向へ持ち越さない。</summary>
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(1)]
+    public void ReversingWheelDirectionDiscardsRemainder(int direction)
+    {
+        var view = new FakeView();
+        using var menu = new TrayMenuController(view, _ => { }, Fail);
+        var snapshot = ScrollableSnapshot();
+        menu.Open(snapshot with { Layout = snapshot.Layout.WithScrollOffset(100) });
+        menu.Wheel(direction);
+        menu.Wheel(-direction);
+        Assert.Equal(100, view.Snapshot!.Layout.ScrollOffset);
+        menu.Wheel(-direction);
+        Assert.Equal(100 + direction, view.Snapshot!.Layout.ScrollOffset);
+    }
+
+    /// <summary>開き直したメニューには、前のホイール入力の端数を引き継がない。</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ReopeningDiscardsWheelRemainder(bool closeFirst)
+    {
+        var view = new FakeView();
+        using var menu = new TrayMenuController(view, _ => { }, Fail);
+        var snapshot = ScrollableSnapshot();
+        menu.Open(snapshot);
+        menu.Wheel(-1);
+        if (closeFirst) { menu.Close(); }
+        menu.Open(snapshot);
+        menu.Wheel(-1);
+        Assert.Equal(0, view.Snapshot!.Layout.ScrollOffset);
+        menu.Wheel(-1);
+        Assert.Equal(1, view.Snapshot!.Layout.ScrollOffset);
+    }
+
+    /// <summary>端に到達した端数は、キーで移動したあとも持ち越さない。</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ReachingScrollBoundaryDiscardsWheelRemainder(bool bottom)
+    {
+        var view = new FakeView();
+        using var menu = new TrayMenuController(view, _ => { }, Fail);
+        var snapshot = ScrollableSnapshot();
+        var maximum = snapshot.Layout.MaxScrollOffset;
+        menu.Open(snapshot with { Layout = snapshot.Layout.WithScrollOffset(bottom ? maximum - 1 : 1) });
+        menu.Wheel(bottom ? -2 : 2);
+        Assert.Equal(bottom ? maximum : 0, view.Snapshot!.Layout.ScrollOffset);
+        menu.Key(bottom ? 0x24u : 0x23u);
+        if (bottom) { menu.Key(0x28); }
+        var offset = bottom ? 0 : maximum;
+        Assert.Equal(offset, view.Snapshot!.Layout.ScrollOffset);
+        menu.Wheel(bottom ? -1 : 1);
+        Assert.Equal(offset, view.Snapshot!.Layout.ScrollOffset);
+        menu.Wheel(bottom ? -1 : 1);
+        Assert.Equal(offset + (bottom ? 1 : -1), view.Snapshot!.Layout.ScrollOffset);
+    }
+
+    private static TrayMenuSnapshot ScrollableSnapshot() => Snapshot(true) with
+    {
+        Layout = TrayMenuLayout.Create(new(1100, 400, 24, 24), new(0, 0, 1200, 400),
+            TrayTaskbarEdge.Bottom, 2.5, true),
+        Status = "状態の案内",
+    };
+
     private static void Fail(Exception exception) => Assert.Fail(exception.ToString());
 
     private sealed class FakeView : ITrayMenuView
