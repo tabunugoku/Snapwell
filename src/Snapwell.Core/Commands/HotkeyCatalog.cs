@@ -17,7 +17,10 @@ public static class HotkeyCatalog
         .ToArray();
 
     /// <summary>修飾キーを Ctrl、Alt、Shift、Win の順に表示する。</summary>
-    public static string FormatChord(KeyChordSpec chord)
+    public static string FormatChord(KeyChordSpec chord) => string.Join("+", FormatChordParts(chord));
+
+    /// <summary>修飾キーを Ctrl、Alt、Shift、Win の順に並べ、最後にキー名を返す。</summary>
+    public static IReadOnlyList<string> FormatChordParts(KeyChordSpec chord)
     {
         var parts = new List<string>();
         if (chord.Modifiers.HasFlag(ChordModifiers.Control))
@@ -54,7 +57,7 @@ public static class HotkeyCatalog
             >= 0x30 and <= 0x39 or >= 0x41 and <= 0x5A => ((char)chord.VirtualKey).ToString(),
             _ => $"0x{chord.VirtualKey:X2}",
         });
-        return string.Join("+", parts);
+        return parts;
     }
 
     /// <summary>既知の操作は日本語、追加された操作は列挙の名前を返す。</summary>

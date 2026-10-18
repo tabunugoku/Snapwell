@@ -6,8 +6,11 @@ using Snapwell.App.Lifecycle;
 using Snapwell.App.Overlay;
 using Snapwell.App.Tests.Motion;
 using Snapwell.App.Tests.Overlay;
+using Snapwell.App.Tray;
+using Snapwell.Core.Commands;
 using Snapwell.Core.Geometry;
 using Snapwell.Core.Settings;
+using Snapwell.Core.Tray;
 using Snapwell.Platform.Hooks;
 using Snapwell.Platform.Windows;
 
@@ -15,6 +18,95 @@ namespace Snapwell.App.Tests.Lifecycle;
 
 public sealed class AppHostTests
 {
+    /// <summary>フックの開始可否と有効状態を、メニューの可否と実効キーへ反映する。</summary>
+    [Theory]
+    [InlineData(true, true)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public void TrayMenuUsesHookAvailabilityAndEffectiveDefaultShortcuts(bool hooksStarted, bool enabled)
+    {
+        using var fixture = new Fixture(new() { Enabled = enabled });
+        fixture.Hooks.Starts = hooksStarted;
+        Assert.True(fixture.Host.Start());
+        var state = fixture.Tray.State!;
+        Assert.Equal(hooksStarted, state.LauncherAvailable);
+        var items = TrayIconPolicy.MenuItems(state);
+        Assert.Equal(hooksStarted && enabled, items.Single(item => item.Command == TrayMenuCommand.Launcher).Enabled);
+        if (!hooksStarted)
+        {
+            Assert.Empty(state.Shortcuts!);
+            Assert.All(items, item => Assert.Empty(item.Keys));
+            return;
+        }
+
+        Assert.Equal(["Ctrl", "Alt", "Space"], items.Single(item => item.Command == TrayMenuCommand.Launcher).Keys);
+        Assert.Equal(["Ctrl", "Alt", "Pause"], items.Single(item => item.Command == TrayMenuCommand.Toggle).Keys);
+        Assert.Equal(["Ctrl", "Alt", "A"], items.Single(item => item.Command == TrayMenuCommand.Arrange).Keys);
+    }
+
+    /// <summary>対象と選択時刻を現在の Runtime へ渡し、再読込後は交換先だけへ渡す。</summary>
+    [Fact]
+    public void TrayLauncherRequestPreservesTargetAndUsesReplacementRuntime()
+    {
+        using var fixture = new Fixture();
+        fixture.Tray.RequestLauncher(41, 100);
+        Assert.Empty(fixture.Runtime.LauncherTargets);
+        Assert.True(fixture.Host.Start());
+        fixture.Tray.RequestLauncher(42, uint.MaxValue - 1);
+        Assert.Equal([(nint)42], fixture.Runtime.LauncherTargets);
+        Assert.Equal([uint.MaxValue - 1], fixture.Runtime.LauncherCutoffs);
+        fixture.Portable.ReloadResult = new(new() { Gap = 19 });
+        fixture.Host.ReloadSettings();
+        var replacement = Assert.IsType<FakeRuntime>(fixture.Created[1]);
+        fixture.Tray.RequestLauncher(43, 5);
+        Assert.Equal([(nint)42], fixture.Runtime.LauncherTargets);
+        Assert.Equal([uint.MaxValue - 1], fixture.Runtime.LauncherCutoffs);
+        Assert.Equal([(nint)43], replacement.LauncherTargets);
+        Assert.Equal([5u], replacement.LauncherCutoffs);
+        fixture.Host.Shutdown();
+        Assert.Equal(0, fixture.Tray.LauncherSubscriptions);
+        fixture.Tray.RequestLauncher(44, 103);
+        fixture.Host.OpenLauncher(45, 104);
+        Assert.Equal([(nint)43], replacement.LauncherTargets);
+    }
+
+    /// <summary>一時停止とフック未開始では配送せず、再開後にだけ配送する。</summary>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void TrayLauncherRequestIsIgnoredWhenPausedOrHooksUnavailable(bool hooksStarted)
+    {
+        using var fixture = new Fixture(new() { Enabled = false });
+        fixture.Hooks.Starts = hooksStarted;
+        Assert.True(fixture.Host.Start());
+        fixture.Tray.RequestLauncher(42);
+        Assert.Empty(fixture.Runtime.LauncherTargets);
+        fixture.Tray.RequestToggle();
+        fixture.Tray.RequestLauncher(43);
+        Assert.Equal(hooksStarted ? [(nint)43] : Array.Empty<nint>(), fixture.Runtime.LauncherTargets);
+    }
+
+    /// <summary>保存したキーへ表示を更新し、先勝ちで落ちた操作にはキーを表示しない。</summary>
+    [Fact]
+    public void ReloadSettingsUpdatesTrayShortcutsAndOmitsDroppedBindings()
+    {
+        using var fixture = new Fixture();
+        Assert.True(fixture.Host.Start());
+        var settings = new PortableSettings();
+        settings.Hotkeys[WindowCommand.OpenLauncher] = new(ChordModifiers.Win | ChordModifiers.Shift, 0x20);
+        fixture.Portable.ReloadResult = new(settings);
+        fixture.Host.ReloadSettings();
+        Assert.Equal(["Shift", "Win", "Space"], fixture.Tray.State!.Shortcuts![TrayMenuCommand.Launcher]);
+
+        var conflicting = new PortableSettings();
+        conflicting.Hotkeys[WindowCommand.OpenLauncher] = conflicting.Hotkeys[WindowCommand.LeftHalf];
+        fixture.Portable.ReloadResult = new(conflicting);
+        fixture.Host.ReloadSettings();
+        Assert.False(fixture.Tray.State!.Shortcuts!.ContainsKey(TrayMenuCommand.Launcher));
+        Assert.Empty(TrayIconPolicy.MenuItems(fixture.Tray.State)
+            .Single(item => item.Command == TrayMenuCommand.Launcher).Keys);
+    }
+
     /// <summary>保存例外でも停止は保存前に完了し、再読込や保存失敗では解除されない。</summary>
     [Theory]
     [InlineData(false)]
@@ -1218,6 +1310,8 @@ public sealed class AppHostTests
         public event Action? RestoreRequested;
         public event Action? ArrangeRequested;
         internal int ArrangementSubscriptions => ArrangeRequested?.GetInvocationList().Length ?? 0;
+        public event Action<nint, uint>? LauncherRequested;
+        internal int LauncherSubscriptions => LauncherRequested?.GetInvocationList().Length ?? 0;
         public event Action? ExitRequested;
         public event Action? SessionEnding;
         internal TrayState? State;
@@ -1240,6 +1334,7 @@ public sealed class AppHostTests
         internal void RequestStandardSnap() => StandardSnapRequested?.Invoke();
         internal void RequestRestore() => RestoreRequested?.Invoke();
         internal void RequestArrange() => ArrangeRequested?.Invoke();
+        internal void RequestLauncher(nint target, uint timeMs = 100) => LauncherRequested?.Invoke(target, timeMs);
         internal void RequestExit() => ExitRequested?.Invoke();
         internal void EndSession() => SessionEnding?.Invoke();
     }
@@ -1289,6 +1384,8 @@ public sealed class AppHostTests
         internal int Cancels;
         internal int Disposals;
         internal int Arrangements;
+        internal List<nint> LauncherTargets { get; } = [];
+        internal List<uint> LauncherCutoffs { get; } = [];
         internal ManualResetEventSlim? BlockDispose;
         internal Action? OnDispose;
         internal Action<bool>? OnSetEnabled;
@@ -1312,6 +1409,11 @@ public sealed class AppHostTests
         }
         public void CancelAll() => Cancels++;
         public void ArrangeCurrentMonitor() => Arrangements++;
+        public void OpenLauncher(nint target, uint ignorePointerUpToMs)
+        {
+            LauncherTargets.Add(target);
+            LauncherCutoffs.Add(ignorePointerUpToMs);
+        }
         public void Dispose()
         {
             Disposals++;
