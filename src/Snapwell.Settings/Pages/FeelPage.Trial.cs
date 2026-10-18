@@ -218,7 +218,7 @@ public sealed partial class FeelPage
     private void StartFlight()
     {
         // アプリの設定か OS のアニメーション設定のどちらかが削減を求めれば、止まる先へ直ちに確定する
-        if (_session.Current.ReduceMotion)
+        if (_session.Current.ReduceMotion || !new Windows.UI.ViewManagement.UISettings().AnimationsEnabled)
         {
             _trial!.Settle();
             PaintTrial();
