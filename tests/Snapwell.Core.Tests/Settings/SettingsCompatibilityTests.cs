@@ -22,7 +22,7 @@ public sealed class SettingsCompatibilityTests : IDisposable
             JsonSerializer.Serialize(value, SettingsJsonContext.Default.PortableSettings));
         var device = Path.Combine(_directory, "device.json");
         File.WriteAllText(device, "{}");
-        Assert.Equal(new DeviceState(), SettingsStores.Device(device).Load().Value);
+        Assert.Equal(new DeviceState { SetupCompleted = true }, SettingsStores.Device(device).Load().Value);
         store.Save(value);
         using var document = JsonDocument.Parse(File.ReadAllText(SettingsPath));
         Assert.Equal(PortableSettings.CurrentSchemaVersion,
@@ -79,7 +79,7 @@ public sealed class SettingsCompatibilityTests : IDisposable
 
     [Theory]
     [InlineData(1, false, false)]
-    [InlineData(2, false, true)]
+    [InlineData(2, false, false)]
     [InlineData(3, false, true)]
     [InlineData(4, false, true)]
     [InlineData(5, true, true)]
