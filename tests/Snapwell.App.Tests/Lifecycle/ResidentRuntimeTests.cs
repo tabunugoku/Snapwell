@@ -841,7 +841,8 @@ public sealed class ResidentRuntimeTests
         }
 
         public bool SetBounds(nint handle, PixelRect bounds, bool positionOnly) => throw new NotSupportedException();
-        public bool ApplyBatch(IReadOnlyList<NativeWindowPlacement> placements) => throw new NotSupportedException();
+        public bool ApplyBatch(IReadOnlyList<NativeWindowPlacement> placements, bool positionOnly) =>
+            throw new NotSupportedException();
         public void Dispose()
         {
             Continue.Set();
@@ -902,6 +903,6 @@ public sealed class ResidentRuntimeTests
     {
         public bool Restore(nint handle) => true;
         public bool SetBounds(nint handle, PixelRect bounds, bool positionOnly) => true;
-        public bool ApplyBatch(IReadOnlyList<NativeWindowPlacement> placements) => true;
+        public bool ApplyBatch(IReadOnlyList<NativeWindowPlacement> placements, bool positionOnly) => true;
     }
 }
