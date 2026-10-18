@@ -30,3 +30,7 @@ Thumbs.db
 # Claude Code のローカル設定と worktree
 .claude/settings.local.json
 .claude/worktrees/
+
+# 忠実度ツール
+tools/fidelity/node_modules/
+tools/fidelity/out/
