@@ -1,3 +1,4 @@
+using Snapwell.Core.Commands;
 using Snapwell.Core.Geometry;
 using Snapwell.Core.Tray;
 
@@ -6,6 +7,39 @@ namespace Snapwell.Core.Tests.Tray;
 /// <summary>メニューの状態・入力を Win32 に触れず検証する。</summary>
 public sealed class TrayMenuModelTests
 {
+    /// <summary>有効な割り当てだけを対応する項目へ写し、同じキーでも捨てない。</summary>
+    [Fact]
+    public void EffectiveShortcutsMapOnlyTrayCommandsWithoutDeduplicatingChords()
+    {
+        var chord = new KeyChordSpec(ChordModifiers.Control | ChordModifiers.Alt, 0x20);
+        var shortcuts = TrayMenuModel.Shortcuts(new Dictionary<WindowCommand, KeyChordSpec>
+        {
+            [WindowCommand.ToggleEnabled] = new(ChordModifiers.Control, 0x13),
+            [WindowCommand.OpenLauncher] = chord,
+            [WindowCommand.ArrangeGrid] = chord,
+            [WindowCommand.LeftHalf] = new(ChordModifiers.Win, 0x25),
+        });
+        Assert.Equal(3, shortcuts.Count);
+        var items = TrayMenuModel.Create(true, true, shortcuts);
+        Assert.Equal(["Ctrl", "Pause"], items.Single(item => item.Command == TrayMenuCommand.Toggle).Keys);
+        Assert.Equal(["Ctrl", "Alt", "Space"], items.Single(item => item.Command == TrayMenuCommand.Launcher).Keys);
+        Assert.Equal(["Ctrl", "Alt", "Space"], items.Single(item => item.Command == TrayMenuCommand.Arrange).Keys);
+        Assert.All(items.Skip(3), item => Assert.Empty(item.Keys));
+    }
+
+    /// <summary>未割り当ての操作や無関係な操作からキーを補わない。</summary>
+    [Fact]
+    public void MissingEffectiveCommandsHaveNoShortcutKeys()
+    {
+        var shortcuts = TrayMenuModel.Shortcuts(new Dictionary<WindowCommand, KeyChordSpec>
+        {
+            [WindowCommand.LeftHalf] = new(ChordModifiers.Win, 0x25),
+        });
+        Assert.Empty(shortcuts);
+        Assert.All(TrayMenuModel.Create(true, true, shortcuts), item => Assert.Empty(item.Keys));
+        Assert.Empty(TrayMenuModel.Shortcuts([]));
+    }
+
     /// <summary>モックアップの項目順と一時停止時の可否を保つ。</summary>
     [Theory]
     [InlineData(true)]
