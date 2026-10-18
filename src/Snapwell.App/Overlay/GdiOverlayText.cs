@@ -29,15 +29,18 @@ internal sealed unsafe partial class GdiOverlayText : IDisposable
         SetTextColor(_dc, 0xFFFFFF);
     }
 
-    /// <summary>描画と同じフォントで論理 px の文字幅を測る。</summary>
+    /// <summary>縮小後も維持する元サイズの文字幅を論理 px で測る。</summary>
     internal double Measure(string text, double size, bool mono, bool bold = false)
+        => MeasurePixels(text, size, mono, bold) / _scale;
+
+    private int MeasurePixels(string text, double size, bool mono, bool bold, int samples = 1)
     {
         if (text.Length == 0)
         {
             return 0;
         }
 
-        var previous = SelectObject(_dc, Font(size, mono, bold));
+        var previous = SelectObject(_dc, Font(size, mono, bold, samples));
         try
         {
             var rect = new NativeRect();
@@ -46,7 +49,7 @@ internal sealed unsafe partial class GdiOverlayText : IDisposable
                 DrawTextW(_dc, value, text.Length, &rect, 0x20 | 0x400 | 0x800);
             }
 
-            return rect.Right / _scale;
+            return rect.Right;
         }
         finally
         {
@@ -63,7 +66,51 @@ internal sealed unsafe partial class GdiOverlayText : IDisposable
             return;
         }
 
-        var font = Font(text.Size, text.Mono, text.Bold);
+        // 小さい文字は静的パネル内だけにあるため、追加の描画はキャッシュ作成時に限られる。
+        var mask = text.Size <= 11.5 ? SupersampledMask(text, color) : Rasterize(text, color);
+        OverlayPainter.Composite(frame, mask, bounds.X - area.X, bounds.Y - area.Y);
+    }
+
+    private OverlayFrame SupersampledMask(LauncherText text, OverlayColor color)
+    {
+        const int Samples = 4;
+        var bounds = text.Bounds;
+        var result = OverlayPainter.Create(bounds.Width, bounds.Height);
+        var runs = text.LetterSpacing > 0
+            ? text.Value.EnumerateRunes().Select(rune => rune.ToString()).ToArray()
+            : [text.Value];
+        var widths = runs.Select(run => MeasurePixels(run, text.Size, text.Mono, text.Bold)).ToArray();
+        var spacing = text.LetterSpacing * _scale;
+        var x = text.Center ? (bounds.Width - widths.Sum() - runs.Length * spacing) / 2 : 0;
+        for (var index = 0; index < runs.Length; index++)
+        {
+            var width = widths[index];
+            var sourceWidth = MeasurePixels(runs[index], text.Size, text.Mono, text.Bold, Samples);
+            if (width > 0 && sourceWidth > 0)
+            {
+                // 計測は元のフォントのままにし、高解像度で変わる送り幅だけを縮小時に合わせる。
+                var run = text with
+                {
+                    Value = runs[index],
+                    Bounds = new(0, 0, sourceWidth, checked(bounds.Height * Samples)),
+                    Center = false,
+                    LetterSpacing = 0,
+                };
+                var mask = Rasterize(run, color, Samples, width);
+                var left = text.LetterSpacing > 0 ? (int)Math.Round(x) : (int)x;
+                OverlayPainter.Composite(result, mask, left, 0);
+            }
+
+            x += width + spacing;
+        }
+
+        return result;
+    }
+
+    private OverlayFrame Rasterize(LauncherText text, OverlayColor color, int samples = 1, int? width = null)
+    {
+        var bounds = text.Bounds;
+        var font = Font(text.Size, text.Mono, text.Bold, samples);
         var info = new BitmapHeader
         {
             Size = (uint)sizeof(BitmapHeader),
@@ -106,6 +153,12 @@ internal sealed unsafe partial class GdiOverlayText : IDisposable
             }
 
             GdiFlush();
+            if (samples > 1)
+            {
+                return OverlayTextMask.Downsample(pixels, bounds.Width, width!.Value,
+                    bounds.Height / samples, samples, color);
+            }
+
             var mask = new OverlayFrame(bounds.Width, bounds.Height, pixels.ToArray());
             for (var index = 0; index < mask.Pixels.Length; index += 4)
             {
@@ -118,7 +171,7 @@ internal sealed unsafe partial class GdiOverlayText : IDisposable
                 mask.Pixels[index + 3] = alpha;
             }
 
-            OverlayPainter.Composite(frame, mask, bounds.X - area.X, bounds.Y - area.Y);
+            return mask;
         }
         finally
         {
@@ -158,9 +211,9 @@ internal sealed unsafe partial class GdiOverlayText : IDisposable
         DeleteDC(_dc);
     }
 
-    private nint Font(double size, bool mono, bool bold)
+    private nint Font(double size, bool mono, bool bold, int samples = 1)
     {
-        var height = Math.Max(1, (int)Math.Round(size * _scale));
+        var height = Math.Max(1, (int)Math.Round(size * _scale * samples));
         var key = (height, mono, bold);
         if (_fonts.TryGetValue(key, out var cached))
         {
