@@ -6,6 +6,24 @@ public sealed record FeelPreset
     /// <summary>語に磁石がないときの強さ。feel の corner-card の <c>w.magnet || 0.6</c>。</summary>
     public const double DefaultMagnetStrength = 0.6;
 
+    /// <summary>設定で選べる質量の範囲。feel の語彙の上限（0.15–8）と rig のスライダーに合わせる。</summary>
+    public const double MinimumMass = 0.15;
+
+    /// <summary>設定で選べる質量の上限。</summary>
+    public const double MaximumMass = 8;
+
+    /// <summary>設定で選べる固有振動数の下限。単位は Hz。feel の rig のスライダーに合わせる。</summary>
+    public const double MinimumFrequency = 0.4;
+
+    /// <summary>設定で選べる固有振動数の上限。単位は Hz。</summary>
+    public const double MaximumFrequency = 7;
+
+    /// <summary>設定で選べる減衰比の下限。feel の rig のスライダーに合わせる。</summary>
+    public const double MinimumDampingRatio = 0.1;
+
+    /// <summary>設定で選べる減衰比の上限。</summary>
+    public const double MaximumDampingRatio = 1.6;
+
     /// <summary>設定で選べる磁石の強さの上限。feel の語は "super magnetic" で 1.8 になる。</summary>
     public const double MaximumMagnetStrength = 2;
 
@@ -101,6 +119,11 @@ public sealed record FeelPreset
     /// <summary>磁石の強さだけを変えた操作感を返す。範囲外は 0〜上限に収め、非有限は既定値にする。</summary>
     public FeelPreset WithMagnetStrength(double strength) => new(Mass, Frequency, DampingRatio,
         double.IsFinite(strength) ? Math.Clamp(strength, 0, MaximumMagnetStrength) : DefaultMagnetStrength);
+
+    /// <summary>指定した値だけを置き換えた操作感を返す。値の検証はコンストラクターに任せる。</summary>
+    public FeelPreset With(double? mass = null, double? frequency = null, double? dampingRatio = null,
+        double? magnetStrength = null) => new(mass ?? Mass, frequency ?? Frequency, dampingRatio ?? DampingRatio,
+        magnetStrength ?? MagnetStrength);
 
     /// <summary>feel の語彙から操作感を作る。磁石の語がなければ既定の強さにする。</summary>
     public static FeelPreset FromWords(string text)
