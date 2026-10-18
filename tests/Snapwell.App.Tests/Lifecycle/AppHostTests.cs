@@ -15,6 +15,65 @@ namespace Snapwell.App.Tests.Lifecycle;
 
 public sealed class AppHostTests
 {
+    /// <summary>再読込と保存の間の同意取り消しを保持し、キャッシュと OS にも反映する。</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void TraySnapTogglePreservesConsentRevokedAfterReload(bool previouslyDisabled)
+    {
+        using var fixture = new Fixture(new()
+        {
+            DisableStandardSnap = previouslyDisabled,
+            StandardSnapConsentGiven = true,
+        });
+        Assert.True(fixture.Host.Start());
+        fixture.Calls.Clear();
+        fixture.Device.AfterReload = () =>
+        {
+            fixture.Device.AfterReload = null;
+            fixture.Device.Save(new() { SetupCompleted = true });
+        };
+
+        fixture.Host.ToggleStandardSnap();
+
+        Assert.False(fixture.Device.Value.StandardSnapConsentGiven);
+        Assert.False(fixture.Device.Value.DisableStandardSnap);
+        Assert.True(fixture.Device.Value.SetupCompleted);
+        Assert.False(fixture.Tray.State!.DisableStandardSnap);
+        Assert.DoesNotContain("disable", fixture.Calls);
+        if (previouslyDisabled) { Assert.Contains("restore", fixture.Calls); }
+        Assert.Equal(0, fixture.Consent.Calls);
+        Assert.Empty(fixture.Log.Errors);
+    }
+
+    /// <summary>再開時も保存した最新の同意を使い、取り消し後に OS を停止しない。</summary>
+    [Fact]
+    public void TrayResumeUsesConsentRevokedAfterReload()
+    {
+        using var fixture = new Fixture(new()
+        {
+            Enabled = false,
+            DisableStandardSnap = true,
+            StandardSnapConsentGiven = true,
+        });
+        Assert.True(fixture.Host.Start());
+        fixture.Device.AfterReload = () =>
+        {
+            fixture.Device.AfterReload = null;
+            fixture.Device.Save(new() { Enabled = false, SetupCompleted = true });
+        };
+
+        fixture.Host.ToggleEnabled();
+
+        Assert.True(fixture.Host.Enabled);
+        Assert.True(fixture.Runtime.Enabled);
+        Assert.False(fixture.Device.Value.StandardSnapConsentGiven);
+        Assert.False(fixture.Tray.State!.DisableStandardSnap);
+        Assert.True(fixture.Device.Value.SetupCompleted);
+        Assert.DoesNotContain("disable", fixture.Calls);
+        Assert.Empty(fixture.Log.Errors);
+    }
+
     /// <summary>未完了かつ書き込み可能な端末だけ案内し、同意前に OS を変更しない。</summary>
     [Theory]
     [InlineData(false, false, 1)]
@@ -890,10 +949,14 @@ public sealed class AppHostTests
         internal int Saves;
         internal int Reloads;
         internal SettingsLoadResult<T>? ReloadResult = new(value);
+        internal Action? AfterReload;
         public SettingsLoadResult<T>? TryReload()
         {
             Reloads++;
-            return ReloadResult is null ? null : ReloadResult with { IsReadOnly = ReadOnly || ReloadResult.IsReadOnly };
+            var result = ReloadResult is null ? null
+                : ReloadResult with { IsReadOnly = ReadOnly || ReloadResult.IsReadOnly };
+            AfterReload?.Invoke();
+            return result;
         }
         internal bool ReadOnly;
         internal bool ResetToDefaults;
