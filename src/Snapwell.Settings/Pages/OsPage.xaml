@@ -2,6 +2,7 @@
 <Page
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:Snapwell.Settings.Controls"
     x:Class="Snapwell.Settings.Pages.OsPage">
     <Page.Resources>
         <Style x:Key="DemoSwitchStyle" TargetType="ToggleSwitch"
@@ -42,8 +43,8 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="ドラッグでのスナップ" Style="{StaticResource SnapwellRowTitleStyle}" />
-                                <Border Grid.Column="1" Style="{StaticResource SnapwellPendingTagStyle}">
-                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellPendingTagTextStyle}" />
+                                <Border Grid.Column="1" Style="{StaticResource SnapwellTagPendingStyle}">
+                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellTagPendingTextStyle}" />
                                 </Border>
                             </Grid>
                             <TextBlock
@@ -52,20 +53,8 @@
                                 FontFamily="{StaticResource SnapwellMonoFontFamily}" />
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <Border
-                                Background="{ThemeResource SnapwellGreenBackgroundBrush}"
-                                CornerRadius="9.4"
-                                Padding="8,1"
-                                HorizontalAlignment="Left"
-                                VerticalAlignment="Center">
-                                <TextBlock
-                                    Text="—"
-                                    FontSize="10.5"
-                                    FontWeight="SemiBold"
-                                    CharacterSpacing="50"
-                                    LineHeight="16.8"
-                                    TextWrapping="Wrap"
-                                    Foreground="{ThemeResource SnapwellGreenTextBrush}" />
+                            <Border Style="{StaticResource SnapwellTagGreenStyle}">
+                                <TextBlock Text="—" Style="{StaticResource SnapwellTagGreenTextStyle}" />
                             </Border>
                             <ToggleSwitch IsEnabled="False"
                                 Style="{StaticResource DemoSwitchStyle}"
@@ -86,8 +75,8 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="スナップ レイアウト（最大化ボタンのメニュー）" Style="{StaticResource SnapwellRowTitleStyle}" />
-                                <Border Grid.Column="1" Style="{StaticResource SnapwellPendingTagStyle}">
-                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellPendingTagTextStyle}" />
+                                <Border Grid.Column="1" Style="{StaticResource SnapwellTagPendingStyle}">
+                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellTagPendingTextStyle}" />
                                 </Border>
                             </Grid>
                             <TextBlock
@@ -95,20 +84,8 @@
                                 Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <Border
-                                Background="{ThemeResource SnapwellYellowBackgroundBrush}"
-                                CornerRadius="9.4"
-                                Padding="8,1"
-                                HorizontalAlignment="Left"
-                                VerticalAlignment="Center">
-                                <TextBlock
-                                    Text="要検証"
-                                    FontSize="10.5"
-                                    FontWeight="SemiBold"
-                                    CharacterSpacing="50"
-                                    LineHeight="16.8"
-                                    TextWrapping="Wrap"
-                                    Foreground="{ThemeResource SnapwellYellowTextBrush}" />
+                            <Border Style="{StaticResource SnapwellTagYellowStyle}">
+                                <TextBlock Text="要検証" Style="{StaticResource SnapwellTagYellowTextStyle}" />
                             </Border>
                             <ToggleSwitch IsEnabled="False"
                                 Style="{StaticResource DemoSwitchStyle}"
@@ -129,27 +106,15 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="画面上端のスナップ バー" Style="{StaticResource SnapwellRowTitleStyle}" />
-                                <Border Grid.Column="1" Style="{StaticResource SnapwellPendingTagStyle}">
-                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellPendingTagTextStyle}" />
+                                <Border Grid.Column="1" Style="{StaticResource SnapwellTagPendingStyle}">
+                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellTagPendingTextStyle}" />
                                 </Border>
                             </Grid>
                             <TextBlock Text="24H2 以降" Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <Border
-                                Background="{ThemeResource SnapwellYellowBackgroundBrush}"
-                                CornerRadius="9.4"
-                                Padding="8,1"
-                                HorizontalAlignment="Left"
-                                VerticalAlignment="Center">
-                                <TextBlock
-                                    Text="要検証"
-                                    FontSize="10.5"
-                                    FontWeight="SemiBold"
-                                    CharacterSpacing="50"
-                                    LineHeight="16.8"
-                                    TextWrapping="Wrap"
-                                    Foreground="{ThemeResource SnapwellYellowTextBrush}" />
+                            <Border Style="{StaticResource SnapwellTagYellowStyle}">
+                                <TextBlock Text="要検証" Style="{StaticResource SnapwellTagYellowTextStyle}" />
                             </Border>
                             <ToggleSwitch IsEnabled="False"
                                 Style="{StaticResource DemoSwitchStyle}"
@@ -169,27 +134,15 @@
                                     <TextBlock Text="Win" Style="{StaticResource DemoKeyTextStyle}" />
                                 </Border>
                                 <TextBlock Text=" + 矢印" Style="{StaticResource SnapwellRowTitleStyle}" />
-                                <Border Style="{StaticResource SnapwellPendingTagStyle}">
-                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellPendingTagTextStyle}" />
+                                <Border Style="{StaticResource SnapwellTagPendingStyle}">
+                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellTagPendingTextStyle}" />
                                 </Border>
                             </StackPanel>
                             <TextBlock Text="Snapwell の操作に置き換えます" Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <Border
-                                Background="{ThemeResource SnapwellGreenBackgroundBrush}"
-                                CornerRadius="9.4"
-                                Padding="8,1"
-                                HorizontalAlignment="Left"
-                                VerticalAlignment="Center">
-                                <TextBlock
-                                    Text="—"
-                                    FontSize="10.5"
-                                    FontWeight="SemiBold"
-                                    CharacterSpacing="50"
-                                    LineHeight="16.8"
-                                    TextWrapping="Wrap"
-                                    Foreground="{ThemeResource SnapwellGreenTextBrush}" />
+                            <Border Style="{StaticResource SnapwellTagGreenStyle}">
+                                <TextBlock Text="—" Style="{StaticResource SnapwellTagGreenTextStyle}" />
                             </Border>
                             <ToggleSwitch IsEnabled="False"
                                 Style="{StaticResource DemoSwitchStyle}"
@@ -206,8 +159,8 @@
                 </Grid.ColumnDefinitions>
                 <StackPanel Orientation="Horizontal" Spacing="6">
                     <Button IsEnabled="False" Content="標準の動作に戻す" Style="{StaticResource SnapwellDemoButtonStyle}" />
-                    <Border Style="{StaticResource SnapwellPendingTagStyle}">
-                        <TextBlock Text="準備中" Style="{StaticResource SnapwellPendingTagTextStyle}" />
+                    <Border Style="{StaticResource SnapwellTagPendingStyle}">
+                        <TextBlock Text="準備中" Style="{StaticResource SnapwellTagPendingTextStyle}" />
                     </Border>
                 </StackPanel>
                 <TextBlock
