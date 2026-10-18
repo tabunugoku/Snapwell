@@ -297,10 +297,15 @@ public static class SpringToggle
             var wasDragging = _dragging;
             _pressed = false;
             _dragging = false;
-            if (wasDragging)
+            if (wasDragging && commit && _toggle.IsEnabled)
             {
                 _body.Release();
                 _toggle.IsOn = _body.IsOn;
+            }
+            else if (wasDragging)
+            {
+                // 取り消しや無効化では IsOn を書かない（Toggled も自動起動の登録も起きない）。
+                _body.Cancel();
             }
             else if (commit && _toggle.IsEnabled)
             {
