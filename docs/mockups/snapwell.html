@@ -2048,6 +2048,7 @@ function makeSwitch(label) {
       sw.since = 0;
       switchLoop.add(sw);
     } else {
+      if (sw.since > 0.06) sw.hand.v = 0; // 止まっていた手の古い速度は混ぜない
       const dt = t - sw.hand.t;
       if (dt > 0) sw.hand.v = sw.hand.v * 0.35 + (hx - sw.hand.x) / dt * 0.65;
       sw.hand.x = hx; sw.hand.t = t;
