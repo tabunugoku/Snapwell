@@ -142,7 +142,8 @@
                             Background="{ThemeResource SnapwellWallBrush}" SizeChanged="TrialStage_SizeChanged"
                             PointerPressed="TrialStage_PointerPressed" PointerMoved="TrialStage_PointerMoved"
                             PointerReleased="TrialStage_PointerReleased"
-                            PointerCanceled="TrialStage_PointerReleased">
+                            PointerCanceled="TrialStage_PointerCanceled"
+                            PointerCaptureLost="TrialStage_PointerCanceled">
                         <Border x:Name="TrialCard" IsTabStop="True" CornerRadius="8"
                                 BorderThickness="1" Background="{ThemeResource SnapwellSurfaceBrush}"
                                 BorderBrush="{ThemeResource SnapwellBorderStrongBrush}"

@@ -248,4 +248,23 @@ public sealed class FeelTrialTests
         Assert.False(trial.Release(velocity, FeelPreset.Airy, 28));
         Assert.False(trial.IsFlying);
     }
+
+    /// <summary>入力のキャンセルでは投げず、つかみだけが解かれ、カードはその場に残る。</summary>
+    [Fact]
+    public void CancelEndsTheGrabWithoutThrowing()
+    {
+        var trial = new FeelTrial(640, 260, SnapMode.Zones);
+        Assert.True(trial.Grab(new(320, 100)));
+        trial.Move(new(420, 110));
+        var center = trial.Center;
+        trial.Cancel();
+        Assert.False(trial.IsGrabbed);
+        Assert.False(trial.IsFlying);
+        Assert.Null(trial.Kind);
+        Assert.Equal(center, trial.Center);
+        trial.Move(new(10, 10));
+        Assert.Equal(center, trial.Center);
+        trial.Cancel();
+        Assert.Equal(center, trial.Center);
+    }
 }

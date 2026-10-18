@@ -16,6 +16,7 @@ public sealed partial class FeelPage
     private const double KeyThrowSpeed = 2200;
 
     private VelocityTracker _velocity = new();
+    private ManipulationModes _savedManipulation = ManipulationModes.System;
     private readonly List<Rectangle> _zoneShapes = [];
     private readonly Stopwatch _clock = Stopwatch.StartNew();
     private FeelTrial? _trial;
@@ -160,6 +161,11 @@ public sealed partial class FeelPage
         StopRendering();
         _trial.Grab(point, kind);
         _dragging = true;
+        // 親の ScrollViewer に入力を奪われないよう、ドラッグの間だけシステムの manipulation を止める。
+        // 終了時（離す・キャンセル）に元へ戻す。実機（タッチ・ペン）未確認
+        _savedManipulation = TrialStage.ManipulationMode;
+        TrialStage.ManipulationMode = ManipulationModes.None;
+        FindScrollViewer()?.CancelDirectManipulations();
         TrialStage.CapturePointer(e.Pointer);
         _velocity = new();
         _velocity.AddSample(point, _clock.Elapsed.TotalSeconds);
@@ -187,6 +193,7 @@ public sealed partial class FeelPage
         }
 
         _dragging = false;
+        TrialStage.ManipulationMode = _savedManipulation;
         TrialStage.ReleasePointerCapture(e.Pointer);
         // 本体と同じ速度の推定。止めてから離せば、最後の動きの速度は使わない
         var velocity = _velocity.Release(_clock.Elapsed.TotalSeconds);
@@ -198,6 +205,34 @@ public sealed partial class FeelPage
         {
             PaintTrial();
         }
+    }
+
+    // キャンセルとキャプチャの喪失では、投げずにつかみだけを解く（カードはその場に残る）
+    private void TrialStage_PointerCanceled(object sender, PointerRoutedEventArgs e)
+    {
+        if (!_dragging || _trial is null)
+        {
+            return;
+        }
+
+        _dragging = false;
+        TrialStage.ManipulationMode = _savedManipulation;
+        _trial.Cancel();
+        PaintTrial();
+    }
+
+    private ScrollViewer? FindScrollViewer()
+    {
+        for (var node = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetParent(TrialStage); node is not null;
+            node = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetParent(node))
+        {
+            if (node is ScrollViewer viewer)
+            {
+                return viewer;
+            }
+        }
+
+        return null;
     }
 
     private void Launch(Vec2 velocity)
