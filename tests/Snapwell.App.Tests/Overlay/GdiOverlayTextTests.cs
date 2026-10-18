@@ -8,6 +8,42 @@ namespace Snapwell.App.Tests.Overlay;
 /// <summary>文字マスクの境界と乗算済み alpha を検証する。</summary>
 public sealed class GdiOverlayTextTests
 {
+    /// <summary>小さい日本語と等幅キーの縁に、白黒だけでない十分な中間階調を作る。</summary>
+    [Theory]
+    [InlineData(1)]
+    [InlineData(1.5)]
+    [InlineData(2)]
+    public void SmallTextHasGrayscaleEdgesWithoutChangingMeasurements(double scale)
+    {
+        using var text = new GdiOverlayText(scale);
+        var area = new PixelRect(-100, -80, 1920, 1080);
+        var selection = new ZoneSelection(area, new(8, 8), new(8, 8));
+        var before = LauncherPanelLayout.Create(selection, scale, "対象の例", true, text.Measure);
+        foreach (var item in before.Text.Where(item => item.Size <= 11.5))
+        {
+            var frame = OverlayPainter.Create(item.Bounds.Width, item.Bounds.Height);
+            var width = text.Measure(item.Value, item.Size, item.Mono, item.Bold);
+            text.Draw(frame, item.Bounds, item, new(255, 255, 255, 255));
+            var levels = frame.Pixels.Where((value, index) => index % 4 == 3 && value is > 0 and < 255)
+                .Distinct().Count();
+            Assert.True(levels > (item.Value.Length > 1 ? 20 : 0), $"{item.Value}: {levels}");
+            Assert.Equal(width, text.Measure(item.Value, item.Size, item.Mono, item.Bold));
+            for (var index = 0; index < frame.Pixels.Length; index += 4)
+            {
+                Assert.Equal(frame.Pixels[index + 3], frame.Pixels[index]);
+                Assert.Equal(frame.Pixels[index + 3], frame.Pixels[index + 1]);
+                Assert.Equal(frame.Pixels[index + 3], frame.Pixels[index + 2]);
+            }
+        }
+
+        var after = LauncherPanelLayout.Create(selection, scale, "対象の例", true, text.Measure);
+        Assert.Equal(before.Panel, after.Panel);
+        Assert.Equal(before.Text, after.Text);
+        Assert.Equal(before.Presets, after.Presets);
+        Assert.Equal(before.Keys, after.Keys);
+        Assert.Equal(before.Options, after.Options);
+    }
+
     /// <summary>空文字・長い文字・負座標・拡大率二倍でも例外や配列外アクセスを起こさない。</summary>
     [Theory]
     [InlineData("", 1)]
