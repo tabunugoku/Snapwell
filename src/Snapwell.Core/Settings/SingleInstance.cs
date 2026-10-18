@@ -7,14 +7,15 @@ public sealed class SingleInstance : IDisposable
 
     private SingleInstance(Mutex mutex) => _mutex = mutex;
 
-    /// <summary>ユーザーの SID から、本体とは別の Mutex 名を返す。</summary>
-    public static string GetMutexName(string userSid) => @"Local\Snapwell.Settings." + userSid;
+    /// <summary>起動の種類によらず、ユーザーの SID から設定画面共通の Mutex 名を返す。</summary>
+    public static string GetMutexName(string userSid, bool setup = false) =>
+        @"Local\Snapwell.Settings." + userSid;
 
     /// <summary>同名のオブジェクトがなければ、解放まで Mutex を保持するインスタンスを返す。</summary>
-    public static SingleInstance? TryAcquire(string userSid)
+    public static SingleInstance? TryAcquire(string userSid, bool setup = false)
     {
         // 所有権を取らないため、同じスレッドでの再取得やスレッドの終了で二重起動を許さない。
-        var mutex = new Mutex(false, GetMutexName(userSid), out var createdNew);
+        var mutex = new Mutex(false, GetMutexName(userSid, setup), out var createdNew);
         if (!createdNew)
         {
             mutex.Dispose();
