@@ -72,7 +72,8 @@ internal static class Program
                         launcherSurface.SetEnabled(value);
                         ringSurface.SetEnabled(value);
                     }, [holdRing, ringSurface, previewSurface, launcherSurface], longPress);
-            }, new SettingsWatcher(SettingsStores.PortablePath()));
+            }, new SettingsWatcher(SettingsStores.PortablePath()),
+            () => new SettingsLauncher(log).Open("--setup"), new SettingsWatcher(SettingsStores.DevicePath()));
         UnhandledExceptionEventHandler unhandled = (_, args) => host.HandleUnhandledException(
             args.ExceptionObject as Exception ?? new InvalidOperationException("未処理の例外。"));
         EventHandler<UnobservedTaskExceptionEventArgs> unobserved = (_, args) =>
