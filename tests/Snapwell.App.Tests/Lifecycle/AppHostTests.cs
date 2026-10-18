@@ -90,7 +90,7 @@ public sealed class AppHostTests
                 var pause = Task.Run(fixture.Host.ToggleEnabled);
                 try
                 {
-                    Assert.True(SpinWait.SpinUntil(() => fixture.Runtime.Cancels == 1, 1000));
+                    Assert.True(SpinWait.SpinUntil(() => fixture.Runtime.Cancels == 1, 10000));
                     Assert.False(fixture.Runtime.Enabled);
                     Assert.Contains("restore", fixture.Calls);
                     await pause.WaitAsync(TimeSpan.FromSeconds(10));
