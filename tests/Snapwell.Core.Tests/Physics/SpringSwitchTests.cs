@@ -179,6 +179,25 @@ public sealed class SpringSwitchTests
         Assert.False(sw.IsOn);
     }
 
+    /// <summary>止まったあとの逆向きの微小な入力で、古い手の速度が復活して押し戻さない。</summary>
+    [Fact]
+    public void ResumedInputDoesNotReviveStaleHandVelocity()
+    {
+        var sw = new SpringSwitch(Travel, FeelPreset.StiffHeavy, false);
+        sw.Grab(4, 0);
+        sw.Move(8, 1.0 / 120);
+        for (var i = 0; i < 60; i++)
+        {
+            sw.Advance(Frame);
+        }
+
+        sw.Move(7.9, 1 + 1.0 / 120);
+        sw.Advance(Frame);
+        Assert.True(sw.Projected < Travel / 2);
+        sw.Release();
+        Assert.False(sw.IsOn);
+    }
+
     /// <summary>握りの取り消しは状態を変えず、元の側へ静止する。</summary>
     [Theory]
     [InlineData(false)]

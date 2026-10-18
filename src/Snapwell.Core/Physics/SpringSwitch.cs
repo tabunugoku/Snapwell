@@ -95,6 +95,12 @@ public sealed class SpringSwitch
         }
 
         var hand = ClampHand(handPosition);
+        // 止まっていた手の古い速度は混ぜない。再開した入力は新しい速度だけで始める。
+        if (_sinceMove > StaleHandSeconds)
+        {
+            _handVelocity = 0;
+        }
+
         var dt = time - _handTime;
         if (dt > 0)
         {
