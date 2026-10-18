@@ -18,6 +18,7 @@ internal sealed unsafe class TrayMenuWindow : ITrayMenuView, ITrayMenuPresentati
     private static TrayMenuWindow? _current;
     private readonly HWND _owner;
     private readonly Action<Exception> _error;
+    private readonly HCURSOR _arrow;
     private HWND _window;
     private TrayMenuSnapshot? _snapshot;
     private TrayMenuRenderer? _renderer;
@@ -30,6 +31,7 @@ internal sealed unsafe class TrayMenuWindow : ITrayMenuView, ITrayMenuPresentati
         _presentation = new(this);
         _owner = owner;
         _error = error;
+        _arrow = PInvoke.LoadCursor(default, PInvoke.IDC_ARROW);
         _current = this;
         var module = new HINSTANCE(PInvoke.GetModuleHandle(default(PCWSTR)).Value);
         fixed (char* name = ClassName)
@@ -39,7 +41,7 @@ internal sealed unsafe class TrayMenuWindow : ITrayMenuView, ITrayMenuPresentati
                 lpfnWndProc = &WindowProcedure,
                 hInstance = module,
                 lpszClassName = name,
-                hCursor = PInvoke.LoadCursor(default, PInvoke.IDC_ARROW),
+                hCursor = _arrow,
             };
             // メニューを作り直しても同じ STA のクラスを使う。
             if (PInvoke.RegisterClass(in windowClass) == 0 && Marshal.GetLastWin32Error() != 1410)
@@ -154,6 +156,12 @@ internal sealed unsafe class TrayMenuWindow : ITrayMenuView, ITrayMenuPresentati
 
     private LRESULT HandleMessage(HWND window, uint message, WPARAM wParam, LPARAM lParam)
     {
+        if (message == 0x0020 && !_arrow.IsNull) // WM_SETCURSOR
+        {
+            PInvoke.SetCursor(_arrow);
+            return new(1);
+        }
+
         if (_presentation.IsOpen && Controller is { } controller && _snapshot is { } snapshot)
         {
             var point = new Vec2(snapshot.Layout.Bounds.X + unchecked((short)(long)lParam.Value),
