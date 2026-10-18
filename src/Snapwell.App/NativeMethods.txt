@@ -46,3 +46,8 @@ SendMessageTimeout
 WM_NCHITTEST
 HTCAPTION
 SEND_MESSAGE_TIMEOUT_FLAGS
+LoadCursor
+IDC_ARROW
+SetCursor
+IsWindow
+PostThreadMessage

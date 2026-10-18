@@ -56,5 +56,7 @@ internal static class HotkeyBindingsBuilder
         new((int)LauncherInput.ExtendDown, KeyModifiers.Shift, 0x28, true),
         new((int)LauncherInput.Accept, KeyModifiers.None, 0x0D, true),
         new((int)LauncherInput.Cancel, KeyModifiers.None, 0x1B, true),
+        // 失敗通知の遅配中でも回復要求を配送する。同じキーなら先に並ぶ選択操作を優先する。
+        .. normal.Where(binding => binding.Id == (int)WindowCommand.OpenLauncher),
     ];
 }

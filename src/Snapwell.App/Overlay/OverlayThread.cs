@@ -9,25 +9,31 @@ internal sealed class OverlayThread : IOverlayPresenter, IOverlaySurface
     private readonly object _gate = new();
     private readonly Thread _thread;
     private readonly Func<(IOverlaySurface Surface, IOverlayLoop Loop)> _factory;
+    private static long _nextGeneration;
+    private readonly Action<long, string, Exception?>? _diagnostic;
     private (PixelRect Bounds, Func<OverlayFrame>? Paint)? _pending;
     private OverlayPointer? _pendingMove;
     private IOverlayLoop? _loop;
     private bool _disposed;
     private bool _faulted;
     private bool _hidePending;
+    private string _state = "window-create";
 
-    internal OverlayThread(bool interactive)
+    internal OverlayThread(bool interactive, Action<long, string, Exception?>? diagnostic = null)
         : this(() =>
         {
             var window = new LayeredOverlayWindow(interactive);
             return (window, window);
-        })
+        }, diagnostic)
     {
     }
 
-    internal OverlayThread(Func<(IOverlaySurface Surface, IOverlayLoop Loop)> factory)
+    internal OverlayThread(Func<(IOverlaySurface Surface, IOverlayLoop Loop)> factory,
+        Action<long, string, Exception?>? diagnostic = null)
     {
         _factory = factory;
+        _diagnostic = diagnostic;
+        Generation = Interlocked.Increment(ref _nextGeneration);
         _thread = new(Run) { IsBackground = true, Name = "Snapwell overlay" };
         _thread.SetApartmentState(ApartmentState.STA);
         _thread.Start();
@@ -35,6 +41,13 @@ internal sealed class OverlayThread : IOverlayPresenter, IOverlaySurface
 
     public event Action<OverlayPointer>? Pointer;
     public event Action? Faulted;
+
+    internal long Generation { get; }
+
+    public bool IsAvailable
+    {
+        get { lock (_gate) { return !_disposed && !_faulted && _thread.IsAlive; } }
+    }
 
     internal bool IsFaulted
     {
@@ -51,7 +64,7 @@ internal sealed class OverlayThread : IOverlayPresenter, IOverlaySurface
     {
         lock (_gate)
         {
-            if (_disposed)
+            if (_disposed || _faulted)
             {
                 return;
             }
@@ -67,7 +80,16 @@ internal sealed class OverlayThread : IOverlayPresenter, IOverlaySurface
 
             if (wake)
             {
-                _loop?.Wake();
+                try
+                {
+                    _loop?.Wake();
+                }
+                catch (Exception exception)
+                {
+                    _faulted = true;
+                    _diagnostic?.Invoke(Generation, "wake-failed", exception);
+                    throw;
+                }
             }
         }
     }
@@ -84,12 +106,23 @@ internal sealed class OverlayThread : IOverlayPresenter, IOverlaySurface
             _disposed = true;
             _pending = null;
             _pendingMove = null;
-            _loop?.Wake();
+            try
+            {
+                _loop?.Wake();
+            }
+            catch (Exception exception)
+            {
+                _faulted = true;
+                _diagnostic?.Invoke(Generation, "stop-wake-failed", exception);
+            }
         }
 
         if (Thread.CurrentThread != _thread)
         {
-            _thread.Join(TimeSpan.FromMilliseconds(250));
+            if (!_thread.Join(TimeSpan.FromMilliseconds(250)))
+            {
+                _diagnostic?.Invoke(Generation, "stop-timeout", null);
+            }
         }
     }
 
@@ -107,12 +140,14 @@ internal sealed class OverlayThread : IOverlayPresenter, IOverlaySurface
             }
 
             loop.Pointer += OnPointer;
+            _state = "message-loop";
             loop.Run(() => Process(surface));
         }
-        catch (Exception)
+        catch (Exception exception)
         {
             // 描画の失敗で入力や OS 設定の復元を止めない。
             faulted = true;
+            _diagnostic?.Invoke(Generation, _state, exception);
         }
         finally
         {
@@ -120,7 +155,11 @@ internal sealed class OverlayThread : IOverlayPresenter, IOverlaySurface
             lock (_gate)
             {
                 // 停止要求なしでループが戻った場合も、次の要求を受け取れない。
-                _faulted = faulted || !_disposed;
+                _faulted |= faulted || !_disposed;
+                if (!faulted && !_disposed)
+                {
+                    _diagnostic?.Invoke(Generation, "loop-exited", null);
+                }
                 _disposed = true;
                 _pending = null;
                 _pendingMove = null;
@@ -136,8 +175,9 @@ internal sealed class OverlayThread : IOverlayPresenter, IOverlaySurface
 
                 surface?.Dispose();
             }
-            catch (Exception)
+            catch (Exception exception)
             {
+                _diagnostic?.Invoke(Generation, "cleanup-failed", exception);
                 lock (_gate)
                 {
                     _faulted = true;
@@ -183,12 +223,14 @@ internal sealed class OverlayThread : IOverlayPresenter, IOverlaySurface
 
         if (hide)
         {
+            _state = "hide";
             LauncherPanelRenderer.ReleaseCurrent();
             surface.Hide();
         }
 
         if (pending is { Paint: { } paint } request)
         {
+            _state = "paint";
             var frame = paint();
             // 計算中に閉じた要求を再表示しない。GDI の呼び出し自体はロックの外に置く。
             lock (_gate)
@@ -199,8 +241,10 @@ internal sealed class OverlayThread : IOverlayPresenter, IOverlaySurface
                 }
             }
 
+            _state = "show";
             surface.Show(request.Bounds, frame);
         }
+        _state = "message-loop";
         return true;
     }
 

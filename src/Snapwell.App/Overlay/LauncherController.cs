@@ -55,7 +55,7 @@ internal sealed class LauncherController : IDisposable
         _ownProcessId = ownProcessId;
         _theme = theme ?? OverlayThemeSource.Read;
         presenter.Pointer += HandlePointer;
-        presenter.Faulted += Close;
+        presenter.Faulted += CloseIfUnavailable;
     }
 
     internal bool IsOpen
@@ -80,6 +80,11 @@ internal sealed class LauncherController : IDisposable
     {
         lock (_gate)
         {
+            if (_selection is not null && !_presenter.IsAvailable)
+            {
+                CloseCore();
+            }
+
             if (_disposed || !_enabled || _selection is not null)
             {
                 return;
@@ -246,7 +251,7 @@ internal sealed class LauncherController : IDisposable
             CloseCore();
             _disposed = true;
             _presenter.Pointer -= HandlePointer;
-            _presenter.Faulted -= Close;
+            _presenter.Faulted -= CloseIfUnavailable;
         }
     }
 
@@ -375,7 +380,7 @@ internal sealed class LauncherController : IDisposable
             return false;
         }
 
-        if (!_inspector.TryInspect(_target, out var window) ||
+        if (!_presenter.IsAvailable || !_inspector.TryInspect(_target, out var window) ||
             WindowClassifier.Classify(window, _ownProcessId) == WindowKind.Excluded)
         {
             CloseCore();
@@ -424,6 +429,18 @@ internal sealed class LauncherController : IDisposable
         _mouseSelecting = false;
         _presenter.Hide();
         ApplyCurrentBindings();
+    }
+
+    private void CloseIfUnavailable()
+    {
+        lock (_gate)
+        {
+            // 旧世代の通知がロックを待つ間に開いた、新しい表示は閉じない。
+            if (!_presenter.IsAvailable)
+            {
+                CloseCore();
+            }
+        }
     }
 
     private void ApplyCurrentBindings() =>
