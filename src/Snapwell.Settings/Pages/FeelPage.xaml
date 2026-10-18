@@ -187,31 +187,20 @@
                     </Grid>
                     <Border Style="{StaticResource SnapwellRowDividerStyle}" />
 
-                    <!-- デモ状態 (未実装) -->
                     <Grid Style="{StaticResource SnapwellRowGridStyle}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
-                            <Grid ColumnSpacing="6" HorizontalAlignment="Left">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="磁石の強さ" Style="{StaticResource SnapwellRowTitleStyle}" />
-                                <Border Grid.Column="1" Style="{StaticResource SnapwellTagPendingStyle}">
-                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellTagPendingTextStyle}" />
-                                </Border>
-                            </Grid>
-                            <TextBlock Text="区画の近くで吸い寄せる力" Style="{StaticResource SnapwellRowDescriptionStyle}" />
+                            <TextBlock Text="磁石の強さ" Style="{StaticResource SnapwellRowTitleStyle}" />
+                            <TextBlock Text="区画の近くで吸い寄せる力。0〜1、大きいほど素早く吸い寄せます" Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
-                        <TextBlock
-                            Text="0.6"
-                            Style="{StaticResource SnapwellMonoTextStyle}"
-                            Grid.Column="1"
-                            VerticalAlignment="Center"
-                            FontSize="14" />
+                        <NumberBox x:Name="MagnetStrengthBox" Grid.Column="1" Width="140" VerticalAlignment="Center"
+                                   Minimum="0" Maximum="1" SmallChange="0.05" LargeChange="0.1"
+                                   SpinButtonPlacementMode="Compact" AutomationProperties.Name="磁石の強さ"
+                                   ValueChanged="MagnetStrength_ValueChanged"
+                                   ValidationMode="InvalidInputOverwritten" />
                     </Grid>
                     <Border Style="{StaticResource SnapwellRowDividerStyle}" />
                     <Grid Style="{StaticResource SnapwellRowGridStyle}">
@@ -220,27 +209,16 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
-                            <Grid ColumnSpacing="6" HorizontalAlignment="Left">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="吸着半径" Style="{StaticResource SnapwellRowTitleStyle}" />
-                                <Border Grid.Column="1" Style="{StaticResource SnapwellTagPendingStyle}">
-                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellTagPendingTextStyle}" />
-                                </Border>
-                            </Grid>
-                            <TextBlock Text="この距離に入ると吸着します" Style="{StaticResource SnapwellRowDescriptionStyle}" />
+                            <TextBlock Text="吸着半径" Style="{StaticResource SnapwellRowTitleStyle}" />
+                            <TextBlock Text="隣のウィンドウの辺にこの距離まで近づくと吸着します (px)" Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
-                        <TextBlock
-                            Text="28 px"
-                            Style="{StaticResource SnapwellMonoTextStyle}"
-                            Grid.Column="1"
-                            VerticalAlignment="Center"
-                            FontSize="14" />
+                        <NumberBox x:Name="SnapRadiusBox" Grid.Column="1" Width="140" VerticalAlignment="Center"
+                                   Minimum="8" Maximum="96" SmallChange="1" LargeChange="8"
+                                   SpinButtonPlacementMode="Compact" AutomationProperties.Name="吸着半径 (px)"
+                                   ValueChanged="SnapRadius_ValueChanged"
+                                   ValidationMode="InvalidInputOverwritten" />
                     </Grid>
                     <Border Style="{StaticResource SnapwellRowDividerStyle}" />
-                    <!-- デモ状態 (未実装) ここまで -->
                     <Grid Style="{StaticResource SnapwellRowGridStyle}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />

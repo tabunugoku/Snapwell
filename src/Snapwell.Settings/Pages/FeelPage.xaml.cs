@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml.Shapes;
 using Snapwell.Core.Physics;
 using Snapwell.Core.Snapping;
 using Windows.Foundation;
+using Windows.Globalization.NumberFormatting;
 
 namespace Snapwell.Settings.Pages;
 
@@ -29,6 +30,11 @@ public sealed partial class FeelPage : Page
         FeelBox.SelectedIndex = value.Feel switch { "Snappy" => 1, "Heavy" => 2, "Bouncy" => 3, _ => 0 };
         ModeBox.SelectedIndex = value.SnapMode == SnapMode.Corners ? 1 : 0;
         MotionSwitch.IsOn = value.ReduceMotion;
+        MagnetStrengthBox.NumberFormatter = new DecimalFormatter { FractionDigits = 2, IntegerDigits = 1 };
+        SnapRadiusBox.NumberFormatter = new DecimalFormatter { FractionDigits = 0 };
+        MagnetStrengthBox.IsEnabled = SnapRadiusBox.IsEnabled = !session.IsReadOnly;
+        MagnetStrengthBox.Value = value.MagnetStrength;
+        SnapRadiusBox.Value = value.SnapRadius;
         RefreshFeelDetails();
         _refreshing = false;
     }
@@ -104,6 +110,25 @@ public sealed partial class FeelPage : Page
         {
             var mode = ModeBox.SelectedIndex == 1 ? SnapMode.Corners : SnapMode.Zones;
             _session.Update(_session.Current with { SnapMode = mode });
+        }
+    }
+
+    private void MagnetStrength_ValueChanged(NumberBox sender, NumberBoxValueChangedEventArgs args)
+    {
+        if (!_refreshing)
+        {
+            _session.Update(_session.Current with { MagnetStrength = args.NewValue });
+            RefreshFeelDetails();
+            MagnetStrengthBox.Value = _session.Current.MagnetStrength;
+        }
+    }
+
+    private void SnapRadius_ValueChanged(NumberBox sender, NumberBoxValueChangedEventArgs args)
+    {
+        if (!_refreshing)
+        {
+            _session.Update(_session.Current with { SnapRadius = args.NewValue });
+            SnapRadiusBox.Value = _session.Current.SnapRadius;
         }
     }
 
