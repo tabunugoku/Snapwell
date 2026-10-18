@@ -481,6 +481,37 @@
                 <Setter Property="Foreground" Value="{ThemeResource SnapwellTextBrush}" />
             </Style>
 
+            <!-- kbd の枠内は行高 20、上下の Padding は 0 とし、枠込みで高さ 22 にする。 -->
+            <Style x:Key="SnapwellKbdBorderStyle" TargetType="Border">
+                <Setter Property="MinWidth" Value="22" />
+                <Setter Property="Padding" Value="6,0" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="BorderBrush" Value="{ThemeResource SnapwellBorderStrongBrush}" />
+                <Setter Property="CornerRadius" Value="4" />
+                <Setter Property="Background" Value="{ThemeResource SnapwellSurface2Brush}" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+            </Style>
+
+            <Style x:Key="SnapwellKbdTextStyle" TargetType="TextBlock"
+                   BasedOn="{StaticResource SnapwellMonoTextStyle}">
+                <Setter Property="FontSize" Value="11.5" />
+                <Setter Property="LineHeight" Value="20" />
+                <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+                <Setter Property="TextAlignment" Value="Center" />
+                <!-- 実測の下寄り 2 DIP を補正し、上下の Margin の合計を 0 にして枠の高さを保つ。 -->
+                <Setter Property="Margin" Value="0,-2,0,2" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+            </Style>
+
+            <Style x:Key="SnapwellKbdCompanionTextStyle" TargetType="TextBlock">
+                <Setter Property="FontFamily" Value="{StaticResource SnapwellUiFontFamily}" />
+                <Setter Property="FontSize" Value="13" />
+                <Setter Property="LineHeight" Value="20.8" />
+                <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+                <Setter Property="Foreground" Value="{ThemeResource SnapwellTextBrush}" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+            </Style>
+
             <Style x:Key="SnapwellLeadTextStyle" TargetType="TextBlock">
                 <Setter Property="FontFamily" Value="{StaticResource SnapwellUiFontFamily}" />
                 <Setter Property="FontSize" Value="14" />
@@ -618,7 +649,7 @@
                 <Setter Property="TextWrapping" Value="NoWrap" />
             </Style>
 
-            <!-- モックアップの .switch (40×20、完全な丸み CornerRadius 10、つまみ 12 px、オフ時 Margin 3,3、オン時 Margin 23,3、輪郭の二重線なし)。 -->
+            <!-- .switch のつまみは枠の内側から 3 px、外形からは 4 px に置く。 -->
             <Style x:Key="SnapwellToggleSwitchStyle" TargetType="ToggleSwitch">
                 <Setter Property="MinWidth" Value="0" />
                 <Setter Property="MinHeight" Value="0" />
@@ -694,12 +725,12 @@
                                     <Grid.RenderTransform>
                                         <TranslateTransform x:Name="BoundsTranslateTransform" />
                                     </Grid.RenderTransform>
-                                    <!-- 可動幅は 40 - 12 - 3 - 5 = 20。状態変更は補間せず即座に反映する。 -->
+                                    <!-- 可動幅は 40 - 12 - 4 - 4 = 20。状態変更は補間せず即座に反映する。 -->
                                     <Grid
                                         x:Name="SwitchKnob"
                                         Width="12"
                                         Height="12"
-                                        Margin="3,3,5,0"
+                                        Margin="4,4,4,0"
                                         HorizontalAlignment="Left"
                                         VerticalAlignment="Top">
                                         <Grid.RenderTransform>
