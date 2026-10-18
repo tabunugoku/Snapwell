@@ -20,12 +20,40 @@
         <NavigationView x:Name="Navigation" Grid.Row="1" IsSettingsVisible="False"
                         PaneDisplayMode="Left" IsPaneOpen="True" OpenPaneLength="232"
                         IsBackButtonVisible="Collapsed" IsPaneToggleButtonVisible="False"
+                        Background="{ThemeResource SnapwellSurface2Brush}"
                         SelectionChanged="Navigation_SelectionChanged">
             <NavigationView.Resources>
-                <Thickness x:Key="NavigationViewContentGridBorderThickness">1,0,0,0</Thickness>
-                <Thickness x:Key="NavigationViewItemButtonMargin">10,0</Thickness>
-                <CornerRadius x:Key="NavigationViewItemButtonCornerRadius">6</CornerRadius>
-                <Thickness x:Key="NavigationViewItemBorderThickness">1</Thickness>
+                <ResourceDictionary>
+                    <ResourceDictionary.ThemeDictionaries>
+                        <ResourceDictionary x:Key="Light">
+                            <SolidColorBrush x:Key="NavigationViewDefaultPaneBackground" Color="#FFF9F9F8" />
+                            <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="#FFF9F9F8" />
+                            <SolidColorBrush x:Key="NavigationViewTopPaneBackground" Color="#FFF9F9F8" />
+                            <SolidColorBrush x:Key="NavigationViewContentBackground" Color="#FFFFFFFF" />
+                            <SolidColorBrush x:Key="NavigationViewContentGridBorderBrush" Color="Transparent" />
+                        </ResourceDictionary>
+                        <ResourceDictionary x:Key="Dark">
+                            <SolidColorBrush x:Key="NavigationViewDefaultPaneBackground" Color="#FF252524" />
+                            <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="#FF252524" />
+                            <SolidColorBrush x:Key="NavigationViewTopPaneBackground" Color="#FF252524" />
+                            <SolidColorBrush x:Key="NavigationViewContentBackground" Color="#FF202020" />
+                            <SolidColorBrush x:Key="NavigationViewContentGridBorderBrush" Color="Transparent" />
+                        </ResourceDictionary>
+                        <ResourceDictionary x:Key="Default">
+                            <SolidColorBrush x:Key="NavigationViewDefaultPaneBackground" Color="#FF252524" />
+                            <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="#FF252524" />
+                            <SolidColorBrush x:Key="NavigationViewTopPaneBackground" Color="#FF252524" />
+                            <SolidColorBrush x:Key="NavigationViewContentBackground" Color="#FF202020" />
+                            <SolidColorBrush x:Key="NavigationViewContentGridBorderBrush" Color="Transparent" />
+                        </ResourceDictionary>
+                    </ResourceDictionary.ThemeDictionaries>
+                    <CornerRadius x:Key="NavigationViewContentGridCornerRadius">0</CornerRadius>
+                    <Thickness x:Key="NavigationViewContentGridBorderThickness">0</Thickness>
+                    <Thickness x:Key="NavigationViewContentMargin">0</Thickness>
+                    <Thickness x:Key="NavigationViewItemButtonMargin">10,0</Thickness>
+                    <CornerRadius x:Key="NavigationViewItemButtonCornerRadius">6</CornerRadius>
+                    <Thickness x:Key="NavigationViewItemBorderThickness">1</Thickness>
+                </ResourceDictionary>
             </NavigationView.Resources>
             <NavigationView.PaneHeader>
                 <Border Height="10" />
@@ -95,7 +123,9 @@
                     </StackPanel>
                 </NavigationViewItem>
             </NavigationView.MenuItems>
-            <Grid>
+            <Grid Background="{ThemeResource SnapwellSurfaceBrush}"
+                  BorderBrush="{ThemeResource SnapwellBorderBrush}"
+                  BorderThickness="1,0,0,0">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
@@ -109,7 +139,7 @@
             </Grid>
         </NavigationView>
         <Grid Grid.Row="2" Padding="32,14" ColumnSpacing="16"
-              Background="{ThemeResource SnapwellSurface2Brush}"
+              Background="{ThemeResource SnapwellSurfaceBrush}"
               BorderBrush="{ThemeResource SnapwellBorderBrush}" BorderThickness="0,1,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
