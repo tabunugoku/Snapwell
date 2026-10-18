@@ -58,3 +58,8 @@ SetWindowPos
 HWND_TOPMOST
 WindowFromPoint
 GetAncestor
+Shell_NotifyIconGetRect
+GetForegroundWindow
+SetFocus
+SetWindowText
+NotifyWinEvent
