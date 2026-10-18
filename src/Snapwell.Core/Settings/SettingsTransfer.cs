@@ -204,7 +204,7 @@ public static class SettingsTransfer
             imported.Hotkeys.TryGetValue(command, out var after);
             if (before != after)
             {
-                differences.Add(new(new(SettingsField.Hotkey, command), HotkeyCatalog.GetDisplayName(command),
+                differences.Add(new(new(SettingsField.Hotkey, command), HotkeyCatalog.GetDisplayName(command, current.ResizeStep),
                     before is null ? "未割り当て" : HotkeyCatalog.FormatChord(before),
                     after is null ? "未割り当て" : HotkeyCatalog.FormatChord(after)));
             }
