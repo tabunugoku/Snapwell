@@ -15,8 +15,7 @@ public sealed partial class FeelPage
 {
     private const double KeyThrowSpeed = 2200;
 
-    private const double SampleWindowSeconds = 0.1;
-    private readonly List<(double Time, Vec2 Point)> _samples = [];
+    private VelocityTracker _velocity = new();
     private readonly List<Rectangle> _zoneShapes = [];
     private readonly Stopwatch _clock = Stopwatch.StartNew();
     private FeelTrial? _trial;
@@ -162,8 +161,8 @@ public sealed partial class FeelPage
         _trial.Grab(point, kind);
         _dragging = true;
         TrialStage.CapturePointer(e.Pointer);
-        _samples.Clear();
-        _samples.Add((_clock.Elapsed.TotalSeconds, point));
+        _velocity = new();
+        _velocity.AddSample(point, _clock.Elapsed.TotalSeconds);
         PaintTrial();
     }
 
@@ -176,9 +175,7 @@ public sealed partial class FeelPage
 
         var point = Position(e);
         _trial.Move(point);
-        var now = _clock.Elapsed.TotalSeconds;
-        _samples.Add((now, point));
-        _samples.RemoveAll(sample => now - sample.Time > SampleWindowSeconds);
+        _velocity.AddSample(point, _clock.Elapsed.TotalSeconds);
         PaintTrial();
     }
 
@@ -191,10 +188,8 @@ public sealed partial class FeelPage
 
         _dragging = false;
         TrialStage.ReleasePointerCapture(e.Pointer);
-        var first = _samples[0];
-        var last = _samples[^1];
-        var seconds = Math.Max(0.016, last.Time - first.Time);
-        var velocity = (last.Point - first.Point) * (1 / seconds);
+        // 本体と同じ速度の推定。止めてから離せば、最後の動きの速度は使わない
+        var velocity = _velocity.Release(_clock.Elapsed.TotalSeconds);
         if (_trial.Release(velocity, _session.Current.ToFeelPreset(), _session.Current.SnapRadius))
         {
             StartFlight();
@@ -222,6 +217,7 @@ public sealed partial class FeelPage
     // 動きを減らす設定がオンなら、アニメーションせずに止まる先へ直ちに移る。
     private void StartFlight()
     {
+        // アプリの設定か OS のアニメーション設定のどちらかが削減を求めれば、止まる先へ直ちに確定する
         if (_session.Current.ReduceMotion)
         {
             _trial!.Settle();
