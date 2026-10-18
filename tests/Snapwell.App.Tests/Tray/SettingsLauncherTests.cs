@@ -7,6 +7,17 @@ namespace Snapwell.App.Tests.Tray;
 
 public sealed class SettingsLauncherTests
 {
+    /// <summary>終了を待たず、セットアップ引数をシェルに解釈させずに渡す。</summary>
+    [Fact]
+    public void SetupArgumentIsPassedAsOneArgumentWithoutWaitingForExit()
+    {
+        var starts = new List<ProcessStartInfo>();
+        var launcher = new SettingsLauncher(new RecordingLog(), exists: _ => true, start: starts.Add);
+        launcher.Open("--setup");
+        Assert.Equal(new[] { "--setup" }, Assert.Single(starts).ArgumentList);
+        Assert.False(starts[0].UseShellExecute);
+    }
+
     [Fact]
     public void ExistingExecutableStartsOnceInItsOwnFolderWithoutShellOrMessage()
     {

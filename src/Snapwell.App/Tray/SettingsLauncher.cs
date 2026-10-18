@@ -33,7 +33,10 @@ internal sealed class SettingsLauncher : ISettingsLauncher
     }
 
     /// <summary>利用者に結果を知らせ、起動時の例外をトレイの配送へ返さない。</summary>
-    public void Open()
+    public void Open() => Open([]);
+
+    /// <summary>引数をシェルに解釈させず、設定画面へ渡す。</summary>
+    public void Open(params string[] arguments)
     {
         if (!_exists(_path))
         {
@@ -43,7 +46,16 @@ internal sealed class SettingsLauncher : ISettingsLauncher
 
         try
         {
-            _start(new(_path) { UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(_path)! });
+            var info = new ProcessStartInfo(_path)
+            {
+                UseShellExecute = false,
+                WorkingDirectory = Path.GetDirectoryName(_path)!,
+            };
+            foreach (var argument in arguments)
+            {
+                info.ArgumentList.Add(argument);
+            }
+            _start(info);
         }
         catch (Exception exception) when (exception is Win32Exception or IOException or UnauthorizedAccessException or
             InvalidOperationException or SecurityException)
