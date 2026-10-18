@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 using Snapwell.Core.Commands;
+using Snapwell.Core.Layout;
 using Snapwell.Core.Snapping;
 
 namespace Snapwell.Core.Settings;
@@ -9,6 +10,7 @@ namespace Snapwell.Core.Settings;
 public enum SettingsField
 {
     Grid, Gap, Edge, Feel, SnapMode, ReduceMotion, ShowZonePreview, LongPressMilliseconds, LongPressDistance, Hotkey,
+    ResizeStep, ResizeAnchor,
 }
 
 /// <summary>ホットキーはコマンドごと、それ以外は項目ごとに識別する。</summary>
@@ -158,6 +160,8 @@ public static class SettingsTransfer
                     LongPressMilliseconds = imported.LongPressMilliseconds,
                 },
                 SettingsField.LongPressDistance => value with { LongPressDistance = imported.LongPressDistance },
+                SettingsField.ResizeStep => value with { ResizeStep = imported.ResizeStep },
+                SettingsField.ResizeAnchor => value with { ResizeAnchor = imported.ResizeAnchor },
                 _ => value,
             };
             if (key.Field == SettingsField.Hotkey && key.Command is { } command)
@@ -198,6 +202,9 @@ public static class SettingsTransfer
             Milliseconds(imported.LongPressMilliseconds));
         Add(SettingsField.LongPressDistance, "長押し中に動いてよい距離", Pixels(current.LongPressDistance),
             Pixels(imported.LongPressDistance));
+        Add(SettingsField.ResizeStep, "1 回の拡大・縮小の幅", $"{current.ResizeStep} 区画", $"{imported.ResizeStep} 区画");
+        Add(SettingsField.ResizeAnchor, "拡大・縮小で固定する位置", AnchorName(current.ResizeAnchor),
+            AnchorName(imported.ResizeAnchor));
         foreach (var command in current.Hotkeys.Keys.Union(imported.Hotkeys.Keys).OrderBy(HotkeyCatalog.GetDisplayOrder))
         {
             current.Hotkeys.TryGetValue(command, out var before);
@@ -224,6 +231,14 @@ public static class SettingsTransfer
     private static string Milliseconds(int value) => value.ToString(CultureInfo.InvariantCulture) + " ms";
 
     private static string Pixels(double value) => value.ToString(CultureInfo.InvariantCulture) + " px";
+
+    private static string AnchorName(ResizeAnchor anchor) => anchor switch
+    {
+        ResizeAnchor.TopLeft => "左上",
+        ResizeAnchor.Center => "中心",
+        ResizeAnchor.NearEdge => "近い辺",
+        _ => anchor.ToString(),
+    };
 
     private static string ModeName(SnapMode mode) => mode switch
     {
