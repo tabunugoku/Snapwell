@@ -34,7 +34,22 @@ public sealed class HotkeyCatalogTests
         Assert.Equal(new(ChordModifiers.Control | ChordModifiers.Alt | ChordModifiers.Shift, key), defaults[command]);
         Assert.Empty(HotkeyCatalog.FindConflicts(defaults));
         Assert.False(string.IsNullOrWhiteSpace(HotkeyCatalog.GetDisplayName(command)));
-        Assert.Equal(WindowCommand.ArrangeAllMonitors, Enum.GetValues<WindowCommand>()[^1]);
+        Assert.Equal(25, (int)WindowCommand.ArrangeAllMonitors);
+    }
+
+    /// <summary>隣接吸着は既存の ID の末尾に追加し、四つの修飾キーと日本語名を使う。</summary>
+    [Theory]
+    [InlineData(WindowCommand.SnapAdjacentLeft, 26, 0x25u, "左の隣へ寄せる")]
+    [InlineData(WindowCommand.SnapAdjacentRight, 27, 0x27u, "右の隣へ寄せる")]
+    [InlineData(WindowCommand.SnapAdjacentUp, 28, 0x26u, "上の隣へ寄せる")]
+    [InlineData(WindowCommand.SnapAdjacentDown, 29, 0x28u, "下の隣へ寄せる")]
+    public void AdjacentDefaultsAppendStableIdsAndUseAllModifiers(
+        WindowCommand command, int id, uint key, string name)
+    {
+        Assert.Equal(id, (int)command);
+        Assert.Equal(new(ChordModifiers.Control | ChordModifiers.Alt | ChordModifiers.Win | ChordModifiers.Shift,
+            key), DefaultHotkeys.Create()[command]);
+        Assert.Equal(name, HotkeyCatalog.GetDisplayName(command));
     }
 
     [Fact]
