@@ -233,6 +233,26 @@ public sealed class SpringSwitchTests
         Assert.Equal(expected, SpringSwitch.IsTapRelease(x, y, 40, 20));
     }
 
+    /// <summary>端を越えるまで引いて離したドラッグは、入力面の外でも予測位置で確定する。</summary>
+    [Fact]
+    public void DragReleasedBeyondTheEndIsDecidedByProjection()
+    {
+        var sw = new SpringSwitch(Travel, FeelPreset.StiffHeavy, false);
+        var time = 0.0;
+        sw.Grab(10, time);
+        for (var i = 1; i <= 8; i++)
+        {
+            time += Frame;
+            sw.Move(10 + i * 5, time);
+            sw.Advance(Frame);
+        }
+
+        sw.Release();
+        Assert.True(sw.IsOn);
+        Run(sw, 2);
+        Assert.Equal(Travel, sw.Position);
+    }
+
     /// <summary>握りの取り消しは状態を変えず、元の側へ静止する。</summary>
     [Theory]
     [InlineData(false)]
