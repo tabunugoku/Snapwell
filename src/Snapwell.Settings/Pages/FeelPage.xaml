@@ -24,7 +24,7 @@
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
         <StackPanel x:Name="Editor" Padding="32,28,32,40" HorizontalAlignment="Stretch">
             <TextBlock Text="操作感" Style="{StaticResource SnapwellPageTitleStyle}" />
-            <TextBlock Text="投げたときの動き方です。言葉で選ぶと、質量・振動数・減衰比が決まります。曲線は手を離してから止まるまでの位置です。"
+            <TextBlock Text="投げたときの動き方です。4 つはプリセットで、選ぶと 5 つの値がその値になります。値を変えると「カスタム」になります。曲線は手を離してから止まるまでの位置です。"
                        Style="{StaticResource SnapwellLeadTextStyle}" />
 
             <ComboBox x:Name="FeelBox" Header="物理モデルのプリセット" HorizontalAlignment="Stretch"
@@ -124,7 +124,13 @@
                 </Button>
             </Grid>
 
-            <TextBlock Text="詳細" Style="{StaticResource SnapwellGroupTitleStyle}" />
+            <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                <TextBlock Text="詳細" Style="{StaticResource SnapwellGroupTitleStyle}" VerticalAlignment="Center" />
+                <TextBlock x:Name="FeelStateText" Style="{StaticResource SnapwellMonoTextStyle}"
+                           VerticalAlignment="Center" />
+                <Button x:Name="FeelResetButton" Content="プリセットに戻す" Click="FeelReset_Click"
+                        Visibility="Collapsed" />
+            </StackPanel>
             <Border Style="{StaticResource SnapwellRowsBorderStyle}">
                 <StackPanel>
                     <Grid Style="{StaticResource SnapwellRowGridStyle}">
@@ -151,11 +157,18 @@
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
                             <TextBlock Text="質量 m" Style="{StaticResource SnapwellRowTitleStyle}" />
-                            <TextBlock Text="重いほど手から遅れ、遠くまで滑ります"
+                            <TextBlock Text="feel の磁石場では力が質量に比例するため、吸着の動きは変わりません。導かれる値の k と c に効きます"
                                        Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
-                        <TextBlock x:Name="MassValueText" Grid.Column="1" VerticalAlignment="Center"
-                                   Style="{StaticResource SnapwellMonoTextStyle}" />
+                        <StackPanel x:Name="MassPanel" Grid.Column="1" Orientation="Horizontal" Spacing="12"
+                                    VerticalAlignment="Center">
+                            <Slider x:Name="MassSlider" Width="200" Minimum="0" Maximum="1000"
+                                    AutomationProperties.Name="質量 m（スライダー）" />
+                            <NumberBox x:Name="MassBox" Width="130" Minimum="0.15" Maximum="8"
+                                       SmallChange="0.05" LargeChange="0.5"
+                                       SpinButtonPlacementMode="Compact" AutomationProperties.Name="質量 m"
+                                       ValidationMode="InvalidInputOverwritten" />
+                        </StackPanel>
                     </Grid>
                     <Border Style="{StaticResource SnapwellRowDividerStyle}" />
                     <Grid Style="{StaticResource SnapwellRowGridStyle}">
@@ -168,8 +181,15 @@
                             <TextBlock Text="大きいほど素早く吸着します"
                                        Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
-                        <TextBlock x:Name="FrequencyValueText" Grid.Column="1" VerticalAlignment="Center"
-                                   Style="{StaticResource SnapwellMonoTextStyle}" />
+                        <StackPanel x:Name="FrequencyPanel" Grid.Column="1" Orientation="Horizontal" Spacing="12"
+                                    VerticalAlignment="Center">
+                            <Slider x:Name="FrequencySlider" Width="200" Minimum="0" Maximum="1000"
+                                    AutomationProperties.Name="固有振動数 f (Hz)（スライダー）" />
+                            <NumberBox x:Name="FrequencyBox" Width="130" Minimum="0.4" Maximum="7"
+                                       SmallChange="0.05" LargeChange="0.5"
+                                       SpinButtonPlacementMode="Compact" AutomationProperties.Name="固有振動数 f (Hz)"
+                                       ValidationMode="InvalidInputOverwritten" />
+                        </StackPanel>
                     </Grid>
                     <Border Style="{StaticResource SnapwellRowDividerStyle}" />
                     <Grid Style="{StaticResource SnapwellRowGridStyle}">
@@ -182,8 +202,15 @@
                             <TextBlock Text="1 に近いほど行き過ぎません"
                                        Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
-                        <TextBlock x:Name="DampingRatioValueText" Grid.Column="1" VerticalAlignment="Center"
-                                   Style="{StaticResource SnapwellMonoTextStyle}" />
+                        <StackPanel x:Name="DampingRatioPanel" Grid.Column="1" Orientation="Horizontal" Spacing="12"
+                                    VerticalAlignment="Center">
+                            <Slider x:Name="DampingRatioSlider" Width="200" Minimum="0" Maximum="1000"
+                                    AutomationProperties.Name="減衰比 ζ（スライダー）" />
+                            <NumberBox x:Name="DampingRatioBox" Width="130" Minimum="0.1" Maximum="1.6"
+                                       SmallChange="0.01" LargeChange="0.1"
+                                       SpinButtonPlacementMode="Compact" AutomationProperties.Name="減衰比 ζ"
+                                       ValidationMode="InvalidInputOverwritten" />
+                        </StackPanel>
                     </Grid>
                     <Border Style="{StaticResource SnapwellRowDividerStyle}" />
 
@@ -194,13 +221,17 @@
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
                             <TextBlock Text="磁石の強さ" Style="{StaticResource SnapwellRowTitleStyle}" />
-                            <TextBlock Text="停止点へ吸い寄せる力。操作感の語から決まる値で、大きいほど強く引きます (0〜2)" Style="{StaticResource SnapwellRowDescriptionStyle}" />
+                            <TextBlock Text="停止点へ吸い寄せる力。大きいほど強く引きます (0〜2)" Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
-                        <NumberBox x:Name="MagnetStrengthBox" Grid.Column="1" Width="140" VerticalAlignment="Center"
-                                   Minimum="0" Maximum="2" SmallChange="0.05" LargeChange="0.1"
-                                   SpinButtonPlacementMode="Compact" AutomationProperties.Name="磁石の強さ"
-                                   ValueChanged="MagnetStrength_ValueChanged"
-                                   ValidationMode="InvalidInputOverwritten" />
+                        <StackPanel x:Name="MagnetStrengthPanel" Grid.Column="1" Orientation="Horizontal" Spacing="12"
+                                    VerticalAlignment="Center">
+                            <Slider x:Name="MagnetStrengthSlider" Width="200" Minimum="0" Maximum="1000"
+                                    AutomationProperties.Name="磁石の強さ（スライダー）" />
+                            <NumberBox x:Name="MagnetStrengthBox" Width="130" Minimum="0" Maximum="2"
+                                       SmallChange="0.05" LargeChange="0.1"
+                                       SpinButtonPlacementMode="Compact" AutomationProperties.Name="磁石の強さ"
+                                       ValidationMode="InvalidInputOverwritten" />
+                        </StackPanel>
                     </Grid>
                     <Border Style="{StaticResource SnapwellRowDividerStyle}" />
                     <Grid Style="{StaticResource SnapwellRowGridStyle}">
@@ -212,11 +243,15 @@
                             <TextBlock Text="吸着半径" Style="{StaticResource SnapwellRowTitleStyle}" />
                             <TextBlock Text="強く吸い込まれる距離 (px)" Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
-                        <NumberBox x:Name="SnapRadiusBox" Grid.Column="1" Width="140" VerticalAlignment="Center"
-                                   Minimum="8" Maximum="96" SmallChange="1" LargeChange="8"
-                                   SpinButtonPlacementMode="Compact" AutomationProperties.Name="吸着半径 (px)"
-                                   ValueChanged="SnapRadius_ValueChanged"
-                                   ValidationMode="InvalidInputOverwritten" />
+                        <StackPanel x:Name="SnapRadiusPanel" Grid.Column="1" Orientation="Horizontal" Spacing="12"
+                                    VerticalAlignment="Center">
+                            <Slider x:Name="SnapRadiusSlider" Width="200" Minimum="0" Maximum="1000"
+                                    AutomationProperties.Name="吸着半径 (px)（スライダー）" />
+                            <NumberBox x:Name="SnapRadiusBox" Width="130" Minimum="8" Maximum="96"
+                                       SmallChange="1" LargeChange="8"
+                                       SpinButtonPlacementMode="Compact" AutomationProperties.Name="吸着半径 (px)"
+                                       ValidationMode="InvalidInputOverwritten" />
+                        </StackPanel>
                     </Grid>
                     <Border Style="{StaticResource SnapwellRowDividerStyle}" />
                     <Grid Style="{StaticResource SnapwellRowGridStyle}">
