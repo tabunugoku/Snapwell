@@ -101,12 +101,78 @@ public sealed class WindowTests
         var inspector = new FakeInspector { Current = CreateWindow() };
         var api = new FakePositionApi(inspector);
         var mover = new WindowMover(inspector, api);
-        Assert.True(mover.ApplyBatch([]));
-        Assert.True(mover.ApplyBatch([new(1, new PixelRect(100, 100, 800, 600))]));
+        Assert.True(mover.ApplyBatch([], false, out var failed));
+        Assert.Empty(failed);
+        Assert.True(mover.ApplyBatch([new(1, new PixelRect(100, 100, 800, 600))], false, out failed));
+        Assert.Empty(failed);
+        Assert.False(api.PositionOnly);
         Assert.Equal(new PixelRect(93, 100, 814, 607), Assert.Single(api.Batch).WindowBounds);
         inspector.Current = null;
-        Assert.False(mover.ApplyBatch([new(1, default)]));
+        var calls = api.BatchCalls;
+        Assert.True(mover.ApplyBatch([new(1, default)], false, out failed));
+        Assert.Equal([(nint)1], failed);
+        Assert.Equal(calls, api.BatchCalls);
     }
+
+    /// <summary>位置バッチでも最大化を解除してから枠を補正する。</summary>
+    [Fact]
+    public void PositionBatchRestoresMaximizedWindowAndPreservesSize()
+    {
+        var inspector = new FakeInspector { Current = CreateWindow() with { IsMaximized = true, Insets = default } };
+        var api = new FakePositionApi(inspector);
+        var mover = new WindowMover(inspector, api);
+        Assert.True(mover.ApplyBatch([new(1, new(-100, 200, 10, 20))], true, out var failed));
+        Assert.Empty(failed);
+        Assert.Equal(1, api.RestoreCount);
+        Assert.True(api.PositionOnly);
+        Assert.Equal(new PixelRect(-107, 200, 24, 27), Assert.Single(api.Batch).WindowBounds);
+    }
+
+    /// <summary>調査が失敗または例外になった対象だけを除き、残りのバッチを適用する。</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void BatchSkipsUnavailableWindowAndAppliesRemainingWindows(bool throws)
+    {
+        var inspector = new FakeInspector { Current = CreateWindow(), FailedHandle = 2, ThrowOnFailure = throws };
+        var api = new FakePositionApi(inspector);
+        var mover = new WindowMover(inspector, api);
+        Assert.True(mover.ApplyBatch([new(1, new(10, 20, 100, 200)), new(2, default),
+            new(3, new(30, 40, 300, 400))], true, out var failed));
+        Assert.Equal([(nint)2], failed);
+        Assert.Equal([(nint)1, (nint)3], api.Batch.Select(placement => placement.Handle));
+        Assert.Equal(1, api.BatchCalls);
+    }
+
+    /// <summary>ネイティブバッチの失敗を呼び出し側へ返す。</summary>
+    [Fact]
+    public void BatchReportsNativeFailure()
+    {
+        var inspector = new FakeInspector { Current = CreateWindow() };
+        var mover = new WindowMover(inspector, new FakePositionApi(inspector) { Success = false });
+        Assert.False(mover.ApplyBatch([new(1, default)], false, out var failed));
+        Assert.Empty(failed);
+    }
+
+    /// <summary>実矩形の再読み込みと、読み込めない場合の結果を確認する。</summary>
+    [Fact]
+    public void GetVisualBoundsReadsActualBoundsWithoutRestoring()
+    {
+        var inspector = new FakeInspector { Current = CreateWindow() with { IsMaximized = true } };
+        var api = new FakePositionApi(inspector);
+        var mover = new WindowMover(inspector, api);
+        Assert.Equal(inspector.Current.VisualBounds, mover.GetVisualBounds(1));
+        Assert.Equal(0, api.RestoreCount);
+        inspector.Current = null;
+        Assert.Null(mover.GetVisualBounds(1));
+    }
+
+    /// <summary>位置だけなら NOSIZE を付け、サイズ指定でも非活性化と Z 順序の維持を保つ。</summary>
+    [Theory]
+    [InlineData(false, 0x14u)]
+    [InlineData(true, 0x15u)]
+    public void PlacementFlagsPreserveZOrderAndActivationAndOptionallySkipSize(bool positionOnly, uint expected) =>
+        Assert.Equal(expected, (uint)Win32WindowPositionApi.GetPlacementFlags(positionOnly));
 
     private static WindowSnapshot CreateWindow() => new(1, "Example", "Test", 42,
         Resizable | Caption, 0, new PixelRect(93, 100, 814, 607), new PixelRect(100, 100, 800, 600),
@@ -115,10 +181,17 @@ public sealed class WindowTests
     private sealed class FakeInspector : IWindowInspector
     {
         internal WindowSnapshot? Current { get; set; }
+        internal nint FailedHandle { get; set; }
+        internal bool ThrowOnFailure { get; set; }
 
         public bool TryInspect(nint handle, [NotNullWhen(true)] out WindowSnapshot? snapshot)
         {
-            snapshot = Current;
+            if (handle == FailedHandle && ThrowOnFailure)
+            {
+                throw new InvalidOperationException("closed");
+            }
+
+            snapshot = handle == FailedHandle ? null : Current;
             return snapshot is not null;
         }
 
@@ -133,6 +206,7 @@ public sealed class WindowTests
         internal PixelRect LastBounds { get; private set; }
         internal IReadOnlyList<NativeWindowPlacement> Batch { get; private set; } = [];
         internal bool Success { get; set; } = true;
+        internal int BatchCalls { get; private set; }
 
         public bool Restore(nint handle)
         {
@@ -148,8 +222,10 @@ public sealed class WindowTests
             return Success;
         }
 
-        public bool ApplyBatch(IReadOnlyList<NativeWindowPlacement> placements)
+        public bool ApplyBatch(IReadOnlyList<NativeWindowPlacement> placements, bool positionOnly)
         {
+            BatchCalls++;
+            PositionOnly = positionOnly;
             Batch = placements;
             return Success;
         }
