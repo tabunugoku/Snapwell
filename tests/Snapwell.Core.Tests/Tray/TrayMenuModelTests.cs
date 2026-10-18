@@ -9,7 +9,7 @@ public sealed class TrayMenuModelTests
 {
     /// <summary>有効な割り当てだけを対応する項目へ写し、同じキーでも捨てない。</summary>
     [Fact]
-    public void EffectiveShortcutsMapOnlyTrayCommandsWithoutDeduplicatingChords()
+    public void EffectiveShortcutsMapToggleAndLauncherButNotArrangeWithoutDeduplicatingChords()
     {
         var chord = new KeyChordSpec(ChordModifiers.Control | ChordModifiers.Alt, 0x20);
         var shortcuts = TrayMenuModel.Shortcuts(new Dictionary<WindowCommand, KeyChordSpec>
@@ -19,11 +19,11 @@ public sealed class TrayMenuModelTests
             [WindowCommand.ArrangeGrid] = chord,
             [WindowCommand.LeftHalf] = new(ChordModifiers.Win, 0x25),
         });
-        Assert.Equal(3, shortcuts.Count);
+        Assert.Equal(2, shortcuts.Count);
         var items = TrayMenuModel.Create(true, true, shortcuts);
         Assert.Equal(["Ctrl", "Pause"], items.Single(item => item.Command == TrayMenuCommand.Toggle).Keys);
         Assert.Equal(["Ctrl", "Alt", "Space"], items.Single(item => item.Command == TrayMenuCommand.Launcher).Keys);
-        Assert.Equal(["Ctrl", "Alt", "Space"], items.Single(item => item.Command == TrayMenuCommand.Arrange).Keys);
+        Assert.Empty(items.Single(item => item.Command == TrayMenuCommand.Arrange).Keys);
         Assert.All(items.Skip(3), item => Assert.Empty(item.Keys));
     }
 
