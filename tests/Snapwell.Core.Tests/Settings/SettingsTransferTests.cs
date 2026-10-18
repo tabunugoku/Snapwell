@@ -128,7 +128,7 @@ public sealed class SettingsTransferTests : IDisposable
     [InlineData("{\"LongPressMilliseconds\":null}")]
     [InlineData("{\"LongPressDistance\":\"6\"}")]
     [InlineData("{\"LongPressDistance\":null}")]
-    [InlineData("{\"SchemaVersion\":5,\"Feel\":{\"future\":true}}")]
+    [InlineData("{\"SchemaVersion\":6,\"Feel\":{\"future\":true}}")]
     [InlineData("{\"SchemaVersion\":999999999999,\"Feel\":\"Airy\"}")]
     public void InvalidOrFutureFilesAreRejectedWithoutChangingAnything(string json)
     {

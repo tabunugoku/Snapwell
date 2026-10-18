@@ -13,7 +13,7 @@ public sealed record GridSettings(int Columns = 8, int Rows = 8);
 /// <summary>他の端末にも持ち運べる設定。</summary>
 public sealed record PortableSettings
 {
-    public const int CurrentSchemaVersion = 4;
+    public const int CurrentSchemaVersion = 5;
 
     // JSON のソース生成でも、欠けた値に初期化子を使うため set にする。
     public int SchemaVersion { get; set; } = CurrentSchemaVersion;

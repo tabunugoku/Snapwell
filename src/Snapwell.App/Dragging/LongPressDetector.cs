@@ -1,5 +1,6 @@
 using Snapwell.Core.Commands;
 using Snapwell.Core.Geometry;
+using Snapwell.Core.Input;
 using Snapwell.Core.Settings;
 using Snapwell.Platform.Hooks;
 using Snapwell.Platform.Monitors;
@@ -8,7 +9,8 @@ using Snapwell.Platform.Windows;
 namespace Snapwell.App.Dragging;
 
 /// <summary>押下の世代と物理座標を持つ長押し候補。</summary>
-internal sealed record LongPressCandidate(nint Handle, Vec2 Position, long Generation, double Radius);
+internal sealed record LongPressCandidate(nint Handle, Vec2 Position, long Generation, double Radius,
+    bool InTopBand = false);
 
 /// <summary>左ボタンの長押しと、その押下から通常のドラッグへの切り替えを判定する。</summary>
 internal sealed class LongPressDetector(IWindowInspector inspector, IMonitorSource monitors,
@@ -104,7 +106,9 @@ internal sealed class LongPressDetector(IWindowInspector inspector, IMonitorSour
                             : MovementLogicalPixels;
                         var monitor = CommandPlanner.SelectMonitor(window.VisualBounds, areas);
                         var candidate = new LongPressCandidate(handle, new(button.X, button.Y),
-                            _generation, movementLogicalPixels * monitor.Scale);
+                            _generation, movementLogicalPixels * monitor.Scale,
+                            TopBandRule.Contains(window.VisualBounds, monitor.WorkArea,
+                                new(button.X, button.Y), monitor.Scale));
                         _press = candidate;
                         HoldStarted?.Invoke(candidate, holdMilliseconds);
                         trackMouse(true);
@@ -143,7 +147,8 @@ internal sealed class LongPressDetector(IWindowInspector inspector, IMonitorSour
 
     /// <summary>応答待ちと現在位置の取得を、状態ロックを持たずに行う。</summary>
     internal bool CheckTarget(LongPressCandidate candidate) =>
-        isCaption(candidate.Handle, candidate.Position) && cursorPosition() is { } position &&
+        (isCaption(candidate.Handle, candidate.Position) || candidate.InTopBand) &&
+        cursorPosition() is { } position &&
         (position - candidate.Position).Length <= candidate.Radius;
 
     /// <summary>検査中に押下が変わっていなければ、一度だけ発火を確定する。</summary>
