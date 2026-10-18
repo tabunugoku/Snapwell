@@ -312,6 +312,17 @@ internal sealed class HotkeyCommandExecutor(IWindowInspector inspector, IMonitor
         }
 
         var walls = area ?? CommandPlanner.SelectMonitor(bounds, areas).WorkArea;
+        if (selected is null && direction is not null)
+        {
+            // モーション削減時の包含補正でも、直交軸と大きすぎる寸法を保つ。
+            var current = window.VisualBounds;
+            var left = Math.Min(walls.X, Math.Min(current.X, bounds.X));
+            var top = Math.Min(walls.Y, Math.Min(current.Y, bounds.Y));
+            var right = Math.Max(walls.Right, Math.Max(current.Right, bounds.Right));
+            var bottom = Math.Max(walls.Bottom, Math.Max(current.Bottom, bounds.Bottom));
+            walls = new(left, top, right - left, bottom - top);
+        }
+
         if (selected is not null && !WindowClassifier.CanResize(window, ownProcessId))
         {
             var current = window.VisualBounds;
