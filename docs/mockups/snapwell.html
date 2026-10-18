@@ -1947,7 +1947,6 @@ const SWITCH_FEEL = (() => {
 const SWITCH_TRAVEL = 20;
 const SWITCH_STEP = 1 / 240;
 const SWITCH_HAND_W = 2 * Math.PI * 6;
-const SWITCH_WALL_W = 2 * Math.PI * 8;
 
 const switchLoop = (() => {
   const active = new Set();
@@ -1966,14 +1965,8 @@ function makeSwitch(label) {
   const input = $('input', label), track = $('span', label);
   const { m, k, c } = SWITCH_FEEL;
   const sw = { x: 0, v: 0, target: 0, hand: null, since: 0 };
-  const wall = (x, v) => {
-    const kw = m * SWITCH_WALL_W ** 2, cw = 2 * 0.9 * Math.sqrt(kw * m);
-    if (x < 0) return -kw * x - (v < 0 ? cw * v : 0);
-    if (x > SWITCH_TRAVEL) return -kw * (x - SWITCH_TRAVEL) - (v > 0 ? cw * v : 0);
-    return 0;
-  };
   const accel = (x, v) => {
-    let f = -c * v + wall(x, v);
+    let f = -c * v;
     if (sw.hand) {
       const kh = SWITCH_HAND_W ** 2, ch = 2 * Math.sqrt(kh * m);
       // 入力が止まった手は動いていない。最後に測った速度を力として残さない
@@ -1993,6 +1986,9 @@ function makeSwitch(label) {
     const k4v = accel(x + h * k3x, v + h * k3v), k4x = v + h * k3v;
     sw.x = x + h / 6 * (k1x + 2 * k2x + 2 * k3x + k4x);
     sw.v = v + h / 6 * (k1v + 2 * k2v + 2 * k3v + k4v);
+    // 壁はトラックの端で位置と外向きの速度を止める (速い手の速度が残っても押し越さない)
+    if (sw.x > SWITCH_TRAVEL) { sw.x = SWITCH_TRAVEL; sw.v = Math.min(sw.v, 0); }
+    else if (sw.x < 0) { sw.x = 0; sw.v = Math.max(sw.v, 0); }
   };
   const settled = () => !sw.hand && Math.abs(sw.v) < 4 && Math.abs(sw.x - sw.target) < 0.25;
   const paint = () => {
