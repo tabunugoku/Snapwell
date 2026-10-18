@@ -142,6 +142,24 @@ public sealed class ResidentRuntimeTests
         Assert.Empty(fixture.Presenter.Requests);
     }
 
+    /// <summary>記録したハンドルが別の識別属性に再利用されてもランチャーを開かない。</summary>
+    [Theory]
+    [InlineData(456u, "Editor")]
+    [InlineData(123u, "Other")]
+    [InlineData(456u, "Other")]
+    public void TrayLauncherDoesNotOpenForReusedRecordedHandle(uint processId, string className)
+    {
+        using var fixture = new OverlayFixture();
+        fixture.Runtime.Handle(new ForegroundChanged(1));
+        fixture.Inspector.Window = fixture.Inspector.Window with { ProcessId = processId, ClassName = className };
+
+        fixture.Runtime.OpenLauncher(98, 100);
+
+        Assert.False(fixture.Launcher.IsOpen);
+        Assert.Empty(fixture.Presenter.Requests);
+        Assert.Empty(fixture.Motion.Requests);
+    }
+
     /// <summary>トレイの時刻を表示へ渡し、一周を含む先行入力だけを無視する。</summary>
     [Theory]
     [InlineData(100u, 99u)]
