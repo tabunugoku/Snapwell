@@ -47,7 +47,7 @@ public sealed class GdiOverlayTextTests
     public void MixedSelectionLabelMatchesMeasuredRunDrawing(double scale)
     {
         using var text = new GdiOverlayText(scale);
-        var selection = new ZoneSelection(new(-100, -80, 1920, 1080), new(8, 8), new(8, 8));
+        var selection = new ZoneSelection(new(-100, -80, 1920, 1080), new(2, 2), new(8, 8));
         var layout = LauncherPanelLayout.Create(selection, scale, measure: text.Measure);
         var label = Assert.Single(layout.Text, item => item.Kind == LauncherTextKind.Ink);
         var parts = label.Value.Split("区画");
