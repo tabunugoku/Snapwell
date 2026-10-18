@@ -26,6 +26,7 @@ internal sealed class TrayMenuPresentation(ITrayMenuPresentationPlatform platfor
 {
     private int _generation;
     private string _name = "";
+    private bool _visible;
 
     internal bool IsOpen { get; private set; }
 
@@ -45,6 +46,8 @@ internal sealed class TrayMenuPresentation(ITrayMenuPresentationPlatform platfor
         {
             platform.BringOwnerToFront();
             if (!IsCurrent(generation)) { return; }
+            // 非表示の初回配置による DPI 変更は許容し、Show の同期配送からは閉じる対象にする。
+            _visible = true;
             platform.Show();
             if (!IsCurrent(generation)) { return; }
             platform.Activate();
@@ -73,11 +76,17 @@ internal sealed class TrayMenuPresentation(ITrayMenuPresentationPlatform platfor
         }
     }
 
+    internal void DpiChanged(Action close)
+    {
+        if (_visible) { close(); }
+    }
+
     internal void Hide()
     {
         // ReleaseCapture と ShowWindow が同期配送する前に世代を無効にする。
         _generation++;
         IsOpen = false;
+        _visible = false;
         _name = "";
         if (platform.HasCapture) { platform.ReleaseCapture(); }
         platform.Hide();

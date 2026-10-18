@@ -8,6 +8,62 @@ namespace Snapwell.App.Tests.Tray;
 /// <summary>Win32 の同期配送を偽で再現し、閉じた表示の再開を防ぐ。</summary>
 public sealed class TrayMenuPresentationTests
 {
+    /// <summary>初回配置の DPI 変更は許容し、表示開始後の変更では捕捉も回収する。</summary>
+    [Theory]
+    [InlineData("Present", true)]
+    [InlineData("Show", false)]
+    [InlineData("Capture", false)]
+    public void DpiChangeOnlyClosesAfterShowingStarts(string operation, bool remainsOpen)
+    {
+        var platform = new FakePlatform();
+        using var view = new FakeView(platform);
+        using var controller = new TrayMenuController(view, _ => Assert.Fail("Unexpected command"), Fail);
+        platform.Callback = step =>
+        {
+            if (step == operation) { view.Presentation.DpiChanged(controller.Close); }
+        };
+        var snapshot = Snapshot() with
+        {
+            Layout = TrayMenuLayout.Create(new(2100, 900, 24, 24), new(1200, 0, 1600, 900),
+                TrayTaskbarEdge.Bottom, 2.5),
+        };
+        controller.Open(snapshot);
+        Assert.Equal(remainsOpen, controller.IsOpen);
+        Assert.Equal(remainsOpen, view.Presentation.IsOpen);
+        Assert.Equal(remainsOpen, platform.Visible);
+        Assert.Equal(remainsOpen, platform.HasCapture);
+        Assert.Single(platform.Operations, step => step == "Present");
+        if (remainsOpen)
+        {
+            Assert.Equal(1, platform.Captures);
+            view.Presentation.DpiChanged(controller.Close);
+            Assert.False(controller.IsOpen);
+            Assert.False(view.Presentation.IsOpen);
+            Assert.False(platform.Visible);
+            Assert.False(platform.HasCapture);
+        }
+    }
+
+    /// <summary>表示済みの再描画中の DPI 変更でも、古い表示を再開しない。</summary>
+    [Fact]
+    public void DpiChangeDuringRepaintClosesAndReleasesCapture()
+    {
+        var platform = new FakePlatform();
+        using var view = new FakeView(platform);
+        using var controller = new TrayMenuController(view, _ => { }, Fail);
+        controller.Open(Snapshot());
+        platform.Callback = operation =>
+        {
+            if (operation == "Present") { view.Presentation.DpiChanged(controller.Close); }
+        };
+        controller.Key(0x28);
+        Assert.False(controller.IsOpen);
+        Assert.False(view.Presentation.IsOpen);
+        Assert.False(platform.Visible);
+        Assert.False(platform.HasCapture);
+        Assert.Equal(1, platform.Captures);
+    }
+
     /// <summary>初回描画と再描画の途中で閉じたら、表示も捕捉も残らない。</summary>
     [Theory]
     [InlineData(false)]

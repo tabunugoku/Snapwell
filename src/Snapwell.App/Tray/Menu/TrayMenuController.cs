@@ -23,6 +23,7 @@ internal sealed class TrayMenuController(ITrayMenuView view, Action<uint> comman
     private int _selected = -1;
     private int _pressed = -1;
     private bool _keyboard;
+    private long _wheelRemainder;
 
     internal bool IsOpen => _snapshot is not null;
 
@@ -32,6 +33,7 @@ internal sealed class TrayMenuController(ITrayMenuView view, Action<uint> comman
         _selected = -1;
         _pressed = -1;
         _keyboard = false;
+        _wheelRemainder = 0;
         Paint();
     }
 
@@ -56,7 +58,17 @@ internal sealed class TrayMenuController(ITrayMenuView view, Action<uint> comman
     internal void Wheel(int delta)
     {
         if (_snapshot is not { } snapshot || delta == 0) { return; }
-        var offset = snapshot.Layout.ScrollOffset - delta * snapshot.Layout.Px(32) / 120;
+        if (Math.Sign(_wheelRemainder) != Math.Sign(delta)) { _wheelRemainder = 0; }
+        // 120 分の 1 px 単位で保持し、細粒度の入力でも端数を失わない。
+        var movement = (long)delta * snapshot.Layout.Px(32) + _wheelRemainder;
+        _wheelRemainder = movement % 120;
+        var offset = (int)Math.Clamp(snapshot.Layout.ScrollOffset - movement / 120,
+            0, snapshot.Layout.MaxScrollOffset);
+        if ((offset == 0 && delta > 0) || (offset == snapshot.Layout.MaxScrollOffset && delta < 0))
+        {
+            _wheelRemainder = 0;
+        }
+
         var layout = snapshot.Layout.WithScrollOffset(offset);
         if (layout.ScrollOffset == snapshot.Layout.ScrollOffset) { return; }
         _snapshot = snapshot with { Layout = layout };

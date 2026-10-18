@@ -168,8 +168,11 @@ internal sealed unsafe class TrayMenuWindow : ITrayMenuView, ITrayMenuPresentati
                     return default;
                 case 0x0204 or 0x0207 or 0x020B:
                 case 0x001F or 0x0215: // WM_CANCELMODE / WM_CAPTURECHANGED
-                case 0x0010 or 0x02E0 or 0x007E:
+                case 0x0010 or 0x007E:
                     controller.Close();
+                    return default;
+                case 0x02E0: // WM_DPICHANGED
+                    _presentation.DpiChanged(controller.Close);
                     return default;
                 case 0x0006 when (wParam.Value & 0xFFFF) == 0:
                 case 0x001C when wParam.Value == 0:
