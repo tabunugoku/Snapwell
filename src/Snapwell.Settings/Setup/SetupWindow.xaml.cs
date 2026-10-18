@@ -18,7 +18,7 @@ public sealed partial class SetupWindow : Window
     private readonly SettingsStore<DeviceState> _deviceStore = SettingsStores.Device();
     private readonly SetupWizard _wizard;
     private readonly PortableSettings _initialSettings = new();
-    private bool _consent = true;
+    private bool _consent;
     private bool _sized;
     private readonly bool _loadFailed;
 
