@@ -110,6 +110,33 @@ public sealed class HotkeyTests
         fixture.Executor.Handle(new((int)command));
         var request = Assert.Single(fixture.Motion.Requests);
         Assert.Equal(new PixelRect(x, y, 400, 300), request.Target);
+        Assert.Equal(new PixelRect(0, 0, 1920, 1040), request.Walls);
+        Assert.False(request.Resize);
+    }
+
+    /// <summary>隣接吸着の壁は画面外の直交軸も保ち、現在・目標・作業領域を最小の範囲で含む。</summary>
+    [Theory]
+    [InlineData(WindowCommand.SnapAdjacentLeft, 100, -100, 400, 300, 8, -100, 0, -100, 1920, 1140)]
+    [InlineData(WindowCommand.SnapAdjacentRight, 100, 900, 400, 300, 1512, 900, 0, 0, 1920, 1200)]
+    [InlineData(WindowCommand.SnapAdjacentUp, -100, 100, 400, 300, -100, 8, -100, 0, 2020, 1040)]
+    [InlineData(WindowCommand.SnapAdjacentDown, 1700, 100, 400, 300, 1700, 732, 0, 0, 2100, 1040)]
+    [InlineData(WindowCommand.SnapAdjacentLeft, 100, -100, 2000, 1200, 8, -100, 0, -100, 2100, 1200)]
+    [InlineData(WindowCommand.SnapAdjacentLeft, -100, -100, 2000, 1200, 8, -100, -100, -100, 2108, 1200)]
+    public void AdjacentCommandWallsContainCurrentTargetAndWorkArea(WindowCommand command,
+        int x, int y, int width, int height, int targetX, int targetY,
+        int wallsX, int wallsY, int wallsWidth, int wallsHeight)
+    {
+        var fixture = new Fixture();
+        var current = new PixelRect(x, y, width, height);
+        fixture.Inspector.Window = fixture.Inspector.Window with { VisualBounds = current };
+        fixture.Executor.Handle(new((int)command));
+        var request = Assert.Single(fixture.Motion.Requests);
+        Assert.Equal(current, request.Current);
+        Assert.Equal(new PixelRect(targetX, targetY, width, height), request.Target);
+        Assert.Equal(new PixelRect(wallsX, wallsY, wallsWidth, wallsHeight), request.Walls);
+        Assert.True(request.Walls.Contains(current));
+        Assert.True(request.Walls.Contains(request.Target));
+        Assert.True(request.Walls.Contains(new PixelRect(0, 0, 1920, 1040)));
         Assert.False(request.Resize);
     }
 
