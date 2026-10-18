@@ -222,21 +222,7 @@ internal sealed class AppHost
                     return;
                 }
 
-                var previouslyDisabled = _device.DisableStandardSnap && _device.StandardSnapConsentGiven;
-                _device = loaded.Value;
-                _enabled = _device.Enabled;
-                _runtime?.SetEnabled(_enabled && _hooksStarted);
-                if (!_enabled || !_device.DisableStandardSnap || !_device.StandardSnapConsentGiven)
-                {
-                    if (previouslyDisabled)
-                    {
-                        RestoreSnap();
-                    }
-                }
-                else
-                {
-                    DisableIfRequested();
-                }
+                ApplyDevice(loaded.Value);
                 _tray.Update(State());
             });
         }
@@ -365,22 +351,7 @@ internal sealed class AppHost
             }
 
             ReloadDevice();
-            _enabled = !_enabled;
-            _device = _device with { Enabled = _enabled };
-            if (!_enabled)
-            {
-                // 移動の取り消しが固まっても、OS 設定は先に戻しておく。
-                RestoreSnap();
-                _runtime!.SetEnabled(false);
-                _runtime.CancelAll();
-            }
-            else
-            {
-                _runtime!.SetEnabled(_hooksStarted);
-                DisableIfRequested();
-            }
-
-            SaveDevice(current => current with { Enabled = _enabled });
+            SaveDevice(current => current with { Enabled = !current.Enabled });
             _tray.Update(State());
         }
     }
@@ -412,24 +383,11 @@ internal sealed class AppHost
                 return;
             }
 
-            _device = _device with
-            {
-                DisableStandardSnap = !_device.DisableStandardSnap,
-                StandardSnapConsentGiven = _device.StandardSnapConsentGiven || needsConsent,
-            };
-            if (_device.DisableStandardSnap)
-            {
-                DisableIfRequested();
-            }
-            else
-            {
-                RestoreSnap();
-            }
-
             SaveDevice(current => current with
             {
-                DisableStandardSnap = _device.DisableStandardSnap,
-                StandardSnapConsentGiven = _device.StandardSnapConsentGiven,
+                // この操作で同意を得ていなければ、保存までに取り消された同意を戻さない。
+                DisableStandardSnap = !current.DisableStandardSnap && (current.StandardSnapConsentGiven || needsConsent),
+                StandardSnapConsentGiven = current.StandardSnapConsentGiven || needsConsent,
             });
             _tray.Update(State());
         }
@@ -633,23 +591,55 @@ internal sealed class AppHost
     private TrayState State() => new(_enabled, _device.DisableStandardSnap,
         _status is null ? _reloadStatus : _reloadStatus is null ? _status : $"{_status} / {_reloadStatus}");
 
+    private void ApplyDevice(DeviceState device)
+    {
+        var previouslyDisabled = _device.DisableStandardSnap && _device.StandardSnapConsentGiven;
+        var pausing = _enabled && !device.Enabled;
+        _device = device;
+        _enabled = device.Enabled;
+        if (!_enabled || !device.DisableStandardSnap || !device.StandardSnapConsentGiven)
+        {
+            if (previouslyDisabled || pausing)
+            {
+                // 移動の取り消しが固まっても、OS 設定は先に戻しておく。
+                RestoreSnap();
+            }
+        }
+        else
+        {
+            DisableIfRequested();
+        }
+        _runtime?.SetEnabled(_enabled && _hooksStarted);
+        if (pausing)
+        {
+            _runtime?.CancelAll();
+        }
+    }
+
     private void SaveDevice(Func<DeviceState, DeviceState> update)
     {
-        if (!_deviceReadOnly)
+        Cleanup(() =>
         {
-            Cleanup(() =>
+            // 読み取り専用なら従来どおり、この起動中の操作だけに反映する。
+            var device = _deviceReadOnly ? update(_device) : Save();
+            // 保存待ちの間に終了した場合は、復元済みの OS や Runtime を再び有効にしない。
+            if (CanOperate())
             {
-                // ウィザードが保存した完了フラグと同意を、古いキャッシュで上書きしない。
-                try
-                {
-                    DeviceStateChanges.Update(_deviceStore, update);
-                }
-                catch (InvalidOperationException)
-                {
-                    _deviceReadOnly = true;
-                    throw;
-                }
-            });
+                ApplyDevice(device);
+            }
+        });
+
+        DeviceState Save()
+        {
+            try
+            {
+                return DeviceStateChanges.Update(_deviceStore, update);
+            }
+            catch (InvalidOperationException)
+            {
+                _deviceReadOnly = true;
+                throw;
+            }
         }
     }
 
