@@ -267,4 +267,28 @@ public sealed class FeelTrialTests
         trial.Cancel();
         Assert.Equal(center, trial.Center);
     }
+
+    /// <summary>二本目の指は、つかんでいる最中には何もできない（つかめず、動かせず、取り消せない）。</summary>
+    [Fact]
+    public void ASecondPointerCannotGrabMoveOrCancelWhileGrabbed()
+    {
+        var trial = new FeelTrial(640, 260, SnapMode.Zones);
+        Assert.True(trial.Grab(new(320, 100), TrialPointerKind.Touch, 1));
+        Assert.False(trial.Grab(new(300, 95), TrialPointerKind.Touch, 2));
+        Assert.True(trial.Owns(1));
+        Assert.False(trial.Owns(2));
+        trial.Move(new(400, 100), 1);
+        var center = trial.Center;
+        trial.Move(new(10, 10), 2);
+        Assert.Equal(center, trial.Center);
+        trial.Cancel(2);
+        Assert.True(trial.IsGrabbed);
+        trial.Move(new(420, 100), 1);
+        Assert.NotEqual(center, trial.Center);
+        trial.Cancel(1);
+        Assert.False(trial.IsGrabbed);
+        Assert.False(trial.Owns(1));
+        Assert.True(trial.Grab(new(trial.Center.X, trial.Center.Y - 30), TrialPointerKind.Touch, 2));
+        Assert.True(trial.Owns(2));
+    }
 }

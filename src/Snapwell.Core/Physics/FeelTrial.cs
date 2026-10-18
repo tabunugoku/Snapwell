@@ -28,6 +28,7 @@ public sealed class FeelTrial
     private RectD[] _guides = [];
     private Vec2 _grabOffset;
     private bool _grabbed;
+    private long _pointerId;
 
     /// <summary>舞台の大きさと吸着の方式から試す領域を作り、カードを中央に置く。</summary>
     public FeelTrial(double width, double height, SnapMode mode)
@@ -122,11 +123,12 @@ public sealed class FeelTrial
 
     /// <summary>
     /// タイトルバーをつかむ。つかめたら、動いていても止め、元の大きさに戻して true を返す。
-    /// つかんだ点はタイトルバーの上に残り、カードはそれに付いて動く。タイトルバー以外なら何もせず false。
+    /// つかんだ点はタイトルバーの上に残り、カードはそれに付いて動く。タイトルバー以外、またはほかのポインターが
+    /// すでにつかんでいる最中（二本目の指など）なら何もせず false。
     /// </summary>
-    public bool Grab(Vec2 point, TrialPointerKind kind = TrialPointerKind.Mouse)
+    public bool Grab(Vec2 point, TrialPointerKind kind = TrialPointerKind.Mouse, long pointerId = 0)
     {
-        if (!HitsTitleBar(point, kind))
+        if (_grabbed || !HitsTitleBar(point, kind))
         {
             return false;
         }
@@ -139,23 +141,33 @@ public sealed class FeelTrial
         Size = DefaultSize;
         _grabOffset = new(fraction * Size.X, TitleBarHeight / 2);
         _grabbed = true;
-        Move(point);
+        _pointerId = pointerId;
+        Move(point, pointerId);
         return true;
     }
 
     /// <summary>つかんでいる最中か。</summary>
     public bool IsGrabbed => _grabbed;
 
+    /// <summary>そのポインターが、いまつかんでいるポインターか。つかんでいなければ false。</summary>
+    public bool Owns(long pointerId) => _grabbed && _pointerId == pointerId;
+
     /// <summary>
     /// 入力が取り消された（キャンセル・キャプチャの喪失）ときに、投げずにつかみだけを解く。
     /// カードはその場に置き、吸着もしない。つかんでいなければ何もしない。
     /// </summary>
-    public void Cancel() => _grabbed = false;
+    public void Cancel(long pointerId = 0)
+    {
+        if (Owns(pointerId))
+        {
+            _grabbed = false;
+        }
+    }
 
     /// <summary>つかんだカードを動かす。中心は舞台の中に収める。つかんでいなければ何もしない。</summary>
-    public void Move(Vec2 point)
+    public void Move(Vec2 point, long pointerId = 0)
     {
-        if (_grabbed)
+        if (Owns(pointerId))
         {
             Center = Clamp(point - _grabOffset + new Vec2(Size.X / 2, Size.Y / 2));
         }

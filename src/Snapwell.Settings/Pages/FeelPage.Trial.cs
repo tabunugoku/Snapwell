@@ -17,6 +17,7 @@ public sealed partial class FeelPage
 
     private VelocityTracker _velocity = new();
     private ManipulationModes _savedManipulation = ManipulationModes.System;
+    private uint _dragPointerId;
     private readonly List<Rectangle> _zoneShapes = [];
     private readonly Stopwatch _clock = Stopwatch.StartNew();
     private FeelTrial? _trial;
@@ -158,9 +159,16 @@ public sealed partial class FeelPage
             return;
         }
 
+        // ドラッグ中の二本目の押下は無視する（元の ManipulationMode は最初の開始時だけ保存する）
+        if (_dragging)
+        {
+            return;
+        }
+
         StopRendering();
-        _trial.Grab(point, kind);
+        _trial.Grab(point, kind, e.Pointer.PointerId);
         _dragging = true;
+        _dragPointerId = e.Pointer.PointerId;
         // 親の ScrollViewer に入力を奪われないよう、ドラッグの間だけシステムの manipulation を止める。
         // 終了時（離す・キャンセル）に元へ戻す。実機（タッチ・ペン）未確認
         _savedManipulation = TrialStage.ManipulationMode;
@@ -174,20 +182,20 @@ public sealed partial class FeelPage
 
     private void TrialStage_PointerMoved(object sender, PointerRoutedEventArgs e)
     {
-        if (!_dragging || _trial is null)
+        if (!_dragging || _trial is null || e.Pointer.PointerId != _dragPointerId)
         {
             return;
         }
 
         var point = Position(e);
-        _trial.Move(point);
+        _trial.Move(point, _dragPointerId);
         _velocity.AddSample(point, _clock.Elapsed.TotalSeconds);
         PaintTrial();
     }
 
     private void TrialStage_PointerReleased(object sender, PointerRoutedEventArgs e)
     {
-        if (!_dragging || _trial is null)
+        if (!_dragging || _trial is null || e.Pointer.PointerId != _dragPointerId)
         {
             return;
         }
@@ -210,14 +218,14 @@ public sealed partial class FeelPage
     // キャンセルとキャプチャの喪失では、投げずにつかみだけを解く（カードはその場に残る）
     private void TrialStage_PointerCanceled(object sender, PointerRoutedEventArgs e)
     {
-        if (!_dragging || _trial is null)
+        if (!_dragging || _trial is null || e.Pointer.PointerId != _dragPointerId)
         {
             return;
         }
 
         _dragging = false;
         TrialStage.ManipulationMode = _savedManipulation;
-        _trial.Cancel();
+        _trial.Cancel(_dragPointerId);
         PaintTrial();
     }
 
