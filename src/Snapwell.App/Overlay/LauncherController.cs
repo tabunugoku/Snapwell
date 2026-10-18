@@ -1,3 +1,4 @@
+using System.Globalization;
 using Snapwell.App.Hotkeys;
 using Snapwell.Core.Commands;
 using Snapwell.Core.Geometry;
@@ -335,9 +336,13 @@ internal sealed class LauncherController : IDisposable
                 var area = selection.WorkArea;
                 cell ??= selection.HitTest(new(Math.Clamp(pointer.Position.X, area.X, area.Right - 1),
                     Math.Clamp(pointer.Position.Y, area.Y, area.Bottom - 1)));
-                _selection = selection.Select(selection.Anchor, cell!.Value);
+                var updated = selection.Select(selection.Anchor, cell!.Value);
                 _mouseSelecting = pointer.Kind != OverlayPointerKind.Up;
-                Draw();
+                if (updated != selection)
+                {
+                    _selection = updated;
+                    Draw();
+                }
             }
         }
     }
@@ -390,7 +395,7 @@ internal sealed class LauncherController : IDisposable
         var revision = ++_drawRevision;
         _panelLayout ??= LauncherPanelLayout.Create(selection, scale, title, menuOpen);
         _presenter.Request(selection.WorkArea, () =>
-            LauncherPanelRenderer.Paint(selection, title, scale, menuOpen, _theme(), layout =>
+            LauncherPanelRenderer.Current.Render(selection, title, scale, menuOpen, _theme(), layout =>
             {
                 lock (_gate)
                 {
@@ -424,6 +429,15 @@ internal sealed class LauncherController : IDisposable
     private void ApplyCurrentBindings() =>
         _applyBindings(_selection is not null ? _launcherBindings : _enabled ? _normalBindings : _pausedBindings);
 
-    private static string DisplayTitle(string title) =>
-        string.Concat(title.Take(512).Select(character => char.IsControl(character) ? ' ' : character));
+    private static string DisplayTitle(string title)
+    {
+        var clean = string.Concat(title.Select(character => char.IsControl(character) ? ' ' : character));
+        if (clean.Length <= 512)
+        {
+            return clean;
+        }
+
+        var end = StringInfo.ParseCombiningCharacters(clean).Last(index => index <= 512);
+        return clean[..end] + "…";
+    }
 }

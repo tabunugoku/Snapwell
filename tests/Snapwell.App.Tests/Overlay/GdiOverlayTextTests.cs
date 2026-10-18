@@ -80,4 +80,78 @@ public sealed class GdiOverlayTextTests
         Assert.Contains(layout.Text, text => text.Value == " 閉じる");
         Assert.All(layout.Presets, button => Assert.Equal(button.Index, layout.HitPreset(button.Bounds.Center)));
     }
+
+    /// <summary>実際の日本語フォントの幅を含め、どの案内も切り詰めずに収める。</summary>
+    [Theory]
+    [InlineData(1)]
+    [InlineData(1.5)]
+    [InlineData(2)]
+    public void NativeMeasuredLabelsFitTheirBoxes(double scale)
+    {
+        using var text = new GdiOverlayText(scale);
+        var selection = new ZoneSelection(new(-2000, -100, 1920, 1080), new(8, 8), new(8, 8));
+        var layout = LauncherPanelLayout.Create(selection, scale, new string('例', 100), measure: text.Measure);
+        Assert.True(layout.Panel.Height > 0);
+        Assert.All(layout.Text, item => Assert.True(
+            (text.Measure(item.Value, item.Size, item.Mono, item.Bold) + item.Value.Length * item.LetterSpacing) *
+            scale <= item.Bounds.Width + .00001, item.Value));
+        Assert.EndsWith("…", Assert.Single(layout.Text, item => item.Size == 12.5).Value);
+    }
+
+    /// <summary>選択だけの変化ではパネルを作り直さず、静的な状態の変更では作り直す。</summary>
+    [Fact]
+    public void PanelCacheInvalidatesOnlyForStaticChanges()
+    {
+        var renderer = new LauncherPanelRenderer();
+        var selection = new ZoneSelection(new(-1000, -100, 900, 700), new(8, 8), new(4, 4));
+        var original = renderer.Render(selection, "対象", 1, false, OverlayTheme.Light, _ => { });
+        var buffer = original.Pixels;
+        selection = selection.Move(1, 0, false);
+        var moved = renderer.Render(selection, "対象", 1, false, OverlayTheme.Light, _ => { });
+        Assert.Same(buffer, moved.Pixels);
+        Assert.Equal(1, renderer.PanelBuildCount);
+        Assert.True(moved.DirtyRegions!.Sum(rect => (long)rect.Width * rect.Height) < 900L * 700);
+        renderer.Render(selection, "変更", 1, false, OverlayTheme.Light, _ => { });
+        Assert.Equal(2, renderer.PanelBuildCount);
+        renderer.Render(selection, "変更", 1, false, OverlayTheme.Dark, _ => { });
+        Assert.Equal(3, renderer.PanelBuildCount);
+        renderer.Render(selection, "変更", 1, true, OverlayTheme.Dark, _ => { });
+        Assert.Equal(4, renderer.PanelBuildCount);
+        Assert.Equal(1, renderer.ShadowBuildCount);
+        renderer.Render(selection, "変更", 1.5, true, OverlayTheme.Dark, _ => { });
+        Assert.Equal(5, renderer.PanelBuildCount);
+        selection = new(selection.WorkArea, new(12, 6), new(4, 4));
+        renderer.Render(selection, "変更", 1.5, true, OverlayTheme.Dark, _ => { });
+        Assert.Equal(6, renderer.PanelBuildCount);
+    }
+
+    /// <summary>日本語マスクと半透明の角も、キャッシュなしの全面描画と同じ画素になる。</summary>
+    [Theory]
+    [InlineData(OverlayTheme.Light, 1)]
+    [InlineData(OverlayTheme.Dark, 1.5)]
+    [InlineData(OverlayTheme.Light, 2)]
+    public void CachedNativeTextMatchesFullDrawing(OverlayTheme theme, double scale)
+    {
+        var renderer = new LauncherPanelRenderer();
+        var selection = new ZoneSelection(new(-900, -300, 900, 700), new(8, 8), new(4, 4));
+        using var text = new GdiOverlayText(scale);
+        var palette = OverlayPalette.For(theme);
+        void DrawText(OverlayFrame frame, PixelRect area, LauncherText item) => text.Draw(frame, area, item,
+            item.Kind switch
+            {
+                LauncherTextKind.Muted => palette.Muted,
+                LauncherTextKind.Ink => palette.Ink,
+                LauncherTextKind.Blue => palette.BlueText,
+                _ => palette.Text,
+            });
+        foreach (var cursor in new ZoneCell[] { new(0, 0), new(1, 2), new(7, 7), new(0, 0) })
+        {
+            selection = selection.Select(new(0, 0), cursor);
+            var actual = renderer.Render(selection, "対象の例", scale, true, theme, _ => { });
+            var layout = LauncherPanelLayout.Create(selection, scale, "対象の例", true, text.Measure);
+            var expected = OverlayPainter.Launcher(selection, theme, scale);
+            OverlayPainter.Panel(expected, selection, layout, theme, scale, DrawText);
+            Assert.Equal(expected.Pixels, actual.Pixels);
+        }
+    }
 }

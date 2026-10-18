@@ -10,9 +10,11 @@ internal sealed class OverlayThread : IOverlayPresenter, IOverlaySurface
     private readonly Thread _thread;
     private readonly Func<(IOverlaySurface Surface, IOverlayLoop Loop)> _factory;
     private (PixelRect Bounds, Func<OverlayFrame>? Paint)? _pending;
+    private OverlayPointer? _pendingMove;
     private IOverlayLoop? _loop;
     private bool _disposed;
     private bool _faulted;
+    private bool _hidePending;
 
     internal OverlayThread(bool interactive)
         : this(() =>
@@ -54,8 +56,19 @@ internal sealed class OverlayThread : IOverlayPresenter, IOverlaySurface
                 return;
             }
 
+            var wake = _pending is null && _pendingMove is null;
             _pending = (bounds, paint);
-            _loop?.Wake();
+            if (paint is null)
+            {
+                _pendingMove = null;
+                // 直後の Show が要求を上書きしても、非表示時の解放は省略しない。
+                _hidePending = true;
+            }
+
+            if (wake)
+            {
+                _loop?.Wake();
+            }
         }
     }
 
@@ -70,6 +83,7 @@ internal sealed class OverlayThread : IOverlayPresenter, IOverlaySurface
 
             _disposed = true;
             _pending = null;
+            _pendingMove = null;
             _loop?.Wake();
         }
 
@@ -102,12 +116,14 @@ internal sealed class OverlayThread : IOverlayPresenter, IOverlaySurface
         }
         finally
         {
+            LauncherPanelRenderer.ReleaseCurrent();
             lock (_gate)
             {
                 // 停止要求なしでループが戻った場合も、次の要求を受け取れない。
                 _faulted = faulted || !_disposed;
                 _disposed = true;
                 _pending = null;
+                _pendingMove = null;
                 _loop = null;
             }
 
@@ -138,7 +154,20 @@ internal sealed class OverlayThread : IOverlayPresenter, IOverlaySurface
 
     private bool Process(IOverlaySurface surface)
     {
+        OverlayPointer? move;
+        lock (_gate)
+        {
+            move = _pendingMove;
+            _pendingMove = null;
+        }
+
+        if (move is not null)
+        {
+            Pointer?.Invoke(move);
+        }
+
         (PixelRect Bounds, Func<OverlayFrame>? Paint)? pending;
+        bool hide;
         lock (_gate)
         {
             if (_disposed)
@@ -148,6 +177,14 @@ internal sealed class OverlayThread : IOverlayPresenter, IOverlaySurface
 
             pending = _pending;
             _pending = null;
+            hide = _hidePending;
+            _hidePending = false;
+        }
+
+        if (hide)
+        {
+            LauncherPanelRenderer.ReleaseCurrent();
+            surface.Hide();
         }
 
         if (pending is { Paint: { } paint } request)
@@ -156,7 +193,7 @@ internal sealed class OverlayThread : IOverlayPresenter, IOverlaySurface
             // 計算中に閉じた要求を再表示しない。GDI の呼び出し自体はロックの外に置く。
             lock (_gate)
             {
-                if (_disposed || _pending is not null)
+                if (_disposed || _pending is not null || _pendingMove is not null)
                 {
                     return !_disposed;
                 }
@@ -164,13 +201,41 @@ internal sealed class OverlayThread : IOverlayPresenter, IOverlaySurface
 
             surface.Show(request.Bounds, frame);
         }
-        else if (pending is not null)
-        {
-            surface.Hide();
-        }
-
         return true;
     }
 
-    private void OnPointer(OverlayPointer pointer) => Pointer?.Invoke(pointer);
+    private void OnPointer(OverlayPointer pointer)
+    {
+        OverlayPointer? move;
+        lock (_gate)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            if (pointer.Kind == OverlayPointerKind.Move)
+            {
+                var wake = _pendingMove is null && _pending is null;
+                _pendingMove = pointer;
+                if (wake)
+                {
+                    _loop?.Wake();
+                }
+
+                return;
+            }
+
+            // 押下・解放の前の移動を配送し、ドラッグの端点の順序を保つ。
+            move = _pendingMove;
+            _pendingMove = null;
+        }
+
+        if (move is not null)
+        {
+            Pointer?.Invoke(move);
+        }
+
+        Pointer?.Invoke(pointer);
+    }
 }
