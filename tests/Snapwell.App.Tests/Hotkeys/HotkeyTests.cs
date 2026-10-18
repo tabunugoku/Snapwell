@@ -62,15 +62,13 @@ public sealed class HotkeyTests
     }
 
     [Fact]
-    public void DefaultsUseWindowsModifierOnlyForAdjacentCommandsAndSuppressChords()
+    public void DefaultsNeverUseWindowsModifierAndSuppressChords()
     {
         var result = HotkeyBindingsBuilder.Build(new PortableSettings().Hotkeys);
         Assert.Empty(result.Dropped);
         Assert.All(result.Bindings, binding =>
         {
-            var adjacent = (WindowCommand)binding.Id is WindowCommand.SnapAdjacentLeft or
-                WindowCommand.SnapAdjacentRight or WindowCommand.SnapAdjacentUp or WindowCommand.SnapAdjacentDown;
-            Assert.Equal(adjacent, binding.Modifiers.HasFlag(KeyModifiers.Win));
+            Assert.False(binding.Modifiers.HasFlag(KeyModifiers.Win));
             Assert.True(binding.Suppress);
         });
     }
