@@ -160,10 +160,7 @@ internal sealed class MotionEngine : IMotionEngine
                     }
                 }
 
-                foreach (var application in applications)
-                {
-                    Apply(application);
-                }
+                ApplyFrame(applications, reduceMotion);
             }
         }
         catch (OperationCanceledException) when (_stop.IsCancellationRequested)
@@ -190,7 +187,116 @@ internal sealed class MotionEngine : IMotionEngine
         return applications;
     }
 
-    private void Apply(Application application)
+    private void ApplyFrame(Application[] applications, bool reduceMotion)
+    {
+        for (var index = 0; index < applications.Length;)
+        {
+            if (!reduceMotion && applications[index].Kind == ApplyKind.Bounds)
+            {
+                Apply(applications[index++]);
+                continue;
+            }
+
+            var start = index++;
+            // サイズ確定をまたいで位置を先行適用せず、元の順序でバッチを区切る。
+            while (index < applications.Length && applications[index].Kind == applications[start].Kind)
+            {
+                index++;
+            }
+
+            ApplyBatch(applications.AsSpan(start, index - start));
+        }
+    }
+
+    private void ApplyBatch(ReadOnlySpan<Application> applications)
+    {
+        if (applications.Length == 1)
+        {
+            Apply(applications[0]);
+            return;
+        }
+
+        var current = new Dictionary<nint, Application>(applications.Length);
+        var placements = new List<WindowPlacement>(applications.Length);
+        lock (_gate)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            foreach (var application in applications)
+            {
+                if (IsCurrent(application))
+                {
+                    current.Add(application.Handle, application);
+                    placements.Add(new(application.Handle, application.Bounds));
+                }
+            }
+        }
+
+        if (current.Count < 2)
+        {
+            foreach (var application in current.Values)
+            {
+                Apply(application);
+            }
+
+            return;
+        }
+
+        bool IsBatchCurrent(nint handle)
+        {
+            lock (_gate)
+            {
+                return !_disposed && IsCurrent(current[handle]);
+            }
+        }
+
+        // 準備中の取り消しも確認する。判定からネイティブ呼び出しまでの間だけは取り消せない。
+        // 外部呼び出し中はロックせず、判定でだけ短く取得する。
+        bool applied;
+        IReadOnlyList<nint> failedHandles;
+        try
+        {
+            applied = _mover.ApplyBatch(placements, current.Values.First().Kind == ApplyKind.Position,
+                out failedHandles, IsBatchCurrent);
+        }
+        catch (Exception)
+        {
+            applied = false;
+            failedHandles = [];
+        }
+
+        foreach (var application in current.Values)
+        {
+            // 無効な対象は failedHandles に含まれないため、成功扱いの完了処理からも除く。
+            if (!IsBatchCurrent(application.Handle))
+            {
+                continue;
+            }
+
+            if (!applied)
+            {
+                // バッチの一部が適用済みでも、同じフレームの値で全対象を個別に再試行する。
+                Apply(application);
+            }
+            else if (failedHandles.Contains(application.Handle))
+            {
+                Complete(application, false);
+            }
+            else if (application.Kind == ApplyKind.Bounds)
+            {
+                Apply(application, boundsAlreadyApplied: true);
+            }
+            else
+            {
+                Complete(application, true);
+            }
+        }
+    }
+
+    private void Apply(Application application, bool boundsAlreadyApplied = false)
     {
         // 同期の SetWindowPos は応答しないウィンドウで返らないことがあるため、ロックの外で呼ぶ。
         // 確認から呼び出しまでの間に来た Cancel だけは、その 1 回の適用を止められない。
@@ -207,8 +313,10 @@ internal sealed class MotionEngine : IMotionEngine
         {
             if (application.Kind == ApplyKind.Bounds)
             {
-                // サイズの適用は常に最後の 1 回。失敗しても再試行せずに外す。
-                var actual = _mover.SetVisualBounds(application.Handle, application.Bounds);
+                // バッチ成功後は読み直しだけを行い、個別経路でもサイズ適用を繰り返さない。
+                var actual = boundsAlreadyApplied
+                    ? _mover.GetVisualBounds(application.Handle)
+                    : _mover.SetVisualBounds(application.Handle, application.Bounds);
                 if (actual is { } bounds && !application.Walls.Contains(bounds))
                 {
                     var walls = application.Walls;
@@ -240,6 +348,11 @@ internal sealed class MotionEngine : IMotionEngine
             applied = false;
         }
 
+        Complete(application, applied);
+    }
+
+    private void Complete(Application application, bool applied)
+    {
         lock (_gate)
         {
             if ((application.Final || !applied) && IsCurrent(application))

@@ -386,7 +386,8 @@ public sealed class HotkeyTests
         public void Cancel(nint handle) { }
         public void CancelAll() { }
         public bool SetBounds(nint handle, PixelRect bounds, bool positionOnly) => throw new NotSupportedException();
-        public bool ApplyBatch(IReadOnlyList<NativeWindowPlacement> placements) => throw new NotSupportedException();
+        public bool ApplyBatch(IReadOnlyList<NativeWindowPlacement> placements, bool positionOnly) =>
+            throw new NotSupportedException();
         public void Dispose()
         {
             Executor.Stop();
@@ -437,6 +438,7 @@ public sealed class HotkeyTests
         }
 
         public bool SetBounds(nint handle, PixelRect bounds, bool positionOnly) => throw new NotSupportedException();
-        public bool ApplyBatch(IReadOnlyList<NativeWindowPlacement> placements) => throw new NotSupportedException();
+        public bool ApplyBatch(IReadOnlyList<NativeWindowPlacement> placements, bool positionOnly) =>
+            throw new NotSupportedException();
     }
 }
