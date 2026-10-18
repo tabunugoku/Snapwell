@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Shapes;
 using Snapwell.Core.Physics;
+using Snapwell.Core.Settings;
 using Snapwell.Core.Snapping;
 using Windows.Foundation;
 using Windows.Globalization.NumberFormatting;
@@ -12,7 +13,15 @@ namespace Snapwell.Settings.Pages;
 /// <summary>物理モデルと吸着の方式を編集する。</summary>
 public sealed partial class FeelPage : Page
 {
+    // 範囲は feel の rig のスライダー（質量・振動数・減衰比）と Snapwell の設定（磁石の強さ・吸着半径）。
+    // 質量と振動数は対数、ほかは線形のスライダー。位置は 0〜1000。
+    private readonly record struct Tuning(FeelParameter? Parameter, Slider Slider, NumberBox Box, double Minimum,
+        double Maximum, bool Log, int Digits);
+
+    private const double SliderMaximum = 1000;
+
     private readonly SettingsSession _session;
+    private readonly Tuning[] _tunings;
     private bool _refreshing = true;
 
     /// <summary>現在の値を標準コントロールへ設定する。</summary>
@@ -20,6 +29,18 @@ public sealed partial class FeelPage : Page
     {
         _session = session;
         InitializeComponent();
+        _tunings =
+        [
+            new(FeelParameter.Mass, MassSlider, MassBox, FeelPreset.MinimumMass, FeelPreset.MaximumMass, true, 2),
+            new(FeelParameter.Frequency, FrequencySlider, FrequencyBox, FeelPreset.MinimumFrequency,
+                FeelPreset.MaximumFrequency, true, 2),
+            new(FeelParameter.DampingRatio, DampingRatioSlider, DampingRatioBox, FeelPreset.MinimumDampingRatio,
+                FeelPreset.MaximumDampingRatio, false, 2),
+            new(FeelParameter.MagnetStrength, MagnetStrengthSlider, MagnetStrengthBox, 0,
+                FeelPreset.MaximumMagnetStrength, false, 2),
+            new(null, SnapRadiusSlider, SnapRadiusBox, PortableSettings.MinimumSnapRadius,
+                PortableSettings.MaximumSnapRadius, false, 0),
+        ];
         BuildCurve(AiryCurve, FeelPreset.Airy);
         BuildCurve(SnappyCurve, FeelPreset.Snappy);
         BuildCurve(HeavyCurve, FeelPreset.Heavy);
@@ -30,12 +51,15 @@ public sealed partial class FeelPage : Page
         FeelBox.SelectedIndex = value.Feel switch { "Snappy" => 1, "Heavy" => 2, "Bouncy" => 3, _ => 0 };
         ModeBox.SelectedIndex = value.SnapMode == SnapMode.Corners ? 1 : 0;
         MotionSwitch.IsOn = value.ReduceMotion;
-        MagnetStrengthBox.NumberFormatter = new DecimalFormatter { FractionDigits = 2, IntegerDigits = 1 };
-        SnapRadiusBox.NumberFormatter = new DecimalFormatter { FractionDigits = 0 };
-        MagnetStrengthBox.IsEnabled = SnapRadiusBox.IsEnabled = !session.IsReadOnly;
-        MagnetStrengthBox.Value = value.ToFeelPreset().MagnetStrength;
-        SnapRadiusBox.Value = value.SnapRadius;
-        RefreshFeelDetails();
+        foreach (var tuning in _tunings)
+        {
+            var captured = tuning;
+            tuning.Box.NumberFormatter = new DecimalFormatter { FractionDigits = tuning.Digits, IntegerDigits = 1 };
+            tuning.Slider.ValueChanged += (_, e) => Edit(captured, FromPosition(captured, e.NewValue), true);
+            tuning.Box.ValueChanged += (_, e) => Edit(captured, e.NewValue, false);
+        }
+
+        ShowValues();
         _refreshing = false;
     }
 
@@ -59,38 +83,120 @@ public sealed partial class FeelPage : Page
 
     private void RefreshFeelDetails()
     {
-        var feel = _session.Current.Feel;
+        var current = _session.Current;
+        var custom = current.IsCustomFeel();
+        var feel = current.Feel;
         var normalStyle = (Style)Resources["FeelCardButtonStyle"];
         var selectedStyle = (Style)Resources["SelectedFeelCardButtonStyle"];
-        CardAiry.Style = feel is not ("Snappy" or "Heavy" or "Bouncy") ? selectedStyle : normalStyle;
-        CardSnappy.Style = feel == "Snappy" ? selectedStyle : normalStyle;
-        CardHeavy.Style = feel == "Heavy" ? selectedStyle : normalStyle;
-        CardBouncy.Style = feel == "Bouncy" ? selectedStyle : normalStyle;
+        // カスタムのときは、どのカードも選ばれていない。
+        CardAiry.Style = !custom && feel is not ("Snappy" or "Heavy" or "Bouncy") ? selectedStyle : normalStyle;
+        CardSnappy.Style = !custom && feel == "Snappy" ? selectedStyle : normalStyle;
+        CardHeavy.Style = !custom && feel == "Heavy" ? selectedStyle : normalStyle;
+        CardBouncy.Style = !custom && feel == "Bouncy" ? selectedStyle : normalStyle;
+        FeelStateText.Text = custom ? $"カスタム（{feel} から変更）" : $"プリセット: {feel}";
+        FeelResetButton.Visibility = custom ? Visibility.Visible : Visibility.Collapsed;
 
+        var preset = current.ToFeelPreset();
+        DerivedValueText.Text = $"k {preset.Stiffness:F0} · c {preset.Damping:F1} · m/c {preset.CoastTime:0.00} s";
+    }
+
+    // 編集中のスライダーを動かし直すと指に逆らうため、編集元のスライダー以外へ現在の値を戻す。
+    private void ShowValues(Slider? editing = null)
+    {
         var preset = _session.Current.ToFeelPreset();
-        MassValueText.Text = $"{preset.Mass:0.##}";
-        FrequencyValueText.Text = $"{preset.Frequency:0.##} Hz";
-        DampingRatioValueText.Text = $"{preset.DampingRatio:0.##}";
-        DerivedValueText.Text = $"k {preset.Stiffness:F0} · c {preset.Damping:F1}";
+        var previous = _refreshing;
+        _refreshing = true;
+        try
+        {
+            foreach (var tuning in _tunings)
+            {
+                var value = tuning.Parameter switch
+                {
+                    FeelParameter.Mass => preset.Mass,
+                    FeelParameter.Frequency => preset.Frequency,
+                    FeelParameter.DampingRatio => preset.DampingRatio,
+                    FeelParameter.MagnetStrength => preset.MagnetStrength,
+                    _ => _session.Current.SnapRadius,
+                };
+                tuning.Box.Value = Math.Round(value, tuning.Digits);
+                if (tuning.Slider != editing)
+                {
+                    tuning.Slider.Value = ToPosition(tuning, value);
+                }
+            }
+        }
+        finally
+        {
+            _refreshing = previous;
+        }
+
+        RefreshFeelDetails();
+    }
+
+    private static double ToPosition(Tuning tuning, double value)
+    {
+        var clamped = Math.Clamp(value, tuning.Minimum, tuning.Maximum);
+        var ratio = tuning.Log
+            ? Math.Log(clamped / tuning.Minimum) / Math.Log(tuning.Maximum / tuning.Minimum)
+            : (clamped - tuning.Minimum) / (tuning.Maximum - tuning.Minimum);
+        return ratio * SliderMaximum;
+    }
+
+    private static double FromPosition(Tuning tuning, double position)
+    {
+        var ratio = position / SliderMaximum;
+        return tuning.Log
+            ? tuning.Minimum * Math.Pow(tuning.Maximum / tuning.Minimum, ratio)
+            : tuning.Minimum + ratio * (tuning.Maximum - tuning.Minimum);
+    }
+
+    private void Edit(Tuning tuning, double value, bool fromSlider)
+    {
+        if (_refreshing)
+        {
+            return;
+        }
+
+        if (double.IsFinite(value))
+        {
+            _session.Update(tuning.Parameter is { } parameter
+                ? _session.Current.WithFeelValue(parameter, value)
+                : _session.Current with
+                {
+                    SnapRadius = Math.Clamp(Math.Round(value),
+                    PortableSettings.MinimumSnapRadius, PortableSettings.MaximumSnapRadius)
+                });
+        }
+
+        ShowValues(fromSlider ? tuning.Slider : null);
     }
 
     private void FeelCard_Click(object sender, RoutedEventArgs e)
     {
         if (sender is Button { Tag: string feel })
         {
-            FeelBox.SelectedIndex = feel switch { "Snappy" => 1, "Heavy" => 2, "Bouncy" => 3, _ => 0 };
+            SelectPreset(feel);
         }
     }
+
+    private void FeelReset_Click(object sender, RoutedEventArgs e) => SelectPreset(_session.Current.Feel);
 
     private void Feel_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (!_refreshing && FeelBox.SelectedItem is ComboBoxItem { Tag: string feel })
         {
-            // 操作感を選び直すと、磁石の強さはその語から決まる値に戻る。
-            _session.Update(_session.Current with { Feel = feel, MagnetStrength = null });
-            RefreshFeelDetails();
-            ShowMagnetStrength();
+            SelectPreset(feel);
         }
+    }
+
+    // 同じプリセットを選び直す（カスタムから戻す）ときも値を入れ直すため、コンボボックスの変更を経由しない。
+    private void SelectPreset(string feel)
+    {
+        _session.Update(_session.Current.WithPreset(feel));
+        _refreshing = true;
+        FeelBox.SelectedIndex = feel switch { "Snappy" => 1, "Heavy" => 2, "Bouncy" => 3, _ => 0 };
+        _refreshing = false;
+        ShowValues();
     }
 
     private void Mode_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -99,43 +205,6 @@ public sealed partial class FeelPage : Page
         {
             var mode = ModeBox.SelectedIndex == 1 ? SnapMode.Corners : SnapMode.Zones;
             _session.Update(_session.Current with { SnapMode = mode });
-        }
-    }
-
-    private void MagnetStrength_ValueChanged(NumberBox sender, NumberBoxValueChangedEventArgs args)
-    {
-        if (!_refreshing)
-        {
-            if (double.IsFinite(args.NewValue))
-            {
-                _session.Update(_session.Current with { MagnetStrength = args.NewValue });
-            }
-            RefreshFeelDetails();
-            ShowMagnetStrength();
-        }
-    }
-
-    private void ShowMagnetStrength()
-    {
-        _refreshing = true;
-        try
-        {
-            MagnetStrengthBox.Value = _session.Current.ToFeelPreset().MagnetStrength;
-        }
-        finally
-        {
-            _refreshing = false;
-        }
-    }
-
-    private void SnapRadius_ValueChanged(NumberBox sender, NumberBoxValueChangedEventArgs args)
-    {
-        if (!_refreshing)
-        {
-            _session.Update(_session.Current with { SnapRadius = args.NewValue });
-            _refreshing = true;
-            SnapRadiusBox.Value = _session.Current.SnapRadius;
-            _refreshing = false;
         }
     }
 
