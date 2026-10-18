@@ -40,24 +40,24 @@ public sealed class WindowBodyTests
         }
     }
 
-    /// <summary>壁に向かう大きな初速でも壁の外へ描画しない。</summary>
+    /// <summary>壁に向かう大きな初速でも、壁は硬いばねで押し返し、止まったときは壁の中に戻る。</summary>
     [Theory]
     [InlineData(40000, 40000)]
     [InlineData(-40000, -40000)]
-    public void HighVelocityNeverEscapesWalls(double vx, double vy)
+    public void HighVelocityIsPushedBackByWalls(double vx, double vy)
     {
         var body = new WindowBody(new(400, 300, 100, 100), new(450, 350, 100, 100),
             new(0, 0, 1000, 800), FeelPreset.Bouncy, velocity: new(vx, vy));
-        for (var i = 0; i < 1200; i++)
+        var settled = false;
+        for (var i = 0; i < 1200 && !settled; i++)
         {
-            body.Step(1.0 / 240);
-            Assert.InRange(body.State.X, 0, 900);
-            Assert.InRange(body.State.Y, 0, 700);
-            if (body.State.X == 0 || body.State.X == 900)
-            {
-                Assert.True(body.State.X == 0 ? body.Velocity.X >= 0 : body.Velocity.X <= 0);
-            }
+            settled = Simulator.Advance(body, 1.0 / 60);
+            Assert.True(double.IsFinite(body.State.X) && double.IsFinite(body.State.Y));
         }
+
+        Assert.True(settled);
+        Assert.InRange(body.State.X, 0, 900);
+        Assert.InRange(body.State.Y, 0, 700);
     }
 
     /// <summary>着地時変更では静止の確定までサイズを保つ。</summary>
@@ -169,17 +169,19 @@ public sealed class WindowBodyTests
         Assert.True(body.IsSettled);
     }
 
-    /// <summary>静止判定の誤差と速さの閾値は上限を含まない。</summary>
+    /// <summary>静止判定は feel の値（速さ 4、位置 0.25）で、上限を含まない。サイズ誤差は 0.5。</summary>
     [Fact]
     public void SettledThresholdsAreStrictAndIncludeSmoothSizeError()
     {
-        Assert.False(new WindowBody(new(0.5, 0, 10, 10), new(0, 0, 10, 10), _distantWalls,
-            FeelPreset.Airy).IsSettled);
         Assert.False(new WindowBody(default, default, _distantWalls, FeelPreset.Airy,
-            velocity: new(6, 0)).IsSettled);
+            velocity: new(4, 0)).IsSettled);
+        Assert.False(new WindowBody(new(0.25, 0, 10, 10), new(0, 0, 10, 10), _distantWalls,
+            FeelPreset.Airy).IsSettled);
+        Assert.True(new WindowBody(new(0.24, 0, 10, 10), new(0, 0, 10, 10), _distantWalls,
+            FeelPreset.Airy, velocity: new(3.9, 0)).IsSettled);
         Assert.False(new WindowBody(new(0, 0, 10.5, 10), new(0, 0, 10, 10), _distantWalls,
             FeelPreset.Airy, SizeMode.Smooth).IsSettled);
-        Assert.True(new WindowBody(new(0.49, 0.49, 10.49, 10.49), new(0, 0, 10, 10), _distantWalls,
-            FeelPreset.Airy, SizeMode.Smooth, new(3, 4)).IsSettled);
+        Assert.True(new WindowBody(new(0.17, 0.17, 10.49, 10.49), new(0, 0, 10, 10), _distantWalls,
+            FeelPreset.Airy, SizeMode.Smooth, new(2, 3)).IsSettled);
     }
 }

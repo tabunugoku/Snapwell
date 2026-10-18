@@ -8,6 +8,9 @@ namespace Snapwell.Core.Tests.Snapping;
 /// <summary>予測点・区画・四隅・複数モニターの選択を検証する。</summary>
 public sealed class SnapResolverTests
 {
+    // 惰性で止まる距離の係数 m/c がちょうど 0.22 秒。区画の判定を速度で選びやすくする。
+    private static readonly FeelPreset _feel = new(1, 1 / (4 * Math.PI * 0.78 * 0.22), 0.78);
+
     private static readonly PixelRect _area = new(0, 0, 2560, 1440);
     private static readonly MonitorArea[] _monitors = [new("main", _area, 1)];
     private static readonly Spacing _spacing = new(8, 8);
@@ -37,7 +40,7 @@ public sealed class SnapResolverTests
         var current = new PixelRect(x, y, 400, 300);
         var result = Resolve(current, new(vx, vy))!.Value;
         Assert.Equal(kind, result.Kind);
-        Assert.Equal(new Vec2(x + vx * FeelPreset.Airy.Tau, y + vy * FeelPreset.Airy.Tau),
+        Assert.Equal(new Vec2(x + vx * _feel.CoastTime, y + vy * _feel.CoastTime),
             result.PredictedPosition);
         Assert.Equal("main", result.MonitorId);
         Assert.Equal(ZoneRect(kind, _area, _spacing.ToPhysical(1)), result.Target);
@@ -53,7 +56,7 @@ public sealed class SnapResolverTests
     public void ZoneBandsUseMockupThresholds(int centerY, SnapTargetKind expected)
     {
         var result = SnapResolver.Resolve(new(150, centerY - 100, 200, 200), new(151, 0),
-            new(1, 1, 0.8, 0), SnapMode.Zones, default, [new("square", new(0, 0, 1000, 1000), 1)]);
+            new(1, 1, 0.8), SnapMode.Zones, default, [new("square", new(0, 0, 1000, 1000), 1)]);
         Assert.Equal(expected, result!.Value.Kind);
     }
 
@@ -64,7 +67,7 @@ public sealed class SnapResolverTests
     public void PointerNearTopSelectsQuarterForTallWindow(double vx, SnapTargetKind expected)
     {
         var area = new PixelRect(0, 0, 1000, 1000);
-        var result = SnapResolver.Resolve(new(400, 0, 200, 800), new(vx, 0), FeelPreset.Airy,
+        var result = SnapResolver.Resolve(new(400, 0, 200, 800), new(vx, 0), _feel,
             SnapMode.Zones, _spacing, [new("main", area, 1)], pointer: new(5, 5))!.Value;
         Assert.Equal(expected, result.Kind);
         Assert.Equal(ZoneRect(expected, area, _spacing.ToPhysical(1)), result.Target);
@@ -77,7 +80,7 @@ public sealed class SnapResolverTests
     public void HorizontalThrowNearTopRequiresPointerAtEdge(double pointerY, SnapTargetKind expected)
     {
         var area = new PixelRect(0, 0, 1920, 1040);
-        var result = SnapResolver.Resolve(new(1000, 80, 600, 800), new(500, 0), FeelPreset.Airy,
+        var result = SnapResolver.Resolve(new(1000, 80, 600, 800), new(500, 0), _feel,
             SnapMode.Zones, _spacing, [new("main", area, 1)], pointer: new(1300, pointerY))!.Value;
         Assert.Equal(expected, result.Kind);
         Assert.Equal(ZoneRect(expected, area, _spacing.ToPhysical(1)), result.Target);
@@ -89,7 +92,7 @@ public sealed class SnapResolverTests
     {
         var destination = new PixelRect(1920, 200, 1920, 1040);
         MonitorArea[] monitors = [new("main", new(0, 0, 1920, 1040), 1), new("right", destination, 1)];
-        var result = SnapResolver.Resolve(new(1500, 120, 400, 800), new(2000, 0), FeelPreset.Airy,
+        var result = SnapResolver.Resolve(new(1500, 120, 400, 800), new(2000, 0), _feel,
             SnapMode.Zones, _spacing, monitors, pointer: new(1700, 140))!.Value;
         Assert.Equal("right", result.MonitorId);
         Assert.Equal(SnapTargetKind.LeftHalf, result.Kind);
@@ -109,7 +112,7 @@ public sealed class SnapResolverTests
             new("upper", new(0, 0, 1920, 1040), 1),
             new("lower", new(0, 1040, 1920, 1040), 1),
         ];
-        var result = SnapResolver.Resolve(new(1000, windowY, 600, 800), new(500, vy), FeelPreset.Airy,
+        var result = SnapResolver.Resolve(new(1000, windowY, 600, 800), new(500, vy), _feel,
             SnapMode.Zones, _spacing, monitors, pointer: new(1300, pointerY))!.Value;
         var area = monitors.Single(monitor => monitor.Id == expectedMonitor).WorkArea;
         Assert.Equal(expectedMonitor, result.MonitorId);
@@ -137,7 +140,7 @@ public sealed class SnapResolverTests
             new("upper", new(0, 0, 1920, 1040), 1),
             new("lower", new(0, 1040, 1920, 1040), 1),
         ];
-        var result = SnapResolver.Resolve(new(1000, windowY, 600, 800), new(500, vy), FeelPreset.Airy,
+        var result = SnapResolver.Resolve(new(1000, windowY, 600, 800), new(500, vy), _feel,
             SnapMode.Zones, _spacing, monitors, pointer: new(1300, pointerY))!.Value;
         var area = monitors.Single(monitor => monitor.Id == expectedMonitor).WorkArea;
         Assert.Equal(expectedMonitor, result.MonitorId);
@@ -153,7 +156,7 @@ public sealed class SnapResolverTests
     public void PointerOnSingleMonitorTaskbarPreservesQuarter(double pointerY)
     {
         var area = new PixelRect(0, 0, 1920, 1040);
-        var result = SnapResolver.Resolve(new(1000, 1020, 600, 800), new(500, -4000), FeelPreset.Airy,
+        var result = SnapResolver.Resolve(new(1000, 1020, 600, 800), new(500, -4000), _feel,
             SnapMode.Zones, _spacing, [new("upper", area, 1)], pointer: new(1300, pointerY))!.Value;
         Assert.Equal("upper", result.MonitorId);
         Assert.Equal(SnapTargetKind.BottomRight, result.Kind);
@@ -169,7 +172,7 @@ public sealed class SnapResolverTests
     public void MissingOrMiddlePointerPreservesHalf(double vx, double? pointerY, SnapTargetKind expected)
     {
         Vec2? pointer = pointerY is { } y ? new(5, y) : null;
-        var result = SnapResolver.Resolve(new(400, 0, 200, 800), new(vx, 0), FeelPreset.Airy,
+        var result = SnapResolver.Resolve(new(400, 0, 200, 800), new(vx, 0), _feel,
             SnapMode.Zones, default, [new("main", new(0, 0, 1000, 1000), 1)], pointer: pointer);
         Assert.Equal(expected, result!.Value.Kind);
     }
@@ -182,7 +185,7 @@ public sealed class SnapResolverTests
     [InlineData(2000, 1040, SnapTargetKind.BottomRight)]
     public void PointerNearOrBelowBottomSelectsQuarter(double vx, double pointerY, SnapTargetKind expected)
     {
-        var result = SnapResolver.Resolve(new(400, 0, 200, 800), new(vx, 0), FeelPreset.Airy,
+        var result = SnapResolver.Resolve(new(400, 0, 200, 800), new(vx, 0), _feel,
             SnapMode.Zones, default, [new("main", new(0, 0, 1000, 1000), 1)], pointer: new(5, pointerY));
         Assert.Equal(expected, result!.Value.Kind);
     }
@@ -199,7 +202,7 @@ public sealed class SnapResolverTests
     [InlineData(1.5, 981, SnapTargetKind.LeftHalf)]
     public void PointerInsideBandsUseScaledLogicalWidth(double scale, double pointerY, SnapTargetKind expected)
     {
-        var result = SnapResolver.Resolve(new(400, 0, 200, 800), new(-2000, 0), FeelPreset.Airy,
+        var result = SnapResolver.Resolve(new(400, 0, 200, 800), new(-2000, 0), _feel,
             SnapMode.Zones, default, [new("main", new(0, 0, 1000, 1000), scale)], pointer: new(995, pointerY));
         Assert.Equal(expected, result!.Value.Kind);
     }
@@ -216,7 +219,7 @@ public sealed class SnapResolverTests
     [InlineData(1101, SnapTargetKind.LeftHalf)]
     public void PointerOutsideBandsIncludeOnlyTenPercent(double pointerY, SnapTargetKind expected)
     {
-        var result = SnapResolver.Resolve(new(400, 0, 200, 800), new(-2000, 0), FeelPreset.Airy,
+        var result = SnapResolver.Resolve(new(400, 0, 200, 800), new(-2000, 0), _feel,
             SnapMode.Zones, default, [new("main", new(0, 0, 1000, 1000), 1.5)], pointer: new(995, pointerY));
         Assert.Equal(expected, result!.Value.Kind);
     }
@@ -233,7 +236,7 @@ public sealed class SnapResolverTests
     [InlineData(1100, 1200, SnapTargetKind.LeftHalf)]
     public void PointerBandsRequireXWithinSelectedWorkArea(double pointerX, double pointerY, SnapTargetKind expected)
     {
-        var result = SnapResolver.Resolve(new(500, 200, 200, 800), new(-2000, 0), FeelPreset.Airy,
+        var result = SnapResolver.Resolve(new(500, 200, 200, 800), new(-2000, 0), _feel,
             SnapMode.Zones, default, [new("main", new(100, 200, 1000, 1000), 1)], pointer: new(pointerX, pointerY));
         Assert.Equal(expected, result!.Value.Kind);
     }
@@ -249,7 +252,7 @@ public sealed class SnapResolverTests
     public void OutsidePointerBandsPreservePredictedQuarter(double vy, double pointerX, double pointerY,
         SnapTargetKind expected)
     {
-        var result = SnapResolver.Resolve(new(100, 400, 200, 200), new(-1000, vy), FeelPreset.Airy,
+        var result = SnapResolver.Resolve(new(100, 400, 200, 200), new(-1000, vy), _feel,
             SnapMode.Zones, default, [new("main", new(0, 0, 1000, 1000), 1)], pointer: new(pointerX, pointerY));
         Assert.Equal(expected, result!.Value.Kind);
     }
@@ -258,7 +261,7 @@ public sealed class SnapResolverTests
     [Fact]
     public void MaximizeTakesPriorityOverPointerBand()
     {
-        var result = SnapResolver.Resolve(new(1080, 100, 400, 800), new(0, -3000), FeelPreset.Airy,
+        var result = SnapResolver.Resolve(new(1080, 100, 400, 800), new(0, -3000), _feel,
             SnapMode.Zones, _spacing, _monitors, pointer: new(5, 5));
         Assert.Equal(SnapTargetKind.Maximize, result!.Value.Kind);
     }
@@ -277,7 +280,7 @@ public sealed class SnapResolverTests
     {
         var destination = new PixelRect(-1920, -200, 1920, 1000);
         MonitorArea[] monitors = [new("main", _area, 1), new("destination", destination, 2)];
-        var result = SnapResolver.Resolve(new(100, 100, 400, 200), new(-2000, 0), FeelPreset.Airy,
+        var result = SnapResolver.Resolve(new(100, 100, 400, 200), new(-2000, 0), _feel,
             SnapMode.Zones, _spacing, monitors, pointer: new(-1915, pointerY))!.Value;
         Assert.Equal("destination", result.MonitorId);
         Assert.Equal(expected, result.Kind);
@@ -293,9 +296,9 @@ public sealed class SnapResolverTests
     public void PointerDoesNotChangeCorners(double vx, double vy, double pointerY)
     {
         var current = new PixelRect(1080, 570, 400, 300);
-        var expected = SnapResolver.Resolve(current, new(vx, vy), FeelPreset.Airy,
+        var expected = SnapResolver.Resolve(current, new(vx, vy), _feel,
             SnapMode.Corners, _spacing, _monitors);
-        var actual = SnapResolver.Resolve(current, new(vx, vy), FeelPreset.Airy,
+        var actual = SnapResolver.Resolve(current, new(vx, vy), _feel,
             SnapMode.Corners, _spacing, _monitors, pointer: new(5, pointerY));
         Assert.Equal(expected, actual);
     }
@@ -314,8 +317,8 @@ public sealed class SnapResolverTests
     [InlineData(650)]
     public void MaximizeIncludesQuarterHeightAndCentralBandBoundaries(int x)
     {
-        var result = SnapResolver.Resolve(new(x, -50, 200, 200), new(151, 0),
-            new(1, 1, 0.8, 0), SnapMode.Zones, default, [new("square", new(0, 0, 1000, 1000), 1)]);
+        var result = SnapResolver.Resolve(new(x, -50, 200, 200), new(0, -151),
+            new(1, 1, 0.8), SnapMode.Zones, default, [new("square", new(0, 0, 1000, 1000), 1)]);
         Assert.Equal(SnapTargetKind.Maximize, result!.Value.Kind);
     }
 
@@ -327,7 +330,7 @@ public sealed class SnapResolverTests
     [InlineData(-5000, 5000, SnapTargetKind.CornerBottomLeft, 8, 1132)]
     public void CornersPreserveCurrentSize(double vx, double vy, SnapTargetKind kind, int x, int y)
     {
-        var result = SnapResolver.Resolve(new(1080, 570, 400, 300), new(vx, vy), FeelPreset.Airy,
+        var result = SnapResolver.Resolve(new(1080, 570, 400, 300), new(vx, vy), _feel,
             SnapMode.Corners, _spacing, _monitors)!.Value;
         Assert.Equal(kind, result.Kind);
         Assert.Equal(new PixelRect(x, y, 400, 300), result.Target);
@@ -387,7 +390,7 @@ public sealed class SnapResolverTests
     {
         var rightArea = new PixelRect(2560, 0, 2560, 1440);
         MonitorArea[] monitors = [new("left", _area, 1), new("right", rightArea, 1.5)];
-        var result = SnapResolver.Resolve(new(2200, 500, 400, 300), new(1000, 0), FeelPreset.Airy,
+        var result = SnapResolver.Resolve(new(2200, 500, 400, 300), new(1000, 0), _feel,
             SnapMode.Zones, _spacing, monitors)!.Value;
         Assert.Equal("right", result.MonitorId);
         Assert.True(result.PredictedPosition.X < rightArea.X);
@@ -402,7 +405,7 @@ public sealed class SnapResolverTests
     {
         var leftArea = new PixelRect(-1920, -200, 1920, 1080);
         MonitorArea[] monitors = [new("main", _area, 1), new("negative", leftArea, 2)];
-        var result = SnapResolver.Resolve(new(100, 300, 400, 200), new(-2000, 0), FeelPreset.Airy,
+        var result = SnapResolver.Resolve(new(100, 300, 400, 200), new(-2000, 0), _feel,
             SnapMode.Zones, _spacing, monitors)!.Value;
         Assert.Equal("negative", result.MonitorId);
         Assert.Equal(SnapTargetKind.RightHalf, result.Kind);
@@ -418,7 +421,7 @@ public sealed class SnapResolverTests
             new("left", new(0, 0, 1000, 1000), 1),
             new("right", new(2000, 0, 1000, 1000), 1),
         ];
-        var result = SnapResolver.Resolve(new(1300, 400, 100, 100), new(1000, 0), FeelPreset.Airy,
+        var result = SnapResolver.Resolve(new(1300, 400, 100, 100), new(1000, 0), _feel,
             SnapMode.Zones, default, monitors)!.Value;
         Assert.Equal("right", result.MonitorId);
         Assert.Equal(SnapTargetKind.LeftHalf, result.Kind);
@@ -429,7 +432,7 @@ public sealed class SnapResolverTests
     public void CenterExactlyOnMonitorBoundarySelectsRightMonitor()
     {
         MonitorArea[] monitors = [new("left", _area, 1), new("right", new(2560, 0, 2560, 1440), 1)];
-        var result = SnapResolver.Resolve(new(2360, 500, 400, 300), new(151, 0), new(1, 1, 0.8, 0),
+        var result = SnapResolver.Resolve(new(2360, 500, 400, 300), new(0, 151), new(1, 1, 0.8),
             SnapMode.Zones, default, monitors)!.Value;
         Assert.Equal("right", result.MonitorId);
     }
@@ -449,7 +452,7 @@ public sealed class SnapResolverTests
     [Fact]
     public void EmptyMonitorListReturnsNull()
     {
-        Assert.Null(SnapResolver.Resolve(new(0, 0, 100, 100), new(1000, 0), FeelPreset.Airy,
+        Assert.Null(SnapResolver.Resolve(new(0, 0, 100, 100), new(1000, 0), _feel,
             SnapMode.Zones, default, []));
     }
 
@@ -457,13 +460,13 @@ public sealed class SnapResolverTests
     [Fact]
     public void CornersUseDestinationDpiForEdgeMargin()
     {
-        var result = SnapResolver.Resolve(new(1080, 570, 400, 300), new(5000, 5000), FeelPreset.Airy,
+        var result = SnapResolver.Resolve(new(1080, 570, 400, 300), new(5000, 5000), _feel,
             SnapMode.Corners, _spacing, [new("scaled", _area, 1.5)])!.Value;
         Assert.Equal(new PixelRect(2148, 1128, 400, 300), result.Target);
     }
 
     private static SnapResult? Resolve(PixelRect current, Vec2 velocity, bool canResize = true) =>
-        SnapResolver.Resolve(current, velocity, FeelPreset.Airy, SnapMode.Zones, _spacing, _monitors, canResize);
+        SnapResolver.Resolve(current, velocity, _feel, SnapMode.Zones, _spacing, _monitors, canResize);
 
     private static PixelRect ZoneRect(SnapTargetKind kind, PixelRect area, PhysicalSpacing spacing)
     {

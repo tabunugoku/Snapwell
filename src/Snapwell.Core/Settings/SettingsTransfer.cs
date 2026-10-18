@@ -201,8 +201,8 @@ public static class SettingsTransfer
             Milliseconds(imported.LongPressMilliseconds));
         Add(SettingsField.LongPressDistance, "長押し中に動いてよい距離", Pixels(current.LongPressDistance),
             Pixels(imported.LongPressDistance));
-        Add(SettingsField.MagnetStrength, "磁石の強さ", $"{current.MagnetStrength:0.##}",
-            $"{imported.MagnetStrength:0.##}");
+        Add(SettingsField.MagnetStrength, "磁石の強さ", Strength(current.MagnetStrength),
+            Strength(imported.MagnetStrength));
         Add(SettingsField.SnapRadius, "吸着半径", Pixels(current.SnapRadius), Pixels(imported.SnapRadius));
         foreach (var command in current.Hotkeys.Keys.Union(imported.Hotkeys.Keys).OrderBy(HotkeyCatalog.GetDisplayOrder))
         {
@@ -228,6 +228,9 @@ public static class SettingsTransfer
     }
 
     private static string Milliseconds(int value) => value.ToString(CultureInfo.InvariantCulture) + " ms";
+
+    private static string Strength(double? value) =>
+        value is { } strength ? strength.ToString("0.##", CultureInfo.InvariantCulture) : "操作感に従う";
 
     private static string Pixels(double value) => value.ToString(CultureInfo.InvariantCulture) + " px";
 

@@ -33,18 +33,25 @@ public sealed record PortableSettings
     public bool ShowZonePreview { get; set; } = true;
     public int LongPressMilliseconds { get; set; } = 450;
     public double LongPressDistance { get; set; } = 6;
-    public double MagnetStrength { get; set; } = FeelPreset.DefaultMagnetStrength;
+
+    /// <summary>磁石の強さ。null なら操作感の語（airy, slightly magnetic など）から決まる値を使う。</summary>
+    public double? MagnetStrength { get; set; }
+
     public double SnapRadius { get; set; } = DefaultSnapRadius;
     public Dictionary<WindowCommand, KeyChordSpec> Hotkeys { get; set; } = DefaultHotkeys.Create();
 
     /// <summary>磁石の強さを反映した物理モデルのプリセットを返す。</summary>
-    public FeelPreset ToFeelPreset() => (Feel switch
+    public FeelPreset ToFeelPreset()
     {
-        "Snappy" => FeelPreset.Snappy,
-        "Heavy" => FeelPreset.Heavy,
-        "Bouncy" => FeelPreset.Bouncy,
-        _ => FeelPreset.Airy,
-    }).WithMagnetStrength(MagnetStrength);
+        var preset = Feel switch
+        {
+            "Snappy" => FeelPreset.Snappy,
+            "Heavy" => FeelPreset.Heavy,
+            "Bouncy" => FeelPreset.Bouncy,
+            _ => FeelPreset.Airy,
+        };
+        return MagnetStrength is { } strength ? preset.WithMagnetStrength(strength) : preset;
+    }
 
     /// <summary>検証済みの分割案を返す。</summary>
     public GridPlan ToGridPlan() => new(Grid.Columns, Grid.Rows);
@@ -76,10 +83,10 @@ public sealed record PortableSettings
             LongPressDistance = double.IsFinite(LongPressDistance) && LongPressDistance is >= 2 and <= 32
                 ? LongPressDistance
                 : defaults.LongPressDistance,
-            MagnetStrength = double.IsFinite(MagnetStrength) &&
-                MagnetStrength is >= FeelPreset.MinimumMagnetStrength and <= FeelPreset.MaximumMagnetStrength
-                ? MagnetStrength
-                : defaults.MagnetStrength,
+            MagnetStrength = MagnetStrength is { } strength && double.IsFinite(strength) &&
+                strength is >= 0 and <= FeelPreset.MaximumMagnetStrength
+                ? strength
+                : null,
             SnapRadius = double.IsFinite(SnapRadius) && SnapRadius is >= MinimumSnapRadius and <= MaximumSnapRadius
                 ? SnapRadius
                 : defaults.SnapRadius,

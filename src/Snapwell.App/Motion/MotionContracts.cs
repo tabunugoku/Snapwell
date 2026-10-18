@@ -3,9 +3,10 @@ using Snapwell.Core.Physics;
 
 namespace Snapwell.App.Motion;
 
-/// <summary>一つのウィンドウの移動要求。座標はすべて物理ピクセル。</summary>
+/// <summary>一つのウィンドウの移動要求。座標はすべて物理ピクセル。Stops があれば磁石場、なければ目標へのばねで動く。</summary>
 internal sealed record MotionRequest(nint Handle, PixelRect Current, PixelRect Target, PixelRect Walls,
-    FeelPreset Feel, Vec2 Velocity = default, bool Resize = false);
+    FeelPreset Feel, Vec2 Velocity = default, bool Resize = false, IReadOnlyList<Vec2>? Stops = null,
+    double ClickRadius = WindowBody.DefaultClickRadius);
 
 /// <summary>ドラッグとキー操作から見た移動サービス。</summary>
 internal interface IMotionEngine : IDisposable

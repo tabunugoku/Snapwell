@@ -39,13 +39,14 @@ public static class SnapResolver
             return null;
         }
 
-        var predicted = new Vec2(current.X, current.Y) + velocity * feel.Tau;
+        var predicted = new Vec2(current.X, current.Y) + velocity * feel.CoastTime;
         var center = predicted + new Vec2(current.Width / 2.0, current.Height / 2.0);
         var monitor = SelectMonitor(monitors, center);
         var physicalSpacing = spacing.ToPhysical(monitor.Scale);
         var pointerBand = mode == SnapMode.Zones ? SelectPointerBand(monitor, monitors, pointer) : null;
+        var clickRadius = snapRadius * monitor.Scale;
         var selection = mode == SnapMode.Corners
-            ? SelectCorner(current, predicted, monitor.WorkArea, physicalSpacing.Edge)
+            ? SelectCorner(current, velocity, feel, monitor.WorkArea, physicalSpacing.Edge, clickRadius)
             : SelectZone(current, predicted, center, monitor, physicalSpacing, canResize, pointerBand);
         if (mode == SnapMode.Zones && selection.Kind != SnapTargetKind.Maximize && pointerBand is null &&
             neighbors is { Count: > 0 } &&
@@ -54,8 +55,12 @@ public static class SnapResolver
             selection = adjacent;
         }
 
+        // 区画と隣の辺は選んだ一点の磁石場、四隅は feel と同じく四つの停止点の磁石場で止める。
+        var stops = mode == SnapMode.Corners
+            ? CornerPositions(current, monitor.WorkArea, physicalSpacing.Edge).Select(corner => corner.Position).ToArray()
+            : [new Vec2(selection.Target.X, selection.Target.Y)];
         return new(selection.Target, selection.Kind, monitor.Id, predicted,
-            selection.Target.Width != current.Width || selection.Target.Height != current.Height);
+            selection.Target.Width != current.Width || selection.Target.Height != current.Height, stops, clickRadius);
     }
 
     private static MonitorArea SelectMonitor(IReadOnlyList<MonitorArea> monitors, Vec2 center)
@@ -82,25 +87,36 @@ public static class SnapResolver
         return best;
     }
 
-    private static (PixelRect Target, SnapTargetKind Kind) SelectCorner(PixelRect current, Vec2 predicted,
-        PixelRect area, int edge)
+    // 時計回りに左上・右上・右下・左下。
+    private static (Vec2 Position, SnapTargetKind Kind)[] CornerPositions(PixelRect current, PixelRect area, int edge)
     {
         var left = checked(area.X + edge);
         var top = checked(area.Y + edge);
         var right = checked(area.Right - edge - current.Width);
         var bottom = checked(area.Bottom - edge - current.Height);
-        (int X, int Y, SnapTargetKind Kind)[] corners =
+        return
         [
-            (left, top, SnapTargetKind.CornerTopLeft),
-            (right, top, SnapTargetKind.CornerTopRight),
-            (right, bottom, SnapTargetKind.CornerBottomRight),
-            (left, bottom, SnapTargetKind.CornerBottomLeft),
+            (new(left, top), SnapTargetKind.CornerTopLeft),
+            (new(right, top), SnapTargetKind.CornerTopRight),
+            (new(right, bottom), SnapTargetKind.CornerBottomRight),
+            (new(left, bottom), SnapTargetKind.CornerBottomLeft),
         ];
+    }
+
+    // 四隅は feel の corner-card と同じ。投げた速度のまま磁石場の中を動かし、止まった角を選ぶ。
+    private static (PixelRect Target, SnapTargetKind Kind) SelectCorner(PixelRect current, Vec2 velocity,
+        FeelPreset feel, PixelRect area, int edge, double clickRadius)
+    {
+        var corners = CornerPositions(current, area, edge);
+        var body = new WindowBody(RectD.FromPixelRect(current), RectD.FromPixelRect(current),
+            RectD.FromPixelRect(area), feel, velocity: velocity, stops: corners.Select(c => c.Position).ToArray(),
+            clickRadius: clickRadius);
+        var rest = body.PredictRest();
         var best = corners[0];
         var bestDistance = double.PositiveInfinity;
         foreach (var corner in corners)
         {
-            var distance = (new Vec2(corner.X, corner.Y) - predicted).Length;
+            var distance = (corner.Position - rest).Length;
             if (distance < bestDistance)
             {
                 bestDistance = distance;
@@ -108,7 +124,7 @@ public static class SnapResolver
             }
         }
 
-        return (new(best.X, best.Y, current.Width, current.Height), best.Kind);
+        return (new((int)best.Position.X, (int)best.Position.Y, current.Width, current.Height), best.Kind);
     }
 
     private static (PixelRect Target, SnapTargetKind Kind) SelectZone(PixelRect current, Vec2 predicted,
