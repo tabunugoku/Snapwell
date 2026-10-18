@@ -1,6 +1,7 @@
 using Snapwell.App.Overlay;
 using Snapwell.Core.Geometry;
 using Snapwell.Core.Overlay;
+using Snapwell.Core.Tray;
 
 namespace Snapwell.App.Tray.Menu;
 
@@ -32,25 +33,21 @@ internal sealed class TrayMenuRenderer : IDisposable
             }
 
             // SVG の viewBox 44 を 22 論理 px に写す。
-            OverlayPainter.StrokeRounded(_background, Local(layout.Rect(18, 18, 20, 20)),
+            OverlayPainter.StrokeRounded(_background, Local(layout.HeaderIcon),
                 _palette.Ink, 4.5, 1.5, layout.Scale);
             OverlayPainter.FillRounded(_background, Local(layout.Rect(28.5, 20.5, 7, 7)),
                 _palette.Ink, 1.5, layout.Scale);
-            Text(_background, "Snapwell", layout.Rect(49, 16, 110, 24), 13, _palette.Ink, bold: true);
+            Text(_background, "Snapwell", TrayMenuLayout.CenterVertically(layout.HeaderIcon,
+                layout.Panel.X + layout.Px(49), layout.Px(110), layout.Px(24)), 13, _palette.Ink, bold: true);
             var dark = snapshot.Theme == OverlayTheme.Dark;
             var tagBackground = !snapshot.Enabled ? _palette.Surface2
                 : dark ? new OverlayColor(52, 101, 56, 77) : new(237, 243, 236, 255);
             var tagText = !snapshot.Enabled ? _palette.Muted
                 : dark ? new OverlayColor(166, 209, 169, 255) : new(52, 101, 56, 255);
-            OverlayPainter.FillRounded(_background, Local(layout.Rect(210, 19, 43, 19)),
+            OverlayPainter.FillRounded(_background, Local(layout.StatusTag),
                 tagBackground, 4, layout.Scale);
-            Text(_background, snapshot.Enabled ? "有効" : "無効", layout.Rect(210, 19, 43, 19),
+            Text(_background, snapshot.Enabled ? "有効" : "無効", layout.StatusTag,
                 10.5, tagText, bold: true, center: true);
-            Box(_background, layout.Toggle, snapshot.Enabled ? _palette.Ink : new(0, 0, 0, 0),
-                snapshot.Enabled ? _palette.Ink : _palette.Muted, 10);
-            OverlayPainter.FillRounded(_background, Local(layout.Rect(snapshot.Enabled ? 286 : 266, 21, 12, 12)),
-                snapshot.Enabled ? (dark ? new(17, 17, 17, 255) : new(255, 255, 255, 255)) : _palette.Muted,
-                6, layout.Scale);
             if (!layout.IsCompact)
             {
                 Text(_background, $"モニター構成: {snapshot.MonitorCount} 画面", layout.Rect(17, 58, 286, 22),
@@ -74,7 +71,7 @@ internal sealed class TrayMenuRenderer : IDisposable
                 {
                     var width = Math.Max(22, Math.Ceiling(_text.Measure(key, 11.5, true)) + 12);
                     right -= width;
-                    var keyRect = Relative(row, right, 5, width, 22);
+                    var keyRect = layout.KeyBounds(row, right, width);
                     Box(frame, keyRect, _palette.Surface2, _palette.BorderStrong, 4, row);
                     Text(frame, key, keyRect, 11.5, color, mono: true, center: true, origin: row);
                     right -= 3;
@@ -82,7 +79,8 @@ internal sealed class TrayMenuRenderer : IDisposable
 
                 var available = Math.Max(0, right - 34 - (item.Keys.Count > 0 ? 10 : 0));
                 var label = Ellipsize(item.Name, available, 13);
-                Text(frame, label, Relative(row, 34, 0, available, 32), 13, color, origin: row);
+                Text(frame, label, new(row.X + layout.Px(34), row.Y, layout.Px(available), row.Height),
+                    13, color, origin: row);
                 return frame;
             }).ToArray();
         }
@@ -93,10 +91,14 @@ internal sealed class TrayMenuRenderer : IDisposable
         }
     }
 
-    internal OverlayFrame Render(int selected, bool keyboard)
+    internal OverlayFrame Render(int selected, bool keyboard) =>
+        Render(selected, keyboard, _snapshot.Enabled ? 20 : 0, _snapshot.Enabled ? 1 : 0);
+
+    internal OverlayFrame Render(int selected, bool keyboard, double position, double fill, double stretch = 1)
     {
         var layout = _snapshot.Layout;
         var result = _background with { Pixels = (byte[])_background.Pixels.Clone() };
+        DrawToggle(result, position, fill, stretch);
         var viewport = layout.ItemsViewport;
         var items = OverlayPainter.Create(viewport.Width, viewport.Height);
         PixelRect InViewport(PixelRect rect) =>
@@ -132,14 +134,24 @@ internal sealed class TrayMenuRenderer : IDisposable
         return result;
     }
 
-    private PixelRect Local(PixelRect rect) => new(rect.X - _snapshot.Layout.Bounds.X,
-        rect.Y - _snapshot.Layout.Bounds.Y, rect.Width, rect.Height);
-
-    private PixelRect Relative(PixelRect origin, double x, double y, double width, double height)
+    private void DrawToggle(OverlayFrame frame, double position, double fill, double stretch)
     {
         var layout = _snapshot.Layout;
-        return new(origin.X + layout.Px(x), origin.Y + layout.Px(y), layout.Px(width), layout.Px(height));
+        var track = Local(layout.Toggle);
+        static OverlayColor Opacity(OverlayColor color, double opacity) =>
+            color with { Alpha = (byte)Math.Round(color.Alpha * opacity) };
+        // 設定画面と同じ重ね順。塗りは位置、伸びは速度から受け取る。
+        OverlayPainter.StrokeRounded(frame, track, Opacity(_palette.Muted, 1 - fill), 10, 1, layout.Scale);
+        OverlayPainter.FillRounded(frame, track, Opacity(_palette.Ink, fill), 10, layout.Scale);
+        var thumb = Local(layout.ThumbBounds(position, stretch));
+        OverlayPainter.FillRounded(frame, thumb, _palette.Muted, 6, layout.Scale);
+        var onColor = _snapshot.Theme == OverlayTheme.Dark
+            ? new OverlayColor(17, 17, 17, 255) : new(255, 255, 255, 255);
+        OverlayPainter.FillRounded(frame, thumb, Opacity(onColor, fill), 6, layout.Scale);
     }
+
+    private PixelRect Local(PixelRect rect) => new(rect.X - _snapshot.Layout.Bounds.X,
+        rect.Y - _snapshot.Layout.Bounds.Y, rect.Width, rect.Height);
 
     private void Box(OverlayFrame frame, PixelRect bounds, OverlayColor fill, OverlayColor border,
         double radius, PixelRect? origin = null)
@@ -194,7 +206,7 @@ internal sealed class TrayMenuRenderer : IDisposable
             var width = Math.Max(0, Math.Min(bounds.Right - left, (int)Math.Ceiling(widths[index] * scale)));
             _text.Draw(frame, origin ?? _snapshot.Layout.Bounds,
                 new(run.Value, new(left, bounds.Y, width, bounds.Height), size,
-                    Mono: mono || run.Japanese, Bold: bold), color);
+                    Mono: mono || run.Japanese, Bold: bold), color, centerFontBody: true);
             x += widths[index] * scale;
         }
     }
