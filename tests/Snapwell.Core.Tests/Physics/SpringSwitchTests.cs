@@ -161,6 +161,47 @@ public sealed class SpringSwitchTests
         Assert.InRange(sw.Position, position, position + velocity / 240 * 1.4);
     }
 
+    /// <summary>入力が止まった手は速度を持たない。保持を続けてもつまみは手の位置に落ち着き、誤ってオンにならない。</summary>
+    [Fact]
+    public void HeldStillHandStopsPushingKnob()
+    {
+        var sw = new SpringSwitch(Travel, FeelPreset.StiffHeavy, false);
+        sw.Grab(4, 0);
+        sw.Move(8, Frame);
+        for (var i = 0; i < 120; i++)
+        {
+            sw.Advance(Frame);
+        }
+
+        Assert.InRange(sw.Position, 7.9, 8.1);
+        Assert.InRange(sw.Velocity, -1, 1);
+        sw.Release();
+        Assert.False(sw.IsOn);
+    }
+
+    /// <summary>握りの取り消しは状態を変えず、元の側へ静止する。</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CancelKeepsStateAndReturnsToSameSide(bool isOn)
+    {
+        var sw = new SpringSwitch(Travel, FeelPreset.StiffHeavy, isOn);
+        var time = 0.0;
+        sw.Grab(isOn ? Travel : 0, time);
+        for (var i = 1; i <= 30; i++)
+        {
+            time += Frame;
+            sw.Move(isOn ? Travel - i : i, time);
+            sw.Advance(Frame);
+        }
+
+        sw.Cancel();
+        Assert.False(sw.IsHeld);
+        Assert.Equal(isOn, sw.IsOn);
+        Run(sw, 2);
+        Assert.Equal(isOn ? Travel : 0, sw.Position);
+    }
+
     /// <summary>手を遠くまで引いても、つまみはトラックの外へ出ない。</summary>
     [Fact]
     public void DragFarBeyondTheEndStaysInsideTheWalls()

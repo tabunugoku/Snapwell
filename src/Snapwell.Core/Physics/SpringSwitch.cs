@@ -10,12 +10,14 @@ public sealed class SpringSwitch
     private const double WallDampingRatio = 0.9;
     private const double RestVelocity = 4;
     private const double RestPosition = 0.25;
+    private const double StaleHandSeconds = 0.06;
     private const double MaximumStretch = 0.22;
     private const double StretchSpeed = 2600;
 
     private double _handPosition;
     private double _handVelocity;
     private double _handTime;
+    private double _sinceMove;
     private double _target;
 
     /// <summary>可動幅・操作感・初期の状態からつまみを作る。</summary>
@@ -81,6 +83,7 @@ public sealed class SpringSwitch
         _handPosition = ClampHand(handPosition);
         _handVelocity = 0;
         _handTime = time;
+        _sinceMove = 0;
     }
 
     /// <summary>手を動かす。手の速度は直前の値と混ぜて均す（位置は直接動かさず、ハンドばねが引く）。</summary>
@@ -100,6 +103,7 @@ public sealed class SpringSwitch
 
         _handPosition = hand;
         _handTime = time;
+        _sinceMove = 0;
     }
 
     /// <summary>手を離す。勢いのまま進む先が中央より先の側に決める（手の速度は離すと消えるので判定に使わない）。</summary>
@@ -112,6 +116,18 @@ public sealed class SpringSwitch
 
         IsHeld = false;
         Set(Projected > Travel / 2);
+    }
+
+    /// <summary>握りを取り消す。状態は変えず、つまみは今の側へ戻る（スクロールへの移行やキャプチャ喪失用）。</summary>
+    public void Cancel()
+    {
+        if (!IsHeld)
+        {
+            return;
+        }
+
+        IsHeld = false;
+        Set(IsOn);
     }
 
     /// <summary>描画間隔を固定刻みに分割して進め、静止したら目標に合わせて true を返す。</summary>
@@ -159,6 +175,7 @@ public sealed class SpringSwitch
 
     private void Step(double h)
     {
+        _sinceMove += h;
         // 4 次のルンゲ・クッタ。feel の本体と同じ積分。
         var x = Position;
         var v = Velocity;
@@ -182,7 +199,9 @@ public sealed class SpringSwitch
             // ハンドばねは質量 1 のつまみに合わせた強さ。重いつまみは指に遅れてついてくる。
             var kh = Math.Pow(2 * Math.PI * HandFrequency, 2);
             var ch = 2 * Math.Sqrt(kh * Feel.Mass);
-            force += kh * (_handPosition - x) + ch * (_handVelocity - v);
+            // 入力が止まった手は動いていない。最後に測った速度を力として残さない。
+            var handVelocity = _sinceMove > StaleHandSeconds ? 0 : _handVelocity;
+            force += kh * (_handPosition - x) + ch * (handVelocity - v);
         }
         else
         {
