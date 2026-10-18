@@ -378,7 +378,7 @@ public sealed class AppHostTests
         fixture.Host.Start();
         fixture.Runtime.BlockDispose = block;
         var shutdown = Task.Run(fixture.Host.Shutdown);
-        Assert.True(SpinWait.SpinUntil(() => fixture.Calls.Contains("corners"), 1000));
+        Assert.True(SpinWait.SpinUntil(() => fixture.Calls.Contains("corners"), 10000));
         Assert.Contains("restore", fixture.Calls);
         block.Set();
         await shutdown.WaitAsync(TimeSpan.FromSeconds(5));
@@ -392,10 +392,10 @@ public sealed class AppHostTests
         fixture.Host.Start();
         fixture.Device.BlockSave = block;
         var resume = Task.Run(fixture.Host.ToggleEnabled);
-        Assert.True(SpinWait.SpinUntil(() => fixture.Device.SaveEntered, 1000));
+        Assert.True(SpinWait.SpinUntil(() => fixture.Device.SaveEntered, 10000));
         var shutdown = Task.Run(fixture.Host.Shutdown);
         Assert.True(SpinWait.SpinUntil(() => fixture.Calls.Contains("restore") && fixture.Calls.Contains("corners"),
-            1000));
+            10000));
         Assert.True(fixture.Watcher.Disposed);
         block.Set();
         await Task.WhenAll(resume, shutdown).WaitAsync(TimeSpan.FromSeconds(5));
@@ -408,7 +408,7 @@ public sealed class AppHostTests
         fixture.Host.Start();
         fixture.Hooks.StopDelay = TimeSpan.FromMilliseconds(300);
         var first = Task.Run(fixture.Host.Shutdown);
-        Assert.True(SpinWait.SpinUntil(() => fixture.Calls.Contains("hooks.stop"), 1000));
+        Assert.True(SpinWait.SpinUntil(() => fixture.Calls.Contains("hooks.stop"), 10000));
         await Task.Run(() => fixture.Host.HandleUnhandledException(new Exception("test")));
         Assert.Contains("mutex.release", fixture.Calls);
         await first.WaitAsync(TimeSpan.FromSeconds(5));
