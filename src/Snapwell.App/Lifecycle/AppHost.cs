@@ -1,4 +1,7 @@
+using Snapwell.App.Hotkeys;
+using Snapwell.Core.Commands;
 using Snapwell.Core.Settings;
+using Snapwell.Core.Tray;
 
 namespace Snapwell.App.Lifecycle;
 
@@ -84,6 +87,7 @@ internal sealed class AppHost
         tray.StandardSnapRequested += ToggleStandardSnap;
         tray.RestoreRequested += RestoreStandardBehavior;
         tray.ArrangeRequested += ArrangeCurrentMonitor;
+        tray.LauncherRequested += OpenLauncher;
         tray.ExitRequested += Shutdown;
         tray.SessionEnding += Shutdown;
     }
@@ -403,6 +407,20 @@ internal sealed class AppHost
         }
     }
 
+    /// <summary>選択時の状態を再確認し、現在の Runtime に対象を渡す。</summary>
+    internal void OpenLauncher(nint target)
+    {
+        lock (_gate)
+        {
+            if (!CanOperate() || !_enabled || !_hooksStarted)
+            {
+                return;
+            }
+
+            _runtime?.OpenLauncher(target);
+        }
+    }
+
     internal void ToggleEnabled()
     {
         lock (_gate)
@@ -521,6 +539,7 @@ internal sealed class AppHost
             Cleanup(_deviceWatcher.Dispose);
         }
         _tray.ArrangeRequested -= ArrangeCurrentMonitor;
+        _tray.LauncherRequested -= OpenLauncher;
         if (_watcher is not null)
         {
             _watcher.Changed -= OnSettingsChanged;
@@ -663,7 +682,13 @@ internal sealed class AppHost
     {
         var status = string.Join(" / ", new[] { _status, _reloadStatus, _deviceSaveStatus, _deviceReloadStatus }
             .Where(value => value is not null));
-        return new(_enabled, _device.DisableStandardSnap, status.Length == 0 ? null : status);
+        var shortcuts = TrayMenuModel.Shortcuts(_hooksStarted
+            ? HotkeyBindingsBuilder.Build(_portable.Hotkeys).Bindings.Select(binding =>
+                new KeyValuePair<WindowCommand, KeyChordSpec>((WindowCommand)binding.Id,
+                    new((ChordModifiers)binding.Modifiers, binding.VirtualKey)))
+            : []);
+        return new(_enabled, _device.DisableStandardSnap, status.Length == 0 ? null : status,
+            _hooksStarted, shortcuts);
     }
 
     private void ApplyDevice(DeviceState device)
