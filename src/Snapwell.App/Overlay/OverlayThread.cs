@@ -8,7 +8,7 @@ internal sealed class OverlayThread : IOverlayPresenter, IOverlaySurface
 {
     private readonly object _gate = new();
     private readonly Thread _thread;
-    private readonly Func<(IOverlaySurface Surface, IOverlayLoop Loop)> _factory;
+    private readonly Func<long, (IOverlaySurface Surface, IOverlayLoop Loop)> _factory;
     private static long _nextGeneration;
     private readonly Action<long, string, Exception?>? _diagnostic;
     private (PixelRect Bounds, Func<OverlayFrame>? Paint)? _pending;
@@ -20,9 +20,9 @@ internal sealed class OverlayThread : IOverlayPresenter, IOverlaySurface
     private string _state = "window-create";
 
     internal OverlayThread(bool interactive, Action<long, string, Exception?>? diagnostic = null)
-        : this(() =>
+        : this(generation =>
         {
-            var window = new LayeredOverlayWindow(interactive);
+            var window = new LayeredOverlayWindow(interactive, generation, diagnostic);
             return (window, window);
         }, diagnostic)
     {
@@ -30,6 +30,12 @@ internal sealed class OverlayThread : IOverlayPresenter, IOverlaySurface
 
     internal OverlayThread(Func<(IOverlaySurface Surface, IOverlayLoop Loop)> factory,
         Action<long, string, Exception?>? diagnostic = null)
+        : this(_ => factory(), diagnostic)
+    {
+    }
+
+    private OverlayThread(Func<long, (IOverlaySurface Surface, IOverlayLoop Loop)> factory,
+        Action<long, string, Exception?>? diagnostic)
     {
         _factory = factory;
         _diagnostic = diagnostic;
@@ -133,7 +139,7 @@ internal sealed class OverlayThread : IOverlayPresenter, IOverlaySurface
         var faulted = false;
         try
         {
-            (surface, loop) = _factory();
+            (surface, loop) = _factory(Generation);
             lock (_gate)
             {
                 _loop = loop;
