@@ -185,19 +185,18 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="1 回の拡大・縮小の幅" Style="{StaticResource SnapwellRowTitleStyle}" />
-                                <Border Grid.Column="1" Style="{StaticResource SnapwellTagPendingStyle}">
-                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellTagPendingTextStyle}" />
-                                </Border>
                             </Grid>
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <ComboBox IsEnabled="False"
+                            <ComboBox x:Name="ResizeStepBox"
                                 Width="160"
                                 Style="{StaticResource DemoSelectStyle}"
-                                SelectedIndex="0"
-                                AutomationProperties.Name="1 区画">
-                                <ComboBoxItem Content="1 区画" />
-                                <ComboBoxItem Content="2 区画" />
+                                AutomationProperties.Name="1 回の拡大・縮小の幅"
+                                SelectionChanged="ResizeStep_SelectionChanged">
+                                <ComboBoxItem Content="1 区画" Tag="1" />
+                                <ComboBoxItem Content="2 区画" Tag="2" />
+                                <ComboBoxItem Content="3 区画" Tag="3" />
+                                <ComboBoxItem Content="4 区画" Tag="4" />
                             </ComboBox>
                         </StackPanel>
                     </Grid>
@@ -214,21 +213,18 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="固定する位置" Style="{StaticResource SnapwellRowTitleStyle}" />
-                                <Border Grid.Column="1" Style="{StaticResource SnapwellTagPendingStyle}">
-                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellTagPendingTextStyle}" />
-                                </Border>
                             </Grid>
                             <TextBlock Text="拡大・縮小するときに動かさない辺" Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <ComboBox IsEnabled="False"
+                            <ComboBox x:Name="ResizeAnchorBox"
                                 Width="160"
                                 Style="{StaticResource DemoSelectStyle}"
-                                SelectedIndex="0"
-                                AutomationProperties.Name="左上">
-                                <ComboBoxItem Content="左上" />
-                                <ComboBoxItem Content="中心" />
-                                <ComboBoxItem Content="近い辺" />
+                                AutomationProperties.Name="固定する位置"
+                                SelectionChanged="ResizeAnchor_SelectionChanged">
+                                <ComboBoxItem Content="左上" Tag="TopLeft" />
+                                <ComboBoxItem Content="中心" Tag="Center" />
+                                <ComboBoxItem Content="近い辺" Tag="NearEdge" />
                             </ComboBox>
                         </StackPanel>
                     </Grid>

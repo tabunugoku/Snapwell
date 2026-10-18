@@ -56,7 +56,7 @@ public sealed partial class HotkeysPage : Page
         foreach (var command in Enum.GetValues<WindowCommand>().Union(hotkeys.Keys)
             .OrderBy(HotkeyCatalog.GetDisplayOrder))
         {
-            HotkeyList.Items.Add(new HotkeyRow(HotkeyCatalog.GetDisplayName(command),
+            HotkeyList.Items.Add(new HotkeyRow(HotkeyCatalog.GetDisplayName(command, _session.Current.ResizeStep),
                 hotkeys.TryGetValue(command, out var chord) ? HotkeyCatalog.FormatChord(chord) : "未割り当て",
                 conflicts.Contains(command) ? Visibility.Visible : Visibility.Collapsed));
         }

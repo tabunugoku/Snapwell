@@ -1,3 +1,5 @@
+using Snapwell.Core.Layout;
+
 namespace Snapwell.Core.Commands;
 
 /// <summary>同じキーを割り当てたコマンドの組。</summary>
@@ -17,7 +19,10 @@ public static class HotkeyCatalog
         .ToArray();
 
     /// <summary>修飾キーを Ctrl、Alt、Shift、Win の順に表示する。</summary>
-    public static string FormatChord(KeyChordSpec chord)
+    public static string FormatChord(KeyChordSpec chord) => string.Join("+", FormatChordParts(chord));
+
+    /// <summary>修飾キーを Ctrl、Alt、Shift、Win の順に並べ、最後にキー名を返す。</summary>
+    public static IReadOnlyList<string> FormatChordParts(KeyChordSpec chord)
     {
         var parts = new List<string>();
         if (chord.Modifiers.HasFlag(ChordModifiers.Control))
@@ -54,11 +59,11 @@ public static class HotkeyCatalog
             >= 0x30 and <= 0x39 or >= 0x41 and <= 0x5A => ((char)chord.VirtualKey).ToString(),
             _ => $"0x{chord.VirtualKey:X2}",
         });
-        return string.Join("+", parts);
+        return parts;
     }
 
-    /// <summary>既知の操作は日本語、追加された操作は列挙の名前を返す。</summary>
-    public static string GetDisplayName(WindowCommand command) => command switch
+    /// <summary>既知の操作は日本語、追加された操作は列挙の名前を返す。広げる・縮めるは区画数を含める。</summary>
+    public static string GetDisplayName(WindowCommand command, int resizeStep = 1) => command switch
     {
         WindowCommand.LeftHalf => "左半分",
         WindowCommand.RightHalf => "右半分",
@@ -69,10 +74,10 @@ public static class HotkeyCatalog
         WindowCommand.BottomLeftQuarter => "左下の四分割",
         WindowCommand.BottomRightQuarter => "右下の四分割",
         WindowCommand.Maximize => "最大化",
-        WindowCommand.GrowRight => "右へ 1 区画広げる",
-        WindowCommand.GrowDown => "下へ 1 区画広げる",
-        WindowCommand.ShrinkLeft => "左へ 1 区画縮める",
-        WindowCommand.ShrinkUp => "上へ 1 区画縮める",
+        WindowCommand.GrowRight => $"右へ {Step(resizeStep)} 区画広げる",
+        WindowCommand.GrowDown => $"下へ {Step(resizeStep)} 区画広げる",
+        WindowCommand.ShrinkLeft => $"左へ {Step(resizeStep)} 区画縮める",
+        WindowCommand.ShrinkUp => $"上へ {Step(resizeStep)} 区画縮める",
         WindowCommand.MoveCellLeft => "左へ 1 区画移動",
         WindowCommand.MoveCellRight => "右へ 1 区画移動",
         WindowCommand.MoveCellUp => "上へ 1 区画移動",
@@ -92,6 +97,9 @@ public static class HotkeyCatalog
         WindowCommand.SnapAdjacentDown => "下の隣へ寄せる",
         _ => command.ToString(),
     };
+
+    // 実際に効く幅（設定の範囲）と同じ値を表示する。
+    private static int Step(int resizeStep) => Math.Clamp(resizeStep, ResizeSettings.MinStep, ResizeSettings.MaxStep);
 
     /// <summary>列挙の定義と同じ表示順を返す。</summary>
     public static int GetDisplayOrder(WindowCommand command) => (int)command;
