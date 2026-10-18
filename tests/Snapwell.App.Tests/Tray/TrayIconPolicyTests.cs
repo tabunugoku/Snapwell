@@ -1,22 +1,25 @@
 using Snapwell.App.Lifecycle;
 using Snapwell.App.Tray;
+using Snapwell.Core.Tray;
 
 namespace Snapwell.App.Tests.Tray;
 
 public sealed class TrayIconPolicyTests
 {
-    /// <summary>整列は設定の直後に置き、一時停止中だけ選択できなくする。</summary>
+    /// <summary>モックアップの順で並べ、一時停止中と未接続の操作を選択不可にする。</summary>
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public void ArrangementMenuFollowsSettingsAndIsEnabledOnlyWhenActive(bool enabled)
+    public void CustomMenuUsesMockupOrderAndCurrentAvailability(bool enabled)
     {
         var items = TrayIconPolicy.MenuItems(new(enabled, true, "状態"));
-        Assert.Equal([5u, 6u, 1u, 2u, 3u, 0u, 4u], items.Select(item => item.Id));
-        Assert.Equal("設定を開く", items[0].Text);
-        Assert.Equal(new TrayMenuItem(6, "現在のモニターを整列", enabled), items[1]);
-        Assert.True(items[3].Checked);
-        Assert.False(items[5].Enabled);
+        Assert.Equal([TrayMenuCommand.Arrange, TrayMenuCommand.Launcher, TrayMenuCommand.Toggle,
+            TrayMenuCommand.Settings, TrayMenuCommand.Exit], items.Select(item => item.Command));
+        Assert.Equal("現在のモニターを整列", items[0].Name);
+        Assert.Equal(enabled, items[0].Enabled);
+        Assert.False(items[1].Enabled);
+        Assert.All(items.Skip(2), item => Assert.True(item.Enabled));
+        Assert.All(items, item => Assert.Empty(item.Keys));
     }
 
     [Fact]
