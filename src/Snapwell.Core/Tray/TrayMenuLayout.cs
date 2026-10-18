@@ -14,6 +14,10 @@ public sealed class TrayMenuLayout
     public PixelRect Panel { get; }
     /// <summary>ヘッダーのスイッチ。</summary>
     public PixelRect Toggle { get; }
+    /// <summary>ヘッダー共通の中心線を決めるアイコン。</summary>
+    public PixelRect HeaderIcon => Rect(18, 18, 20, 20);
+    /// <summary>ヘッダーの状態タグ。</summary>
+    public PixelRect StatusTag => CenterVertically(HeaderIcon, Panel.X + Px(210), Px(43), Px(19));
     /// <summary>項目の矩形。</summary>
     public IReadOnlyList<PixelRect> Rows { get; }
     /// <summary>区切り線の矩形。</summary>
@@ -47,7 +51,7 @@ public sealed class TrayMenuLayout
         var top = Math.Max(workArea.Y, panel.Y - padding);
         Bounds = new(left, top, Math.Min(workArea.Right, panel.Right + padding) - left,
             Math.Min(workArea.Bottom, panel.Bottom + padding) - top);
-        var toggle = Rect(263, 18, 40, 20);
+        var toggle = CenterVertically(HeaderIcon, panel.X + Px(263), Px(40), HeaderIcon.Height);
         Toggle = new(Math.Max(panel.X, Math.Min(toggle.X, panel.Right - toggle.Width)), toggle.Y,
             Math.Min(panel.Width, toggle.Width), toggle.Height);
         var offset = hasStatus ? 24 : 0;
@@ -95,6 +99,23 @@ public sealed class TrayMenuLayout
     /// <summary>本体の左上からの論理矩形を物理画面座標へ変換する。</summary>
     public PixelRect Rect(double x, double y, double width, double height) =>
         new(Panel.X + Px(x), Panel.Y + Px(y), Px(x + width) - Px(x), Px(y + height) - Px(y));
+
+    /// <summary>丸め済みの物理矩形の中心から一度だけ丸め、半ピクセルの誤差を蓄積しない。</summary>
+    public static PixelRect CenterVertically(PixelRect row, int x, int width, int height) =>
+        new(x, row.Y + (int)Math.Round((row.Height - height) / 2.0), width, height);
+
+    /// <summary>キーの枠を、スクロール後の項目の中心にそろえる。</summary>
+    public PixelRect KeyBounds(PixelRect row, double x, double width) =>
+        CenterVertically(row, row.X + Px(x), Px(width), Px(22));
+
+    /// <summary>つまみをトラックの上下中央へ置く。位置は論理 px、伸びの中心はつまみの中心。</summary>
+    public PixelRect ThumbBounds(double position, double stretch = 1)
+    {
+        var width = Px(12 * stretch);
+        var height = Px(12 / Math.Sqrt(stretch));
+        var centerX = Toggle.X + Px(10 + position);
+        return CenterVertically(Toggle, centerX - (int)Math.Round(width / 2.0), width, height);
+    }
 
     /// <summary>予約領域がない自動非表示でも、アイコンに一番近い画面端を選ぶ。</summary>
     public static TrayTaskbarEdge DetectEdge(PixelRect monitor, PixelRect workArea, PixelRect anchor)
