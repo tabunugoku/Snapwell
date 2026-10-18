@@ -277,14 +277,17 @@ public static class SpringToggle
         private void Root_PointerReleased(object sender, PointerRoutedEventArgs e)
         {
             e.Handled = true;
-            if (!_pressed || e.Pointer.PointerId != _pointerId)
+            if (_root is null || !_pressed || e.Pointer.PointerId != _pointerId)
             {
                 return;
             }
 
             // 先に確定する。キャプチャを外すと PointerCaptureLost が来て、取り消しとして扱われるため。
-            Finish(commit: true);
-            _root?.ReleasePointerCapture(e.Pointer);
+            // 押したまま入力面の外へ出して離したタップは取り消す（捕捉しているので外でも Released が来る）。
+            var position = e.GetCurrentPoint(_root).Position;
+            var inside = SpringSwitch.IsTapRelease(position.X, position.Y, _root.ActualWidth, _root.ActualHeight);
+            Finish(commit: inside);
+            _root.ReleasePointerCapture(e.Pointer);
         }
 
         private void Root_PointerCanceled(object sender, PointerRoutedEventArgs e) => Finish(commit: false);

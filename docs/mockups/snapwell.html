@@ -2069,7 +2069,11 @@ function makeSwitch(label) {
       setChecked(!input.checked);
     }
   };
-  label.addEventListener('pointerup', (e) => finish(e, true));
+  label.addEventListener('pointerup', (e) => {
+    // 押したまま外へ出して離したタップは取り消す
+    const r = label.getBoundingClientRect();
+    finish(e, e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom);
+  });
   label.addEventListener('pointercancel', (e) => finish(e, false));
 
   sw.x = sw.target = input.checked ? SWITCH_TRAVEL : 0;
