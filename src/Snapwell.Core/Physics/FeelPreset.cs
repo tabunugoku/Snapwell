@@ -144,4 +144,7 @@ public sealed record FeelPreset
 
     /// <summary>light, playful に対応する操作感。</summary>
     public static FeelPreset Bouncy { get; } = FromWords("light, playful");
+
+    /// <summary>stiff, heavy に対応する操作感（トグルスイッチ用）。</summary>
+    public static FeelPreset StiffHeavy { get; } = FromWords("stiff, heavy");
 }

@@ -666,6 +666,7 @@
                 <Setter Property="FocusVisualPrimaryThickness" Value="2" />
                 <Setter Property="FocusVisualSecondaryThickness" Value="0" />
                 <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource SnapwellBlueTextBrush}" />
+                <Setter Property="controls:SpringToggle.Enabled" Value="True" />
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="ToggleSwitch">
@@ -677,39 +678,10 @@
                                         <VisualState x:Name="Pressed" />
                                         <VisualState x:Name="Disabled" />
                                     </VisualStateGroup>
+                                    <!-- つまみの位置・塗り・伸びは SpringToggle が毎フレーム書く。状態では動かさない。 -->
                                     <VisualStateGroup x:Name="ToggleStates">
-                                        <VisualState x:Name="Off">
-                                            <Storyboard>
-                                                <DoubleAnimation
-                                                    x:Name="SwitchKnobOff"
-                                                    Storyboard.TargetName="KnobTranslateTransform"
-                                                    Storyboard.TargetProperty="X"
-                                                    To="0"
-                                                    Duration="0" />
-                                            </Storyboard>
-                                        </VisualState>
-                                        <VisualState x:Name="On">
-                                            <VisualState.Setters>
-                                                <Setter
-                                                    Target="TrackBorder.Background"
-                                                    Value="{ThemeResource SnapwellInkBrush}" />
-                                                <Setter
-                                                    Target="TrackBorder.BorderBrush"
-                                                    Value="{ThemeResource SnapwellInkBrush}" />
-                                                <Setter Target="TrackBorder.BorderThickness" Value="0" />
-                                                <Setter
-                                                    Target="ThumbEllipse.Fill"
-                                                    Value="{ThemeResource SnapwellInkTextBrush}" />
-                                            </VisualState.Setters>
-                                            <Storyboard>
-                                                <DoubleAnimation
-                                                    x:Name="SwitchKnobOn"
-                                                    Storyboard.TargetName="KnobTranslateTransform"
-                                                    Storyboard.TargetProperty="X"
-                                                    To="20"
-                                                    Duration="0" />
-                                            </Storyboard>
-                                        </VisualState>
+                                        <VisualState x:Name="Off" />
+                                        <VisualState x:Name="On" />
                                         <VisualState x:Name="Dragging" />
                                     </VisualStateGroup>
                                 </VisualStateManager.VisualStateGroups>
@@ -721,11 +693,19 @@
                                     Background="Transparent"
                                     BorderThickness="1"
                                     BorderBrush="{ThemeResource SnapwellMutedBrush}" />
+                                <!-- オンの塗りは位置から決めた不透明度で重ねる（トラックの線は逆に薄くする）。 -->
+                                <Border
+                                    x:Name="TrackFill"
+                                    Width="40"
+                                    Height="20"
+                                    CornerRadius="10"
+                                    Opacity="0"
+                                    Background="{ThemeResource SnapwellInkBrush}" />
                                 <Grid x:Name="SwitchKnobBounds" Width="40" Height="20">
                                     <Grid.RenderTransform>
                                         <TranslateTransform x:Name="BoundsTranslateTransform" />
                                     </Grid.RenderTransform>
-                                    <!-- 可動幅は 40 - 12 - 4 - 4 = 20。状態変更は補間せず即座に反映する。 -->
+                                    <!-- 可動幅は 40 - 12 - 4 - 4 = 20。位置は SpringToggle がばねで動かす。 -->
                                     <Grid
                                         x:Name="SwitchKnob"
                                         Width="12"
@@ -734,16 +714,22 @@
                                         HorizontalAlignment="Left"
                                         VerticalAlignment="Top">
                                         <Grid.RenderTransform>
-                                            <TranslateTransform x:Name="KnobTranslateTransform" />
+                                            <CompositeTransform CenterX="6" CenterY="6" />
                                         </Grid.RenderTransform>
                                         <Ellipse
                                             x:Name="ThumbEllipse"
                                             Width="12"
                                             Height="12"
                                             Fill="{ThemeResource SnapwellMutedBrush}" />
+                                        <Ellipse
+                                            x:Name="ThumbOnEllipse"
+                                            Width="12"
+                                            Height="12"
+                                            Opacity="0"
+                                            Fill="{ThemeResource SnapwellInkTextBrush}" />
                                     </Grid>
                                 </Grid>
-                                <!-- 入力面は描画と分離し、トラック全体でタップとドラッグを受ける。 -->
+                                <!-- Thumb は ToggleSwitch の部品として残すだけで、入力は SpringToggle が LayoutRoot で受ける。 -->
                                 <Thumb
                                     x:Name="SwitchThumb"
                                     Width="40"
