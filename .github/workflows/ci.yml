@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    # 出荷は x64 と ARM64 のネイティブだけ。両 RID のビルドは x64 のランナーで行う (ARM64 の実行テストは MANUAL_TEST.md の実機確認)
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Build.props') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      # -r を付けると片方の RID だけの復元になる。Directory.Build.props の RuntimeIdentifiers で両方を復元する
+      - name: Restore
+        run: dotnet restore Snapwell.sln
+
+      - name: Format
+        run: dotnet format Snapwell.sln --verify-no-changes --no-restore
+
+      - name: Test
+        # スレッドの待ちを使うテストが、並列実行で遅いランナーのスレッドプールに詰まって落ちるため、並列実行を止める
+        run: dotnet test Snapwell.sln -c Release --no-restore -- xUnit.ParallelizeTestCollections=false
+
+      - name: Build (win-x64)
+        run: |
+          dotnet build src/Snapwell.App/Snapwell.App.csproj -c Release -r win-x64 --no-restore
+          dotnet build src/Snapwell.Settings/Snapwell.Settings.csproj -c Release -r win-x64 --no-restore
+
+      - name: Build (win-arm64)
+        run: |
+          dotnet build src/Snapwell.App/Snapwell.App.csproj -c Release -r win-arm64 --no-restore
+          dotnet build src/Snapwell.Settings/Snapwell.Settings.csproj -c Release -r win-arm64 --no-restore
