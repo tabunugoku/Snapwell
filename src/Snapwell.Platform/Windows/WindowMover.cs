@@ -18,8 +18,12 @@ public interface IWindowMover
     /// <summary>サイズを適用して実際の見た目の矩形を返し、失敗時は null を返す。</summary>
     PixelRect? SetVisualBounds(nint handle, PixelRect visualBounds);
 
-    /// <summary>複数の位置とサイズを一括で適用する。</summary>
-    bool ApplyBatch(IReadOnlyList<WindowPlacement> placements);
+    /// <summary>現在の見た目の矩形を返し、調査に失敗したときは null を返す。</summary>
+    PixelRect? GetVisualBounds(nint handle);
+
+    /// <summary>調査失敗と無効な対象を除いて一括適用し、調査失敗のハンドルと API の成否を返す。</summary>
+    bool ApplyBatch(IReadOnlyList<WindowPlacement> placements, bool positionOnly,
+        out IReadOnlyList<nint> failedHandles, Func<nint, bool>? isCurrent = null);
 }
 
 /// <summary>移動の状態判断から分離したネイティブ操作。</summary>
@@ -32,7 +36,7 @@ public interface IWindowPositionApi
     bool SetBounds(nint handle, PixelRect bounds, bool positionOnly);
 
     /// <summary>ウィンドウ矩形の一覧を一括で適用する。</summary>
-    bool ApplyBatch(IReadOnlyList<NativeWindowPlacement> placements);
+    bool ApplyBatch(IReadOnlyList<NativeWindowPlacement> placements, bool positionOnly);
 }
 
 /// <summary>枠の補正と最大化の解除を調整する移動サービス。</summary>
@@ -62,27 +66,49 @@ public sealed class WindowMover(IWindowInspector inspector, IWindowPositionApi a
         return inspector.TryInspect(handle, out var actual) ? actual.VisualBounds : null;
     }
 
-    /// <summary>先に全対象を調査し、補正後の矩形をまとめて適用する。</summary>
-    public bool ApplyBatch(IReadOnlyList<WindowPlacement> placements)
-    {
-        if (placements.Count == 0)
-        {
-            return true;
-        }
+    /// <summary>バッチによるサイズ適用後も、最小・最大サイズを反映した実矩形を読み直す。</summary>
+    public PixelRect? GetVisualBounds(nint handle) =>
+        inspector.TryInspect(handle, out var window) ? window.VisualBounds : null;
 
-        var corrected = new NativeWindowPlacement[placements.Count];
-        for (var index = 0; index < placements.Count; index++)
+    /// <summary>調査できた対象だけ、通常状態の枠で補正してまとめて適用する。</summary>
+    public bool ApplyBatch(IReadOnlyList<WindowPlacement> placements, bool positionOnly,
+        out IReadOnlyList<nint> failedHandles, Func<nint, bool>? isCurrent = null)
+    {
+        var corrected = new List<NativeWindowPlacement>(placements.Count);
+        var failed = new List<nint>();
+        foreach (var placement in placements)
         {
-            var placement = placements[index];
-            if (!TryPrepare(placement.Handle, out var window))
+            if (isCurrent is not null && !isCurrent(placement.Handle))
             {
-                return false;
+                continue;
             }
 
-            corrected[index] = new(placement.Handle, window.Insets.ToWindowBounds(placement.VisualBounds));
+            try
+            {
+                if (TryPrepare(placement.Handle, out var window))
+                {
+                    corrected.Add(new(placement.Handle, window.Insets.ToWindowBounds(placement.VisualBounds)));
+                    continue;
+                }
+            }
+            catch (Exception)
+            {
+                // 閉じた対象などの調査失敗で、ほかの対象のバッチを中断しない。
+            }
+
+            failed.Add(placement.Handle);
         }
 
-        return api.ApplyBatch(corrected);
+        // 復元は同期で待つため、準備済みの対象もネイティブ呼び出し直前に確かめ直す。
+        // 無効な対象は失敗に含めない。呼び出し側も同じ判定で完了処理から除く。null は全員有効。
+        if (isCurrent is not null)
+        {
+            failed.RemoveAll(handle => !isCurrent(handle));
+            corrected.RemoveAll(placement => !isCurrent(placement.Handle));
+        }
+
+        failedHandles = failed;
+        return corrected.Count == 0 || api.ApplyBatch(corrected, positionOnly);
     }
 
     private bool TryPrepare(nint handle, [NotNullWhen(true)] out WindowSnapshot? window)

@@ -158,12 +158,19 @@ public sealed class GridLayout
     {
         var total = starts.Length - 1;
         var oldCount = current.End - current.Start + 1;
+        // 作業領域の前半にあれば先頭側、後半にあれば末尾側の辺を固定する。
+        var fromEnd = anchor == ResizeAnchor.NearEdge && current.Start + current.End + 1 > total;
         // 中心固定は端で中心が半区画以上ずれない範囲まで拡大する。
         var centerLimit = Math.Min(total,
             Math.Min(current.Start + current.End + 2, 2 * total - current.Start - current.End));
-        var limit = anchor == ResizeAnchor.TopLeft ? total - current.Start : centerLimit;
+        var limit = anchor switch
+        {
+            ResizeAnchor.Center => centerLimit,
+            _ when fromEnd => current.End + 1,
+            _ => total - current.Start,
+        };
         var newCount = (int)Math.Clamp((long)oldCount + delta, 1, limit);
-        var start = current.Start;
+        var start = fromEnd ? current.End + 1 - newCount : current.Start;
         if (anchor == ResizeAnchor.Center)
         {
             var center = (starts[current.Start] + starts[current.End + 1] - _gap) / 2.0;

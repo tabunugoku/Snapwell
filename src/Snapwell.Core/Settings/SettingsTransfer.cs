@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 using Snapwell.Core.Commands;
+using Snapwell.Core.Layout;
 using Snapwell.Core.Snapping;
 
 namespace Snapwell.Core.Settings;
@@ -8,7 +9,8 @@ namespace Snapwell.Core.Settings;
 /// <summary>選んで取り込める設定の種類。</summary>
 public enum SettingsField
 {
-    Grid, Gap, Edge, Feel, SnapMode, ReduceMotion, ShowZonePreview, LongPressMilliseconds, LongPressDistance, Hotkey,
+    Grid, Gap, Edge, Feel, SnapMode, ReduceMotion, ShowZonePreview, LongPressMilliseconds, LongPressDistance,
+    MagnetStrength, SnapRadius, Hotkey, ResizeStep, ResizeAnchor,
 }
 
 /// <summary>ホットキーはコマンドごと、それ以外は項目ごとに識別する。</summary>
@@ -149,7 +151,13 @@ public static class SettingsTransfer
                 SettingsField.Grid => value with { Grid = imported.Grid },
                 SettingsField.Gap => value with { Gap = imported.Gap },
                 SettingsField.Edge => value with { Edge = imported.Edge },
-                SettingsField.Feel => value with { Feel = imported.Feel },
+                SettingsField.Feel => value with
+                {
+                    Feel = imported.Feel,
+                    Mass = imported.Mass,
+                    Frequency = imported.Frequency,
+                    DampingRatio = imported.DampingRatio,
+                },
                 SettingsField.SnapMode => value with { SnapMode = imported.SnapMode },
                 SettingsField.ReduceMotion => value with { ReduceMotion = imported.ReduceMotion },
                 SettingsField.ShowZonePreview => value with { ShowZonePreview = imported.ShowZonePreview },
@@ -158,6 +166,10 @@ public static class SettingsTransfer
                     LongPressMilliseconds = imported.LongPressMilliseconds,
                 },
                 SettingsField.LongPressDistance => value with { LongPressDistance = imported.LongPressDistance },
+                SettingsField.MagnetStrength => value with { MagnetStrength = imported.MagnetStrength },
+                SettingsField.SnapRadius => value with { SnapRadius = imported.SnapRadius },
+                SettingsField.ResizeStep => value with { ResizeStep = imported.ResizeStep },
+                SettingsField.ResizeAnchor => value with { ResizeAnchor = imported.ResizeAnchor },
                 _ => value,
             };
             if (key.Field == SettingsField.Hotkey && key.Command is { } command)
@@ -188,7 +200,7 @@ public static class SettingsTransfer
             $"{imported.Grid.Columns} × {imported.Grid.Rows}");
         Add(SettingsField.Gap, "ウィンドウの間隔", Pixels(current.Gap), Pixels(imported.Gap));
         Add(SettingsField.Edge, "画面端の余白", Pixels(current.Edge), Pixels(imported.Edge));
-        Add(SettingsField.Feel, "操作感", current.Feel, imported.Feel);
+        Add(SettingsField.Feel, "操作感", FeelName(current), FeelName(imported));
         Add(SettingsField.SnapMode, "吸着の方式", ModeName(current.SnapMode), ModeName(imported.SnapMode));
         Add(SettingsField.ReduceMotion, "動きを減らす", current.ReduceMotion ? "オン" : "オフ",
             imported.ReduceMotion ? "オン" : "オフ");
@@ -198,13 +210,19 @@ public static class SettingsTransfer
             Milliseconds(imported.LongPressMilliseconds));
         Add(SettingsField.LongPressDistance, "長押し中に動いてよい距離", Pixels(current.LongPressDistance),
             Pixels(imported.LongPressDistance));
+        Add(SettingsField.MagnetStrength, "磁石の強さ", Strength(current.MagnetStrength),
+            Strength(imported.MagnetStrength));
+        Add(SettingsField.SnapRadius, "吸着半径", Pixels(current.SnapRadius), Pixels(imported.SnapRadius));
+        Add(SettingsField.ResizeStep, "1 回の拡大・縮小の幅", $"{current.ResizeStep} 区画", $"{imported.ResizeStep} 区画");
+        Add(SettingsField.ResizeAnchor, "拡大・縮小で固定する位置", AnchorName(current.ResizeAnchor),
+            AnchorName(imported.ResizeAnchor));
         foreach (var command in current.Hotkeys.Keys.Union(imported.Hotkeys.Keys).OrderBy(HotkeyCatalog.GetDisplayOrder))
         {
             current.Hotkeys.TryGetValue(command, out var before);
             imported.Hotkeys.TryGetValue(command, out var after);
             if (before != after)
             {
-                differences.Add(new(new(SettingsField.Hotkey, command), HotkeyCatalog.GetDisplayName(command),
+                differences.Add(new(new(SettingsField.Hotkey, command), HotkeyCatalog.GetDisplayName(command, current.ResizeStep),
                     before is null ? "未割り当て" : HotkeyCatalog.FormatChord(before),
                     after is null ? "未割り当て" : HotkeyCatalog.FormatChord(after)));
             }
@@ -223,7 +241,26 @@ public static class SettingsTransfer
 
     private static string Milliseconds(int value) => value.ToString(CultureInfo.InvariantCulture) + " ms";
 
+    private static string FeelName(PortableSettings value) => value.Mass is null && value.Frequency is null &&
+        value.DampingRatio is null
+        ? value.Feel
+        : $"カスタム（{value.Feel} から。質量 {Number(value.Mass)}、振動数 {Number(value.Frequency)}、減衰比 {Number(value.DampingRatio)}）";
+
+    private static string Number(double? value) =>
+        value is { } number ? number.ToString("0.##", CultureInfo.InvariantCulture) : "プリセットのまま";
+
+    private static string Strength(double? value) =>
+        value is { } strength ? strength.ToString("0.##", CultureInfo.InvariantCulture) : "操作感に従う";
+
     private static string Pixels(double value) => value.ToString(CultureInfo.InvariantCulture) + " px";
+
+    private static string AnchorName(ResizeAnchor anchor) => anchor switch
+    {
+        ResizeAnchor.TopLeft => "左上",
+        ResizeAnchor.Center => "中心",
+        ResizeAnchor.NearEdge => "近い辺",
+        _ => anchor.ToString(),
+    };
 
     private static string ModeName(SnapMode mode) => mode switch
     {

@@ -1,4 +1,5 @@
 using Snapwell.Core.Commands;
+using Snapwell.Core.Layout;
 using Snapwell.Core.Settings;
 using Snapwell.Core.Snapping;
 
@@ -30,6 +31,28 @@ public sealed class SettingsTransferTests : IDisposable
         Assert.Empty(result.Differences);
         Assert.Equal(current.Hotkeys, SettingsTransfer.Apply(current, result).Hotkeys);
         Assert.Equal(17, SettingsStores.Portable(path).Load().Value.Gap);
+    }
+
+    /// <summary>拡大・縮小の幅と固定する位置は、それぞれ単独でも差分に出て、個別に取り込める。</summary>
+    [Theory]
+    [InlineData(SettingsField.ResizeStep)]
+    [InlineData(SettingsField.ResizeAnchor)]
+    public void ResizeSettingsAreDetectedAndImportedIndividually(SettingsField field)
+    {
+        var current = new PortableSettings();
+        var imported = field == SettingsField.ResizeStep
+            ? current with { ResizeStep = 3, Hotkeys = new(current.Hotkeys) }
+            : current with { ResizeAnchor = ResizeAnchor.NearEdge, Hotkeys = new(current.Hotkeys) };
+        Assert.Equal([new SettingsTransferKey(field)],
+            SettingsTransfer.GetDifferences(current, imported).Select(difference => difference.Key));
+        var result = ReadExport(imported, current);
+        Assert.Equal([new SettingsTransferKey(field)], result.Differences.Select(difference => difference.Key));
+        var applied = SettingsTransfer.Apply(current, result, [new(field)]);
+        Assert.Equal(imported.ResizeStep, applied.ResizeStep);
+        Assert.Equal(imported.ResizeAnchor, applied.ResizeAnchor);
+        var other = field == SettingsField.ResizeStep ? applied.ResizeAnchor == current.ResizeAnchor
+            : applied.ResizeStep == current.ResizeStep;
+        Assert.True(other);
     }
 
     [Fact]
@@ -105,7 +128,7 @@ public sealed class SettingsTransferTests : IDisposable
     [InlineData("{\"LongPressMilliseconds\":null}")]
     [InlineData("{\"LongPressDistance\":\"6\"}")]
     [InlineData("{\"LongPressDistance\":null}")]
-    [InlineData("{\"SchemaVersion\":5,\"Feel\":{\"future\":true}}")]
+    [InlineData("{\"SchemaVersion\":6,\"Feel\":{\"future\":true}}")]
     [InlineData("{\"SchemaVersion\":999999999999,\"Feel\":\"Airy\"}")]
     public void InvalidOrFutureFilesAreRejectedWithoutChangingAnything(string json)
     {

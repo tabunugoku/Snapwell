@@ -1150,7 +1150,7 @@ public sealed class AppHostTests
     {
         public bool Restore(nint handle) => true;
         public bool SetBounds(nint handle, PixelRect bounds, bool positionOnly) => true;
-        public bool ApplyBatch(IReadOnlyList<NativeWindowPlacement> placements) => true;
+        public bool ApplyBatch(IReadOnlyList<NativeWindowPlacement> placements, bool positionOnly) => true;
     }
 
     private sealed class FakeWatcher : ISettingsWatcher

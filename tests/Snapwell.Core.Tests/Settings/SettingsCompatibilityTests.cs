@@ -30,12 +30,12 @@ public sealed class SettingsCompatibilityTests : IDisposable
     }
 
     [Theory]
-    [InlineData("{\"Hotkeys\":{}}", true, 6)]
-    [InlineData("{\"SchemaVersion\":1,\"Hotkeys\":{}}", true, 6)]
-    [InlineData("{\"SchemaVersion\":2,\"Hotkeys\":{}}", false, 5)]
-    [InlineData("{\"SchemaVersion\":1,\"Hotkeys\":{\"LeftHalf\":{\"Modifiers\":\"Control, Alt\",\"VirtualKey\":32}}}", false, 6)]
-    [InlineData("{\"SchemaVersion\":1,\"Hotkeys\":null}", true, 22)]
-    [InlineData("{\"SchemaVersion\":2,\"Hotkeys\":null}", true, 22)]
+    [InlineData("{\"Hotkeys\":{}}", true, 10)]
+    [InlineData("{\"SchemaVersion\":1,\"Hotkeys\":{}}", true, 10)]
+    [InlineData("{\"SchemaVersion\":2,\"Hotkeys\":{}}", false, 9)]
+    [InlineData("{\"SchemaVersion\":1,\"Hotkeys\":{\"LeftHalf\":{\"Modifiers\":\"Control, Alt\",\"VirtualKey\":32}}}", false, 10)]
+    [InlineData("{\"SchemaVersion\":1,\"Hotkeys\":null}", true, 26)]
+    [InlineData("{\"SchemaVersion\":2,\"Hotkeys\":null}", true, 26)]
     public void StoreAndImportMigrateOnlyOlderFilesWithoutCreatingConflicts(string json, bool launcher, int count)
     {
         File.WriteAllText(SettingsPath, json);
@@ -74,7 +74,8 @@ public sealed class SettingsCompatibilityTests : IDisposable
 
         store.Save(stored);
         using var document = JsonDocument.Parse(File.ReadAllText(SettingsPath));
-        Assert.Equal(4, document.RootElement.GetProperty("SchemaVersion").GetInt32());
+        Assert.Equal(PortableSettings.CurrentSchemaVersion,
+            document.RootElement.GetProperty("SchemaVersion").GetInt32());
     }
 
     [Theory]
@@ -82,7 +83,8 @@ public sealed class SettingsCompatibilityTests : IDisposable
     [InlineData(2, false, false)]
     [InlineData(3, false, true)]
     [InlineData(4, false, true)]
-    [InlineData(5, true, true)]
+    [InlineData(5, false, true)]
+    [InlineData(6, true, true)]
     [InlineData(999999999999, true, true)]
     public void FutureVersionsUseEachStoresCurrentVersion(long version, bool portableFuture, bool deviceFuture)
     {

@@ -15,6 +15,17 @@
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
             <Setter Property="VerticalContentAlignment" Value="Stretch" />
         </Style>
+        <Style x:Key="ChipButtonStyle" TargetType="Button" BasedOn="{StaticResource SnapwellButtonStyle}">
+            <Setter Property="Padding" Value="12,5" />
+            <Setter Property="FontSize" Value="13" />
+        </Style>
+        <Style x:Key="SelectedChipButtonStyle" TargetType="Button" BasedOn="{StaticResource SnapwellButtonStyle}">
+            <Setter Property="Padding" Value="11,4" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Foreground" Value="{ThemeResource SnapwellInkBrush}" />
+            <Setter Property="BorderBrush" Value="{ThemeResource SnapwellInkBrush}" />
+            <Setter Property="BorderThickness" Value="2" />
+        </Style>
         <Style x:Key="SelectedFeelCardButtonStyle" TargetType="Button" BasedOn="{StaticResource FeelCardButtonStyle}">
             <Setter Property="Padding" Value="11" />
             <Setter Property="BorderBrush" Value="{ThemeResource SnapwellInkBrush}" />
@@ -24,7 +35,7 @@
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
         <StackPanel x:Name="Editor" Padding="32,28,32,40" HorizontalAlignment="Stretch">
             <TextBlock Text="操作感" Style="{StaticResource SnapwellPageTitleStyle}" />
-            <TextBlock Text="投げたときの動き方です。言葉で選ぶと、質量・振動数・減衰比が決まります。曲線は手を離してから止まるまでの位置です。"
+            <TextBlock Text="投げたときの動き方です。4 つはプリセットで、選ぶと 5 つの値がその値になります。値を変えると「カスタム」になります。曲線は手を離してから止まるまでの位置です。"
                        Style="{StaticResource SnapwellLeadTextStyle}" />
 
             <ComboBox x:Name="FeelBox" Header="物理モデルのプリセット" HorizontalAlignment="Stretch"
@@ -124,7 +135,66 @@
                 </Button>
             </Grid>
 
-            <TextBlock Text="詳細" Style="{StaticResource SnapwellGroupTitleStyle}" />
+            <TextBlock Text="試す" Style="{StaticResource SnapwellGroupTitleStyle}" />
+            <Border Style="{StaticResource SnapwellRowsBorderStyle}" Padding="12">
+                <StackPanel Spacing="10">
+                    <Canvas x:Name="TrialStage" Height="260" HorizontalAlignment="Stretch"
+                            Background="{ThemeResource SnapwellWallBrush}" SizeChanged="TrialStage_SizeChanged"
+                            PointerPressed="TrialStage_PointerPressed" PointerMoved="TrialStage_PointerMoved"
+                            PointerReleased="TrialStage_PointerReleased"
+                            PointerCanceled="TrialStage_PointerCanceled"
+                            PointerCaptureLost="TrialStage_PointerCanceled">
+                        <Border x:Name="TrialCard" IsTabStop="True" CornerRadius="8"
+                                BorderThickness="1" Background="{ThemeResource SnapwellSurfaceBrush}"
+                                BorderBrush="{ThemeResource SnapwellBorderStrongBrush}"
+                                AutomationProperties.Name="試すウィンドウ。タイトルバーをドラッグして投げる。矢印キーで投げる"
+                                RenderTransformOrigin="0.5,0.5" KeyDown="TrialCard_KeyDown">
+                            <Border.RenderTransform>
+                                <CompositeTransform x:Name="TrialCardTransform" />
+                            </Border.RenderTransform>
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="30" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+                                <StackPanel Orientation="Horizontal" Spacing="8" Padding="10,0,0,0"
+                                            VerticalAlignment="Center">
+                                    <Border Width="12" Height="12" CornerRadius="3"
+                                            Background="{ThemeResource SnapwellMutedBrush}" />
+                                    <TextBlock Text="Window" FontSize="12"
+                                               Foreground="{ThemeResource SnapwellTextBrush}" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" Spacing="7" Padding="12,10,12,0">
+                                    <Border Height="7" CornerRadius="4" HorizontalAlignment="Left" Width="80"
+                                            Background="{ThemeResource SnapwellSkeletonBrush}" />
+                                    <Border Height="7" CornerRadius="4" HorizontalAlignment="Left" Width="56"
+                                            Background="{ThemeResource SnapwellSkeletonBrush}" />
+                                    <Border Height="7" CornerRadius="4" HorizontalAlignment="Left" Width="68"
+                                            Background="{ThemeResource SnapwellSkeletonBrush}" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </Canvas>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button x:Name="TrialZonesButton" Content="区画" Click="TrialMode_Click" Tag="Zones"
+                                Style="{StaticResource SelectedChipButtonStyle}" />
+                        <Button x:Name="TrialCornersButton" Content="四隅" Click="TrialMode_Click" Tag="Corners"
+                                Style="{StaticResource ChipButtonStyle}" />
+                        <Button x:Name="TrialThrowButton" Content="ランダムに投げる" Click="TrialThrow_Click"
+                                Style="{StaticResource ChipButtonStyle}" />
+                    </StackPanel>
+                    <TextBlock Text="ウィンドウのタイトルバーをつかんで投げます（本体をつかんでも動きません）。いまの 5 つの値で動き、止まる先は本体と同じ規則で決まります（離した速さが 150 px/s 未満だと吸着しません。区画では、中央から上へ強く投げると最大化になります）"
+                               Style="{StaticResource SnapwellRowDescriptionStyle}" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+
+            <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                <TextBlock Text="詳細" Style="{StaticResource SnapwellGroupTitleStyle}" VerticalAlignment="Center" />
+                <TextBlock x:Name="FeelStateText" Style="{StaticResource SnapwellMonoTextStyle}"
+                           VerticalAlignment="Center" />
+                <Button x:Name="FeelResetButton" Content="プリセットに戻す" Click="FeelReset_Click"
+                        Visibility="Collapsed" />
+            </StackPanel>
             <Border Style="{StaticResource SnapwellRowsBorderStyle}">
                 <StackPanel>
                     <Grid Style="{StaticResource SnapwellRowGridStyle}">
@@ -151,11 +221,18 @@
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
                             <TextBlock Text="質量 m" Style="{StaticResource SnapwellRowTitleStyle}" />
-                            <TextBlock Text="重いほど手から遅れ、遠くまで滑ります"
+                            <TextBlock Text="feel の磁石場では力が質量に比例するため、吸着の動きは変わりません。導かれる値の k と c に効きます"
                                        Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
-                        <TextBlock x:Name="MassValueText" Grid.Column="1" VerticalAlignment="Center"
-                                   Style="{StaticResource SnapwellMonoTextStyle}" />
+                        <StackPanel x:Name="MassPanel" Grid.Column="1" Orientation="Horizontal" Spacing="12"
+                                    VerticalAlignment="Center">
+                            <Slider x:Name="MassSlider" Width="200" Minimum="0" Maximum="1000"
+                                    AutomationProperties.Name="質量 m（スライダー）" />
+                            <NumberBox x:Name="MassBox" Width="130" Minimum="0.15" Maximum="8"
+                                       SmallChange="0.05" LargeChange="0.5"
+                                       SpinButtonPlacementMode="Compact" AutomationProperties.Name="質量 m"
+                                       ValidationMode="InvalidInputOverwritten" />
+                        </StackPanel>
                     </Grid>
                     <Border Style="{StaticResource SnapwellRowDividerStyle}" />
                     <Grid Style="{StaticResource SnapwellRowGridStyle}">
@@ -168,8 +245,15 @@
                             <TextBlock Text="大きいほど素早く吸着します"
                                        Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
-                        <TextBlock x:Name="FrequencyValueText" Grid.Column="1" VerticalAlignment="Center"
-                                   Style="{StaticResource SnapwellMonoTextStyle}" />
+                        <StackPanel x:Name="FrequencyPanel" Grid.Column="1" Orientation="Horizontal" Spacing="12"
+                                    VerticalAlignment="Center">
+                            <Slider x:Name="FrequencySlider" Width="200" Minimum="0" Maximum="1000"
+                                    AutomationProperties.Name="固有振動数 f (Hz)（スライダー）" />
+                            <NumberBox x:Name="FrequencyBox" Width="130" Minimum="0.4" Maximum="7"
+                                       SmallChange="0.05" LargeChange="0.5"
+                                       SpinButtonPlacementMode="Compact" AutomationProperties.Name="固有振動数 f (Hz)"
+                                       ValidationMode="InvalidInputOverwritten" />
+                        </StackPanel>
                     </Grid>
                     <Border Style="{StaticResource SnapwellRowDividerStyle}" />
                     <Grid Style="{StaticResource SnapwellRowGridStyle}">
@@ -182,36 +266,36 @@
                             <TextBlock Text="1 に近いほど行き過ぎません"
                                        Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
-                        <TextBlock x:Name="DampingRatioValueText" Grid.Column="1" VerticalAlignment="Center"
-                                   Style="{StaticResource SnapwellMonoTextStyle}" />
+                        <StackPanel x:Name="DampingRatioPanel" Grid.Column="1" Orientation="Horizontal" Spacing="12"
+                                    VerticalAlignment="Center">
+                            <Slider x:Name="DampingRatioSlider" Width="200" Minimum="0" Maximum="1000"
+                                    AutomationProperties.Name="減衰比 ζ（スライダー）" />
+                            <NumberBox x:Name="DampingRatioBox" Width="130" Minimum="0.1" Maximum="1.6"
+                                       SmallChange="0.01" LargeChange="0.1"
+                                       SpinButtonPlacementMode="Compact" AutomationProperties.Name="減衰比 ζ"
+                                       ValidationMode="InvalidInputOverwritten" />
+                        </StackPanel>
                     </Grid>
                     <Border Style="{StaticResource SnapwellRowDividerStyle}" />
 
-                    <!-- デモ状態 (未実装) -->
                     <Grid Style="{StaticResource SnapwellRowGridStyle}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
-                            <Grid ColumnSpacing="6" HorizontalAlignment="Left">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="磁石の強さ" Style="{StaticResource SnapwellRowTitleStyle}" />
-                                <Border Grid.Column="1" Style="{StaticResource SnapwellTagPendingStyle}">
-                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellTagPendingTextStyle}" />
-                                </Border>
-                            </Grid>
-                            <TextBlock Text="区画の近くで吸い寄せる力" Style="{StaticResource SnapwellRowDescriptionStyle}" />
+                            <TextBlock Text="磁石の強さ" Style="{StaticResource SnapwellRowTitleStyle}" />
+                            <TextBlock Text="停止点へ吸い寄せる力。大きいほど強く引きます (0〜2)" Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
-                        <TextBlock
-                            Text="0.6"
-                            Style="{StaticResource SnapwellMonoTextStyle}"
-                            Grid.Column="1"
-                            VerticalAlignment="Center"
-                            FontSize="14" />
+                        <StackPanel x:Name="MagnetStrengthPanel" Grid.Column="1" Orientation="Horizontal" Spacing="12"
+                                    VerticalAlignment="Center">
+                            <Slider x:Name="MagnetStrengthSlider" Width="200" Minimum="0" Maximum="1000"
+                                    AutomationProperties.Name="磁石の強さ（スライダー）" />
+                            <NumberBox x:Name="MagnetStrengthBox" Width="130" Minimum="0" Maximum="2"
+                                       SmallChange="0.05" LargeChange="0.1"
+                                       SpinButtonPlacementMode="Compact" AutomationProperties.Name="磁石の強さ"
+                                       ValidationMode="InvalidInputOverwritten" />
+                        </StackPanel>
                     </Grid>
                     <Border Style="{StaticResource SnapwellRowDividerStyle}" />
                     <Grid Style="{StaticResource SnapwellRowGridStyle}">
@@ -220,27 +304,20 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
-                            <Grid ColumnSpacing="6" HorizontalAlignment="Left">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="吸着半径" Style="{StaticResource SnapwellRowTitleStyle}" />
-                                <Border Grid.Column="1" Style="{StaticResource SnapwellTagPendingStyle}">
-                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellTagPendingTextStyle}" />
-                                </Border>
-                            </Grid>
-                            <TextBlock Text="この距離に入ると吸着します" Style="{StaticResource SnapwellRowDescriptionStyle}" />
+                            <TextBlock Text="吸着半径" Style="{StaticResource SnapwellRowTitleStyle}" />
+                            <TextBlock Text="強く吸い込まれる距離 (px)" Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
-                        <TextBlock
-                            Text="28 px"
-                            Style="{StaticResource SnapwellMonoTextStyle}"
-                            Grid.Column="1"
-                            VerticalAlignment="Center"
-                            FontSize="14" />
+                        <StackPanel x:Name="SnapRadiusPanel" Grid.Column="1" Orientation="Horizontal" Spacing="12"
+                                    VerticalAlignment="Center">
+                            <Slider x:Name="SnapRadiusSlider" Width="200" Minimum="0" Maximum="1000"
+                                    AutomationProperties.Name="吸着半径 (px)（スライダー）" />
+                            <NumberBox x:Name="SnapRadiusBox" Width="130" Minimum="8" Maximum="96"
+                                       SmallChange="1" LargeChange="8"
+                                       SpinButtonPlacementMode="Compact" AutomationProperties.Name="吸着半径 (px)"
+                                       ValidationMode="InvalidInputOverwritten" />
+                        </StackPanel>
                     </Grid>
                     <Border Style="{StaticResource SnapwellRowDividerStyle}" />
-                    <!-- デモ状態 (未実装) ここまで -->
                     <Grid Style="{StaticResource SnapwellRowGridStyle}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />

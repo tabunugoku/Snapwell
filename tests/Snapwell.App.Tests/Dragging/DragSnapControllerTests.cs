@@ -181,7 +181,7 @@ public sealed class DragSnapControllerTests
         neighbors.Clear();
         for (uint time = 0; time <= 80; time += 20)
         {
-            fixture.Controller.Handle(new MouseMoved(50 + (int)time / 2, 450, time));
+            fixture.Controller.Handle(new MouseMoved(50 + (int)(time * 12 / 10), 450, time));
         }
 
         var expected = new PixelRect(608, 450, 100, 100);
@@ -195,7 +195,7 @@ public sealed class DragSnapControllerTests
             Assert.Empty(fixture.Preview.Shown);
         }
 
-        fixture.Inspector.Window = fixture.Inspector.Window with { VisualBounds = new(490, 450, 100, 100) };
+        fixture.Inspector.Window = fixture.Inspector.Window with { VisualBounds = new(546, 450, 100, 100) };
         fixture.Controller.Handle(new MoveSizeEnded(1, 80));
         Assert.Equal(new nint[] { 1 }, calls);
         var request = Assert.Single(fixture.Motion.Requests);

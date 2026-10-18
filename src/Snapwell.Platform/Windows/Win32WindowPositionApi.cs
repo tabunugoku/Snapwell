@@ -23,10 +23,13 @@ public sealed class Win32WindowPositionApi : IWindowPositionApi
     /// <summary>SWP_ASYNCWINDOWPOS を付けず、位置だけなら SWP_NOSIZE を付ける。</summary>
     public bool SetBounds(nint handle, PixelRect bounds, bool positionOnly) =>
         PInvoke.SetWindowPos(new HWND(handle), default, bounds.X, bounds.Y, bounds.Width, bounds.Height,
-            PlacementFlags | (positionOnly ? SET_WINDOW_POS_FLAGS.SWP_NOSIZE : 0));
+            GetPlacementFlags(positionOnly));
+
+    internal static SET_WINDOW_POS_FLAGS GetPlacementFlags(bool positionOnly) =>
+        PlacementFlags | (positionOnly ? SET_WINDOW_POS_FLAGS.SWP_NOSIZE : 0);
 
     /// <summary>DeferWindowPos が失敗した場合は無効になったバッチを使わない。</summary>
-    public bool ApplyBatch(IReadOnlyList<NativeWindowPlacement> placements)
+    public bool ApplyBatch(IReadOnlyList<NativeWindowPlacement> placements, bool positionOnly)
     {
         if (placements.Count == 0)
         {
@@ -43,7 +46,7 @@ public sealed class Win32WindowPositionApi : IWindowPositionApi
         {
             var bounds = placement.WindowBounds;
             batch = PInvoke.DeferWindowPos(batch, new HWND(placement.Handle), default,
-                bounds.X, bounds.Y, bounds.Width, bounds.Height, PlacementFlags);
+                bounds.X, bounds.Y, bounds.Width, bounds.Height, GetPlacementFlags(positionOnly));
             if (batch.IsNull)
             {
                 return false;

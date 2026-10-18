@@ -521,10 +521,12 @@ public sealed class ResidentRuntimeTests
     {
         using var fixture = new OverlayFixture(withLongPress: true);
         fixture.CaptionHitTest = (_, _) => moved;
-        fixture.Runtime.Handle(new MouseButton(MouseButtonKind.Left, true, 100, 100, 0));
+        // 上端の帯の外（クライアント領域）を押す。
+        fixture.Cursor = new(100, 250);
+        fixture.Runtime.Handle(new MouseButton(MouseButtonKind.Left, true, 100, 250, 0));
         if (moved)
         {
-            fixture.Cursor = new(107, 100);
+            fixture.Cursor = new(107, 250);
         }
 
         fixture.Timer.Advance(450);
@@ -928,7 +930,8 @@ public sealed class ResidentRuntimeTests
         }
 
         public bool SetBounds(nint handle, PixelRect bounds, bool positionOnly) => throw new NotSupportedException();
-        public bool ApplyBatch(IReadOnlyList<NativeWindowPlacement> placements) => throw new NotSupportedException();
+        public bool ApplyBatch(IReadOnlyList<NativeWindowPlacement> placements, bool positionOnly) =>
+            throw new NotSupportedException();
         public void Dispose()
         {
             Continue.Set();
@@ -989,6 +992,6 @@ public sealed class ResidentRuntimeTests
     {
         public bool Restore(nint handle) => true;
         public bool SetBounds(nint handle, PixelRect bounds, bool positionOnly) => true;
-        public bool ApplyBatch(IReadOnlyList<NativeWindowPlacement> placements) => true;
+        public bool ApplyBatch(IReadOnlyList<NativeWindowPlacement> placements, bool positionOnly) => true;
     }
 }

@@ -13,4 +13,5 @@ public enum WindowCommand
     OpenLauncher,
     ArrangeGrid, ArrangeColumns, ArrangeRows, ArrangeMainAndStack,
     ArrangeAllMonitors,
+    SnapAdjacentLeft, SnapAdjacentRight, SnapAdjacentUp, SnapAdjacentDown,
 }
