@@ -219,6 +219,20 @@ public sealed class SpringSwitchTests
         Assert.Equal(towardOn ? Travel : 0, sw.Position);
     }
 
+    /// <summary>入力面の中で離したときだけタップとして確定する（上下に退避して離したら確定しない）。</summary>
+    [Theory]
+    [InlineData(20, 10, true)]
+    [InlineData(0, 0, true)]
+    [InlineData(40, 20, true)]
+    [InlineData(20, -1, false)]
+    [InlineData(20, 21, false)]
+    [InlineData(-1, 10, false)]
+    [InlineData(41, 10, false)]
+    public void TapCommitsOnlyInsideTheSurface(double x, double y, bool expected)
+    {
+        Assert.Equal(expected, SpringSwitch.IsTapRelease(x, y, 40, 20));
+    }
+
     /// <summary>握りの取り消しは状態を変えず、元の側へ静止する。</summary>
     [Theory]
     [InlineData(false)]

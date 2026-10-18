@@ -64,6 +64,10 @@ public sealed class SpringSwitch
     /// <summary>握っておらず、目標で静止していると見なせるか。</summary>
     public bool IsSettled => !IsHeld && Math.Abs(Velocity) < RestVelocity && Math.Abs(Position - _target) < RestPosition;
 
+    /// <summary>タップとして確定してよいか。押した点から離れて入力面の外で離したときは取り消す。</summary>
+    public static bool IsTapRelease(double x, double y, double width, double height) =>
+        x >= 0 && x <= width && y >= 0 && y <= height;
+
     /// <summary>状態を反対側に切り替える。位置と速度は保つ。</summary>
     public void Toggle() => Set(!IsOn);
 
