@@ -66,8 +66,8 @@ internal sealed unsafe partial class GdiOverlayText : IDisposable
             return;
         }
 
-        // 小さい文字は静的パネル内だけにあるため、追加の描画はキャッシュ作成時に限られる。
-        var mask = text.Size <= 11.5 ? SupersampledMask(text, color) : Rasterize(text, color);
+        // 文字はすべて 4 倍解像度で描いて縮小する (区画のサイズ表示も同じ。短い文字列のため差分描画でも軽い)。
+        var mask = SupersampledMask(text, color);
         OverlayPainter.Composite(frame, mask, bounds.X - area.X, bounds.Y - area.Y);
     }
 
