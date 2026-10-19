@@ -499,23 +499,6 @@ public sealed class SelectedWindowLauncherTests
         Assert.Equal((nint)2, Assert.Single(fixture.Motion.Requests).Handle);
     }
 
-    /// <summary>長押しで開いた元の左ボタンを離すまで、キーから整列しない。</summary>
-    [Fact]
-    public void KeyboardArrangementWaitsForOpeningMousePressToBeReleased()
-    {
-        using var fixture = new Fixture();
-        fixture.Launcher.HandleGlobalPointer(new(MouseButtonKind.Left, true, -1700, 100, 1));
-        fixture.Launcher.Open(1);
-        fixture.Launcher.Handle(new((int)LauncherWindowInput.Toggle));
-        fixture.Launcher.Handle(new((int)LauncherWindowInput.Grid));
-        Assert.True(fixture.Launcher.IsOpen);
-        Assert.Empty(fixture.Motion.Requests);
-        fixture.Launcher.HandleGlobalPointer(new(MouseButtonKind.Left, false, -1700, 100, 2));
-        fixture.Launcher.Handle(new((int)LauncherWindowInput.Grid));
-        Assert.False(fixture.Launcher.IsOpen);
-        Assert.Single(fixture.Motion.Requests);
-    }
-
     /// <summary>描画にチェックと件数が入り、連続トグルでも全画面を作り直さない。</summary>
     [Fact]
     public void SelectionPaintingUpdatesCheckAndCountUsingPartialRasterRegions()

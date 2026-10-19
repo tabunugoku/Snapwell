@@ -57,17 +57,12 @@ internal static class Program
                     new Win32MotionPreference(() => settings.ReduceMotion));
                 var previewSurface = new OverlaySession(interactive: false, diagnostic: LauncherLog.Write);
                 var launcherSurface = new OverlaySession(interactive: true, diagnostic: LauncherLog.Write);
-                var ringSurface = new OverlaySession(interactive: false, diagnostic: LauncherLog.Write);
                 var preview = new ZonePreview(previewSurface, monitors, settings: () => settings);
                 var tracking = new MouseTrackingVotes(value => hooks.MouseTrackingEnabled = value);
                 var neighbors = new NeighborWindowSource(inspector, monitors, (uint)Environment.ProcessId);
                 var drag = new DragSnapController(inspector, monitors, motion, () => settings,
                     tracking.SetDrag, (uint)Environment.ProcessId,
                     preview: preview, cursorPosition: CursorPosition, neighbors: neighbors.Snapshot);
-                var longPress = new LongPressDetector(inspector, monitors, Win32CaptionHitTest.IsCaption,
-                    () => PInvoke.GetCursorPos(out var point) ? new Vec2(point.X, point.Y) : null,
-                    tracking.SetLongPress, settings: () => settings);
-                var holdRing = new HoldRing(longPress, ringSurface, monitors);
                 LauncherController? launcher = null;
                 var hotkeys = new HotkeyCommandExecutor(inspector, monitors, motion, position, () => settings,
                     enabled, toggle, (uint)Environment.ProcessId, () => launcher?.Open(), neighbors: neighbors.Snapshot);
@@ -78,8 +73,7 @@ internal static class Program
                     {
                         previewSurface.SetEnabled(value);
                         launcherSurface.SetEnabled(value);
-                        ringSurface.SetEnabled(value);
-                    }, [holdRing, ringSurface, previewSurface, launcherSurface], longPress,
+                    }, [previewSurface, launcherSurface],
                     new ForegroundTargetTracker(inspector, (uint)Environment.ProcessId),
                     new CornerWindowController(corners, inspector, () => settings, (uint)Environment.ProcessId, log),
                     new ResizeSnapController(inspector, monitors, motion, () => settings,
