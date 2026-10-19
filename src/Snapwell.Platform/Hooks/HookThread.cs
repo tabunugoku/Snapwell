@@ -17,8 +17,8 @@ public sealed class HookThread : IDisposable
     private readonly object _lifecycle = new();
     private readonly IHookApi _api;
     private readonly HotkeyMatcher _matcher;
-    private readonly HookEventBuffer _buffer;
-    private readonly Channel<HookEvent> _events;
+    private readonly HookInputBuffer _buffer;
+    private readonly HookEventDelivery _events;
     private readonly AutoResetEvent _wake = new(false);
     private readonly ManualResetEventSlim _ready = new(false);
     private Thread? _thread;
@@ -31,7 +31,7 @@ public sealed class HookThread : IDisposable
     private bool _disposed;
     private bool _stopped;
 
-    /// <summary>API は Start まで呼ばず、容量に上限を付けて入力を配送する。</summary>
+    /// <summary>API は Start まで呼ばず、表示・破棄通知に上限を付けて入力を配送する。</summary>
     public HookThread(HotkeyMatcher matcher, int capacity = 1024)
         : this(matcher, capacity, new Win32HookApi())
     {
@@ -42,17 +42,12 @@ public sealed class HookThread : IDisposable
         ArgumentOutOfRangeException.ThrowIfLessThan(capacity, 1);
         _matcher = matcher;
         _api = api;
-        _buffer = new HookEventBuffer(capacity);
-        _events = Channel.CreateBounded<HookEvent>(new BoundedChannelOptions(capacity)
-        {
-            FullMode = BoundedChannelFullMode.DropOldest,
-            SingleWriter = true,
-            AllowSynchronousContinuations = false,
-        });
+        _buffer = new HookInputBuffer(capacity);
+        _events = new HookEventDelivery(capacity);
     }
 
     /// <summary>コールバックとは別の配送スレッドから届くイベント。</summary>
-    public ChannelReader<HookEvent> Events => _events.Reader;
+    public ChannelReader<HookEvent> Events => _events;
 
     /// <summary>移動イベントを流すかどうか。ドラッグ中だけ有効にする。</summary>
     public bool MouseTrackingEnabled
@@ -130,7 +125,7 @@ public sealed class HookThread : IDisposable
         if (_thread is null)
         {
             _stopped = true;
-            _events.Writer.TryComplete();
+            _events.Complete();
             return true;
         }
 
@@ -238,7 +233,7 @@ public sealed class HookThread : IDisposable
                     Publish(remaining);
                 }
 
-                _events.Writer.TryComplete();
+                _events.Complete();
                 return;
             }
 
@@ -259,13 +254,15 @@ public sealed class HookThread : IDisposable
             RawHookKind.MouseMove => new MouseMoved(raw.X, raw.Y, raw.Time),
             _ => new KeyChord(raw.Detail),
         };
-        _events.Writer.TryWrite(value);
+        _events.Write(value);
     }
 
-    private void Enqueue(RawHookEvent value)
+    internal void Enqueue(RawHookEvent value)
     {
-        _buffer.Write(value);
-        _wake.Set();
+        if (_buffer.Write(value))
+        {
+            _wake.Set();
+        }
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
