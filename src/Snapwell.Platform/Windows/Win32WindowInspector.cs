@@ -15,6 +15,9 @@ public interface IWindowInspector
     /// <summary>閉じたハンドルやアクセス不能の場合は false を返す。</summary>
     bool TryInspect(nint handle, [NotNullWhen(true)] out WindowSnapshot? snapshot);
 
+    /// <summary>メッセージを送らずプロセス ID を返し、不明なら 0 を返す。</summary>
+    uint GetProcessId(nint handle) => 0;
+
     /// <summary>前面のウィンドウを返す。</summary>
     nint GetForegroundWindow();
 
@@ -31,6 +34,13 @@ public interface IWindowInspector
 /// <summary>公開 Win32 API でウィンドウを調査する。</summary>
 public sealed class Win32WindowInspector : IWindowInspector
 {
+    /// <summary>ウィンドウスレッドへメッセージを送らずプロセス ID だけを取得する。</summary>
+    public uint GetProcessId(nint handle)
+    {
+        PInvoke.GetWindowThreadProcessId(new HWND(handle), out var processId);
+        return processId;
+    }
+
     /// <summary>見た目の矩形を DWM から取得し、取得できない枠は補正しない。</summary>
     public unsafe bool TryInspect(nint handle, [NotNullWhen(true)] out WindowSnapshot? snapshot)
     {
