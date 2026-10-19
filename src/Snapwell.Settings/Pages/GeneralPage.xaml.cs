@@ -2,25 +2,20 @@ using System.Security;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Snapwell.Core.Settings;
-using Windows.Globalization.NumberFormatting;
 
 namespace Snapwell.Settings.Pages;
 
-/// <summary>自動起動の登録とタイトルバー長押しの設定を編集する。</summary>
+/// <summary>自動起動の登録を編集する。</summary>
 public sealed partial class GeneralPage : Page
 {
-    private readonly SettingsSession _session;
     private readonly AutoStart _autoStart;
     private bool _refreshing = true;
     private AutoStartState _lastState;
 
-    /// <summary>同じフォルダーに本体がある場合だけ自動起動を操作でき、長押し設定は編集中の値へ反映する画面を作る。</summary>
+    /// <summary>同じフォルダーに本体がある場合だけ自動起動を操作できる画面を作る。</summary>
     public GeneralPage(SettingsSession session)
     {
-        _session = session;
         InitializeComponent();
-        LongPressMillisecondsBox.NumberFormatter = new DecimalFormatter { FractionDigits = 0 };
-        RefreshLongPress();
 
         var executable = Path.Combine(AppContext.BaseDirectory, "Snapwell.exe");
         _autoStart = new(new RegistryRunKey(), executable);
@@ -61,46 +56,6 @@ public sealed partial class GeneralPage : Page
         {
             _refreshing = false;
         }
-    }
-
-    private void RefreshLongPress()
-    {
-        _refreshing = true;
-        try
-        {
-            var value = _session.Current;
-            LongPressMillisecondsBox.IsEnabled = !_session.IsReadOnly;
-            LongPressDistanceBox.IsEnabled = !_session.IsReadOnly;
-            LongPressMillisecondsBox.Value = value.LongPressMilliseconds;
-            LongPressDistanceBox.Value = value.LongPressDistance;
-        }
-        finally
-        {
-            _refreshing = false;
-        }
-    }
-
-    private void LongPressMilliseconds_ValueChanged(NumberBox sender, NumberBoxValueChangedEventArgs args)
-    {
-        if (_refreshing)
-        {
-            return;
-        }
-
-        var milliseconds = double.IsFinite(args.NewValue) ? (int)Math.Round(args.NewValue) : 0;
-        _session.Update(_session.Current with { LongPressMilliseconds = milliseconds });
-        RefreshLongPress();
-    }
-
-    private void LongPressDistance_ValueChanged(NumberBox sender, NumberBoxValueChangedEventArgs args)
-    {
-        if (_refreshing)
-        {
-            return;
-        }
-
-        _session.Update(_session.Current with { LongPressDistance = args.NewValue });
-        RefreshLongPress();
     }
 
     private void AutoStart_Toggled(object sender, RoutedEventArgs e)
