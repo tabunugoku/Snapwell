@@ -143,6 +143,19 @@ public sealed class LauncherControllerTests
         Assert.Empty(fixture.Presenter.Requests);
     }
 
+    /// <summary>ポップアップは、設定がオンのときだけランチャーの対象になる。</summary>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void PopupTargetOpensOnlyWhenSettingIsOn(bool movePopup)
+    {
+        using var fixture = new Fixture();
+        fixture.Options.MovePopupWindows = movePopup;
+        fixture.Inspector.Window = fixture.Inspector.Window with { Style = 0x80000000 };
+        fixture.Launcher.Open(1);
+        Assert.Equal(movePopup, fixture.Launcher.IsOpen);
+    }
+
     /// <summary>対象のモニターで開き、選択と Enter の配置を配送する。</summary>
     [Fact]
     public void OpenSelectAndAcceptRestoreNormalBindings()
