@@ -62,7 +62,6 @@
                                       VerticalAlignment="Center" AutomationProperties.Name="サインイン時に起動する"
                                       Toggled="AutoStart_Toggled" />
                     </Grid>
-                    <!-- デモ状態 (未実装) -->
                     <Border Style="{StaticResource SnapwellRowDividerStyle}" />
                     <Grid Style="{StaticResource SnapwellRowGridStyle}">
                         <Grid.ColumnDefinitions>
@@ -70,27 +69,20 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
-                            <Grid ColumnSpacing="6" HorizontalAlignment="Left">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="管理者として起動する" Style="{StaticResource SnapwellRowTitleStyle}" />
-                                <Border Grid.Column="1" Style="{StaticResource SnapwellTagPendingStyle}">
-                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellTagPendingTextStyle}" />
-                                </Border>
-                            </Grid>
+                            <TextBlock Text="管理者として起動する" Style="{StaticResource SnapwellRowTitleStyle}" />
                             <TextBlock
-                                Text="管理者権限で動くアプリのウィンドウも動かせます。タスク スケジューラに登録します"
+                                Text="管理者権限で動くアプリのウィンドウも動かせます。タスク スケジューラに登録します。Windows の確認画面が表示されます。次のサインインから有効です"
                                 Style="{StaticResource SnapwellRowDescriptionStyle}" />
+                            <TextBlock x:Name="AdminStartStatus" Visibility="Collapsed"
+                                       Style="{StaticResource SnapwellRowDescriptionStyle}"
+                                       Foreground="{ThemeResource SnapwellYellowTextBrush}" />
                         </StackPanel>
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <ToggleSwitch IsEnabled="False"
-                                Style="{StaticResource DemoSwitchStyle}"
-                                IsOn="False"
-                                AutomationProperties.Name="管理者として起動" />
-                        </StackPanel>
+                        <ToggleSwitch x:Name="AdminStartToggle" Grid.Column="1" OnContent="" OffContent="" MinWidth="0"
+                                      Style="{StaticResource SnapwellToggleSwitchStyle}"
+                                      VerticalAlignment="Center" AutomationProperties.Name="管理者として起動する"
+                                      Toggled="AdminStart_Toggled" />
                     </Grid>
+                    <!-- デモ状態 (未実装) -->
                     <Border Style="{StaticResource SnapwellRowDividerStyle}" />
                     <Grid Style="{StaticResource SnapwellRowGridStyle}">
                         <Grid.ColumnDefinitions>

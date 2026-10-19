@@ -1,5 +1,6 @@
 using System.Security.Principal;
 using System.Threading.Channels;
+using Snapwell.Core.Settings;
 using Snapwell.Platform.Hooks;
 using Snapwell.Platform.SystemSettings;
 using Windows.Win32;
@@ -8,23 +9,22 @@ using Windows.Win32.UI.WindowsAndMessaging;
 namespace Snapwell.App.Lifecycle;
 
 /// <summary>所有権ではなく名前付きオブジェクトの寿命で二重起動を防ぐ。</summary>
-internal sealed class UserInstanceMutex : ISingleInstance
+internal sealed class UserInstanceMutex(
+    Func<string>? sidProvider = null, Func<string, (Mutex Mutex, bool CreatedNew)>? create = null) : ISingleInstance
 {
-    private Mutex? _mutex;
+    private SingleInstance? _mutex;
 
     public bool TryAcquire()
     {
-        using var identity = WindowsIdentity.GetCurrent();
-        var sid = identity.User?.Value ?? throw new InvalidOperationException("ユーザーの SID を取得できない。");
-        var mutex = new Mutex(false, @"Local\Snapwell." + sid, out var createdNew);
-        if (!createdNew)
-        {
-            mutex.Dispose();
-            return false;
-        }
+        var sid = (sidProvider ?? CurrentSid)();
+        _mutex = SingleInstance.TryAcquireNamed(@"Local\Snapwell." + sid, create);
+        return _mutex is not null;
+    }
 
-        _mutex = mutex;
-        return true;
+    private static string CurrentSid()
+    {
+        using var identity = WindowsIdentity.GetCurrent();
+        return identity.User?.Value ?? throw new InvalidOperationException("ユーザーの SID を取得できない。");
     }
 
     public void Release() => Interlocked.Exchange(ref _mutex, null)?.Dispose();
