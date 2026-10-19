@@ -19,7 +19,7 @@ public sealed unsafe class TaskSchedulerService : IAdminTaskService
     {
         using var identity = WindowsIdentity.GetCurrent();
         _registration = new(new SchedulerStore(),
-            identity.User?.Value ?? throw new InvalidOperationException("SID を取得できない。"));
+            identity.User?.Value ?? throw new InvalidOperationException("SID を取得できない。"), identity.Name);
     }
 
     /// <summary>現在のタスクの実行先を読む。</summary>
