@@ -53,7 +53,7 @@ public sealed class CornerWindowControllerTests
     private sealed class CornerApi : ICornerApi
     {
         internal List<CornerStyle> Calls { get; } = [];
-        public CornerState? Read(nint handle) => new((long)handle, 123, 1, CornerStyle.RoundSmall);
+        public CornerState? Read(nint handle) => new((long)handle, 123, 1, CornerStyle.RoundSmall, 10, "TestWindow");
         public bool IsWindow(nint handle) => true;
         public bool TrySet(nint handle, CornerStyle style) { Calls.Add(style); return true; }
     }

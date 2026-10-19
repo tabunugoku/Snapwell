@@ -4,6 +4,60 @@ namespace Snapwell.Platform.Tests.Dwm;
 
 public sealed class CornerStylerTests
 {
+    [Theory]
+    [InlineData(11u, "OriginalClass")]
+    [InlineData(10u, "ReplacementClass")]
+    public void SameProcessReusedHandleWithDifferentWindowIdentityIsDiscarded(uint threadId, string className)
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "Snapwell-corner-identity-" + Guid.NewGuid());
+        Directory.CreateDirectory(directory);
+        try
+        {
+            var path = Path.Combine(directory, "corners.json");
+            var api = new FakeCornerApi();
+            new CornerStyler(api, path).Apply(1, CornerStyle.Round);
+            api.ThreadId = threadId;
+            api.ClassName = className;
+            var messages = new List<string>();
+            var restarted = new CornerStyler(api, path, messages.Add);
+            restarted.RestoreAll();
+            Assert.Equal(CornerStyle.Round, api.Value);
+            Assert.Equal(1, api.SetCount);
+            Assert.Equal(0, restarted.TrackedCount);
+            Assert.Equal(0, new CornerStyler(api, path).TrackedCount);
+            Assert.Single(messages);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void LegacyBackupWithoutWindowIdentityIsReadAndDiscardedWithoutRestoring()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "Snapwell-corner-legacy-" + Guid.NewGuid());
+        Directory.CreateDirectory(directory);
+        try
+        {
+            var path = Path.Combine(directory, "corners.json");
+            File.WriteAllText(path, """
+                [{"Handle":1,"ProcessId":123,"ProcessStartTicks":1,"Original":1}]
+                """);
+            var api = new FakeCornerApi();
+            var messages = new List<string>();
+            var restarted = new CornerStyler(api, path, messages.Add);
+            restarted.RestoreAll();
+            Assert.Equal(0, api.SetCount);
+            Assert.Equal(0, new CornerStyler(api, path).TrackedCount);
+            Assert.Single(messages);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
     [Fact]
     public void BackupWriteFailureNeverChangesWindowEvenOnRetry()
     {
@@ -114,11 +168,16 @@ public sealed class CornerStylerTests
         internal bool Success = true;
         internal bool Exists = true;
         internal long Generation = 1;
+        internal uint ThreadId = 10;
+        internal string ClassName = "OriginalClass";
+        internal int SetCount;
         internal CornerStyle Value = CornerStyle.RoundSmall;
-        public CornerState? Read(nint handle) => Exists ? new((long)handle, 123, Generation, Value) : null;
+        public CornerState? Read(nint handle) => Exists
+            ? new((long)handle, 123, Generation, Value, ThreadId, ClassName) : null;
         public bool IsWindow(nint handle) => Exists;
         public bool TrySet(nint handle, CornerStyle style)
         {
+            SetCount++;
             if (Success)
             {
                 Value = style;
