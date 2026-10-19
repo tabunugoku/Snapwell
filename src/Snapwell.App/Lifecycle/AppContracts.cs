@@ -1,6 +1,5 @@
 using System.Threading.Channels;
 using Snapwell.Core.Settings;
-using Snapwell.Core.Tray;
 using Snapwell.Platform.Hooks;
 
 namespace Snapwell.App.Lifecycle;
@@ -62,7 +61,7 @@ internal interface IAppRuntime : IDisposable
 
 /// <summary>トレイに表示する状態のスナップショット。</summary>
 internal sealed record TrayState(bool Enabled, bool DisableStandardSnap, string? Status = null,
-    bool LauncherAvailable = false, IReadOnlyDictionary<TrayMenuCommand, IReadOnlyList<string>>? Shortcuts = null);
+    bool LauncherAvailable = false);
 
 /// <summary>メインスレッドのトレイとメッセージループ。</summary>
 internal interface ITrayService

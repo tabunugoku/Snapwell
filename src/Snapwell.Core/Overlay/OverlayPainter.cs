@@ -46,7 +46,28 @@ public sealed record OverlayPalette(OverlayColor Dim, OverlayColor Cell, Overlay
     private static readonly OverlayPalette _dark = new(new(25, 25, 24, 128), new(255, 255, 255, 13),
         new(255, 255, 255, 23), new(31, 108, 159, 71), new(140, 203, 242, 153), new(140, 203, 242, 255),
         new(32, 32, 32, 255), new(37, 37, 36, 255), new(255, 255, 255, 20), new(255, 255, 255, 36),
-        new(230, 230, 227, 255), new(155, 154, 151, 255), new(242, 242, 240, 255));
+        new(230, 230, 227, 255), new(155, 154, 151, 255), new(242, 242, 240, 255))
+    {
+        GreenBackground = new(52, 101, 56, 77),
+        GreenText = new(166, 209, 169, 255),
+        YellowBackground = new(149, 100, 0, 71),
+        YellowText = new(232, 196, 106, 255),
+        RedBackground = new(159, 47, 45, 71),
+        RedText = new(242, 167, 165, 255),
+    };
+
+    /// <summary>有効を表すタグの背景色。</summary>
+    public OverlayColor GreenBackground { get; init; } = new(237, 243, 236, 255);
+    /// <summary>有効を表すタグの文字色。</summary>
+    public OverlayColor GreenText { get; init; } = new(52, 101, 56, 255);
+    /// <summary>一時停止を表すタグの背景色。</summary>
+    public OverlayColor YellowBackground { get; init; } = new(251, 243, 219, 255);
+    /// <summary>一時停止を表すタグの文字色。</summary>
+    public OverlayColor YellowText { get; init; } = new(149, 100, 0, 255);
+    /// <summary>異常を表すタグの背景色。</summary>
+    public OverlayColor RedBackground { get; init; } = new(253, 235, 236, 255);
+    /// <summary>異常を表すアイコンとタグの文字色。</summary>
+    public OverlayColor RedText { get; init; } = new(159, 47, 45, 255);
 
     /// <summary>指定したテーマの配色を返す。</summary>
     public static OverlayPalette For(OverlayTheme theme) => theme == OverlayTheme.Dark ? _dark : _light;
@@ -405,6 +426,79 @@ public static class OverlayPainter
         {
             PaintRounded(frame, rect.X, rect.Y, rect.Width, rect.Height, radius * scale, color,
                 Math.Max(1, thickness * scale));
+        }
+    }
+
+    /// <summary>小数の物理座標を保ち、角丸の塗りまたは輪郭の中心に沿った線を描く。</summary>
+    public static void DrawRounded(OverlayFrame frame, Vec2 origin, Vec2 size, OverlayColor color,
+        double radius, double? thickness = null)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(radius);
+        if (thickness is { } stroke)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(stroke);
+            if (stroke == 0) { return; }
+        }
+        PaintRounded(frame, origin.X, origin.Y, size.X, size.Y, radius, color, thickness,
+            centered: thickness is not null);
+    }
+
+    /// <summary>物理座標の中心と半径で円を塗る。</summary>
+    public static void FillCircle(OverlayFrame frame, Vec2 center, double radius, OverlayColor color) =>
+        DrawRounded(frame, center - new Vec2(radius, radius), new(2 * radius, 2 * radius), color, radius);
+
+    /// <summary>線分への距離から被覆率を求め、両端が丸い線を描く。</summary>
+    public static void StrokeLine(OverlayFrame frame, Vec2 start, Vec2 end, double thickness, OverlayColor color)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(thickness);
+        if (thickness == 0) { return; }
+        var direction = end - start;
+        var lengthSquared = direction.X * direction.X + direction.Y * direction.Y;
+        var radius = thickness / 2;
+        var clip = frame.Clip ?? new(0, 0, frame.Width, frame.Height);
+        var left = Math.Max(clip.X, (int)Math.Floor(Math.Min(start.X, end.X) - radius));
+        var top = Math.Max(clip.Y, (int)Math.Floor(Math.Min(start.Y, end.Y) - radius));
+        var right = Math.Min(clip.Right, (int)Math.Ceiling(Math.Max(start.X, end.X) + radius));
+        var bottom = Math.Min(clip.Bottom, (int)Math.Ceiling(Math.Max(start.Y, end.Y) + radius));
+        for (var y = top; y < bottom; y++)
+        {
+            for (var x = left; x < right; x++)
+            {
+                var point = new Vec2(x + .5, y + .5);
+                var relative = point - start;
+                var along = lengthSquared == 0 ? 0 : Math.Clamp(
+                    (relative.X * direction.X + relative.Y * direction.Y) / lengthSquared, 0, 1);
+                var distance = (point - (start + direction * along)).Length;
+                var alpha = (byte)Math.Round(color.Alpha * Math.Clamp(radius + .5 - distance, 0, 1));
+                var index = (y * frame.Width + x) * 4;
+                BlendPixel(frame, index, new(Premultiply(color.Blue, alpha), Premultiply(color.Green, alpha),
+                    Premultiply(color.Red, alpha), alpha));
+            }
+        }
+    }
+
+    /// <summary>同じ大きさのマスクの alpha で画素を抜き、下の面が透けるようにする。</summary>
+    public static void Cutout(OverlayFrame frame, OverlayFrame mask)
+    {
+        if (frame.Width != mask.Width || frame.Height != mask.Height)
+        {
+            throw new ArgumentException("マスクの大きさが一致しない。", nameof(mask));
+        }
+        var clip = frame.Clip ?? new(0, 0, frame.Width, frame.Height);
+        for (var y = clip.Y; y < clip.Bottom; y++)
+        {
+            for (var x = clip.X; x < clip.Right; x++)
+            {
+                var index = (y * frame.Width + x) * 4;
+                var remaining = (byte)(255 - mask.Pixels[index + 3]);
+                if (remaining == 255) { continue; }
+                for (var channel = 0; channel < 4; channel++)
+                {
+                    frame.Pixels[index + channel] = Premultiply(frame.Pixels[index + channel], remaining);
+                }
+                // 抜いた画素は、抜く前の source-over の履歴を再生できない。
+                frame.Blends?.Remove(index);
+            }
         }
     }
 

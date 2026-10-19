@@ -8,7 +8,6 @@ namespace Snapwell.App.Tests.Tray;
 public sealed class TrayMenuPlacementTests
 {
     /// <summary>主画面よりアイコンのモニターと DPI を優先する。</summary>
-    /// <summary>画面外のカーソルでも最寄りの作業領域へ収める。</summary>
     [Fact]
     public void UsesIconMonitorInsteadOfPrimaryOrCursorMonitor()
     {
@@ -26,7 +25,7 @@ public sealed class TrayMenuPlacementTests
         Assert.Equal(1, monitors.Reads);
     }
 
-    /// <summary>モニターがない場合を呼び出し元へ通知する。</summary>
+    /// <summary>画面外のカーソルでも最寄りの作業領域へ収める。</summary>
     [Fact]
     public void CursorFallbackOutsideAllScreensUsesNearestMonitor()
     {
@@ -35,9 +34,14 @@ public sealed class TrayMenuPlacementTests
         var result = TrayMenuPlacement.Read(new FakeAnchor(new(20, 1100, 1, 1)), new FakeMonitors([monitor]), true);
         Assert.Equal(2, result.Layout.Scale);
         Assert.True(monitor.WorkArea.Contains(result.Layout.Bounds));
-        Assert.Equal(580, result.Layout.Panel.Height);
+        // 状態案内まで 113、四行 128、グループ間 9、下余白 8 論理 px。
+        Assert.Equal((113 + 4 * 32 + 9 + 8) * 2, result.Layout.Panel.Height);
+        Assert.Equal(4, result.Layout.Rows.Count);
+        Assert.Equal(result.Layout.Px(8), result.Layout.Panel.Bottom - result.Layout.Rows[^1].Bottom);
+        Assert.Equal(0, result.Layout.MaxScrollOffset);
     }
 
+    /// <summary>モニターがない場合を呼び出し元へ通知する。</summary>
     [Fact]
     public void MissingMonitorIsReportedToCaller() =>
         Assert.Throws<InvalidOperationException>(() =>

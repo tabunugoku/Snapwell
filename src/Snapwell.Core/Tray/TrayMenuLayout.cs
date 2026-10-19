@@ -17,7 +17,8 @@ public sealed class TrayMenuLayout
     /// <summary>ヘッダー共通の中心線を決めるアイコン。</summary>
     public PixelRect HeaderIcon => Rect(18, 18, 20, 20);
     /// <summary>ヘッダーの状態タグ。</summary>
-    public PixelRect StatusTag => CenterVertically(HeaderIcon, Panel.X + Px(210), Px(43), Px(19));
+    public PixelRect StatusTag => CenterVertically(HeaderIcon,
+        Toggle.X - Px(10) - Px(_statusTagTextWidth + 16), Px(_statusTagTextWidth + 16), Px(19));
     /// <summary>項目の矩形。</summary>
     public IReadOnlyList<PixelRect> Rows { get; }
     /// <summary>区切り線の矩形。</summary>
@@ -36,15 +37,17 @@ public sealed class TrayMenuLayout
 
     private readonly PixelRect _workArea;
     private readonly bool _hasStatus;
+    private readonly double _statusTagTextWidth;
 
     private TrayMenuLayout(PixelRect panel, PixelRect workArea, double scale, bool hasStatus,
-        bool compact, int scrollOffset = 0)
+        bool compact, int scrollOffset = 0, double statusTagTextWidth = 0)
     {
         Panel = panel;
         Scale = scale;
         IsCompact = compact;
         _workArea = workArea;
         _hasStatus = hasStatus;
+        _statusTagTextWidth = statusTagTextWidth;
         // 三回のぼかしの半径と、下向き 8 px の影を含める。
         var padding = Px(52);
         var left = Math.Max(workArea.X, panel.X - padding);
@@ -60,7 +63,7 @@ public sealed class TrayMenuLayout
         var viewportTop = Math.Min(panel.Bottom, panel.Y + Px(start));
         ItemsViewport = new(panel.X, viewportTop, panel.Width,
             Math.Max(0, panel.Bottom - Px(compact ? 4 : 8) - viewportTop));
-        MaxScrollOffset = Math.Max(0, Px(start + 160 + groupGap) - Px(start) - ItemsViewport.Height);
+        MaxScrollOffset = Math.Max(0, Px(start + 128 + groupGap) - Px(start) - ItemsViewport.Height);
         ScrollOffset = Math.Clamp(scrollOffset, 0, MaxScrollOffset);
         PixelRect Row(int y)
         {
@@ -70,10 +73,10 @@ public sealed class TrayMenuLayout
         }
         Rows = Array.AsReadOnly<PixelRect>(
         [
-            Row(start), Row(start + 32), Row(start + 64),
-            Row(start + 96 + groupGap), Row(start + 128 + groupGap),
+            Row(start), Row(start + 32),
+            Row(start + 64 + groupGap), Row(start + 96 + groupGap),
         ]);
-        var groupSeparator = Rect(13, start + 96 + (compact ? 0 : 4), 294, 1);
+        var groupSeparator = Rect(13, start + 64 + (compact ? 0 : 4), 294, 1);
         Separators = Array.AsReadOnly<PixelRect>(
             [Rect(7, 51, 306, 1), Rect(13, start - 5, 294, 1),
                 new(groupSeparator.X, groupSeparator.Y - ScrollOffset, groupSeparator.Width, groupSeparator.Height)]);
@@ -81,7 +84,17 @@ public sealed class TrayMenuLayout
 
     /// <summary>ヘッダーを固定し、項目のスクロール位置だけを更新する。</summary>
     public TrayMenuLayout WithScrollOffset(int offset) =>
-        new(Panel, _workArea, Scale, _hasStatus, IsCompact, offset);
+        new(Panel, _workArea, Scale, _hasStatus, IsCompact, offset, _statusTagTextWidth);
+
+    /// <summary>実測した論理 px の文言幅に左右 8 px の余白を足し、タグの右端を固定する。</summary>
+    public TrayMenuLayout WithStatusTagTextWidth(double textWidth)
+    {
+        if (!double.IsFinite(textWidth) || textWidth < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(textWidth));
+        }
+        return new(Panel, _workArea, Scale, _hasStatus, IsCompact, ScrollOffset, textWidth);
+    }
 
     /// <summary>キーボードで選んだ項目全体を表示する。</summary>
     public TrayMenuLayout EnsureVisible(int selected)
@@ -103,10 +116,6 @@ public sealed class TrayMenuLayout
     /// <summary>丸め済みの物理矩形の中心から一度だけ丸め、半ピクセルの誤差を蓄積しない。</summary>
     public static PixelRect CenterVertically(PixelRect row, int x, int width, int height) =>
         new(x, row.Y + (int)Math.Round((row.Height - height) / 2.0, MidpointRounding.AwayFromZero), width, height);
-
-    /// <summary>キーの枠を、スクロール後の項目の中心にそろえる。</summary>
-    public PixelRect KeyBounds(PixelRect row, double x, double width) =>
-        CenterVertically(row, row.X + Px(x), Px(width), Px(22));
 
     /// <summary>つまみをトラックの上下中央へ置く。位置は論理 px、伸びの中心はつまみの中心。</summary>
     public PixelRect ThumbBounds(double position, double stretch = 1)
@@ -146,9 +155,9 @@ public sealed class TrayMenuLayout
         }
 
         var width = Math.Min(workArea.Width, (int)Math.Round(320 * scale));
-        var height = (int)Math.Round((hasStatus ? 290 : 266) * scale);
+        var height = (int)Math.Round((hasStatus ? 258 : 234) * scale);
         var compact = height > workArea.Height;
-        if (compact) { height = (int)Math.Round((hasStatus ? 248 : 224) * scale); }
+        if (compact) { height = (int)Math.Round((hasStatus ? 216 : 192) * scale); }
         height = Math.Min(height, workArea.Height);
 
         var gap = (int)Math.Round(8 * scale);

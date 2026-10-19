@@ -24,7 +24,7 @@ public sealed class TrayMenuControllerTests
         Assert.Equal(4, view.Selected);
         menu.Key(0x0D);
         menu.Key(0x0D);
-        Assert.Equal([5u], commands);
+        Assert.Equal([4u], commands);
         Assert.False(menu.IsOpen);
         Assert.False(view.Visible);
     }
@@ -68,7 +68,7 @@ public sealed class TrayMenuControllerTests
         menu.Update(snapshot with { Enabled = false, Items = TrayMenuModel.Create(false) });
         Assert.Equal(3, view.Selected);
         menu.Key(0x0D);
-        Assert.Equal([1u], commands);
+        Assert.Equal([5u], commands);
     }
 
     /// <summary>同じ有効な項目で押して離した場合だけ決定する。</summary>
@@ -161,12 +161,12 @@ public sealed class TrayMenuControllerTests
         menu.Move(snapshot.Layout.Rows[0].Center);
         Assert.Equal(count, view.Shows);
         menu.Key(0x23);
-        Assert.Equal(5, view.Selected);
+        Assert.Equal(4, view.Selected);
         Assert.True(view.Keyboard);
         menu.Key(0x24);
         Assert.Equal(0, view.Selected);
         menu.Key(0x26);
-        Assert.Equal(5, view.Selected);
+        Assert.Equal(4, view.Selected);
     }
 
     private static TrayMenuSnapshot Snapshot(bool enabled) =>
@@ -213,15 +213,15 @@ public sealed class TrayMenuControllerTests
             for (var step = 0; step < 20; step++) { menu.Wheel(-120); }
             var layout = view.Snapshot!.Layout;
             Assert.Equal(layout.MaxScrollOffset, layout.ScrollOffset);
-            Assert.True(layout.ItemsViewport.Contains(layout.Rows[4]));
-            menu.Down(layout.Rows[4].Center);
-            menu.Up(layout.Rows[4].Center);
+            Assert.True(layout.ItemsViewport.Contains(layout.Rows[3]));
+            menu.Down(layout.Rows[3].Center);
+            menu.Up(layout.Rows[3].Center);
         }
         else
         {
-            for (var step = 0; step < 6 && view.Selected != 5; step++) { menu.Key(0x28); }
-            Assert.Equal(5, view.Selected);
-            Assert.True(view.Snapshot!.Layout.ItemsViewport.Contains(view.Snapshot.Layout.Rows[4]));
+            for (var step = 0; step < 6 && view.Selected != 4; step++) { menu.Key(0x28); }
+            Assert.Equal(4, view.Selected);
+            Assert.True(view.Snapshot!.Layout.ItemsViewport.Contains(view.Snapshot.Layout.Rows[3]));
             menu.Key(0x0D);
         }
 
@@ -251,21 +251,21 @@ public sealed class TrayMenuControllerTests
                     TrayTaskbarEdge.Bottom, 2.5, status),
                 Status = status ? "状態の案内" : null,
             });
-            Assert.Equal(5, view.Selected);
-            Assert.True(view.Snapshot!.Layout.ItemsViewport.Contains(view.Snapshot.Layout.Rows[4]));
+            Assert.Equal(4, view.Selected);
+            Assert.True(view.Snapshot!.Layout.ItemsViewport.Contains(view.Snapshot.Layout.Rows[3]));
         }
 
-        menu.Down(view.Snapshot!.Layout.Rows[4].Center);
+        menu.Down(view.Snapshot!.Layout.Rows[3].Center);
         menu.Wheel(120);
-        menu.Up(view.Snapshot!.Layout.Rows[4].Center);
+        menu.Up(view.Snapshot!.Layout.Rows[3].Center);
         Assert.Empty(commands);
         for (var step = 0; step < 20; step++) { menu.Wheel(120); }
         Assert.Equal(0, view.Snapshot!.Layout.ScrollOffset);
         menu.Key(0x24);
         Assert.Equal(0, view.Selected);
         menu.Key(0x26);
-        Assert.Equal(5, view.Selected);
-        Assert.True(view.Snapshot!.Layout.ItemsViewport.Contains(view.Snapshot.Layout.Rows[4]));
+        Assert.Equal(4, view.Selected);
+        Assert.True(view.Snapshot!.Layout.ItemsViewport.Contains(view.Snapshot.Layout.Rows[3]));
     }
 
     /// <summary>細粒度の連続入力と同じ合計の一括入力で、同じ位置までスクロールする。</summary>
