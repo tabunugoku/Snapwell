@@ -30,7 +30,7 @@ public sealed class SettingsStoreTests : IDisposable
         Assert.Equal(new GridSettings(6, 4), result.Value.Grid);
         Assert.Equal(21, result.Value.Gap);
         Assert.Equal("Heavy", result.Value.Feel);
-        Assert.Equal(8, PortableSettings.CurrentSchemaVersion);
+        Assert.Equal(9, PortableSettings.CurrentSchemaVersion);
 
         store.Save(result.Value);
         Assert.DoesNotContain("LongPress", File.ReadAllText(path));
@@ -206,6 +206,36 @@ public sealed class SettingsStoreTests : IDisposable
         Assert.False(result.IsReadOnly);
         Assert.False(result.ResetToDefaults);
         Assert.Equal(expected, result.Value.MoveFixedSizeWindows);
+        Assert.Equal(21, result.Value.Gap);
+    }
+
+    /// <summary>ポップアップを動かす設定は既定でオンで、オフの保存は読み戻しても保たれる。</summary>
+    [Fact]
+    public void MovePopupWindowsDefaultsToTrueAndRoundTripsFalse()
+    {
+        Assert.True(new PortableSettings().MovePopupWindows);
+        Assert.True(SettingsTransfer.Normalize(new()).MovePopupWindows);
+
+        var store = SettingsStores.Portable(Path.Combine(_directory, "popup.json"));
+        store.Save(new() { MovePopupWindows = false });
+        Assert.False(store.Load().Value.MovePopupWindows);
+        Assert.False(SettingsTransfer.Normalize(new() { MovePopupWindows = false }).MovePopupWindows);
+    }
+
+    /// <summary>版 8 以下のファイルはオンとして読み、版 9 の明示したオフは保つ。</summary>
+    [Theory]
+    [InlineData(1, "", true)]
+    [InlineData(8, "", true)]
+    [InlineData(8, ",\"MovePopupWindows\":false", true)]
+    [InlineData(9, "", true)]
+    [InlineData(9, ",\"MovePopupWindows\":false", false)]
+    public void MovePopupWindowsIsEnabledForFilesBeforeVersionNine(int version, string field, bool expected)
+    {
+        var path = Path.Combine(_directory, "popup-old.json");
+        File.WriteAllText(path, $$"""{"SchemaVersion":{{version}},"Gap":21{{field}}}""");
+        var result = SettingsStores.Portable(path).Load();
+        Assert.False(result.IsReadOnly);
+        Assert.Equal(expected, result.Value.MovePopupWindows);
         Assert.Equal(21, result.Value.Gap);
     }
 
