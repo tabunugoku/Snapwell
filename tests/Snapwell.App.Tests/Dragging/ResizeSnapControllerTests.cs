@@ -9,6 +9,21 @@ namespace Snapwell.App.Tests.Dragging;
 
 public sealed class ResizeSnapControllerTests
 {
+    [Theory]
+    [InlineData(96, 144)]
+    [InlineData(0, 96)]
+    [InlineData(96, 0)]
+    public void ChangedOrUnavailableDpiNeverRequestsMotion(uint startDpi, uint endDpi)
+    {
+        var fixture = new Fixture();
+        fixture.Constraints.Dpi = startDpi;
+        fixture.Controller.Handle(new MoveSizeStarted(1), true);
+        fixture.Resize(new(100, 100, 650, 400));
+        fixture.Constraints.Dpi = endDpi;
+        fixture.Controller.Handle(new MoveSizeEnded(1, 100), true);
+        Assert.Empty(fixture.Motion.Requests);
+    }
+
     [Fact]
     public void SizeChangeRequestsExistingMotionEngineWithMinimumSize()
     {
@@ -87,6 +102,8 @@ public sealed class ResizeSnapControllerTests
     private sealed class Constraints : IResizeConstraints
     {
         internal bool Success = true;
+        internal uint Dpi = 96;
+        public uint GetDpi(nint handle) => Dpi;
         public bool TryGetMinimum(WindowSnapshot window, out int width, out int height)
         {
             width = 700;
