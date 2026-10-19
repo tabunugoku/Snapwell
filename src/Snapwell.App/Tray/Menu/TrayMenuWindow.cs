@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Snapwell.App.Motion;
 using Snapwell.Core.Geometry;
 using Snapwell.Core.Overlay;
 using Windows.Win32;
@@ -14,6 +15,7 @@ namespace Snapwell.App.Tray.Menu;
 internal sealed unsafe class TrayMenuWindow : ITrayMenuView, ITrayMenuPresentationPlatform
 {
     private const string ClassName = "Snapwell.TrayMenu";
+    private const uint ToggleFrameMessage = 0x8001;
     [ThreadStatic]
     private static TrayMenuWindow? _current;
     private readonly HWND _owner;
@@ -23,12 +25,20 @@ internal sealed unsafe class TrayMenuWindow : ITrayMenuView, ITrayMenuPresentati
     private TrayMenuSnapshot? _snapshot;
     private TrayMenuRenderer? _renderer;
     private readonly TrayMenuPresentation _presentation;
+    private readonly TrayMenuToggleAnimation _toggle;
+    private int _selected;
+    private bool _keyboard;
+    private TrayMenuFrameTicker? _toggleTicker;
+    private nuint _toggleGeneration;
 
     internal TrayMenuController? Controller { get; set; }
 
     internal TrayMenuWindow(HWND owner, Action<Exception> error)
     {
         _presentation = new(this);
+        var clock = new MonotonicClock();
+        var motion = new Win32MotionPreference(() => false);
+        _toggle = new(() => clock.Seconds, () => motion.ReduceMotion, ScheduleToggle);
         _owner = owner;
         _error = error;
         _arrow = PInvoke.LoadCursor(default, PInvoke.IDC_ARROW);
@@ -64,6 +74,9 @@ internal sealed unsafe class TrayMenuWindow : ITrayMenuView, ITrayMenuPresentati
 
     public void Show(TrayMenuSnapshot snapshot, int selected, bool keyboard)
     {
+        _selected = selected;
+        _keyboard = keyboard;
+        _toggle.Show(snapshot.Enabled);
         if (!ReferenceEquals(_snapshot, snapshot))
         {
             _renderer?.Dispose();
@@ -76,7 +89,24 @@ internal sealed unsafe class TrayMenuWindow : ITrayMenuView, ITrayMenuPresentati
         var name = selected == 0 ? $"Snapwell、有効スイッチ、{(snapshot.Enabled ? "オン" : "オフ")}" :
             selected > 0 ? $"Snapwell、{snapshot.Items[selected - 1].Name}" :
             $"Snapwell メニュー、{(snapshot.Enabled ? "有効" : "無効")}、モニター構成: {snapshot.MonitorCount} 画面";
-        _presentation.Show(snapshot.Layout.Bounds, _renderer!.Render(selected, keyboard), name, keyboard);
+        _presentation.Show(snapshot.Layout.Bounds, Render(), name, keyboard);
+    }
+
+    private OverlayFrame Render() => _renderer!.Render(_selected, _keyboard,
+        _toggle.Position, _toggle.Fill, _toggle.Stretch);
+
+    private void ScheduleToggle(bool needed)
+    {
+        _toggleGeneration++;
+        _toggleTicker?.Dispose();
+        _toggleTicker = null;
+        if (needed)
+        {
+            var generation = _toggleGeneration;
+            var window = _window;
+            // コールバックは配送だけに限り、物理の更新と描画はこの HWND の STA に戻す。
+            _toggleTicker = new(() => PInvoke.PostMessage(window, ToggleFrameMessage, new(generation), default));
+        }
     }
 
     void ITrayMenuPresentationPlatform.BringOwnerToFront() => PInvoke.SetForegroundWindow(_owner);
@@ -157,6 +187,7 @@ internal sealed unsafe class TrayMenuWindow : ITrayMenuView, ITrayMenuPresentati
 
     public void Hide()
     {
+        _toggle.Close();
         _presentation.Hide();
         _renderer?.Dispose();
         _renderer = null;
@@ -177,6 +208,13 @@ internal sealed unsafe class TrayMenuWindow : ITrayMenuView, ITrayMenuPresentati
                 snapshot.Layout.Bounds.Y + unchecked((short)((long)lParam.Value >> 16)));
             switch (message)
             {
+                case ToggleFrameMessage when wParam.Value == _toggleGeneration:
+                    _toggleTicker?.Acknowledge();
+                    if (_toggle.Frame())
+                    {
+                        ((ITrayMenuPresentationPlatform)this).Present(snapshot.Layout.Bounds, Render());
+                    }
+                    return default;
                 case 0x0200: controller.Move(point); return default;
                 case 0x0201: controller.Down(point); return default;
                 case 0x0202: controller.Up(point); return default;
