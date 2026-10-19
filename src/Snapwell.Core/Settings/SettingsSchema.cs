@@ -72,6 +72,11 @@ internal static class SettingsSchema
             normalized.LauncherPresets = [.. Snapwell.Core.Overlay.LauncherPreset.DefaultIds];
         }
 
+        if (sourceVersion < 8)
+        {
+            normalized.MoveFixedSizeWindows = true;
+        }
+
         // 版 6 の追加分は初期化子で補う。版 5 以前の既存値には触れない。
         return normalized;
     }

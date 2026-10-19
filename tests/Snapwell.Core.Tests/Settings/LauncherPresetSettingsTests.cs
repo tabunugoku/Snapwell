@@ -23,7 +23,7 @@ public sealed class LauncherPresetSettingsTests : IDisposable
         File.WriteAllText(SettingsPath, $$"""{"SchemaVersion":{{version}},"LauncherPresets":[]}""");
         var value = SettingsStores.Portable(SettingsPath).Load().Value;
         Assert.Equal(count, value.LauncherPresets.Length);
-        Assert.Equal(7, value.SchemaVersion);
+        Assert.Equal(8, value.SchemaVersion);
     }
 
     /// <summary>未知と重複を捨て、カタログ順に保存して独立した値で取り込む。</summary>
