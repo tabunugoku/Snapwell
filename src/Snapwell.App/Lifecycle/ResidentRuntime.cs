@@ -82,6 +82,12 @@ internal sealed class ResidentRuntime : IAppRuntime
 
     public void Handle(HookEvent value)
     {
+        // 他プロセスの調査は遅いことがあるため、入力の配送を止めるロックの外で記録する。
+        if (value is ForegroundChanged recorded)
+        {
+            _foregroundTargets?.Record(recorded.Handle);
+        }
+
         lock (_gate)
         {
             if (_disposed)
@@ -138,7 +144,6 @@ internal sealed class ResidentRuntime : IAppRuntime
                 }
                 else if (value is ForegroundChanged foreground)
                 {
-                    _foregroundTargets?.Record(foreground.Handle);
                     _launcher?.HandleForegroundChanged(foreground);
                 }
 

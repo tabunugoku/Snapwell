@@ -50,7 +50,9 @@ public static class WindowClassifier
         if (!window.IsVisible || window.IsCloaked || window.IsMinimized || window.ProcessId == ownProcessId ||
             (window.Style & (uint)WINDOW_STYLE.WS_CHILD) != 0 ||
             window.ClassName is "Progman" or "WorkerW" or "Shell_TrayWnd" or "Shell_SecondaryTrayWnd" or
-                "Windows.UI.Core.CoreWindow")
+                "Windows.UI.Core.CoreWindow" or
+                // 通知領域の溢れ窓。トレイ操作で前面になるが、操作対象ではない（実機未確認）。
+                "NotifyIconOverflowWindow" or "TopLevelWindowForOverflowXamlIsland")
         {
             return WindowKind.Excluded;
         }

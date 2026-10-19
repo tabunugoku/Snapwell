@@ -278,7 +278,10 @@ internal sealed class HotkeyCommandExecutor(IWindowInspector inspector, IMonitor
     private void PlanAndRequest(WindowCommand command, WindowSnapshot window, PixelRect? selected, PixelRect? area)
     {
         var options = settings();
-        var areas = monitors.GetMonitors().Select(monitor => monitor.ToMonitorArea()).ToArray();
+        // 目標と作業領域が渡された整列では、モニターを列挙しない。
+        MonitorArea[]? cachedAreas = null;
+        MonitorArea[] Areas() => cachedAreas ??=
+            monitors.GetMonitors().Select(monitor => monitor.ToMonitorArea()).ToArray();
         var direction = command switch
         {
             WindowCommand.SnapAdjacentLeft => AdjacentDirection.Left,
@@ -290,6 +293,7 @@ internal sealed class HotkeyCommandExecutor(IWindowInspector inspector, IMonitor
         PixelRect? target;
         if (selected is null && direction is { } adjacent)
         {
+            var areas = Areas();
             if (areas.Length == 0)
             {
                 return;
@@ -303,7 +307,7 @@ internal sealed class HotkeyCommandExecutor(IWindowInspector inspector, IMonitor
         else
         {
             target = selected ?? CommandPlanner.Plan(command, window.VisualBounds,
-                WindowClassifier.CanResize(window, ownProcessId), areas, options.ToGridPlan(), options.ToSpacing(),
+                WindowClassifier.CanResize(window, ownProcessId), Areas(), options.ToGridPlan(), options.ToSpacing(),
                 options.ToResizeSettings());
         }
 
@@ -312,7 +316,7 @@ internal sealed class HotkeyCommandExecutor(IWindowInspector inspector, IMonitor
             return;
         }
 
-        var walls = area ?? CommandPlanner.SelectMonitor(bounds, areas).WorkArea;
+        var walls = area ?? CommandPlanner.SelectMonitor(bounds, Areas()).WorkArea;
         if (selected is null && direction is not null)
         {
             // モーション削減時の包含補正でも、直交軸と大きすぎる寸法を保つ。

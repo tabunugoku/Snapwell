@@ -77,7 +77,7 @@ public sealed class SetupWizard(ISettingsStore<PortableSettings> portableStore, 
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException or
             InvalidOperationException or ArgumentException)
         {
-            error = exception is InvalidOperationException
+            error = exception is FutureSettingsVersionException
                 ? "この設定は読み取り専用のため、保存できません。Snapwell を更新して開き直してください。"
                 : "保存できませんでした。ファイルの場所とアクセス権を確認して、もう一度保存してください。";
             return false;
@@ -114,7 +114,7 @@ public sealed class SetupWizard(ISettingsStore<PortableSettings> portableStore, 
         var loaded = store.TryReload() ?? store.Load();
         if (loaded.IsReadOnly)
         {
-            throw new InvalidOperationException("新しい版の設定は上書きできない。");
+            throw new FutureSettingsVersionException("新しい版の設定は上書きできない。");
         }
 
         return loaded.Value;

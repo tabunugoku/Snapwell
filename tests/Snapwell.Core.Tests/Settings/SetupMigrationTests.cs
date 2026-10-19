@@ -61,7 +61,7 @@ public sealed class SetupMigrationTests : IDisposable
         File.WriteAllText(DevicePath, json);
         var store = SettingsStores.Device(DevicePath);
         Assert.True(store.Load().IsReadOnly);
-        Assert.Throws<InvalidOperationException>(() => store.Save(new()));
+        Assert.Throws<FutureSettingsVersionException>(() => store.Save(new()));
         Assert.Equal(json, File.ReadAllText(DevicePath));
     }
 

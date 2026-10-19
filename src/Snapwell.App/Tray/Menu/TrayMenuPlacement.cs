@@ -22,7 +22,7 @@ internal sealed class TrayMenuAnchor(HWND owner) : ITrayMenuAnchor
         {
             cbSize = (uint)sizeof(NOTIFYICONIDENTIFIER),
             hWnd = owner,
-            uID = 1,
+            uID = TrayIcon.IconId,
         };
         if (PInvoke.Shell_NotifyIconGetRect(in identifier, out var rectangle).Succeeded &&
             rectangle.right > rectangle.left && rectangle.bottom > rectangle.top)

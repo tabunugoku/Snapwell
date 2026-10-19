@@ -26,6 +26,9 @@ internal sealed unsafe class TrayIcon(IAppLog log, ISettingsLauncher? settings =
     private const uint WmRButtonUp = 0x0205;
     private const uint WmLButtonDblClk = 0x0203;
     private const string ClassName = "Snapwell.TrayHost";
+
+    /// <summary>通知アイコンの識別子。Shell_NotifyIconGetRect の問い合わせと一致させる。</summary>
+    internal const uint IconId = 1;
     [ThreadStatic]
     private static TrayIcon? _current;
     private readonly object _gate = new();
@@ -124,7 +127,7 @@ internal sealed unsafe class TrayIcon(IAppLog log, ISettingsLauncher? settings =
             if (!_window.IsNull)
             {
                 // 削除にはアイコンの画像は要らない。
-                var data = new NOTIFYICONDATAW { cbSize = (uint)sizeof(NOTIFYICONDATAW), hWnd = _window, uID = 1 };
+                var data = new NOTIFYICONDATAW { cbSize = (uint)sizeof(NOTIFYICONDATAW), hWnd = _window, uID = IconId };
                 PInvoke.Shell_NotifyIcon(NOTIFY_ICON_MESSAGE.NIM_DELETE, in data);
                 // DestroyWindow は作成したスレッドに任せる。
                 PInvoke.PostMessage(_window, WmClose, default, default);
@@ -182,7 +185,7 @@ internal sealed unsafe class TrayIcon(IAppLog log, ISettingsLauncher? settings =
         {
             cbSize = (uint)sizeof(NOTIFYICONDATAW),
             hWnd = _window,
-            uID = 1,
+            uID = IconId,
             uFlags = NOTIFY_ICON_DATA_FLAGS.NIF_MESSAGE | NOTIFY_ICON_DATA_FLAGS.NIF_ICON |
                 NOTIFY_ICON_DATA_FLAGS.NIF_TIP,
             uCallbackMessage = CallbackMessage,

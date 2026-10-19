@@ -45,6 +45,16 @@ public static class SettingsTransfer
     public static IReadOnlyList<SettingsDifference> GetDifferences(PortableSettings current, PortableSettings imported) =>
         Compare(current.Normalize(), imported.Normalize());
 
+    /// <summary>正規化した二つの設定に違いがあるかだけを、表示文字列を作らずに調べる。</summary>
+    public static bool HasChanges(PortableSettings current, PortableSettings other)
+    {
+        var left = current.Normalize();
+        var right = other.Normalize();
+        return left with { Hotkeys = [] } != right with { Hotkeys = [] } ||
+            left.Hotkeys.Count != right.Hotkeys.Count ||
+            left.Hotkeys.Any(pair => !right.Hotkeys.TryGetValue(pair.Key, out var chord) || chord != pair.Value);
+    }
+
     /// <summary>空の書き出し先にも原子的に保存し、失敗時と未来の版は元のファイルを残す。</summary>
     public static void Export(string path, PortableSettings value)
     {
@@ -57,7 +67,7 @@ public static class SettingsTransfer
                 using var document = JsonDocument.Parse(stream);
                 if (IsFuture(document.RootElement))
                 {
-                    throw new InvalidOperationException("新しい版の設定は上書きできない。");
+                    throw new FutureSettingsVersionException("新しい版の設定は上書きできない。");
                 }
             }
             catch (JsonException)

@@ -5,6 +5,8 @@ namespace Snapwell.App.Overlay;
 /// <summary>トレイへ前面が移る前の操作可能な対象を記録する。</summary>
 internal sealed class ForegroundTargetTracker(IWindowInspector inspector, uint ownProcessId)
 {
+    // Record は配送スレッド、Resolve はトレイから呼ばれる。調査は呼び出し側のロックの外で行うため、記録だけ守る。
+    private readonly object _gate = new();
     private (nint Handle, uint ProcessId, string ClassName)? _lastEligible;
 
     /// <summary>配送された前面だけを調べ、除外対象では記録を変えない。</summary>
@@ -14,7 +16,10 @@ internal sealed class ForegroundTargetTracker(IWindowInspector inspector, uint o
         if (handle != 0 && inspector.GetProcessId(handle) != ownProcessId &&
             inspector.TryInspect(handle, out var window) && IsEligible(window))
         {
-            _lastEligible = (handle, window.ProcessId, window.ClassName);
+            lock (_gate)
+            {
+                _lastEligible = (handle, window.ProcessId, window.ClassName);
+            }
         }
     }
 
@@ -29,19 +34,27 @@ internal sealed class ForegroundTargetTracker(IWindowInspector inspector, uint o
         }
 
         // 閉じた HWND は再利用されるため、記録時の識別属性と照合してから戻す。
-        if (_lastEligible is { } last && inspector.GetProcessId(last.Handle) != ownProcessId &&
+        (nint Handle, uint ProcessId, string ClassName)? remembered;
+        lock (_gate)
+        {
+            remembered = _lastEligible;
+        }
+
+        if (remembered is { } last && inspector.GetProcessId(last.Handle) != ownProcessId &&
             inspector.TryInspect(last.Handle, out var recorded) &&
             recorded.ProcessId == last.ProcessId && recorded.ClassName == last.ClassName && IsEligible(recorded))
         {
             return last.Handle;
         }
 
-        _lastEligible = null;
+        lock (_gate)
+        {
+            _lastEligible = null;
+        }
+
         return 0;
     }
 
     private bool IsEligible(WindowSnapshot? window) => window is not null &&
-        WindowClassifier.Classify(window, ownProcessId) != WindowKind.Excluded &&
-        // 溢れ窓は既存の分類では除外されないが、トレイ操作の対象にはしない（実機未確認）。
-        window.ClassName is not ("NotifyIconOverflowWindow" or "TopLevelWindowForOverflowXamlIsland");
+        WindowClassifier.Classify(window, ownProcessId) != WindowKind.Excluded;
 }

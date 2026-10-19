@@ -86,7 +86,7 @@ public sealed class ArrangementHotkeyMigrationTests : IDisposable
         var store = SettingsStores.Portable(SettingsPath);
         var loaded = store.Load();
         Assert.True(loaded.IsReadOnly);
-        Assert.Throws<InvalidOperationException>(() => store.Save(loaded.Value));
+        Assert.Throws<FutureSettingsVersionException>(() => store.Save(loaded.Value));
         Assert.Equal(future, File.ReadAllText(SettingsPath));
     }
 

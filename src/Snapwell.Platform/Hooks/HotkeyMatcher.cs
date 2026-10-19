@@ -14,7 +14,8 @@ public enum KeyModifiers
 }
 
 /// <summary>ID・修飾キー・仮想キーコードと握りつぶしの指定。</summary>
-public readonly record struct HotkeyBinding(int Id, KeyModifiers Modifiers, uint VirtualKey, bool Suppress = true);
+public readonly record struct HotkeyBinding(int Id, KeyModifiers Modifiers, uint VirtualKey, bool Suppress = true,
+    bool AllowRepeat = true);
 
 /// <summary>割り当てを伴わないキー判定の結果。</summary>
 public readonly record struct HotkeyMatch(bool Matched, int Id, bool Suppress);
@@ -24,6 +25,7 @@ public sealed class HotkeyMatcher
 {
     private HotkeyBinding[] _bindings = [];
     private readonly bool[] _suppressedKeys = new bool[256];
+    private readonly bool[] _downKeys = new bool[256];
     private uint _pressedModifiers;
 
     /// <summary>列挙元から独立した不変の設定スナップショットを公開する。</summary>
@@ -62,16 +64,26 @@ public sealed class HotkeyMatcher
         {
             var suppress = _suppressedKeys[virtualKey];
             _suppressedKeys[virtualKey] = false;
+            _downKeys[virtualKey] = false;
             return new HotkeyMatch(false, 0, suppress);
         }
 
         var modifiers = GetModifiers();
+        var repeated = _downKeys[virtualKey];
+        _downKeys[virtualKey] = true;
         var snapshot = Volatile.Read(ref _bindings);
         for (var index = 0; index < snapshot.Length; index++)
         {
             var binding = snapshot[index];
             if (binding.VirtualKey == virtualKey && binding.Modifiers == modifiers)
             {
+                if (repeated && !binding.AllowRepeat)
+                {
+                    // 押しっぱなしの繰り返しは実行せず、キーだけ握りつぶす。
+                    _suppressedKeys[virtualKey] |= binding.Suppress;
+                    return new HotkeyMatch(false, 0, _suppressedKeys[virtualKey]);
+                }
+
                 _suppressedKeys[virtualKey] |= binding.Suppress;
                 // Win の解放を握りつぶす場合は、その前に VK_NONAME (0xFC) などを送る必要がある。
                 // スタートメニューが開く副作用の抑止は実機未確認。ダミーキーの送信は今回は実装しない。
@@ -87,6 +99,7 @@ public sealed class HotkeyMatcher
     {
         _pressedModifiers = 0;
         Array.Clear(_suppressedKeys);
+        Array.Clear(_downKeys);
     }
 
     private KeyModifiers GetModifiers()

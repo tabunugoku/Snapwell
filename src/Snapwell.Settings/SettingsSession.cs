@@ -54,7 +54,7 @@ public sealed class SettingsSession
         }
 
         Current = SettingsTransfer.Normalize(value);
-        HasChanges = SettingsTransfer.GetDifferences(_saved, Current).Count > 0;
+        HasChanges = SettingsTransfer.HasChanges(_saved, Current);
         Changed?.Invoke(this, EventArgs.Empty);
     }
 
@@ -75,14 +75,15 @@ public sealed class SettingsSession
             HasChanges = false;
             message = "保存しました。Snapwell が起動していれば、すぐに反映されます。";
         }
-        catch (InvalidOperationException)
+        catch (FutureSettingsVersionException)
         {
             IsReadOnly = true;
             message = "新しい版の設定に変わったため、保存できません。Snapwell を更新して開き直してください。";
             Changed?.Invoke(this, EventArgs.Empty);
             return false;
         }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException)
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException or
+            InvalidOperationException)
         {
             message = "保存できませんでした。ファイルの場所とアクセス権を確認して、もう一度保存してください。";
             return false;

@@ -147,9 +147,9 @@ public sealed class SettingsStoreTests : IDisposable
         byte[] future = [0xEF, 0xBB, 0xBF, .. System.Text.Encoding.UTF8.GetBytes(
             $$"""{"SchemaVersion":{{PortableSettings.CurrentSchemaVersion + 1}},"FutureData": [1, 2]}""" + "\r\n")];
         var store = StoreWithCallback(path, () => File.WriteAllBytes(path, future));
-        Assert.Throws<InvalidOperationException>(() => store.Save(new()));
+        Assert.Throws<FutureSettingsVersionException>(() => store.Save(new()));
         Assert.Equal(future, File.ReadAllBytes(path));
-        Assert.Throws<InvalidOperationException>(() => store.Save(new()));
+        Assert.Throws<FutureSettingsVersionException>(() => store.Save(new()));
         Assert.Equal(future, File.ReadAllBytes(path));
         AssertNoTemporaryFiles();
     }
@@ -243,9 +243,9 @@ public sealed class SettingsStoreTests : IDisposable
         File.WriteAllText(path, json);
         var store = SettingsStores.Portable(path);
         Assert.True(store.Load().IsReadOnly);
-        Assert.Throws<InvalidOperationException>(() => store.Save(new()));
+        Assert.Throws<FutureSettingsVersionException>(() => store.Save(new()));
         Assert.Equal(json, File.ReadAllText(path));
-        Assert.Throws<InvalidOperationException>(() => SettingsStores.Portable(path).Save(new()));
+        Assert.Throws<FutureSettingsVersionException>(() => SettingsStores.Portable(path).Save(new()));
     }
 
     [Theory]

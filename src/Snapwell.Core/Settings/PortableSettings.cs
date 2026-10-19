@@ -117,9 +117,7 @@ public sealed record PortableSettings
     {
         var defaults = new PortableSettings();
         var hotkeys = (Hotkeys ?? defaults.Hotkeys)
-            .Where(pair => Enum.IsDefined(pair.Key) && pair.Value is not null && pair.Value.VirtualKey <= 255 &&
-                (pair.Value.Modifiers & ~(ChordModifiers.Control | ChordModifiers.Alt |
-                    ChordModifiers.Shift | ChordModifiers.Win)) == 0)
+            .Where(pair => Enum.IsDefined(pair.Key) && pair.Value is not null && IsValidChord(pair.Value))
             .ToDictionary();
         return this with
         {
@@ -149,6 +147,14 @@ public sealed record PortableSettings
             Hotkeys = hotkeys,
         };
     }
+
+    // 修飾キーのない割り当てはグローバルなフックが通常の入力を握りつぶすため、修飾キーを 1 つ以上要求する。
+    private static bool IsValidChord(KeyChordSpec chord) =>
+        chord.Modifiers != 0 &&
+        (chord.Modifiers & ~(ChordModifiers.Control | ChordModifiers.Alt | ChordModifiers.Shift |
+            ChordModifiers.Win)) == 0 &&
+        chord.VirtualKey is > 0 and <= 255 &&
+        chord.VirtualKey is not (0x10 or 0x11 or 0x12 or 0x5B or 0x5C or (>= 0xA0 and <= 0xA5));
 
     // 範囲外や非有限の値は、プリセットの値に戻す（null）。
     private static double? InRange(double? value, double minimum, double maximum) =>

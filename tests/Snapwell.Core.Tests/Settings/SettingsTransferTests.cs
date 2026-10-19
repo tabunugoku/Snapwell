@@ -205,7 +205,7 @@ public sealed class SettingsTransferTests : IDisposable
         Assert.Equal(9, SettingsStores.Portable(path).Load().Value.Gap);
         var future = $$"""{"SchemaVersion":{{PortableSettings.CurrentSchemaVersion + 1}}}""";
         File.WriteAllText(path, future);
-        Assert.Throws<InvalidOperationException>(() => SettingsTransfer.Export(path, new()));
+        Assert.Throws<FutureSettingsVersionException>(() => SettingsTransfer.Export(path, new()));
         Assert.Equal(future, File.ReadAllText(path));
         Assert.Empty(Directory.GetFiles(_directory, "*.tmp"));
         Assert.Empty(Directory.GetFiles(_directory, "*.bak"));
@@ -223,7 +223,7 @@ public sealed class SettingsTransferTests : IDisposable
         // 削除共有を許さず、置換前に版を確認していることを確かめる。
         using var reader = holdReadHandle ? File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read) : null;
 
-        Assert.Throws<InvalidOperationException>(() => SettingsTransfer.Export(path, new()));
+        Assert.Throws<FutureSettingsVersionException>(() => SettingsTransfer.Export(path, new()));
 
         Assert.Equal(original, File.ReadAllBytes(path));
         Assert.Equal(path, Assert.Single(Directory.GetFiles(_directory)));

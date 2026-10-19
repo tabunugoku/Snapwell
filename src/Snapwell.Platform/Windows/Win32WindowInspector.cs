@@ -75,12 +75,14 @@ public sealed class Win32WindowInspector : IWindowInspector
             return false;
         }
 
-        var titleBuffer = new char[Math.Clamp(PInvoke.GetWindowTextLength(window) + 1, 1, 32768)];
+        // 短いタイトルが大半なので、スタックで足りるときはヒープを確保しない。
+        var titleCapacity = Math.Clamp(PInvoke.GetWindowTextLength(window) + 1, 1, 32768);
+        Span<char> titleBuffer = titleCapacity <= 256 ? stackalloc char[256] : new char[titleCapacity];
         var titleLength = PInvoke.GetWindowText(window, titleBuffer);
         PInvoke.GetWindowThreadProcessId(window, out var processId);
         var visual = ToPixelRect(visualRect);
         snapshot = new WindowSnapshot(handle, new string(className[..classLength]),
-            new string(titleBuffer, 0, titleLength), processId, style, extendedStyle, bounds, visual,
+            new string(titleBuffer[..titleLength]), processId, style, extendedStyle, bounds, visual,
             FrameInsets.FromBounds(bounds, visual), cloaked != 0, PInvoke.IsWindowVisible(window),
             PInvoke.IsIconic(window), PInvoke.IsZoomed(window));
         if (processId == 0 || !PInvoke.IsWindow(window))

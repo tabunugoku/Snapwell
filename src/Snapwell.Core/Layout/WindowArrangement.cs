@@ -59,11 +59,7 @@ public static class WindowArrangement
                 .OrderBy(index => current[index].Center.Y)
                 .ThenBy(index => index)
                 .ToArray(),
-            ArrangeLayout.Grid => indices
-                .OrderBy(index => current[index].Center.Y)
-                .ThenBy(index => current[index].Center.X)
-                .ThenBy(index => index)
-                .ToArray(),
+            ArrangeLayout.Grid => OrderGrid(current),
             ArrangeLayout.MainAndStack => OrderMainAndStack(current, mainIndex),
             _ => indices.ToArray(),
         };
@@ -157,6 +153,35 @@ public static class WindowArrangement
         }
 
         return results;
+    }
+
+    // 中心の Y が行の先頭の高さの半分以内なら同じ行とみなし、行ごとに X の順へ並べる。
+    private static int[] OrderGrid(IReadOnlyList<PixelRect> current)
+    {
+        var byY = Enumerable.Range(0, current.Count)
+            .OrderBy(index => current[index].Center.Y)
+            .ThenBy(index => index)
+            .ToArray();
+        var result = new List<int>(current.Count);
+        var row = new List<int>();
+        foreach (var index in byY)
+        {
+            if (row.Count > 0)
+            {
+                var head = current[row[0]];
+                var tolerance = Math.Min(head.Height, current[index].Height) / 2.0;
+                if (current[index].Center.Y - head.Center.Y > tolerance)
+                {
+                    result.AddRange(row.OrderBy(i => current[i].Center.X).ThenBy(i => i));
+                    row.Clear();
+                }
+            }
+
+            row.Add(index);
+        }
+
+        result.AddRange(row.OrderBy(i => current[i].Center.X).ThenBy(i => i));
+        return [.. result];
     }
 
     private static int[] OrderMainAndStack(IReadOnlyList<PixelRect> current, int? mainIndex)
