@@ -106,7 +106,7 @@ public sealed partial class MainWindow : Window
             "rules" => new RulesPage(),
             "os" => new OsPage(),
             "backup" => new BackupPage(_session, WinRT.Interop.WindowNative.GetWindowHandle(this)),
-            "look" => new LookPage(),
+            "look" => new LookPage(_session),
             _ => new GridPage(_session),
         };
     }

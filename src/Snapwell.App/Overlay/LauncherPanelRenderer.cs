@@ -44,7 +44,7 @@ internal sealed class LauncherPanelRenderer
 
     /// <summary>描画スレッドで静的パネルを再利用し、選択の差分を描く。</summary>
     internal OverlayFrame Render(ZoneSelection selection, string target, double scale, bool menuOpen,
-        OverlayTheme theme, Action<LauncherPanelLayout> publishLayout)
+        OverlayTheme theme, Action<LauncherPanelLayout> publishLayout, bool showZoneLines = true)
     {
         using var text = new GdiOverlayText(scale);
         var palette = OverlayPalette.For(theme);
@@ -79,7 +79,7 @@ internal sealed class LauncherPanelRenderer
 
         var layout = _layout!.WithSelection(selection, scale, text.Measure);
         var label = OverlayPainter.CreateSelectionLabelLayer(layout, theme, scale, DrawText);
-        var frame = _raster.Render(selection, _panel!, label, theme, scale);
+        var frame = _raster.Render(selection, _panel!, label, theme, scale, showZoneLines);
         publishLayout(layout);
         return frame;
     }

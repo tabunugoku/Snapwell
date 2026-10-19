@@ -186,7 +186,7 @@ internal sealed class HotkeyCommandExecutor(IWindowInspector inspector, IMonitor
         var current = windows.Select(window => window.VisualBounds).ToArray();
         var mainIndex = mainHandle is { } handle ? Array.FindIndex(windows, window => window.Handle == handle) : -1;
         var order = WindowArrangement.Order(layout, current, mainIndex);
-        var physicalSpacing = settings().ToSpacing().ToPhysical(targetMonitor.Scale);
+        var physicalSpacing = MonitorGridResolver.Spacing(settings(), targetMonitor.Id).ToPhysical(targetMonitor.Scale);
         var targets = WindowArrangement.Arrange(layout, targetMonitor.WorkArea, physicalSpacing, windows.Length);
         if (targets is null)
         {
@@ -301,14 +301,13 @@ internal sealed class HotkeyCommandExecutor(IWindowInspector inspector, IMonitor
 
             var monitor = CommandPlanner.SelectMonitor(window.VisualBounds, areas);
             target = AdjacentSnapPlanner.Plan(adjacent, window.VisualBounds, neighbors?.Invoke(window.Handle) ?? [],
-                monitor, options.ToSpacing().ToPhysical(monitor.Scale));
+                monitor, MonitorGridResolver.Spacing(options, monitor.Id).ToPhysical(monitor.Scale));
             area ??= monitor.WorkArea;
         }
         else
         {
-            target = selected ?? CommandPlanner.Plan(command, window.VisualBounds,
-                WindowClassifier.CanResize(window, ownProcessId), Areas(), options.ToGridPlan(), options.ToSpacing(),
-                options.ToResizeSettings());
+            target = selected ?? MonitorGridResolver.PlanCommand(options, command, window.VisualBounds,
+                WindowClassifier.CanResize(window, ownProcessId), Areas());
         }
 
         if (target is not { } bounds)

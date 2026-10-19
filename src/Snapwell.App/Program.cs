@@ -37,12 +37,20 @@ internal static class Program
         var monitors = new Win32MonitorSource();
         var position = new Win32WindowPositionApi();
         var mover = new WindowMover(inspector, position);
-        var corners = new CornerStyler(new Win32CornerApi());
+        CornerStyler? corners = null;
         var host = new AppHost(new UserInstanceMutex(),
             new SnapGuardService(new SnapSettingsGuard(new Win32SnapSystemSettings())),
             SettingsStores.Portable(), SettingsStores.Device(), hooks, tray, new WindowsConsentPrompt(),
-            log, corners.RestoreAll, (settings, enabled, toggle) =>
+            log, () => corners?.RestoreAll(), (settings, enabled, toggle) =>
             {
+                // 単一起動の所有権を得た後だけ、前回の退避ファイルを読む。
+                if (corners is null)
+                {
+                    corners = new CornerStyler(new Win32CornerApi(), Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                        "Snapwell", "corners.json"), message => log.Error(new InvalidOperationException(message)));
+                    corners.RestoreAll();
+                }
                 // 割り当ては AppHost が SetEnabled を呼んだときに、有効・一時停止に合わせて入れる。
                 var bindings = HotkeyBindingsBuilder.Build(settings.Hotkeys);
                 var motion = new MotionEngine(new DwmFramePacer(), new MonotonicClock(), mover,
@@ -50,7 +58,7 @@ internal static class Program
                 var previewSurface = new OverlaySession(interactive: false, diagnostic: LauncherLog.Write);
                 var launcherSurface = new OverlaySession(interactive: true, diagnostic: LauncherLog.Write);
                 var ringSurface = new OverlaySession(interactive: false, diagnostic: LauncherLog.Write);
-                var preview = new ZonePreview(previewSurface, monitors);
+                var preview = new ZonePreview(previewSurface, monitors, settings: () => settings);
                 var tracking = new MouseTrackingVotes(value => hooks.MouseTrackingEnabled = value);
                 var neighbors = new NeighborWindowSource(inspector, monitors, (uint)Environment.ProcessId);
                 var drag = new DragSnapController(inspector, monitors, motion, () => settings,
@@ -72,7 +80,10 @@ internal static class Program
                         launcherSurface.SetEnabled(value);
                         ringSurface.SetEnabled(value);
                     }, [holdRing, ringSurface, previewSurface, launcherSurface], longPress,
-                    new ForegroundTargetTracker(inspector, (uint)Environment.ProcessId));
+                    new ForegroundTargetTracker(inspector, (uint)Environment.ProcessId),
+                    new CornerWindowController(corners, inspector, () => settings, (uint)Environment.ProcessId, log),
+                    new ResizeSnapController(inspector, monitors, motion, () => settings,
+                        new Win32ResizeConstraints(), (uint)Environment.ProcessId));
             }, new SettingsWatcher(SettingsStores.PortablePath()),
             () => new SettingsLauncher(log).Open("--setup"), new SettingsWatcher(SettingsStores.DevicePath()));
         UnhandledExceptionEventHandler unhandled = (_, args) => host.HandleUnhandledException(

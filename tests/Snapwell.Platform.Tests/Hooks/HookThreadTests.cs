@@ -7,6 +7,25 @@ namespace Snapwell.Platform.Tests.Hooks;
 public sealed class HookThreadTests
 {
     [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void WindowLifecycleEventsAreDeliveredOutsideCallback(bool shown)
+    {
+        using var api = new FakeHookApi();
+        using var hooks = new HookThread(new HotkeyMatcher(), 8, api);
+        hooks.Publish(new RawHookEvent(shown ? RawHookKind.WindowShown : RawHookKind.WindowDestroyed, 42));
+        Assert.True(hooks.Events.TryRead(out var value));
+        if (shown)
+        {
+            Assert.Equal((nint)42, Assert.IsType<WindowShown>(value).Handle);
+        }
+        else
+        {
+            Assert.Equal((nint)42, Assert.IsType<WindowDestroyed>(value).Handle);
+        }
+    }
+
+    [Theory]
     [InlineData(123u)]
     [InlineData(4294967280u)]
     [InlineData(0u)]
@@ -31,8 +50,8 @@ public sealed class HookThreadTests
         Assert.True(hooks.Start());
         var results = await Task.WhenAll(Task.Run(hooks.Stop), Task.Run(hooks.Stop));
         Assert.All(results, Assert.True);
-        Assert.Equal(5, api.RegisterCount);
-        Assert.Equal(5, api.UnregisterCount);
+        Assert.Equal(7, api.RegisterCount);
+        Assert.Equal(7, api.UnregisterCount);
         Assert.Equal(1, api.PostCount);
         Assert.Single(api.RegistrationThreads.Distinct());
         Assert.Equal(api.RegistrationThreads.First(), Assert.Single(api.RemovalThreads.Distinct()));
@@ -49,7 +68,7 @@ public sealed class HookThreadTests
         using var hooks = new HookThread(new HotkeyMatcher(), 8, api);
         Assert.False(hooks.Start());
         Assert.NotNull(hooks.Failure);
-        Assert.Equal(4, api.UnregisterCount);
+        Assert.Equal(6, api.UnregisterCount);
         Assert.True(hooks.Stop());
         Assert.True(hooks.Events.Completion.IsCompletedSuccessfully);
     }
@@ -79,7 +98,7 @@ public sealed class HookThreadTests
         Assert.Equal(0, api.UnregisterCount);
         api.PostSucceeds = true;
         Assert.True(hooks.Stop());
-        Assert.Equal(5, api.UnregisterCount);
+        Assert.Equal(7, api.UnregisterCount);
     }
 
     private sealed class FakeHookApi : IHookApi, IDisposable
