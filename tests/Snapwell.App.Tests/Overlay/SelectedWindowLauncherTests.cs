@@ -17,6 +17,31 @@ namespace Snapwell.App.Tests.Overlay;
 /// <summary>一覧からの選択と、既存のモーション経路への整列を検証する。</summary>
 public sealed class SelectedWindowLauncherTests
 {
+    /// <summary>数字キーは描画待ちのページではなく、表示済みのページの番号を使う。</summary>
+    [Theory]
+    [InlineData(1)]
+    [InlineData(9)]
+    public void NumberKeyTogglesPresentedPageUntilNextPageIsPresented(int number)
+    {
+        using var fixture = new Fixture(windowCount: 20);
+        fixture.Open();
+        var oldList = fixture.Launcher.WindowList!;
+        fixture.Presenter.DelayPresentation = true;
+        fixture.Presenter.Raise(new(OverlayPointerKind.Down, oldList.Next.Center));
+        var nextPageFrame = fixture.Presenter.Requests[^1];
+        var newList = fixture.Launcher.WindowList!;
+        var oldHandle = oldList.Rows[number - 1].Window.Handle;
+        var newHandle = newList.Rows[number - 1].Window.Handle;
+        Assert.NotEqual(oldHandle, newHandle);
+
+        fixture.Launcher.Handle(new((int)LauncherWindowInput.Window1 + number - 1));
+        Assert.Equal(new[] { oldHandle }, fixture.Launcher.SelectedWindows);
+
+        nextPageFrame.Paint();
+        fixture.Launcher.Handle(new((int)LauncherWindowInput.Window1 + number - 1));
+        Assert.Equal(new[] { oldHandle, newHandle }, fixture.Launcher.SelectedWindows);
+    }
+
     /// <summary>開くたびに折りたたみ、展開中だけページの数字で選ぶ。</summary>
     [Fact]
     public void CollapseResetsOnReopenAndNumbersToggleOnlyWhileExpanded()

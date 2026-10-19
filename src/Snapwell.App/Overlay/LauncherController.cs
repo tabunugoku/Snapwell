@@ -356,8 +356,14 @@ internal sealed class LauncherController : IDisposable
             {
                 var area = _selection!.WorkArea;
                 var bounds = window.VisualBounds;
-                center = (_target, new(area.X + (area.Width - bounds.Width) / 2,
-                    area.Y + (area.Height - bounds.Height) / 2, bounds.Width, bounds.Height), area);
+                var target = new PixelRect(area.X + (area.Width - bounds.Width) / 2,
+                    area.Y + (area.Height - bounds.Height) / 2, bounds.Width, bounds.Height);
+                // サイズ維持の中央だけは、包含補正と壁の力が目標を端へ押し戻さない範囲にする。
+                var left = Math.Min(area.X, target.X);
+                var top = Math.Min(area.Y, target.Y);
+                var right = Math.Max(area.Right, target.Right);
+                var bottom = Math.Max(area.Bottom, target.Bottom);
+                center = (_target, target, new(left, top, right - left, bottom - top));
                 CloseCore();
             }
         }
@@ -447,7 +453,7 @@ internal sealed class LauncherController : IDisposable
                 return;
             }
 
-            if (!_windowsExpanded || _windowList?.Expanded != true) { return; }
+            if (!_windowsExpanded || _displayedWindowList is not { Expanded: true } list) { return; }
             _mouseSelecting = false;
             if (input is >= LauncherWindowInput.Grid and <= LauncherWindowInput.MainAndStack)
             {
@@ -458,11 +464,11 @@ internal sealed class LauncherController : IDisposable
             }
             else
             {
-                var index = _focusedWindow / LauncherWindowListLayout.PageSize * LauncherWindowListLayout.PageSize +
-                    input - LauncherWindowInput.Window1;
-                if (index >= 0 && index < _windows.Count)
+                // マウスと同じく、描画待ちのページではなく表示済みの行で番号を解決する。
+                var number = input - LauncherWindowInput.Window1 + 1;
+                if (list.Rows.FirstOrDefault(row => row.Number == number) is { } row)
                 {
-                    ToggleWindow(_windows[index].Handle);
+                    ToggleWindow(row.Window.Handle);
                     Draw();
                 }
             }
