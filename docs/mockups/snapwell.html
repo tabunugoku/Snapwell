@@ -195,6 +195,7 @@ kbd {
 .tag.red { background: var(--red-bg); color: var(--red-tx); }
 .tag.green { background: var(--green-bg); color: var(--green-tx); }
 .tag.yellow { background: var(--yellow-bg); color: var(--yellow-tx); }
+.tag.pending { background: var(--surface-2); color: var(--muted); box-shadow: inset 0 0 0 1px var(--border); }
 
 /* 2 列のレイアウト (デスクトップと操作パネル) */
 .stage { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 20px; align-items: start; }
@@ -437,6 +438,17 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
 .app-chrome { height: 36px; display: flex; align-items: center; padding-left: 14px; gap: 10px; font-size: 12px; border-bottom: 1px solid var(--border); }
 .app-chrome .name { flex: 1; }
 .app-chrome .caps span { width: 44px; }
+.dlg { width: min(520px, calc(100vw - 32px)); padding: 24px; border: 1px solid var(--border-strong); border-radius: 12px; background: var(--surface); color: var(--text); }
+.dlg::backdrop { background: var(--dim); }
+.dlg h4 { margin: 0 0 8px; font-size: 16px; color: var(--ink); }
+.dlg p { margin: 0; color: var(--muted); }
+.dlg .rows { max-height: 280px; overflow: auto; margin: 14px 0 10px; }
+.dlg .row { cursor: pointer; }
+.dlg input[type="checkbox"] { accent-color: var(--ink); }
+.dlg-foot { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; margin-top: 16px; }
+.savebar { display: flex; align-items: center; gap: 16px; padding: 14px 32px; border-top: 1px solid var(--border); background: var(--surface); }
+.savebar .hint { flex: 1; }
+.savebar .btn { min-width: 100px; }
 .settings { display: grid; grid-template-columns: 232px minmax(0, 1fr); min-height: 640px; }
 .snav { background: var(--surface-2); border-right: 1px solid var(--border); padding: 14px 10px; }
 .snav button {
@@ -601,6 +613,7 @@ table.list tr:last-child td { border-bottom: 0; }
   .page { padding: 32px 16px 64px; }
   .brand h1 { font-size: 34px; }
   .spage { padding: 20px 16px 32px; }
+  .savebar { padding: 12px 16px; }
   .row { grid-template-columns: 1fr; }
   .plan-cards { grid-template-columns: 1fr; }
   .steps { grid-template-columns: repeat(2, 1fr); }
@@ -665,14 +678,6 @@ table.list tr:last-child td { border-bottom: 0; }
           <div class="field">
             <label for="snapGap">間隔（ウィンドウ同士・画面端）</label>
             <div class="range-row"><input type="range" id="snapGap" min="0" max="24" step="1" value="8"><output id="snapGapOut">8 px</output></div>
-          </div>
-          <div class="field">
-            <span class="label">サイズの変わり方</span>
-            <div class="seg" id="sizeMode">
-              <button type="button" data-v="land" aria-pressed="true">着地時に適用</button>
-              <button type="button" data-v="smooth" aria-pressed="false">なめらか</button>
-            </div>
-            <p class="hint" style="margin-top: 6px">「なめらか」は代理描画（DESIGN §5.4 B）。移動中に浮き上がって見えます。<span class="tag yellow">要検証</span></p>
           </div>
         </div>
         <div class="panel">
@@ -811,10 +816,10 @@ table.list tr:last-child td { border-bottom: 0; }
             <h3>一般</h3>
             <p class="lead">起動と動作の基本です。</p>
             <div class="rows">
-              <div class="row"><div><div class="t">Snapwell を有効にする</div><div class="d">オフにすると、標準のスナップ機能を元の状態に戻します</div></div><div class="ctl"><label class="switch"><input type="checkbox" checked aria-label="有効"><span></span></label></div></div>
-              <div class="row"><div><div class="t">サインイン時に起動する</div><div class="d">スタートアップに登録します</div></div><div class="ctl"><label class="switch"><input type="checkbox" checked aria-label="自動起動"><span></span></label></div></div>
-              <div class="row"><div><div class="t">管理者として起動する</div><div class="d">管理者権限で動くアプリのウィンドウも動かせます。タスク スケジューラに登録します</div></div><div class="ctl"><label class="switch"><input type="checkbox" aria-label="管理者として起動"><span></span></label></div></div>
-              <div class="row"><div><div class="t">言語</div></div><div class="ctl"><select class="input" style="width: 160px"><option>日本語</option><option>English</option></select></div></div>
+              <div class="row"><div><div class="t">Snapwell を有効にする</div><div class="d">オフにすると、標準のスナップ機能を元の状態に戻します。トレイメニューからも操作できます。保存を待たず、すぐに反映されます</div></div><div class="ctl"><label class="switch"><input type="checkbox" checked data-instant aria-label="有効"><span></span></label></div></div>
+              <div class="row"><div><div class="t">サインイン時に起動する</div><div class="d">スタートアップに登録します</div></div><div class="ctl"><label class="switch"><input type="checkbox" checked data-instant aria-label="自動起動"><span></span></label></div></div>
+              <div class="row"><div><div class="t">管理者として起動する</div><div class="d">管理者権限で動くアプリのウィンドウも動かせます。タスク スケジューラに登録します。Windows の確認画面が表示されます。次のサインインから有効です</div></div><div class="ctl"><label class="switch"><input type="checkbox" data-instant aria-label="管理者として起動"><span></span></label></div></div>
+              <div class="row"><div><div class="t">言語 <span class="tag pending">準備中</span></div></div><div class="ctl"><select class="input" style="width: 160px" disabled aria-label="言語"><option>日本語</option><option>English</option></select></div></div>
             </div>
             <div class="group-title">対象のウィンドウ</div>
             <div class="rows">
@@ -828,7 +833,7 @@ table.list tr:last-child td { border-bottom: 0; }
             <h3>分割と間隔</h3>
             <p class="lead">モニターごとに分割案を決めます。1 区画が基本単位で、ウィンドウのサイズはその整数倍になります。</p>
             <div class="rows">
-              <div class="row"><div><div class="t">モニター</div></div><div class="ctl"><select class="input" style="width: 260px"><option>1 · 2560 × 1440 · 150%（メイン）</option><option>2 · 1920 × 1080 · 100%</option></select></div></div>
+              <div class="row"><div><div class="t">モニター</div><div class="d">未設定のモニターは共通の案を使います</div></div><div class="ctl"><select class="input" style="width: 300px" aria-label="モニター"><option>全モニター共通</option><option>1 · 2560 × 1440 · 150%（メイン）</option><option>2 · 1920 × 1080 · 100%</option></select></div></div>
             </div>
             <div class="group-title">分割案</div>
             <div class="chips" id="gPlans"></div>
@@ -849,11 +854,18 @@ table.list tr:last-child td { border-bottom: 0; }
             </div>
             <div class="group-title">区画単位のサイズ変更</div>
             <div class="rows">
-              <div class="row"><div><div class="t">1 回の拡大・縮小の幅</div></div><div class="ctl"><select class="input" style="width: 160px"><option>1 区画</option><option>2 区画</option></select></div></div>
+              <div class="row"><div><div class="t">1 回の拡大・縮小の幅</div></div><div class="ctl"><select class="input" style="width: 160px"><option>1 区画</option><option>2 区画</option><option>3 区画</option><option>4 区画</option></select></div></div>
               <div class="row"><div><div class="t">固定する位置</div><div class="d">拡大・縮小するときに動かさない辺</div></div><div class="ctl"><select class="input" style="width: 160px"><option>左上</option><option>中心</option><option>近い辺</option></select></div></div>
               <div class="row"><div><div class="t">手動でリサイズしたら区画に揃える</div></div><div class="ctl"><label class="switch"><input type="checkbox" aria-label="区画に揃える"><span></span></label></div></div>
             </div>
             <p class="hint" style="margin-top: 10px">見た目の枠（DWMWA_EXTENDED_FRAME_BOUNDS）で計算するため、間隔 0 でも隙間はできません。</p>
+            <div class="group-title">数値での指定</div>
+            <div class="rows">
+              <div class="row"><div><div class="t">列数</div><div class="d">横方向の区画数 (1〜64)</div></div><div class="ctl"><input class="numbox" type="number" id="nCols" min="1" max="64" step="1" aria-label="列数"></div></div>
+              <div class="row"><div><div class="t">行数</div><div class="d">縦方向の区画数 (1〜64)</div></div><div class="ctl"><input class="numbox" type="number" id="nRows" min="1" max="64" step="1" aria-label="行数"></div></div>
+              <div class="row"><div><div class="t">ウィンドウの間隔 (px)</div><div class="d">隣り合う区画の間の隙間 (0〜200 px)</div></div><div class="ctl"><input class="numbox" type="number" id="nGap" min="0" max="200" step="1" aria-label="ウィンドウの間隔 (px)"></div></div>
+              <div class="row"><div><div class="t">画面端の余白 (px)</div><div class="d">モニターの作業領域の外周の余白 (0〜200 px)</div></div><div class="ctl"><input class="numbox" type="number" id="nEdge" min="0" max="200" step="1" aria-label="画面端の余白 (px)"></div></div>
+            </div>
           </div>
 
           <!-- ランチャー -->
@@ -871,33 +883,56 @@ table.list tr:last-child td { border-bottom: 0; }
           <!-- ホットキー -->
           <div class="spage" data-page="keys">
             <h3>ホットキー</h3>
-            <p class="lead">クリックして新しいキーを押すと変更できます。ほかのアプリと重なるキーには印が付きます。</p>
+            <p class="lead">割り当ての一覧です。同じキーを複数の操作に割り当てている行には「重複」と表示します。</p>
             <div class="rows" style="padding: 0">
               <table class="list">
                 <thead><tr><th>操作</th><th>キー</th><th></th></tr></thead>
                 <tbody>
+                  <tr><td>左半分</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>←</kbd></td><td></td></tr>
+                  <tr><td>右半分</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>→</kbd></td><td></td></tr>
+                  <tr><td>上半分</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>↑</kbd></td><td></td></tr>
+                  <tr><td>下半分</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>↓</kbd></td><td></td></tr>
+                  <tr><td>左上の四分割</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>U</kbd></td><td></td></tr>
+                  <tr><td>右上の四分割</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>I</kbd></td><td></td></tr>
+                  <tr><td>左下の四分割</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>J</kbd></td><td></td></tr>
+                  <tr><td>右下の四分割</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>K</kbd></td><td></td></tr>
+                  <tr><td>最大化</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Enter</kbd></td><td></td></tr>
+                  <tr><td>右へ 1 区画広げる</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Shift</kbd> <kbd>→</kbd></td><td></td></tr>
+                  <tr><td>下へ 1 区画広げる</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Shift</kbd> <kbd>↓</kbd></td><td></td></tr>
+                  <tr><td>左へ 1 区画縮める</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Shift</kbd> <kbd>←</kbd></td><td></td></tr>
+                  <tr><td>上へ 1 区画縮める</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Shift</kbd> <kbd>↑</kbd></td><td></td></tr>
+                  <tr><td>左へ 1 区画移動</td><td></td><td><span class="tag pending">未割り当て</span></td></tr>
+                  <tr><td>右へ 1 区画移動</td><td></td><td><span class="tag pending">未割り当て</span></td></tr>
+                  <tr><td>上へ 1 区画移動</td><td></td><td><span class="tag pending">未割り当て</span></td></tr>
+                  <tr><td>下へ 1 区画移動</td><td></td><td><span class="tag pending">未割り当て</span></td></tr>
+                  <tr><td>次のモニターへ</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>PageDown</kbd></td><td></td></tr>
+                  <tr><td>前のモニターへ</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>PageUp</kbd></td><td></td></tr>
+                  <tr><td>一時停止・再開</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Pause</kbd></td><td></td></tr>
                   <tr><td>ランチャーを開く</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Space</kbd></td><td></td></tr>
-                  <tr><td>左・右・上・下の半分</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd></td><td></td></tr>
-                  <tr><td>四分割</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>U</kbd><kbd>I</kbd><kbd>J</kbd><kbd>K</kbd></td><td></td></tr>
-                  <tr><td>1 区画ずつ拡大・縮小</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Shift</kbd> + 矢印</td><td></td></tr>
-                  <tr><td>区画単位で移動</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Win</kbd> + 矢印</td><td><span class="tag red">重複</span></td></tr>
-                  <tr><td>現在のモニターを整列</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>A</kbd></td><td></td></tr>
-                  <tr><td>隣のモニターへ投げる</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>PgUp</kbd><kbd>PgDn</kbd></td><td></td></tr>
-                  <tr><td>一時的に無効化</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Pause</kbd></td><td></td></tr>
+                  <tr><td>現在のモニターを整列 (グリッド)</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>A</kbd></td><td></td></tr>
+                  <tr><td>現在のモニターを横一列に整列</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Shift</kbd> <kbd>H</kbd></td><td></td></tr>
+                  <tr><td>現在のモニターを縦一列に整列</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Shift</kbd> <kbd>V</kbd></td><td></td></tr>
+                  <tr><td>現在のモニターをメインとスタックで整列</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Shift</kbd> <kbd>M</kbd></td><td></td></tr>
+                  <tr><td>全モニターを整列 (グリッド)</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Shift</kbd> <kbd>A</kbd></td><td></td></tr>
+                  <tr><td>左の隣へ寄せる</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Shift</kbd> <kbd>J</kbd></td><td></td></tr>
+                  <tr><td>右の隣へ寄せる</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Shift</kbd> <kbd>L</kbd></td><td></td></tr>
+                  <tr><td>上の隣へ寄せる</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Shift</kbd> <kbd>I</kbd></td><td></td></tr>
+                  <tr><td>下の隣へ寄せる</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Shift</kbd> <kbd>K</kbd></td><td></td></tr>
                 </tbody>
               </table>
             </div>
-            <p class="hint" style="margin-top: 10px"><span class="tag red">重複</span> サンプルの表示です。ほかのアプリが同じキーを登録しているときに出ます。</p>
+            <p class="hint" style="margin-top: 10px">ほかのアプリとの競合は、この画面では確認できません。<span class="tag red">重複</span> は同じキーを Snapwell の複数の操作に割り当てたときに出て、上に警告も表示します。</p>
+            <div style="margin-top: 12px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap"><button class="btn" type="button" id="hkReset">既定に戻す</button><span class="hint">クリックして新しいキーを押す変更 <span class="tag pending">準備中</span></span></div>
             <div class="group-title">Windows のキー</div>
             <div class="rows">
-              <div class="row"><div><div class="t"><kbd>Win</kbd> + 矢印 を Snapwell で使う</div><div class="d">標準のスナップを止めているときだけ使えます（「標準機能」のページ）</div></div><div class="ctl"><label class="switch"><input type="checkbox" checked aria-label="Win 矢印"><span></span></label></div></div>
+              <div class="row"><div><div class="t"><kbd>Win</kbd> + 矢印 を Snapwell で使う <span class="tag pending">準備中</span></div><div class="d">標準のスナップを止めているときだけ使えます（「標準機能」のページ）</div></div><div class="ctl"><label class="switch"><input type="checkbox" checked disabled aria-label="Win 矢印"><span></span></label></div></div>
             </div>
           </div>
 
           <!-- 操作感 -->
           <div class="spage" data-page="feel">
             <h3>操作感</h3>
-            <p class="lead">投げたときの動き方です。4 つはプリセットで、選ぶと下の 5 つの値がその値になります。値を自由に変えると「カスタム」になります。曲線は手を離してから止まるまでの位置です。</p>
+            <p class="lead">投げたときの動き方です。4 つはプリセットで、選ぶと 5 つの値がその値になります。値を変えると「カスタム」になります。曲線は手を離してから止まるまでの位置です。</p>
             <div class="feel-cards" id="feelCards"></div>
             <div class="group-title">試す</div>
             <div class="feel-try">
@@ -907,8 +942,8 @@ table.list tr:last-child td { border-bottom: 0; }
               </div>
               <div class="feel-try-bar">
                 <div class="chips" role="group" aria-label="吸着の方式">
-                  <button class="chip" type="button" data-mode="corners" aria-pressed="false">四隅</button>
                   <button class="chip" type="button" data-mode="zones" aria-pressed="true">区画</button>
+                  <button class="chip" type="button" data-mode="corners" aria-pressed="false">四隅</button>
                 </div>
                 <button class="chip" type="button" id="feelThrow">ランダムに投げる</button>
                 <span class="feel-try-hint">ウィンドウのタイトルバーをつかんで投げます（本体をつかんでも動きません）。いまの 5 つの値で動き、止まる先は本体と同じ規則で決まります（離した速さが 150 px/s 未満だと吸着しません。区画では、中央から上へ強く投げると最大化になります）</span>
@@ -924,7 +959,7 @@ table.list tr:last-child td { border-bottom: 0; }
 
           <!-- アプリのルール -->
           <div class="spage" data-page="rules">
-            <h3>アプリごとのルール</h3>
+            <h3>アプリごとのルール <span class="tag pending">準備中</span></h3>
             <p class="lead">特定のアプリを対象から外したり、位置だけを動かすようにしたりできます。</p>
             <div class="rows" style="padding: 0">
               <table class="list">
@@ -944,12 +979,12 @@ table.list tr:last-child td { border-bottom: 0; }
             <h3>Windows の標準機能</h3>
             <p class="lead">Snapwell が有効な間だけ、次の機能を止めます。止める前の値を保存しておき、無効にしたとき・終了したとき・異常終了のあとに起動したときに戻します。</p>
             <div class="rows">
-              <div class="row"><div><div class="t">ドラッグでのスナップ</div><div class="d mono">SPI_SETWINARRANGING</div></div><div class="ctl"><span class="tag green">停止中</span><label class="switch"><input type="checkbox" checked aria-label="ドラッグでのスナップ"><span></span></label></div></div>
-              <div class="row"><div><div class="t">スナップ レイアウト（最大化ボタンのメニュー）</div><div class="d">レジストリの値 · Windows のビルドで差があります</div></div><div class="ctl"><span class="tag yellow">要検証</span><label class="switch"><input type="checkbox" checked aria-label="スナップ レイアウト"><span></span></label></div></div>
-              <div class="row"><div><div class="t">画面上端のスナップ バー</div><div class="d">24H2 以降</div></div><div class="ctl"><span class="tag yellow">要検証</span><label class="switch"><input type="checkbox" checked aria-label="スナップ バー"><span></span></label></div></div>
-              <div class="row"><div><div class="t"><kbd>Win</kbd> + 矢印</div><div class="d">Snapwell の操作に置き換えます</div></div><div class="ctl"><span class="tag green">置き換え中</span><label class="switch"><input type="checkbox" checked aria-label="Win 矢印"><span></span></label></div></div>
+              <div class="row"><div><div class="t">ドラッグでのスナップ <span class="tag pending">準備中</span></div><div class="d mono">SPI_SETWINARRANGING</div></div><div class="ctl"><span class="tag green">停止中</span><label class="switch"><input type="checkbox" checked aria-label="ドラッグでのスナップ"><span></span></label></div></div>
+              <div class="row"><div><div class="t">スナップ レイアウト（最大化ボタンのメニュー） <span class="tag pending">準備中</span></div><div class="d">レジストリの値 · Windows のビルドで差があります</div></div><div class="ctl"><span class="tag yellow">要検証</span><label class="switch"><input type="checkbox" checked aria-label="スナップ レイアウト"><span></span></label></div></div>
+              <div class="row"><div><div class="t">画面上端のスナップ バー <span class="tag pending">準備中</span></div><div class="d">24H2 以降</div></div><div class="ctl"><span class="tag yellow">要検証</span><label class="switch"><input type="checkbox" checked aria-label="スナップ バー"><span></span></label></div></div>
+              <div class="row"><div><div class="t"><kbd>Win</kbd> + 矢印 <span class="tag pending">準備中</span></div><div class="d">Snapwell の操作に置き換えます</div></div><div class="ctl"><span class="tag green">置き換え中</span><label class="switch"><input type="checkbox" checked aria-label="Win 矢印"><span></span></label></div></div>
             </div>
-            <div style="margin-top: 12px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap"><button class="btn" type="button">標準の動作に戻す</button><span class="hint">保存した値: 2026/10/17 09:58（すべて「オン」）</span></div>
+            <div style="margin-top: 12px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap"><button class="btn" type="button" disabled>標準の動作に戻す</button><span class="tag pending">準備中</span><span class="hint">保存した値: 2026/10/17 09:58（すべて「オン」）。トレイメニューから操作できます</span></div>
           </div>
 
           <!-- 同期 -->
@@ -957,14 +992,15 @@ table.list tr:last-child td { border-bottom: 0; }
             <h3>同期とバックアップ</h3>
             <p class="lead">ホットキー・分割案・間隔・操作感・ルールを、ほかの PC と共有できます。モニター構成ごとの配置は、この PC にだけ保存します。</p>
             <div class="rows">
-              <div class="row"><div><div class="t">同期フォルダ</div><div class="d mono">C:\Users\&lt;ユーザー&gt;\OneDrive\Snapwell</div></div><div class="ctl"><button class="btn" type="button">変更</button><label class="switch"><input type="checkbox" checked aria-label="同期"><span></span></label></div></div>
-              <div class="row"><div><div class="t">最後に同期した時刻</div><div class="d">2026/10/17 10:12 · 変更なし</div></div><div class="ctl"><button class="btn" type="button">今すぐ同期</button></div></div>
+              <div class="row"><div><div class="t">同期フォルダ <span class="tag pending">準備中</span></div><div class="d mono">C:\Users\&lt;ユーザー&gt;\OneDrive\Snapwell</div></div><div class="ctl"><button class="btn" type="button">変更</button><label class="switch"><input type="checkbox" checked aria-label="同期"><span></span></label></div></div>
+              <div class="row"><div><div class="t">最後に同期した時刻 <span class="tag pending">準備中</span></div><div class="d">2026/10/17 10:12 · 変更なし</div></div><div class="ctl"><button class="btn" type="button">今すぐ同期</button></div></div>
             </div>
             <div class="group-title">ファイル</div>
             <div class="rows">
               <div class="row"><div><div class="t">書き出す</div><div class="d">設定を 1 つの JSON ファイルに保存します</div></div><div class="ctl"><button class="btn" type="button">書き出す</button></div></div>
-              <div class="row"><div><div class="t">取り込む</div><div class="d">取り込む前に、今の設定との違いを表示します。全部を置き換えるか、一部だけ取り込むかを選べます</div></div><div class="ctl"><button class="btn" type="button">取り込む</button></div></div>
+              <div class="row"><div><div class="t">取り込む</div><div class="d">取り込む前に、今の設定との違いを表示します。全部を置き換えるか、一部だけ取り込むかを選べます</div></div><div class="ctl"><button class="btn" type="button" id="importBtn">取り込む</button></div></div>
             </div>
+            <p class="hint" style="margin-top: 10px" id="importNote">取り込んだあと、画面下の「保存」で確定します。</p>
           </div>
 
           <!-- 外観 -->
@@ -972,11 +1008,12 @@ table.list tr:last-child td { border-bottom: 0; }
             <h3>外観</h3>
             <p class="lead">ウィンドウの角の形と、Snapwell のオーバーレイの見た目です。</p>
             <div class="rows">
-              <div class="row"><div><div class="t">ウィンドウの角</div><div class="d">DWM の角の設定を使います。半径は Windows が決めます（約 8 px）</div></div><div class="ctl"><select class="input" style="width: 200px" id="cornerSel"><option value="8">角丸を強制する</option><option value="4">小さい角丸</option><option value="0">角丸なし</option><option value="win">Windows の既定</option></select></div></div>
-              <div class="row"><div><div class="t">大きな角丸（macOS 風）</div><div class="d">半径を自由に決める方法を検証しています</div></div><div class="ctl"><span class="tag yellow">要検証</span><label class="switch"><input type="checkbox" disabled aria-label="大きな角丸"><span></span></label></div></div>
+              <div class="row"><div><div class="t">ウィンドウの角</div><div class="d">DWM の角の設定を使います。半径は Windows が決めます（約 8 px）</div></div><div class="ctl"><select class="input" style="width: 200px" id="cornerSel"><option value="8">角丸を強制する</option><option value="4">小さい角丸</option><option value="0">角丸なし</option><option value="win" selected>Windows の既定</option></select></div></div>
+              <div class="row"><div><div class="t">区画のプレビュー</div><div class="d">ドラッグ中に、吸着先の区画を枠で表示します</div></div><div class="ctl"><label class="switch"><input type="checkbox" checked aria-label="区画のプレビュー"><span></span></label></div></div>
+              <div class="row"><div><div class="t">大きな角丸（macOS 風） <span class="tag pending">準備中</span></div><div class="d">半径を自由に決める方法を検証しています</div></div><div class="ctl"><span class="tag yellow">要検証</span><label class="switch"><input type="checkbox" disabled aria-label="大きな角丸"><span></span></label></div></div>
             </div>
             <div class="group-title">プレビュー</div>
-            <div class="corner-demo"><div class="cd" id="cornerDemo">角丸を強制する</div><div class="cd" style="border-radius: 12px; opacity: 0.55">大きな角丸（参考）</div></div>
+            <div class="corner-demo"><div class="cd" id="cornerDemo">Windows の既定</div><div class="cd" style="border-radius: 12px; opacity: 0.55">大きな角丸（参考）</div></div>
             <div class="group-title">オーバーレイ</div>
             <div class="rows">
               <div class="row"><div><div class="t">区画の線を表示する</div></div><div class="ctl"><label class="switch"><input type="checkbox" checked aria-label="区画の線"><span></span></label></div></div>
@@ -985,7 +1022,28 @@ table.list tr:last-child td { border-bottom: 0; }
           </div>
         </div>
       </div>
+      <div class="savebar">
+        <span class="hint" id="saveState">保存すると、起動中の Snapwell に反映されます</span>
+        <button class="btn primary" type="button" id="saveBtn">保存</button>
+      </div>
     </div>
+    <dialog class="dlg" id="importDlg" aria-labelledby="importTitle">
+      <h4 id="importTitle">取り込む設定の確認</h4>
+      <p>今の設定との違いです。一部だけ取り込む場合は、項目を選んでください。</p>
+      <div class="rows" id="importList">
+        <label class="row"><div><div class="t">ウィンドウの角</div><div class="d">Windows の既定 → 角丸を強制する</div></div><div class="ctl"><input type="checkbox" aria-label="ウィンドウの角"></div></label>
+        <label class="row"><div><div class="t">分割案</div><div class="d">8 × 8 → 12 × 6</div></div><div class="ctl"><input type="checkbox" aria-label="分割案"></div></label>
+        <label class="row"><div><div class="t">ウィンドウの間隔</div><div class="d">8 px → 12 px</div></div><div class="ctl"><input type="checkbox" aria-label="ウィンドウの間隔"></div></label>
+        <label class="row"><div><div class="t">操作感</div><div class="d">Airy → Heavy</div></div><div class="ctl"><input type="checkbox" aria-label="操作感"></div></label>
+        <label class="row"><div><div class="t">現在のモニターを整列 (グリッド)</div><div class="d">Ctrl+Alt+A → Ctrl+Alt+G</div></div><div class="ctl"><input type="checkbox" aria-label="整列のキー"></div></label>
+      </div>
+      <p class="hint">取り込むだけでは保存されません。画面下の「保存」で確定します。</p>
+      <div class="dlg-foot">
+        <button class="btn primary" type="button" id="importAll">全体を置き換える</button>
+        <button class="btn" type="button" id="importSome" disabled>選んだ項目だけ</button>
+        <button class="btn" type="button" id="importCancel" autofocus>取り消す</button>
+      </div>
+    </dialog>
   </section>
 
   <!-- 04 トレイメニュー -->
@@ -1006,7 +1064,7 @@ table.list tr:last-child td { border-bottom: 0; }
           <label class="switch"><input type="checkbox" id="trayToggle" checked aria-label="有効"><span></span></label>
         </div>
         <div class="tm-sub">モニター構成: ドック接続 · 3 画面</div>
-        <div class="tm-sub">プロファイル</div>
+        <div class="tm-sub">プロファイル <span class="tag pending">準備中</span></div>
         <div id="trayProfiles"></div>
         <div class="tm-sep"></div>
         <button class="tm-item" type="button" role="menuitem"><span class="check"></span><span class="grow">現在のモニターを整列</span></button>
@@ -1071,7 +1129,7 @@ table.list tr:last-child td { border-bottom: 0; }
           <div class="rows">
             <div class="row"><div><div class="t">ランチャーを開く</div></div><div class="ctl"><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Space</kbd> <span class="tag green">使えます</span></div></div>
             <div class="row"><div><div class="t">半分・四分割</div></div><div class="ctl"><kbd>Ctrl</kbd> <kbd>Alt</kbd> + 矢印 / U I J K <span class="tag green">使えます</span></div></div>
-            <div class="row"><div><div class="t">区画単位で移動</div></div><div class="ctl"><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Win</kbd> + 矢印 <span class="tag red">重複</span></div></div>
+            <div class="row"><div><div class="t">区画単位で移動</div></div><div class="ctl"><span class="tag pending">未割り当て</span></div></div>
           </div>
           <p class="hint" style="margin-top: 10px">重なっているキーは、あとで設定の「ホットキー」で変えられます。</p>
         </div></div>
@@ -1493,7 +1551,6 @@ function bindSeg(id, onChange) {
 }
 
 bindSeg('#snapMode', (v) => { snap.mode = v; clearFx(); });
-bindSeg('#sizeMode', (v) => { snap.sizeMode = v; });
 $('#snapGap').addEventListener('input', (ev) => {
   snap.gap = Number(ev.target.value);
   $('#snapGapOut').textContent = `${snap.gap} px`;
@@ -1958,6 +2015,7 @@ function initSettings() {
   initGridPage();
   initFeelPage();
   initPresetPage();
+  initSaveBar();
   const cornerSel = $('#cornerSel');
   cornerSel.addEventListener('change', () => {
     const v = cornerSel.value;
@@ -1966,6 +2024,39 @@ function initSettings() {
     demo.textContent = cornerSel.options[cornerSel.selectedIndex].text;
   });
   $('#cornerDemo').style.borderRadius = '8px';
+}
+// 保存バーと取り込み。保存を待たず反映する項目（data-instant）以外を変えると、保存していない変更になる
+function initSaveBar() {
+  const state = $('#saveState');
+  const idle = '保存すると、起動中の Snapwell に反映されます';
+  const mark = () => { state.textContent = '保存していない変更があります'; };
+  const settings = $('.settings');
+  const changed = (ev) => { if (!ev.target.closest('[data-instant], .feel-try')) mark(); };
+  settings.addEventListener('input', changed);
+  settings.addEventListener('change', changed);
+  settings.addEventListener('click', (ev) => {
+    if (ev.target.closest('#gPlans .chip[data-c], .feel-card, #feelReset, #pAll, #pNone, #pDefault, #hkReset')) mark();
+  });
+  $('#saveBtn').addEventListener('click', () => {
+    state.textContent = '保存しました。Snapwell が起動していれば、すぐに反映されます。';
+    setTimeout(() => { if (state.textContent.startsWith('保存しました')) state.textContent = idle; }, 4000);
+  });
+  const dlg = $('#importDlg');
+  const boxes = $$('#importList input');
+  $('#importBtn').addEventListener('click', () => {
+    boxes.forEach((b) => { b.checked = false; });
+    $('#importSome').disabled = true;
+    dlg.showModal();
+  });
+  $('#importList').addEventListener('change', () => { $('#importSome').disabled = !boxes.some((b) => b.checked); });
+  const done = () => {
+    dlg.close();
+    $('#importNote').textContent = '画面に取り込みました。画面下の「保存」で確定してください。';
+    mark();
+  };
+  $('#importAll').addEventListener('click', done);
+  $('#importSome').addEventListener('click', done);
+  $('#importCancel').addEventListener('click', () => dlg.close());
 }
 function showPage(id) {
   $$('#snav button').forEach((b) => b.setAttribute('aria-current', String(b.dataset.page === id)));
@@ -1977,7 +2068,7 @@ const PLANS = [[8, 8], [12, 6], [6, 4], [4, 4], [16, 9]];
 function initGridPage() {
   const chips = $('#gPlans');
   chips.innerHTML = PLANS.map(([c, r]) => `<button type="button" class="chip" data-c="${c}" data-r="${r}">${c} × ${r}</button>`).join('')
-    + '<button type="button" class="chip" disabled style="opacity: 0.55">カスタム…</button>';
+    + '<button type="button" class="chip" id="gCustom" disabled style="opacity: 0.55">カスタム…</button>';
   chips.addEventListener('click', (ev) => {
     const b = ev.target.closest('button[data-c]');
     if (!b) return;
@@ -1987,20 +2078,46 @@ function initGridPage() {
   });
   $('#gGap').addEventListener('input', (ev) => {
     G.gap = Number(ev.target.value);
-    if (G.linked) { G.edge = G.gap; $('#gEdge').value = G.edge; }
+    if (G.linked) G.edge = G.gap;
     renderGrid();
   });
   $('#gEdge').addEventListener('input', (ev) => { G.edge = Number(ev.target.value); renderGrid(); });
+  // 数値での指定。範囲外は範囲内に丸め、入力を終えた時点で表示も丸め直す
+  const bindNum = (id, lo, hi, apply) => {
+    $(id).addEventListener('input', (ev) => {
+      if (ev.target.value === '') return;
+      apply(Math.min(hi, Math.max(lo, Math.round(Number(ev.target.value)))));
+      renderGrid();
+    });
+    $(id).addEventListener('change', () => renderGrid(true));
+  };
+  bindNum('#nCols', 1, 64, (v) => { G.cols = v; });
+  bindNum('#nRows', 1, 64, (v) => { G.rows = v; });
+  bindNum('#nGap', 0, 200, (v) => { G.gap = v; if (G.linked) G.edge = v; });
+  bindNum('#nEdge', 0, 200, (v) => { G.edge = v; if (v !== G.gap) G.linked = false; });
   $('#gLink').addEventListener('change', (ev) => {
     G.linked = ev.target.checked;
-    $('#gEdge').disabled = G.linked;
-    if (G.linked) { G.edge = G.gap; $('#gEdge').value = G.edge; }
+    if (G.linked) G.edge = G.gap;
     renderGrid();
   });
   renderGrid();
 }
-function renderGrid() {
+function renderGrid(force) {
+  const isPreset = PLANS.some(([c, r]) => c === G.cols && r === G.rows);
   $$('#gPlans .chip[data-c]').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.c) === G.cols && Number(b.dataset.r) === G.rows)));
+  // プリセットに無い値のときだけ「カスタム」が選ばれた状態になる
+  const custom = $('#gCustom');
+  custom.setAttribute('aria-pressed', String(!isPreset));
+  custom.style.opacity = isPreset ? '0.55' : '1';
+  custom.textContent = isPreset ? 'カスタム…' : `カスタム (${G.cols} × ${G.rows})`;
+  // スライダーは 0〜32 まで。数値で超えた分は端に張り付く。編集中の欄は書き換えない
+  $('#gGap').value = Math.min(32, G.gap);
+  $('#gEdge').value = Math.min(32, G.edge);
+  $('#gEdge').disabled = G.linked;
+  $('#gLink').checked = G.linked;
+  [['#nCols', G.cols], ['#nRows', G.rows], ['#nGap', G.gap], ['#nEdge', G.edge]].forEach(([id, v]) => {
+    if (force || document.activeElement !== $(id)) $(id).value = v;
+  });
   $('#gGapOut').textContent = `${G.gap} px`;
   $('#gEdgeOut').textContent = `${G.edge} px`;
   const box = $('#gPreview');
@@ -2061,8 +2178,8 @@ const TUNE = [
   { key: 'm', name: '質量 m', desc: 'feel の磁石場では力が質量に比例するため、吸着の動きは変わりません。導かれる値の k と c に効きます', min: 0.15, max: 8, log: true, step: 0.01, digits: 2, unit: '', tol: 0.005 },
   { key: 'f', name: '固有振動数 f', desc: '大きいほど素早く吸着します', min: 0.4, max: 7, log: true, step: 0.01, digits: 2, unit: 'Hz', tol: 0.005 },
   { key: 'z', name: '減衰比 ζ', desc: '1 に近いほど行き過ぎません', min: 0.1, max: 1.6, log: false, step: 0.01, digits: 2, unit: '', tol: 0.005 },
-  { key: 'magnet', name: '磁石の強さ', desc: '停止点へ吸い寄せる力。大きいほど強く引きます', min: 0, max: 2, log: false, step: 0.05, digits: 2, unit: '', tol: 0.005 },
-  { key: 'radius', name: '吸着半径', desc: '強く吸い込まれる距離', min: 8, max: 96, log: false, step: 1, digits: 0, unit: 'px', tol: 0.5 },
+  { key: 'magnet', name: '磁石の強さ', desc: '停止点へ吸い寄せる力。大きいほど強く引きます (0〜2)', min: 0, max: 2, log: false, step: 0.05, digits: 2, unit: '', tol: 0.005 },
+  { key: 'radius', name: '吸着半径', desc: '強く吸い込まれる距離 (px)', min: 8, max: 96, log: false, step: 1, digits: 0, unit: 'px', tol: 0.5 },
 ];
 const tuneClamp = (t, v) => Math.min(t.max, Math.max(t.min, Number.isFinite(v) ? v : t.min));
 const toSlider = (t, v) => 1000 * (t.log ? Math.log(v / t.min) / Math.log(t.max / t.min) : (v - t.min) / (t.max - t.min));
@@ -2355,9 +2472,9 @@ function initFeelTry(getTune) {
     flight = null;
     release(Math.cos(a) * sp, Math.sin(a) * sp);
   });
-  $$('[data-mode]').forEach((b) => b.addEventListener('click', () => {
+  $$('.feel-try-bar [data-mode]').forEach((b) => b.addEventListener('click', () => {
     mode = b.dataset.mode;
-    $$('[data-mode]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    $$('.feel-try-bar [data-mode]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
     cancelAnimationFrame(rafId);
     flight = null;
     layout();
@@ -2378,11 +2495,13 @@ function initFeelPage() {
     + `<svg viewBox="0 0 160 54" preserveAspectRatio="none"><line x1="0" x2="160" y1="12" y2="12"/>`
     + `<path class="c" d="${curvePath(f, 160, 54)}"/></svg></button>`).join('');
 
-  $('#feelAdvanced').innerHTML = TUNE.map((t) => `<div class="row" data-key="${t.key}"><div><div class="t">${t.name}</div><div class="d">${t.desc}</div></div>`
+  $('#feelAdvanced').innerHTML = `<div class="row"><div><div class="t">吸着の方式</div><div class="d">投げたウィンドウを吸い寄せる対象</div></div>`
+    + `<div class="ctl"><select class="input" style="width: 240px" aria-label="吸着の方式"><option>区画 — 半分・四分割・最大化</option><option>四隅 — サイズを変えずに移動</option></select></div></div>`
+    + TUNE.map((t) => `<div class="row" data-key="${t.key}"><div><div class="t">${t.name}</div><div class="d">${t.desc}</div></div>`
     + `<div class="ctl tune"><input type="range" min="0" max="1000" step="1" aria-label="${t.name}（スライダー）">`
     + `<input class="numbox" type="number" min="${t.min}" max="${t.max}" step="${t.step}" aria-label="${t.name}">`
     + `<span class="unit">${t.unit}</span></div></div>`).join('')
-    + `<div class="row"><div><div class="t">導かれる値</div><div class="d">k = m(2πf)², c = 2ζ√(km)、惰性 m/c</div></div><div class="ctl mono" id="feelDerived"></div></div>`;
+    + `<div class="row"><div><div class="t">導かれる値</div><div class="d">k = m(2πf)², c = 2ζ√(km)</div></div><div class="ctl mono" id="feelDerived"></div></div>`;
 
   const isCustom = () => TUNE.some((t) => Math.abs(tune[t.key] - (t.key === 'radius' ? 28 : FEELS[base][t.key])) > t.tol);
   const refresh = (from) => {
