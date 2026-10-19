@@ -11,6 +11,7 @@ public enum SettingsField
 {
     Grid, Gap, Edge, Feel, SnapMode, ReduceMotion, ShowZonePreview, LongPressMilliseconds, LongPressDistance,
     MagnetStrength, SnapRadius, Hotkey, ResizeStep, ResizeAnchor,
+    CornerPreference, ShowZoneLines, ShowPredictionLine, SnapAfterResize, MonitorGrids,
 }
 
 /// <summary>ホットキーはコマンドごと、それ以外は項目ごとに識別する。</summary>
@@ -50,7 +51,12 @@ public static class SettingsTransfer
     {
         var left = current.Normalize();
         var right = other.Normalize();
-        return left with { Hotkeys = [] } != right with { Hotkeys = [] } ||
+        var noHotkeys = new Dictionary<WindowCommand, KeyChordSpec>();
+        var noMonitors = new Dictionary<string, GridSettings>();
+        return left with { Hotkeys = noHotkeys, MonitorGrids = noMonitors } !=
+            right with { Hotkeys = noHotkeys, MonitorGrids = noMonitors } ||
+            left.MonitorGrids.Count != right.MonitorGrids.Count ||
+            left.MonitorGrids.Any(pair => !right.MonitorGrids.TryGetValue(pair.Key, out var grid) || grid != pair.Value) ||
             left.Hotkeys.Count != right.Hotkeys.Count ||
             left.Hotkeys.Any(pair => !right.Hotkeys.TryGetValue(pair.Key, out var chord) || chord != pair.Value);
     }
@@ -159,6 +165,11 @@ public static class SettingsTransfer
             value = key.Field switch
             {
                 SettingsField.Grid => value with { Grid = imported.Grid },
+                SettingsField.CornerPreference => value with { CornerPreference = imported.CornerPreference },
+                SettingsField.ShowZoneLines => value with { ShowZoneLines = imported.ShowZoneLines },
+                SettingsField.ShowPredictionLine => value with { ShowPredictionLine = imported.ShowPredictionLine },
+                SettingsField.SnapAfterResize => value with { SnapAfterResize = imported.SnapAfterResize },
+                SettingsField.MonitorGrids => value with { MonitorGrids = imported.MonitorGrids },
                 SettingsField.Gap => value with { Gap = imported.Gap },
                 SettingsField.Edge => value with { Edge = imported.Edge },
                 SettingsField.Feel => value with
@@ -206,6 +217,13 @@ public static class SettingsTransfer
     private static IReadOnlyList<SettingsDifference> Compare(PortableSettings current, PortableSettings imported)
     {
         var differences = new List<SettingsDifference>();
+        Add(SettingsField.CornerPreference, "ウィンドウの角", CornerName(current.CornerPreference),
+            CornerName(imported.CornerPreference));
+        Add(SettingsField.ShowZoneLines, "区画の線", OnOff(current.ShowZoneLines), OnOff(imported.ShowZoneLines));
+        Add(SettingsField.ShowPredictionLine, "予測の線", OnOff(current.ShowPredictionLine), OnOff(imported.ShowPredictionLine));
+        Add(SettingsField.SnapAfterResize, "手動リサイズ後に区画へ揃える", OnOff(current.SnapAfterResize),
+            OnOff(imported.SnapAfterResize));
+        Add(SettingsField.MonitorGrids, "モニター別の分割案", MonitorPlans(current), MonitorPlans(imported));
         Add(SettingsField.Grid, "分割案", $"{current.Grid.Columns} × {current.Grid.Rows}",
             $"{imported.Grid.Columns} × {imported.Grid.Rows}");
         Add(SettingsField.Gap, "ウィンドウの間隔", Pixels(current.Gap), Pixels(imported.Gap));
@@ -250,6 +268,21 @@ public static class SettingsTransfer
     }
 
     private static string Milliseconds(int value) => value.ToString(CultureInfo.InvariantCulture) + " ms";
+
+    private static string OnOff(bool value) => value ? "オン" : "オフ";
+
+    private static string CornerName(WindowCornerPreference value) => value switch
+    {
+        WindowCornerPreference.Round => "角丸を強制する",
+        WindowCornerPreference.RoundSmall => "小さい角丸",
+        WindowCornerPreference.DoNotRound => "角丸なし",
+        _ => "Windows の既定",
+    };
+
+    private static string MonitorPlans(PortableSettings value) => string.Join(" / ",
+        value.MonitorGrids.OrderBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase).Select(pair =>
+            $"{pair.Key.ToUpperInvariant()}: {pair.Value.Columns} × {pair.Value.Rows}, " +
+            $"間隔 {Number(pair.Value.Gap)}, 余白 {Number(pair.Value.Edge)}"));
 
     private static string FeelName(PortableSettings value) => value.Mass is null && value.Frequency is null &&
         value.DampingRatio is null
