@@ -65,6 +65,22 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="区画のプレビュー" Style="{StaticResource SnapwellRowTitleStyle}" />
+                            <TextBlock Text="ドラッグ中に、吸着先の区画を枠で表示します"
+                                       Style="{StaticResource SnapwellRowDescriptionStyle}" />
+                        </StackPanel>
+                        <ToggleSwitch x:Name="ZonePreviewToggle" Grid.Column="1" OnContent="" OffContent="" MinWidth="0"
+                                      Style="{StaticResource SnapwellToggleSwitchStyle}"
+                                      VerticalAlignment="Center" AutomationProperties.Name="区画のプレビュー"
+                                      Toggled="ZonePreview_Toggled" />
+                    </Grid>
+                    <Border Style="{StaticResource SnapwellRowDividerStyle}" />
+                    <Grid Style="{StaticResource SnapwellRowGridStyle}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
                             <Grid ColumnSpacing="6" HorizontalAlignment="Left">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />

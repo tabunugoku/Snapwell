@@ -38,14 +38,6 @@
             <TextBlock Text="投げたときの動き方です。4 つはプリセットで、選ぶと 5 つの値がその値になります。値を変えると「カスタム」になります。曲線は手を離してから止まるまでの位置です。"
                        Style="{StaticResource SnapwellLeadTextStyle}" />
 
-            <ComboBox x:Name="FeelBox" Header="物理モデルのプリセット" HorizontalAlignment="Stretch"
-                      Visibility="Collapsed" SelectionChanged="Feel_SelectionChanged">
-                <ComboBoxItem Content="Airy — 軽やかに、少し引き寄せる" Tag="Airy" />
-                <ComboBoxItem Content="Snappy — きびきび、正確に" Tag="Snappy" />
-                <ComboBoxItem Content="Heavy — 重く、落ち着いて" Tag="Heavy" />
-                <ComboBoxItem Content="Bouncy — 軽く、弾むように" Tag="Bouncy" />
-            </ComboBox>
-
             <Grid ColumnSpacing="10">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
