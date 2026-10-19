@@ -8,6 +8,38 @@ namespace Snapwell.Core.Tests.Layout;
 
 public sealed class MonitorGridResolverTests
 {
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void EditingOnlyDimensionsPreservesInheritedSpacingAndFollowsLaterCommonChanges(bool existing)
+    {
+        var settings = new PortableSettings { Gap = 9, Edge = 12 };
+        if (existing)
+        {
+            settings.MonitorGrids["one"] = new(12, 6);
+        }
+
+        var grid = MonitorGridResolver.GetForEditing(settings, "one");
+        var edited = MonitorGridResolver.Update(settings, "one", grid with { Columns = 5, Rows = 3 });
+        Assert.Null(edited.MonitorGrids["one"].Gap);
+        Assert.Null(edited.MonitorGrids["one"].Edge);
+        var later = edited with { Gap = 20, Edge = 30 };
+        Assert.Equal(new(5, 3, 20, 30), MonitorGridResolver.Get(later, "one"));
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void EditingOneSpacingValueMakesOnlyThatValueExplicit(bool gap)
+    {
+        var settings = new PortableSettings { MonitorGrids = new() { ["one"] = new(12, 6) } };
+        var grid = MonitorGridResolver.GetForEditing(settings, "one");
+        var edited = MonitorGridResolver.Update(settings, "one",
+            gap ? grid with { Gap = 15 } : grid with { Edge = 15 });
+        Assert.Equal(gap ? 15.0 : null, edited.MonitorGrids["one"].Gap);
+        Assert.Equal(gap ? null : 15.0, edited.MonitorGrids["one"].Edge);
+    }
+
     [Fact]
     public void KnownMonitorUsesItsPlanAndMissingMonitorFallsBackToCommonPlan()
     {
