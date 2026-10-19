@@ -24,6 +24,8 @@ internal sealed class ResidentRuntime : IAppRuntime
     private readonly Action<bool>? _setOverlayEnabled;
     private readonly IReadOnlyList<IDisposable>? _overlays;
     private readonly LongPressDetector? _longPress;
+    private readonly CornerWindowController? _corners;
+    private readonly ResizeSnapController? _resize;
     private bool _disposed;
     private bool _enabled = true;
 
@@ -32,7 +34,8 @@ internal sealed class ResidentRuntime : IAppRuntime
         Action<IReadOnlyList<HotkeyBinding>> applyBindings, LauncherController? launcher = null,
         IZonePreview? preview = null, Action<bool>? setOverlayEnabled = null,
         IReadOnlyList<IDisposable>? overlays = null, LongPressDetector? longPress = null,
-        ForegroundTargetTracker? foregroundTargets = null)
+        ForegroundTargetTracker? foregroundTargets = null, CornerWindowController? corners = null,
+        ResizeSnapController? resize = null)
     {
         _drag = drag;
         _hotkeys = hotkeys;
@@ -47,6 +50,8 @@ internal sealed class ResidentRuntime : IAppRuntime
         _setOverlayEnabled = setOverlayEnabled;
         _overlays = overlays;
         _longPress = longPress;
+        _corners = corners;
+        _resize = resize;
         if (_longPress is not null)
         {
             _longPress.CandidateReady += HandleLongPress;
@@ -63,10 +68,12 @@ internal sealed class ResidentRuntime : IAppRuntime
             }
 
             _enabled = enabled;
+            _corners?.SetEnabled(enabled);
             _launcher?.SetEnabled(enabled);
             _drag.Enabled = enabled && _launcher?.IsOpen != true;
             if (!enabled)
             {
+                _resize?.Cancel();
                 _longPress?.Cancel();
                 _preview?.Hide();
             }
@@ -96,6 +103,7 @@ internal sealed class ResidentRuntime : IAppRuntime
             }
 
             _launcher?.ValidateTarget();
+            _corners?.Handle(value);
             if (_launcher?.IsOpen != true && _longPress?.HasOpenedLauncher == true)
             {
                 // 描画失敗やオーバーレイ側の操作で閉じた表示の所有権を、次の表示へ持ち越さない。
@@ -152,6 +160,8 @@ internal sealed class ResidentRuntime : IAppRuntime
                 {
                     _drag.Handle(value);
                 }
+
+                _resize?.Handle(value, _enabled && !consumeMoveSize && _launcher?.IsOpen != true);
             }
 
             _drag.Enabled = _enabled && _launcher?.IsOpen != true;
@@ -254,6 +264,8 @@ internal sealed class ResidentRuntime : IAppRuntime
             }
 
             _disposed = true;
+            _resize?.Cancel();
+            _corners?.SetEnabled(false);
             if (_longPress is not null)
             {
                 _longPress.CandidateReady -= HandleLongPress;

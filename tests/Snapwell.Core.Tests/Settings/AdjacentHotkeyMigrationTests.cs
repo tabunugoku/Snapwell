@@ -44,7 +44,7 @@ public sealed class AdjacentHotkeyMigrationTests : IDisposable
         Assert.Empty(HotkeyCatalog.FindConflicts(stored.Hotkeys));
         store.Save(stored);
         using var document = JsonDocument.Parse(File.ReadAllText(SettingsPath));
-        Assert.Equal(5, document.RootElement.GetProperty("SchemaVersion").GetInt32());
+        Assert.Equal(PortableSettings.CurrentSchemaVersion, document.RootElement.GetProperty("SchemaVersion").GetInt32());
         Assert.Equal(stored.Hotkeys, store.Load().Value.Hotkeys);
     }
 

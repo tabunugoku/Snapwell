@@ -7,6 +7,129 @@ namespace Snapwell.Platform.Tests.Hooks;
 public sealed class HookThreadTests
 {
     [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void LifecycleFloodNeverDisplacesCriticalEventsAtEitherDeliveryStage(bool callbackStage)
+    {
+        using var api = new FakeHookApi();
+        using var hooks = new HookThread(new HotkeyMatcher(), 4, api);
+        void Send(RawHookEvent value)
+        {
+            if (callbackStage)
+            {
+                hooks.Enqueue(value);
+            }
+            else
+            {
+                hooks.Publish(value);
+            }
+        }
+
+        RawHookEvent[] critical =
+        [
+            new(RawHookKind.MoveStart, 42),
+            new(RawHookKind.MouseButton, Detail: (int)MouseButtonKind.Left, IsDown: true),
+            new(RawHookKind.MoveEnd, 42, Time: 123),
+            new(RawHookKind.MouseButton, Detail: (int)MouseButtonKind.Left, IsDown: false),
+            new(RawHookKind.Key, Detail: 7),
+        ];
+        foreach (var value in critical)
+        {
+            Send(value);
+            for (var index = 0; index < 2048; index++)
+            {
+                Send(new(index % 2 == 0 ? RawHookKind.WindowShown : RawHookKind.WindowDestroyed, index + 100));
+            }
+        }
+
+        if (callbackStage)
+        {
+            Assert.True(hooks.Start());
+            Assert.True(hooks.Stop());
+        }
+
+        var delivered = new List<HookEvent>();
+        while (hooks.Events.TryRead(out var value))
+        {
+            delivered.Add(value);
+        }
+
+        HookEvent[] expected =
+        [
+            new MoveSizeStarted(42),
+            new MouseButton(MouseButtonKind.Left, true, 0, 0, 0),
+            new MoveSizeEnded(42, 123),
+            new MouseButton(MouseButtonKind.Left, false, 0, 0, 0),
+            new KeyChord(7),
+        ];
+        Assert.Equal(expected, delivered.Where(value => value is not (WindowShown or WindowDestroyed)));
+        Assert.InRange(delivered.Count(value => value is WindowShown or WindowDestroyed), 1, 4);
+    }
+
+    [Fact]
+    public void ConsumingLifecycleEventsReleasesCapacityForLaterNotifications()
+    {
+        using var api = new FakeHookApi();
+        using var hooks = new HookThread(new HotkeyMatcher(), 1, api);
+        hooks.Publish(new(RawHookKind.WindowShown, 1));
+        hooks.Publish(new(RawHookKind.WindowDestroyed, 2));
+        Assert.True(hooks.Events.TryRead(out var first));
+        Assert.Equal(new WindowShown(1), first);
+        Assert.False(hooks.Events.TryRead(out _));
+        hooks.Publish(new(RawHookKind.WindowShown, 3));
+        Assert.True(hooks.Events.TryRead(out var later));
+        Assert.Equal(new WindowShown(3), later);
+    }
+
+    [Fact]
+    public async Task CriticalCallbackEventsRemainOrderedDuringConcurrentDelivery()
+    {
+        var buffer = new HookInputBuffer(4);
+        var producer = Task.Run(() =>
+        {
+            for (var index = 1; index <= 10000; index++)
+            {
+                buffer.Write(new(RawHookKind.Key, Detail: index));
+            }
+        });
+        var last = 0;
+        while (!producer.IsCompleted)
+        {
+            if (buffer.TryRead(out var value))
+            {
+                Assert.Equal(++last, value.Detail);
+            }
+        }
+
+        await producer;
+        while (buffer.TryRead(out var remaining))
+        {
+            Assert.Equal(++last, remaining.Detail);
+        }
+
+        Assert.Equal(10000, last);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void WindowLifecycleEventsAreDeliveredOutsideCallback(bool shown)
+    {
+        using var api = new FakeHookApi();
+        using var hooks = new HookThread(new HotkeyMatcher(), 8, api);
+        hooks.Publish(new RawHookEvent(shown ? RawHookKind.WindowShown : RawHookKind.WindowDestroyed, 42));
+        Assert.True(hooks.Events.TryRead(out var value));
+        if (shown)
+        {
+            Assert.Equal((nint)42, Assert.IsType<WindowShown>(value).Handle);
+        }
+        else
+        {
+            Assert.Equal((nint)42, Assert.IsType<WindowDestroyed>(value).Handle);
+        }
+    }
+
+    [Theory]
     [InlineData(123u)]
     [InlineData(4294967280u)]
     [InlineData(0u)]
@@ -31,8 +154,8 @@ public sealed class HookThreadTests
         Assert.True(hooks.Start());
         var results = await Task.WhenAll(Task.Run(hooks.Stop), Task.Run(hooks.Stop));
         Assert.All(results, Assert.True);
-        Assert.Equal(5, api.RegisterCount);
-        Assert.Equal(5, api.UnregisterCount);
+        Assert.Equal(7, api.RegisterCount);
+        Assert.Equal(7, api.UnregisterCount);
         Assert.Equal(1, api.PostCount);
         Assert.Single(api.RegistrationThreads.Distinct());
         Assert.Equal(api.RegistrationThreads.First(), Assert.Single(api.RemovalThreads.Distinct()));
@@ -49,7 +172,7 @@ public sealed class HookThreadTests
         using var hooks = new HookThread(new HotkeyMatcher(), 8, api);
         Assert.False(hooks.Start());
         Assert.NotNull(hooks.Failure);
-        Assert.Equal(4, api.UnregisterCount);
+        Assert.Equal(6, api.UnregisterCount);
         Assert.True(hooks.Stop());
         Assert.True(hooks.Events.Completion.IsCompletedSuccessfully);
     }
@@ -79,7 +202,7 @@ public sealed class HookThreadTests
         Assert.Equal(0, api.UnregisterCount);
         api.PostSucceeds = true;
         Assert.True(hooks.Stop());
-        Assert.Equal(5, api.UnregisterCount);
+        Assert.Equal(7, api.UnregisterCount);
     }
 
     private sealed class FakeHookApi : IHookApi, IDisposable

@@ -13,6 +13,27 @@ namespace Snapwell.App.Tests.Overlay;
 /// <summary>予測先とプレビューの間引きを偽の入出力で検証する。</summary>
 public sealed class ZonePreviewTests
 {
+    [Fact]
+    public void DisabledLinesReachPainterAndUnreadableSettingsUseDefaults()
+    {
+        var presenter = new RecordingPresenter();
+        var preview = new ZonePreview(presenter, new FakeMonitors(), theme: () => OverlayTheme.Light,
+            settings: () => new() { ShowZoneLines = false, ShowPredictionLine = false });
+        var target = new PixelRect(300, 300, 400, 300);
+        preview.Show(target, new(20, 100), new(200, 100));
+        var frame = Assert.Single(presenter.Requests).Paint();
+        var expected = OverlayPainter.Preview(new(0, 0, 1920, 1040), target,
+            showZoneLines: false, showPredictionLine: false);
+        Assert.Equal(expected.Pixels, frame.Pixels);
+        presenter.Requests.Clear();
+        preview = new(presenter, new FakeMonitors(), theme: () => OverlayTheme.Light,
+            settings: () => throw new IOException());
+        preview.Show(target, new(20, 100), new(200, 100));
+        frame = Assert.Single(presenter.Requests).Paint();
+        Assert.Equal(OverlayPainter.Preview(new(0, 0, 1920, 1040), target, origin: new(20, 100),
+            prediction: new(200, 100)).Pixels, frame.Pixels);
+    }
+
     /// <summary>速い投げは開始矩形と移動量を使って予測し、終了時に隠す。</summary>
     [Fact]
     public void FastMovementShowsPredictedBoundsAndEndHides()

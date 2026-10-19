@@ -1,6 +1,7 @@
 using Snapwell.App.Motion;
 using Snapwell.App.Overlay;
 using Snapwell.Core.Geometry;
+using Snapwell.Core.Layout;
 using Snapwell.Core.Settings;
 using Snapwell.Core.Snapping;
 using Snapwell.Platform.Hooks;
@@ -116,9 +117,8 @@ internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSou
 
                     var options = settings();
                     var areas = monitors.GetMonitors().Select(monitor => monitor.ToMonitorArea()).ToArray();
-                    var result = SnapResolver.Resolve(current.VisualBounds, velocity, options.ToFeelPreset(),
-                        options.SnapMode, options.ToSpacing(), areas,
-                        WindowClassifier.CanResize(current, ownProcessId), pointer, dragNeighbors, options.SnapRadius);
+                    var result = MonitorGridResolver.ResolveSnap(options, current.VisualBounds, velocity, areas,
+                        WindowClassifier.CanResize(current, ownProcessId), pointer, dragNeighbors);
                     if (result is { } snap)
                     {
                         var walls = areas.First(area => area.Id == snap.MonitorId).WorkArea;
@@ -161,11 +161,13 @@ internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSou
         var current = new PixelRect(checked(_startBounds.X + (int)offset.X),
             checked(_startBounds.Y + (int)offset.Y), _startBounds.Width, _startBounds.Height);
         var areas = monitors.GetMonitors().Select(monitor => monitor.ToMonitorArea()).ToArray();
-        var result = SnapResolver.Resolve(current, _velocity!.Release(seconds), options.ToFeelPreset(),
-            options.SnapMode, options.ToSpacing(), areas, _canResize, point, _neighbors, options.SnapRadius);
+        var result = MonitorGridResolver.ResolveSnap(options, current, _velocity!.Release(seconds),
+            areas, _canResize, point, _neighbors);
         if (result is { } snap)
         {
-            _preview.Show(snap.Target);
+            var titleOffset = new Vec2(current.Width / 2.0, 15 * areas.First(area => area.Id == snap.MonitorId).Scale);
+            _preview.Show(snap.Target, new Vec2(current.X, current.Y) + titleOffset,
+                snap.PredictedPosition + titleOffset);
         }
         else
         {
