@@ -232,6 +232,52 @@ public sealed class SelectedWindowLauncherTests
         Assert.False(fixture.Launcher.IsOpen);
     }
 
+    /// <summary>切替の押下が遅配されても、全整列キーはグローバルな解放後に受理する。</summary>
+    [Theory]
+    [InlineData(ArrangeLayout.Grid, true)]
+    [InlineData(ArrangeLayout.Columns, true)]
+    [InlineData(ArrangeLayout.Rows, true)]
+    [InlineData(ArrangeLayout.MainAndStack, true)]
+    [InlineData(ArrangeLayout.Grid, false)]
+    [InlineData(ArrangeLayout.Columns, false)]
+    [InlineData(ArrangeLayout.Rows, false)]
+    [InlineData(ArrangeLayout.MainAndStack, false)]
+    public void TargetSwitchPreservesGlobalButtonStateForEveryArrangementKey(
+        ArrangeLayout layout, bool releaseBeforeOverlayPress)
+    {
+        using var fixture = new Fixture();
+        fixture.Launcher.Open(1);
+        var point = fixture.Launcher.WindowList!.Rows.Single(row => row.Window.Handle == 3).Bounds.Center;
+        var release = new MouseButton(MouseButtonKind.Left, false, (int)point.X, (int)point.Y, 101);
+        fixture.Launcher.HandleGlobalPointer(new(MouseButtonKind.Left, true, (int)point.X, (int)point.Y, 100));
+        if (releaseBeforeOverlayPress) { fixture.Launcher.HandleGlobalPointer(release); }
+
+        fixture.Presenter.Raise(new(OverlayPointerKind.Down, point, TimeMs: 100));
+        Assert.True(fixture.Launcher.IsOpen);
+        Assert.Equal(new PixelRect(0, 0, 1920, 1080), fixture.Launcher.Selection!.WorkArea);
+        fixture.Launcher.Handle(new((int)LauncherWindowInput.Toggle));
+        Assert.Equal(new nint[] { 3 }, fixture.Launcher.SelectedWindows);
+        var matcher = new HotkeyMatcher();
+        matcher.SetBindings(fixture.Bindings);
+        matcher.ProcessKey(0x11, true);
+        var chord = matcher.ProcessKey(0x31 + (uint)layout, true);
+        Assert.Equal((int)LauncherWindowInput.Grid + (int)layout, chord.Id);
+        if (!releaseBeforeOverlayPress)
+        {
+            fixture.Launcher.Handle(new(chord.Id));
+            Assert.Empty(fixture.Motion.Requests);
+            Assert.True(fixture.Launcher.IsOpen);
+            fixture.Launcher.HandleGlobalPointer(release);
+        }
+
+        fixture.Launcher.Handle(new(chord.Id));
+
+        var request = Assert.Single(fixture.Motion.Requests);
+        Assert.Equal((nint)3, request.Handle);
+        Assert.Equal(new PixelRect(0, 0, 1920, 1080), request.Walls);
+        Assert.False(fixture.Launcher.IsOpen);
+    }
+
     /// <summary>Ctrl のときだけトグルし、通常クリックは配置対象を切り替える。</summary>
     [Fact]
     public void ControlClickTogglesAndPlainClickChangesPlacementTarget()
@@ -251,6 +297,31 @@ public sealed class SelectedWindowLauncherTests
         Assert.Empty(fixture.Motion.Requests);
         fixture.Launcher.Handle(new((int)LauncherInput.Accept));
         Assert.Equal((nint)2, Assert.Single(fixture.Motion.Requests).Handle);
+    }
+
+    /// <summary>最後の選択を解除した直後の旧ボタンでは、未選択のウィンドウを整列しない。</summary>
+    [Theory]
+    [InlineData(ArrangeLayout.Grid)]
+    [InlineData(ArrangeLayout.Columns)]
+    [InlineData(ArrangeLayout.Rows)]
+    [InlineData(ArrangeLayout.MainAndStack)]
+    public void PresentedArrangementButtonDoesNothingAfterLastSelectionIsCleared(ArrangeLayout layout)
+    {
+        using var fixture = new Fixture();
+        fixture.Launcher.Open(1);
+        fixture.ClickWindow(2, true);
+        fixture.Presenter.Requests[^1].Paint();
+        var displayedButton = fixture.Launcher.WindowList!.Buttons.Single(button => button.Layout == layout);
+        fixture.Presenter.DelayPresentation = true;
+        fixture.ClickWindow(2, true);
+        Assert.Empty(fixture.Launcher.SelectedWindows);
+        Assert.Empty(fixture.Launcher.WindowList!.Buttons);
+
+        fixture.Presenter.Raise(new(OverlayPointerKind.Down, displayedButton.Bounds.Center));
+
+        Assert.Empty(fixture.Motion.Requests);
+        Assert.Null(fixture.Launcher.LastArrangement);
+        Assert.True(fixture.Launcher.IsOpen);
     }
 
     /// <summary>全方式で選択だけをランチャーのモニターへ移動し、閉じて選択を解除する。</summary>
