@@ -48,6 +48,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Snapwell.Core\Snapwell.Core.csproj" />
+    <ProjectReference Include="..\Snapwell.Platform\Snapwell.Platform.csproj" />
   </ItemGroup>
 
 </Project>

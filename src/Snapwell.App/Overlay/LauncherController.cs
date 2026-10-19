@@ -108,8 +108,8 @@ internal sealed class LauncherController : IDisposable
             var options = _settings();
             try
             {
-                _spacing = options.ToSpacing().ToPhysical(monitor.Scale);
-                _selection = new(monitor.WorkArea, options.ToGridPlan(), _spacing);
+                _spacing = MonitorGridResolver.Spacing(options, monitor.Id).ToPhysical(monitor.Scale);
+                _selection = new(monitor.WorkArea, MonitorGridResolver.Plan(options, monitor.Id), _spacing);
             }
             catch (ArgumentException)
             {
@@ -407,6 +407,7 @@ internal sealed class LauncherController : IDisposable
         var scale = _scale;
         var title = _targetTitle;
         var menuOpen = _planMenuOpen;
+        var showZoneLines = _settings().ShowZoneLines;
         var revision = ++_drawRevision;
         _panelLayout ??= LauncherPanelLayout.Create(selection, scale, title, menuOpen);
         _presenter.Request(selection.WorkArea, () =>
@@ -420,7 +421,7 @@ internal sealed class LauncherController : IDisposable
                         _panelLayout = layout;
                     }
                 }
-            }));
+            }, showZoneLines));
     }
 
     private void CloseCore()

@@ -12,6 +12,12 @@ public sealed record MoveSizeEnded(nint Handle, uint TimeMs) : HookEvent;
 /// <summary>前面ウィンドウの変更。</summary>
 public sealed record ForegroundChanged(nint Handle) : HookEvent;
 
+/// <summary>トップレベルの候補が表示された通知。</summary>
+public sealed record WindowShown(nint Handle) : HookEvent;
+
+/// <summary>ウィンドウの破棄通知。</summary>
+public sealed record WindowDestroyed(nint Handle) : HookEvent;
+
 /// <summary>低レベルフックで区別するマウスボタン。</summary>
 public enum MouseButtonKind
 {

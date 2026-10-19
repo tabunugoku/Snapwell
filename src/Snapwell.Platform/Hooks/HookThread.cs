@@ -149,7 +149,7 @@ public sealed class HookThread : IDisposable
 
     private unsafe void Run()
     {
-        var winEvents = new nint[3];
+        var winEvents = new nint[5];
         nint mouse = 0;
         nint keyboard = 0;
         try
@@ -164,6 +164,10 @@ public sealed class HookThread : IDisposable
             winEvents[1] = _api.RegisterEvent(PInvoke.EVENT_SYSTEM_MOVESIZEEND,
                 (nint)(delegate* unmanaged[Stdcall]<HWINEVENTHOOK, uint, HWND, int, int, uint, uint, void>)&OnWinEvent);
             winEvents[2] = _api.RegisterEvent(PInvoke.EVENT_SYSTEM_FOREGROUND,
+                (nint)(delegate* unmanaged[Stdcall]<HWINEVENTHOOK, uint, HWND, int, int, uint, uint, void>)&OnWinEvent);
+            winEvents[3] = _api.RegisterEvent(PInvoke.EVENT_OBJECT_SHOW,
+                (nint)(delegate* unmanaged[Stdcall]<HWINEVENTHOOK, uint, HWND, int, int, uint, uint, void>)&OnWinEvent);
+            winEvents[4] = _api.RegisterEvent(PInvoke.EVENT_OBJECT_DESTROY,
                 (nint)(delegate* unmanaged[Stdcall]<HWINEVENTHOOK, uint, HWND, int, int, uint, uint, void>)&OnWinEvent);
             mouse = _api.RegisterMouse((nint)(delegate* unmanaged[Stdcall]<int, WPARAM, LPARAM, LRESULT>)&OnMouse);
             keyboard = _api.RegisterKeyboard(
@@ -249,6 +253,8 @@ public sealed class HookThread : IDisposable
             RawHookKind.MoveStart => new MoveSizeStarted(raw.Handle),
             RawHookKind.MoveEnd => new MoveSizeEnded(raw.Handle, raw.Time),
             RawHookKind.Foreground => new ForegroundChanged(raw.Handle),
+            RawHookKind.WindowShown => new WindowShown(raw.Handle),
+            RawHookKind.WindowDestroyed => new WindowDestroyed(raw.Handle),
             RawHookKind.MouseButton => new MouseButton((MouseButtonKind)raw.Detail, raw.IsDown, raw.X, raw.Y, raw.Time),
             RawHookKind.MouseMove => new MouseMoved(raw.X, raw.Y, raw.Time),
             _ => new KeyChord(raw.Detail),
@@ -276,6 +282,8 @@ public sealed class HookThread : IDisposable
         {
             PInvoke.EVENT_SYSTEM_MOVESIZESTART => RawHookKind.MoveStart,
             PInvoke.EVENT_SYSTEM_MOVESIZEEND => RawHookKind.MoveEnd,
+            PInvoke.EVENT_OBJECT_SHOW => RawHookKind.WindowShown,
+            PInvoke.EVENT_OBJECT_DESTROY => RawHookKind.WindowDestroyed,
             _ => RawHookKind.Foreground,
         };
         owner.Enqueue(new RawHookEvent(kind, (nint)window.Value, Time: time));

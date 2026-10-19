@@ -102,7 +102,8 @@ public static class OverlayPainter
 
     /// <summary>一つのモニター上にプレビューの矩形を描く。</summary>
     public static OverlayFrame Preview(PixelRect workArea, PixelRect target,
-        OverlayTheme theme = OverlayTheme.Light, double scale = 1)
+        OverlayTheme theme = OverlayTheme.Light, double scale = 1, bool showZoneLines = true,
+        bool showPredictionLine = true, Vec2? origin = null, Vec2? prediction = null)
     {
         ValidateScale(scale);
         var frame = Create(workArea.Width, workArea.Height);
@@ -110,24 +111,69 @@ public static class OverlayPainter
         var palette = OverlayPalette.For(theme);
         FillRounded(frame, rect, palette.BlueBackground, 8, scale);
         // SVG の枠はパスの中央に置かれる。半径も線と空白も論理 px から換算する。
-        PaintRounded(frame, rect.X, rect.Y, rect.Width, rect.Height, 8 * scale, palette.BlueLine,
-            Math.Max(1, 1.5 * scale), centered: true, dashScale: scale);
+        if (showZoneLines)
+        {
+            PaintRounded(frame, rect.X, rect.Y, rect.Width, rect.Height, 8 * scale, palette.BlueLine,
+                Math.Max(1, 1.5 * scale), centered: true, dashScale: scale);
+        }
+
+        if (showPredictionLine && origin is { } start)
+        {
+            var end = prediction ?? target.Center;
+            PredictionLine(frame, workArea, start, end, palette.BlueLine, scale);
+            var radius = Math.Max(1, (int)Math.Round(4 * scale));
+            FillRounded(frame, new((int)end.X - workArea.X - radius, (int)end.Y - workArea.Y - radius,
+                2 * radius, 2 * radius), palette.BlueText, 4, scale);
+        }
+
         return frame;
+    }
+
+    private static void PredictionLine(OverlayFrame frame, PixelRect area, Vec2 start, Vec2 end,
+        OverlayColor color, double scale)
+    {
+        var delta = end - start;
+        var length = delta.Length;
+        if (length < 0.001)
+        {
+            return;
+        }
+
+        var radius = Math.Max(1, 1.5 * scale) / 2;
+        var left = (int)Math.Clamp(Math.Floor(Math.Min(start.X, end.X) - radius), area.X, area.Right);
+        var right = (int)Math.Clamp(Math.Ceiling(Math.Max(start.X, end.X) + radius), area.X, area.Right);
+        var top = (int)Math.Clamp(Math.Floor(Math.Min(start.Y, end.Y) - radius), area.Y, area.Bottom);
+        var bottom = (int)Math.Clamp(Math.Ceiling(Math.Max(start.Y, end.Y) + radius), area.Y, area.Bottom);
+        for (var y = top; y < bottom; y++)
+        {
+            for (var x = left; x < right; x++)
+            {
+                var offset = new Vec2(x + 0.5, y + 0.5) - start;
+                var along = (offset.X * delta.X + offset.Y * delta.Y) / length;
+                var across = Math.Abs(offset.X * delta.Y - offset.Y * delta.X) / length;
+                // モックアップの 4 / 4 の点線と 1.5 論理 px の幅を使う。
+                if (along >= 0 && along <= length && along % (8 * scale) < 4 * scale && across <= radius)
+                {
+                    Fill(frame, new(x - area.X, y - area.Y, 1, 1), color);
+                }
+            }
+        }
     }
 
     /// <summary>各区画の塗りと枠、選択範囲とカーソルの内側の枠を描く。</summary>
     public static OverlayFrame Launcher(ZoneSelection selection,
-        OverlayTheme theme = OverlayTheme.Light, double scale = 1)
+        OverlayTheme theme = OverlayTheme.Light, double scale = 1, bool showZoneLines = true)
     {
         ValidateScale(scale);
         var area = selection.WorkArea;
         var frame = Create(area.Width, area.Height);
-        PaintLauncher(frame, selection, theme, scale);
+        PaintLauncher(frame, selection, theme, scale, showZoneLines);
         return frame;
     }
 
     /// <summary>既存の画素へ、クリップ領域の背景と区画だけを描く。</summary>
-    public static void PaintLauncher(OverlayFrame frame, ZoneSelection selection, OverlayTheme theme, double scale)
+    public static void PaintLauncher(OverlayFrame frame, ZoneSelection selection, OverlayTheme theme, double scale,
+        bool showZoneLines = true)
     {
         var area = selection.WorkArea;
         var palette = OverlayPalette.For(theme);
@@ -147,7 +193,10 @@ public static class OverlayPainter
                 var selected = column >= range.Column && column < range.Column + range.Columns &&
                     row >= range.Row && row < range.Row + range.Rows;
                 FillRounded(frame, rect, selected ? palette.BlueBackground : palette.Cell, 4, scale);
-                StrokeRounded(frame, rect, selected ? palette.BlueLine : palette.CellBorder, 4, 1, scale);
+                if (showZoneLines)
+                {
+                    StrokeRounded(frame, rect, selected ? palette.BlueLine : palette.CellBorder, 4, 1, scale);
+                }
                 if (selection.Cursor == new ZoneCell(column, row))
                 {
                     var inset = Math.Max(1, scale);
