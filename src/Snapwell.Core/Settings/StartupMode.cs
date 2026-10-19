@@ -4,7 +4,7 @@ namespace Snapwell.Core.Settings;
 public enum StartupMode { None, Normal, Admin }
 
 /// <summary>昇格の結果。キャンセルとヘルパーの終了コードを区別する。</summary>
-public enum StartupChangeResult { Success, Failed, Cancelled, SidMismatch, UnprotectedLocation }
+public enum StartupChangeResult { Success, Failed, Cancelled, SidMismatch, UnprotectedLocation, ExpandablePath }
 
 /// <summary>自分のタスクだけを操作する境界。</summary>
 public interface IAdminTaskService
@@ -29,18 +29,24 @@ public interface IElevatedRunner
 /// <summary>管理者起動を解除するときに戻す Run の値を端末内に保持する。</summary>
 public interface IStartupMemory
 {
-    /// <summary>管理者起動前の値を読む。</summary>
-    string? Read();
+    /// <summary>退避がなければ null、壊れていれば例外を返す。</summary>
+    StartupRunBackup? Read();
 
     /// <summary>管理者起動前の値を保存し、null なら消す。</summary>
-    void Write(string? value);
+    void Write(StartupRunBackup? value);
 }
+
+/// <summary>元の Run がない状態も、復元待ちとして保持する。</summary>
+public sealed record StartupRunBackup(string? Command);
 
 /// <summary>OS の登録を正とし、読み取りでは登録を変更しない。</summary>
 public sealed class StartupController(
     IRunKey runKey, IAdminTaskService tasks, IElevatedRunner runner, IStartupMemory memory, string executablePath)
 {
     private readonly AutoStart _normal = new(runKey, executablePath);
+
+    /// <summary>タスクがなく、元の Run の復元だけが残っている状態を返す。</summary>
+    public bool HasPendingRunRestore => memory.Read() is not null && tasks.ReadCommand() is null;
 
     /// <summary>管理者の登録を優先して現在の方式と登録先を返す。</summary>
     public (StartupMode Mode, AutoStartState State) Read()
@@ -60,11 +66,23 @@ public sealed class StartupController(
     public async Task<StartupChangeResult> SetAdminAsync(bool enabled, bool restoreNormal = true)
     {
         var previous = memory.Read();
-        var saveOriginal = enabled && tasks.ReadCommand() is null;
+        var saveOriginal = enabled && previous is null;
         if (saveOriginal)
         {
             // 昇格後に画面が閉じても、元の登録を失わないよう先に退避する。
-            memory.Write(runKey.Read(AutoStart.ValueName));
+            var backup = new StartupRunBackup(runKey.Read(AutoStart.ValueName));
+            try
+            {
+                memory.Write(backup);
+                if (memory.Read() != backup)
+                {
+                    return StartupChangeResult.Failed;
+                }
+            }
+            catch (IOException)
+            {
+                return StartupChangeResult.Failed;
+            }
         }
 
         StartupChangeResult result;
@@ -98,12 +116,11 @@ public sealed class StartupController(
         }
         else
         {
-            var original = memory.Read();
-            if (restoreNormal && original is not null)
+            if (restoreNormal && previous?.Command is { } original)
             {
                 runKey.Write(AutoStart.ValueName, original);
             }
-            else
+            else if (!restoreNormal || previous is not null)
             {
                 _normal.SetEnabled(false);
             }
@@ -117,7 +134,7 @@ public sealed class StartupController(
     /// <summary>管理者起動も自動起動と数え、全体のオフでは両方式を解除する。</summary>
     public Task<StartupChangeResult> SetAutoStartAsync(bool enabled)
     {
-        if (Read().Mode == StartupMode.Admin)
+        if (Read().Mode == StartupMode.Admin || (!enabled && memory.Read() is not null))
         {
             return enabled ? Task.FromResult(StartupChangeResult.Success) : SetAdminAsync(false, restoreNormal: false);
         }

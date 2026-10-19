@@ -202,9 +202,17 @@ public sealed partial class GeneralPage : Page
         AdminStartToggle.IsEnabled = _startupAvailable && !_startupBusy &&
             (protectedLocation || _lastStartup.Mode == StartupMode.Admin);
         AutoStartToggle.IsEnabled = _startupAvailable && !_startupBusy;
-        AdminStartStatus.Text = protectedLocation ? "" :
-            "管理者以外が書き込めない場所（Program Files など）に配置すると、オンにできます";
-        AdminStartStatus.Visibility = protectedLocation ? Visibility.Collapsed : Visibility.Visible;
+        AdminStartStatus.Text = !ProtectedLocation.IsLiteralTaskPath(_executable)
+            ? "パスに % を含む場所では管理者起動を登録できません"
+            : protectedLocation ? "" :
+                "ローカル固定ディスクの保護された場所（Program Files など）に配置してください。リンクは使えません";
+        if (_startup.HasPendingRunRestore)
+        {
+            AdminStartStatus.Text = "元の自動起動の設定を戻せていません。管理者起動をオンにしてからオフにすると再試行します。" +
+                (AdminStartStatus.Text.Length > 0 ? " " + AdminStartStatus.Text : "");
+        }
+
+        AdminStartStatus.Visibility = AdminStartStatus.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
     // 表示を合わせるだけの IsOn の書き込み。Toggled を登録の操作として扱わせない。
@@ -262,9 +270,12 @@ public sealed partial class GeneralPage : Page
             }
             else if (result != StartupChangeResult.Success)
             {
-                ErrorNotice.Message = result == StartupChangeResult.UnprotectedLocation
-                    ? "管理者以外が書き込めない場所に配置してください"
-                    : "タスク スケジューラに登録できませんでした";
+                ErrorNotice.Message = result switch
+                {
+                    StartupChangeResult.ExpandablePath => "パスに % を含む場所では管理者起動を登録できません",
+                    StartupChangeResult.UnprotectedLocation => "管理者以外が書き込めない場所に配置してください",
+                    _ => "タスク スケジューラに登録できませんでした",
+                };
                 ErrorNotice.IsOpen = true;
             }
             else if (admin && enabled)

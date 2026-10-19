@@ -75,3 +75,12 @@ ShellExecuteEx
 WaitForSingleObject
 GetExitCodeProcess
 CloseHandle
+GetDriveType
+GetCurrentProcess
+OpenProcess
+OpenProcessToken
+GetTokenInformation
+TOKEN_ELEVATION
+DuplicateTokenEx
+GetShellWindow
+CreateProcessWithTokenW

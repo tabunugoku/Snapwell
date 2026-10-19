@@ -19,7 +19,7 @@ public static class AdminTaskHelper
         return true;
     }
 
-    private static bool IsSid(string value)
+    internal static bool IsSid(string value)
     {
         var parts = value.Split('-');
         return parts.Length is >= 4 and <= 18 && parts[0] == "S" && parts[1] == "1" &&
@@ -46,6 +46,11 @@ public static class AdminTaskHelper
         {
             if (enabled)
             {
+                if (!ProtectedLocation.IsLiteralTaskPath(executablePath))
+                {
+                    return 4;
+                }
+
                 if (!isProtected(executablePath))
                 {
                     return 3;

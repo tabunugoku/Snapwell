@@ -80,6 +80,7 @@ public sealed class ElevatedRunner(string executablePath) : IElevatedRunner
                     0 => StartupChangeResult.Success,
                     2 => StartupChangeResult.SidMismatch,
                     3 => StartupChangeResult.UnprotectedLocation,
+                    4 => StartupChangeResult.ExpandablePath,
                     _ => StartupChangeResult.Failed,
                 };
             }
