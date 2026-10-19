@@ -2,6 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using Snapwell.App.Dragging;
 using Snapwell.App.Tests.Motion;
 using Snapwell.Core.Geometry;
+using Snapwell.Core.Settings;
 using Snapwell.Platform.Monitors;
 using Snapwell.Platform.Windows;
 
@@ -47,6 +48,24 @@ public sealed class NeighborWindowSourceTests
         inspector.Handles = Enumerable.Range(1, 14).Select(value => (nint)value).ToArray();
         var source = new NeighborWindowSource(inspector, new FakeMonitors(), 999);
         Assert.Equal(new[] { inspector.Windows[13].VisualBounds }, source.Snapshot(1));
+    }
+
+    /// <summary>設定でサイズ固定を動かさないと固定サイズだけが候補から外れ、変更は次の取得から反映する。</summary>
+    [Fact]
+    public void SnapshotExcludesFixedSizeWindowsWhenSettingIsOffAndAppliesChangesImmediately()
+    {
+        var inspector = new Inspector();
+        inspector.Windows[1] = Window(1);
+        inspector.Windows[2] = Window(2) with { VisualBounds = new(300, 400, 200, 300) };
+        inspector.Windows[3] = Window(3) with { Style = 0, VisualBounds = new(-500, 400, 100, 200) };
+        inspector.Handles = [1, 2, 3];
+        var options = new PortableSettings { MoveFixedSizeWindows = false };
+        var source = new NeighborWindowSource(inspector, new Monitors(), 999, () => options);
+        Assert.Equal(new[] { inspector.Windows[2].VisualBounds }, source.Snapshot(1));
+
+        options.MoveFixedSizeWindows = true;
+        Assert.Equal(new[] { inspector.Windows[2].VisualBounds, inspector.Windows[3].VisualBounds },
+            source.Snapshot(1));
     }
 
     /// <summary>ウィンドウ一つの調査や所有者取得が失敗しても残りを調査する。</summary>

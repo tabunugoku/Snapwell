@@ -81,7 +81,7 @@ public sealed class ArrangementHotkeyMigrationTests : IDisposable
     {
         File.WriteAllText(SettingsPath, """{"SchemaVersion":3,"Hotkeys":null}""");
         Assert.Equal(DefaultHotkeys.Create(), SettingsStores.Portable(SettingsPath).Load().Value.Hotkeys);
-        const string future = """{"SchemaVersion":8,"Future":"keep"}""";
+        const string future = """{"SchemaVersion":9,"Future":"keep"}""";
         File.WriteAllText(SettingsPath, future);
         var store = SettingsStores.Portable(SettingsPath);
         var loaded = store.Load();

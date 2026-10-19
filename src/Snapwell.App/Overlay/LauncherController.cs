@@ -74,7 +74,7 @@ internal sealed class LauncherController : IDisposable
             [.. LauncherWindowBindings.WithoutConflicts(normalBindings), .. HotkeyBindingsBuilder.Launcher(normalBindings)];
         _ownProcessId = ownProcessId;
         _theme = theme ?? OverlayThemeSource.Read;
-        _arrangement = new(inspector, monitors, ownProcessId, place);
+        _arrangement = new(inspector, monitors, ownProcessId, place, settings: settings);
         presenter.Pointer += HandlePointer;
         presenter.Faulted += CloseIfUnavailable;
     }
