@@ -9,6 +9,9 @@ public readonly record struct OverlayColor(byte Red, byte Green, byte Blue, byte
 /// <summary>上から下の行順の premultiplied BGRA 画素。</summary>
 public sealed record OverlayFrame(int Width, int Height, byte[] Pixels)
 {
+    /// <summary>表示先への反映が成功した後に呼び出す通知。</summary>
+    public Action? Presented { get; init; }
+
     // 半透明の描画をまとめても、整数の丸め順を元の描画と一致させる。
     internal Dictionary<int, List<OverlayPixelBlend>>? Blends { get; init; }
 
