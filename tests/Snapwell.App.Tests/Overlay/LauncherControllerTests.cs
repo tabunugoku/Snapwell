@@ -14,6 +14,26 @@ namespace Snapwell.App.Tests.Overlay;
 /// <summary>ランチャーの対象・選択・入力の切り替えを検証する。</summary>
 public sealed class LauncherControllerTests
 {
+    /// <summary>次回の表示で選択を読み直し、サイズ維持の中央を既存の移動経路へ渡す。</summary>
+    [Fact]
+    public void KeepSizeCentersCurrentBoundsAndReloadsPresetsOnNextOpen()
+    {
+        using var fixture = new Fixture();
+        fixture.Options.LauncherPresets = [];
+        fixture.Launcher.Open();
+        Assert.Empty(fixture.Launcher.PanelLayout!.Presets);
+        fixture.Launcher.Close();
+        fixture.Options.LauncherPresets = ["centerKeep"];
+        fixture.Launcher.Open();
+        var area = fixture.Launcher.Selection!.WorkArea;
+        var bounds = fixture.Inspector.Window.VisualBounds;
+        fixture.Presenter.Raise(new(OverlayPointerKind.Down,
+            Assert.Single(fixture.Launcher.PanelLayout!.Presets).Bounds.Center));
+        Assert.Equal(((nint)1, new PixelRect(area.X + (area.Width - bounds.Width) / 2,
+            area.Y + (area.Height - bounds.Height) / 2, bounds.Width, bounds.Height)), Assert.Single(fixture.Placements));
+        Assert.False(fixture.Launcher.IsOpen);
+    }
+
     /// <summary>トレイ選択以前の押下と解放は、別モニターから遅れて届いても表示を閉じない。</summary>
     [Theory]
     [InlineData(100u, 99u, true, false, -1)]
@@ -427,6 +447,7 @@ public sealed class LauncherControllerTests
 
     private sealed class Fixture : IDisposable
     {
+        internal PortableSettings Options { get; } = new();
         internal FakeInspector Inspector { get; } = new();
         internal RecordingPresenter Presenter { get; } = new();
         internal IReadOnlyList<HotkeyBinding> Normal { get; } = HotkeyBindingsBuilder.Build(DefaultHotkeys.Create()).Bindings;
@@ -434,7 +455,7 @@ public sealed class LauncherControllerTests
         internal List<(nint Handle, PixelRect Bounds)> Placements { get; } = [];
         internal LauncherController Launcher { get; }
         internal Fixture(IMonitorSource? monitors = null) => Launcher = new(Inspector, monitors ?? new FakeMonitors(),
-            () => new PortableSettings(), Presenter, (handle, bounds, _) => Placements.Add((handle, bounds)),
+            () => Options, Presenter, (handle, bounds, _) => Placements.Add((handle, bounds)),
             value => Applied = value, Normal, 999);
         internal void Key(LauncherInput input) => Launcher.Handle(new((int)input));
         public void Dispose() => Launcher.Dispose();

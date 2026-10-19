@@ -7,6 +7,20 @@ namespace Snapwell.Core.Tests.Layout;
 /// <summary>選択集合と選択だけの整列計画を検証する。</summary>
 public sealed class SelectedWindowArrangementTests
 {
+    /// <summary>十件目を拒否しても順序を保ち、解除後の再追加は末尾になる。</summary>
+    [Fact]
+    public void SelectionLimitPreservesOrderAndAllowsRemovalAtCapacity()
+    {
+        var selection = new WindowSelection();
+        for (var handle = 1; handle <= 9; handle++) { Assert.True(selection.Toggle(handle)); }
+        Assert.False(selection.Toggle(10));
+        Assert.Equal(9, selection.Count);
+        Assert.True(selection.Toggle(1));
+        Assert.True(selection.Toggle(10));
+        Assert.Equal((nint)2, selection.Snapshot()[0]);
+        Assert.Equal((nint)10, selection.Snapshot()[^1]);
+    }
+
     private static readonly MonitorArea _monitor = new("left", new(-1920, -200, 1920, 1080), 1.5);
 
     /// <summary>再選択は末尾へ入り、スナップショットは後の操作に影響されない。</summary>
