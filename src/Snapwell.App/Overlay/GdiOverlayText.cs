@@ -90,7 +90,8 @@ internal sealed unsafe partial class GdiOverlayText : IDisposable
     }
 
     /// <summary>上から下の 32 bit DIB へ DrawTextW で描き、被覆率を alpha に変換する。</summary>
-    internal void Draw(OverlayFrame frame, PixelRect area, LauncherText text, OverlayColor color)
+    internal void Draw(OverlayFrame frame, PixelRect area, LauncherText text, OverlayColor color,
+        bool centerFontBody = false)
     {
         var bounds = text.Bounds;
         if (text.Value.Length == 0 || bounds.Width == 0 || bounds.Height == 0)
@@ -99,11 +100,11 @@ internal sealed unsafe partial class GdiOverlayText : IDisposable
         }
 
         // 文字はすべて 4 倍解像度で描いて縮小する (区画のサイズ表示も同じ。短い文字列のため差分描画でも軽い)。
-        var mask = SupersampledMask(text, color);
+        var mask = SupersampledMask(text, color, centerFontBody);
         OverlayPainter.Composite(frame, mask, bounds.X - area.X, bounds.Y - area.Y);
     }
 
-    private OverlayFrame SupersampledMask(LauncherText text, OverlayColor color)
+    private OverlayFrame SupersampledMask(LauncherText text, OverlayColor color, bool centerFontBody)
     {
         const int Samples = 4;
         var bounds = text.Bounds;
@@ -127,7 +128,7 @@ internal sealed unsafe partial class GdiOverlayText : IDisposable
                     LetterSpacing = 0,
                 };
                 var font = Font(text.Size, text.Mono, text.Bold, Samples, runs[index].Japanese);
-                var mask = Rasterize(run, color, font, Samples, width);
+                var mask = Rasterize(run, color, font, Samples, width, centerFontBody);
                 var left = text.LetterSpacing > 0 ? (int)Math.Round(x) : (int)x;
                 OverlayPainter.Composite(result, mask, left, 0);
             }
@@ -138,14 +139,74 @@ internal sealed unsafe partial class GdiOverlayText : IDisposable
         return result;
     }
 
-    private OverlayFrame Rasterize(LauncherText text, OverlayColor color, nint font, int samples, int width)
+    /// <summary>実測した字面の ascent と descent を中央に置き、行の描画原点へ戻す。</summary>
+    internal static int CenteredFontTop(int boxHeight, int ascent, int inkAscent, int inkDescent)
+    {
+        var baseline = (boxHeight - inkAscent - inkDescent) / 2.0 + inkAscent;
+        return (int)Math.Round(baseline - ascent);
+    }
+
+    private TextMetrics MeasureFont(nint font)
+    {
+        var previous = SelectObject(_dc, font);
+        try
+        {
+            return GetTextMetricsW(_dc, out var metrics) != 0 ? metrics
+                : throw new InvalidOperationException("文字の行の高さを測れない。");
+        }
+        finally
+        {
+            SelectObject(_dc, previous);
+        }
+    }
+
+    private static byte[] CenterFontPixels(ReadOnlySpan<byte> pixels, int width, int lineHeight,
+        int boxHeight, int ascent)
+    {
+        var top = lineHeight;
+        var bottom = 0;
+        var stride = checked(width * 4);
+        for (var y = 0; y < lineHeight; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                var index = y * stride + x * 4;
+                if (pixels[index] != 0 || pixels[index + 1] != 0 || pixels[index + 2] != 0)
+                {
+                    top = Math.Min(top, y);
+                    bottom = y + 1;
+                    break;
+                }
+            }
+        }
+
+        var result = new byte[checked(stride * boxHeight)];
+        if (bottom == 0) { return result; }
+        // 日本語・等幅・UI フォントの余白を推測せず、ベースラインから字面の上下端を測る。
+        var offset = CenteredFontTop(boxHeight, ascent, ascent - top, bottom - ascent);
+        for (var y = top; y < bottom; y++)
+        {
+            var destination = y + offset;
+            if (destination >= 0 && destination < boxHeight)
+            {
+                pixels.Slice(y * stride, stride).CopyTo(result.AsSpan(destination * stride, stride));
+            }
+        }
+
+        return result;
+    }
+
+    private OverlayFrame Rasterize(LauncherText text, OverlayColor color, nint font, int samples, int width,
+        bool centerFontBody)
     {
         var bounds = text.Bounds;
+        var metrics = centerFontBody ? MeasureFont(font) : default;
+        var rasterHeight = centerFontBody ? metrics.Height : bounds.Height;
         var info = new BitmapHeader
         {
             Size = (uint)sizeof(BitmapHeader),
             Width = bounds.Width,
-            Height = -bounds.Height,
+            Height = -rasterHeight,
             Planes = 1,
             BitCount = 32,
         };
@@ -165,24 +226,30 @@ internal sealed unsafe partial class GdiOverlayText : IDisposable
         var previousFont = SelectObject(_dc, font);
         try
         {
-            var pixels = new Span<byte>(bits, checked(bounds.Width * bounds.Height * 4));
+            var pixels = new Span<byte>(bits, checked(bounds.Width * rasterHeight * 4));
             pixels.Clear();
-            var rect = new NativeRect { Right = bounds.Width, Bottom = bounds.Height };
+            var rect = new NativeRect { Right = bounds.Width, Bottom = rasterHeight };
             // 省略は配置側で対象名にだけ行う。案内に DT_END_ELLIPSIS を付けない。
             var flags = 0x20u | 0x4u | 0x800u | (text.Center ? 1u : 0u);
+            if (centerFontBody)
+            {
+                flags &= ~0x4u; // 行全体を DT_TOP で描き、字面の実測後に中央へ移す。
+            }
             fixed (char* value = text.Value)
             {
                 DrawTextW(_dc, value, text.Value.Length, &rect, flags);
             }
 
             GdiFlush();
+            ReadOnlySpan<byte> source = centerFontBody
+                ? CenterFontPixels(pixels, bounds.Width, rasterHeight, bounds.Height, metrics.Ascent) : pixels;
             if (samples > 1)
             {
-                return OverlayTextMask.Downsample(pixels, bounds.Width, width,
+                return OverlayTextMask.Downsample(source, bounds.Width, width,
                     bounds.Height / samples, samples, color);
             }
 
-            var mask = new OverlayFrame(bounds.Width, bounds.Height, pixels.ToArray());
+            var mask = new OverlayFrame(bounds.Width, bounds.Height, source.ToArray());
             for (var index = 0; index < mask.Pixels.Length; index += 4)
             {
                 // GDI は alpha を保存しない。灰色の被覆率から自分で復元する。
@@ -269,6 +336,15 @@ internal sealed unsafe partial class GdiOverlayText : IDisposable
     private struct NativeRect { internal int Left, Top, Right, Bottom; }
 
     [StructLayout(LayoutKind.Sequential)]
+    private struct TextMetrics
+    {
+        internal int Height, Ascent, Descent, InternalLeading, ExternalLeading;
+        internal int AverageWidth, MaximumWidth, Weight, Overhang, DigitizedAspectX, DigitizedAspectY;
+        internal ushort FirstChar, LastChar, DefaultChar, BreakChar;
+        internal byte Italic, Underlined, StruckOut, PitchAndFamily, CharSet;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
     private struct BitmapHeader
     {
         internal uint Size;
@@ -302,6 +378,8 @@ internal sealed unsafe partial class GdiOverlayText : IDisposable
         uint quality, uint pitchAndFamily, char* face);
     [LibraryImport("gdi32.dll")]
     private static partial int GetTextFaceW(nint dc, int count, char* face);
+    [LibraryImport("gdi32.dll")]
+    private static partial int GetTextMetricsW(nint dc, out TextMetrics metrics);
     [LibraryImport("user32.dll")]
     private static partial int DrawTextW(nint dc, char* text, int length, NativeRect* rect, uint format);
 }
