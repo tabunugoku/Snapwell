@@ -17,12 +17,13 @@ public sealed partial class GridPage : Page
     private readonly GridMonitorCatalog _monitors;
     private string? _monitorId;
     private IReadOnlyList<GridMonitorChoice> _choices = [];
-    private GridSettings EditingGrid => MonitorGridResolver.Get(_session.Current, _monitorId);
+    private GridSettings EditingGrid => MonitorGridResolver.GetForEditing(_session.Current, _monitorId);
+    private GridSettings DisplayGrid => MonitorGridResolver.Get(_session.Current, _monitorId);
     private PortableSettings PreviewSettings => _session.Current with
     {
-        Grid = new(EditingGrid.Columns, EditingGrid.Rows),
-        Gap = EditingGrid.Gap!.Value,
-        Edge = EditingGrid.Edge!.Value,
+        Grid = new(DisplayGrid.Columns, DisplayGrid.Rows),
+        Gap = DisplayGrid.Gap!.Value,
+        Edge = DisplayGrid.Edge!.Value,
     };
 
     /// <summary>保存せずに編集中の設定へ反映する画面を作る。</summary>
@@ -87,7 +88,7 @@ public sealed partial class GridPage : Page
         if (!_refreshing && MonitorBox.SelectedItem is GridMonitorChoice choice)
         {
             _monitorId = choice.Id;
-            _linkedEdge = EditingGrid.Gap == EditingGrid.Edge;
+            _linkedEdge = DisplayGrid.Gap == DisplayGrid.Edge;
             Refresh();
         }
     }
@@ -310,7 +311,7 @@ public sealed partial class GridPage : Page
     {
         if (!_refreshing)
         {
-            if (Math.Abs(args.NewValue - EditingGrid.Gap!.Value) >= 0.001)
+            if (Math.Abs(args.NewValue - DisplayGrid.Gap!.Value) >= 0.001)
             {
                 _linkedEdge = false;
             }
@@ -351,7 +352,7 @@ public sealed partial class GridPage : Page
         _linkedEdge = LinkEdgeCheck.IsChecked == true;
         if (_linkedEdge)
         {
-            UpdateGrid(EditingGrid with { Edge = EditingGrid.Gap });
+            UpdateGrid(EditingGrid with { Edge = DisplayGrid.Gap });
         }
 
         Refresh();

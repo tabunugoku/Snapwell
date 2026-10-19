@@ -11,10 +11,14 @@ public static class MonitorGridResolver
     /// <summary>未接続・未設定のモニターは共通の分割案と間隔を使う。</summary>
     public static GridSettings Get(PortableSettings settings, string? monitorId)
     {
-        var grid = monitorId is not null && settings.MonitorGrids.TryGetValue(monitorId, out var specific)
-            ? specific : settings.Grid;
+        var grid = GetForEditing(settings, monitorId);
         return grid with { Gap = grid.Gap ?? settings.Gap, Edge = grid.Edge ?? settings.Edge };
     }
+
+    /// <summary>間隔と余白の継承を解決せず、編集して保存する分割案を返す。</summary>
+    public static GridSettings GetForEditing(PortableSettings settings, string? monitorId) =>
+        monitorId is not null && settings.MonitorGrids.TryGetValue(monitorId, out var specific)
+            ? specific : settings.Grid;
 
     /// <summary>対象モニター用の分割案を返す。</summary>
     public static GridPlan Plan(PortableSettings settings, string monitorId)
