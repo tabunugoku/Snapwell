@@ -8,12 +8,21 @@ using Snapwell.Core.Snapping;
 namespace Snapwell.Core.Settings;
 
 /// <summary>保存用の列数と行数。</summary>
-public sealed record GridSettings(int Columns = 8, int Rows = 8);
+public sealed record GridSettings(int Columns = 8, int Rows = 8, double? Gap = null, double? Edge = null);
+
+/// <summary>DWM に指定する角の設定。既定は変更前の値を維持する。</summary>
+public enum WindowCornerPreference
+{
+    Default = 0,
+    DoNotRound = 1,
+    Round = 2,
+    RoundSmall = 3,
+}
 
 /// <summary>他の端末にも持ち運べる設定。</summary>
 public sealed record PortableSettings
 {
-    public const int CurrentSchemaVersion = 5;
+    public const int CurrentSchemaVersion = 6;
 
     /// <summary>吸着半径の既定値。論理ピクセル。DESIGN.md §5.1 の feel の値。</summary>
     public const double DefaultSnapRadius = 28;
@@ -33,6 +42,17 @@ public sealed record PortableSettings
     public double Edge { get; set; } = 8;
     public bool ReduceMotion { get; set; }
     public bool ShowZonePreview { get; set; } = true;
+    /// <summary>他のアプリに適用する角の設定。</summary>
+    [JsonConverter(typeof(WindowCornerPreferenceJsonConverter))]
+    public WindowCornerPreference CornerPreference { get; set; }
+    /// <summary>ランチャーと区画プレビューの区画線を表示する。</summary>
+    public bool ShowZoneLines { get; set; } = true;
+    /// <summary>投げた先への予測線を表示する。</summary>
+    public bool ShowPredictionLine { get; set; } = true;
+    /// <summary>手動のリサイズ終了後に区画の境界へ揃える。</summary>
+    public bool SnapAfterResize { get; set; }
+    /// <summary>モニターごとの分割案と間隔。未指定の間隔は共通値を使う。</summary>
+    public Dictionary<string, GridSettings> MonitorGrids { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     public int LongPressMilliseconds { get; set; } = 450;
     public double LongPressDistance { get; set; } = 6;
 
@@ -113,6 +133,15 @@ public sealed record PortableSettings
         var hotkeys = (Hotkeys ?? defaults.Hotkeys)
             .Where(pair => Enum.IsDefined(pair.Key) && pair.Value is not null && IsValidChord(pair.Value))
             .ToDictionary();
+        var monitorGrids = new Dictionary<string, GridSettings>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (identifier, grid) in MonitorGrids ?? [])
+        {
+            // 大文字小文字だけ違う識別子は最初の一件を残し、解釈が曖昧な上書きを避ける。
+            if (!string.IsNullOrWhiteSpace(identifier) && grid is { Columns: >= 1 and <= 64, Rows: >= 1 and <= 64 })
+            {
+                monitorGrids.TryAdd(identifier, grid with { Gap = ValidSpacing(grid.Gap), Edge = ValidSpacing(grid.Edge) });
+            }
+        }
         return this with
         {
             SchemaVersion = CurrentSchemaVersion,
@@ -123,6 +152,8 @@ public sealed record PortableSettings
             Gap = double.IsFinite(Gap) && Gap is >= 0 and <= 200 ? Gap : defaults.Gap,
             Edge = double.IsFinite(Edge) && Edge is >= 0 and <= 200 ? Edge : defaults.Edge,
             ShowZonePreview = ShowZonePreview,
+            CornerPreference = Enum.IsDefined(CornerPreference) ? CornerPreference : WindowCornerPreference.Default,
+            MonitorGrids = monitorGrids,
             LongPressMilliseconds = LongPressMilliseconds is >= 150 and <= 2000
                 ? LongPressMilliseconds
                 : defaults.LongPressMilliseconds,
@@ -141,6 +172,9 @@ public sealed record PortableSettings
             Hotkeys = hotkeys,
         };
     }
+
+    private static double? ValidSpacing(double? value) =>
+        value is { } number && double.IsFinite(number) && number is >= 0 and <= 200 ? number : null;
 
     // 修飾キーのない割り当てはグローバルなフックが通常の入力を握りつぶすため、修飾キーを 1 つ以上要求する。
     private static bool IsValidChord(KeyChordSpec chord) =>
@@ -181,5 +215,30 @@ internal sealed class ResizeAnchorJsonConverter : JsonConverter<ResizeAnchor>
     }
 
     public override void Write(Utf8JsonWriter writer, ResizeAnchor value, JsonSerializerOptions options) =>
+        writer.WriteStringValue(value.ToString());
+}
+
+/// <summary>未知の角設定はほかの設定を壊さず既定へ戻す。</summary>
+internal sealed class WindowCornerPreferenceJsonConverter : JsonConverter<WindowCornerPreference>
+{
+    public override WindowCornerPreference Read(ref Utf8JsonReader reader, Type typeToConvert,
+        JsonSerializerOptions options)
+    {
+        if (reader.TokenType == JsonTokenType.String &&
+            Enum.TryParse<WindowCornerPreference>(reader.GetString(), true, out var named) && Enum.IsDefined(named))
+        {
+            return named;
+        }
+
+        if (reader.TokenType == JsonTokenType.Number && reader.TryGetInt32(out var number) && number is >= 0 and <= 3)
+        {
+            return (WindowCornerPreference)number;
+        }
+
+        reader.Skip();
+        return WindowCornerPreference.Default;
+    }
+
+    public override void Write(Utf8JsonWriter writer, WindowCornerPreference value, JsonSerializerOptions options) =>
         writer.WriteStringValue(value.ToString());
 }
