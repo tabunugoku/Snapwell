@@ -8,6 +8,27 @@ namespace Snapwell.App.Tests.Overlay;
 /// <summary>文字マスクの境界と乗算済み alpha を検証する。</summary>
 public sealed class GdiOverlayTextTests
 {
+    /// <summary>描画フォントで測ったラベルの中心は、各倍率でボタンの中心に一致する。</summary>
+    [Theory]
+    [InlineData(1)]
+    [InlineData(1.5)]
+    [InlineData(2)]
+    public void ArrangementLabelsCenterAcrossFullButtonWidth(double scale)
+    {
+        using var text = new GdiOverlayText(scale);
+        var list = LauncherWindowListLayout.Create(new(-2000, -300, 1920, 1400), default, scale,
+            [new(1, "Window")], [1], 0, expanded: true);
+        foreach (var button in list.Buttons)
+        {
+            var label = button.LabelBounds(scale);
+            var width = text.Measure(button.Label, 12, false) * scale;
+            var left = GdiOverlayText.CenteredTextLeft(label.Width, width);
+            Assert.InRange(Math.Abs(label.X + (int)left + width / 2 - button.Bounds.Center.X), 0, 1);
+            Assert.Equal(button.Bounds.X, label.X);
+            Assert.Equal(button.Bounds.Width, label.Width);
+        }
+    }
+
     /// <summary>ASCII と非 ASCII の境界だけで分け、サイズ表示の記号は等幅のまま保つ。</summary>
     [Theory]
     [InlineData("", new string[] { }, new bool[] { })]

@@ -37,17 +37,21 @@ internal sealed class LauncherController : IDisposable
     private long _displayedRevision;
     private MonitorArea? _destination;
     private int _focusedWindow;
+    private bool _windowsExpanded;
+    private string _windowStatus = "";
+    private int _windowScroll;
+    private bool _scrollDragging;
     private SelectedArrangementPlan? _lastArrangement;
     private double _scale = 1;
     private PhysicalSpacing _spacing;
     private string _targetTitle = "";
     private LauncherPanelLayout? _panelLayout;
     private bool _planMenuOpen;
+    private string[] _presetIds = [];
     private long _drawRevision;
     private ZoneSelection? _selection;
     private nint _target;
     private uint? _ignorePointerUpToMs;
-    private bool _ignoreRetargetRelease;
     private bool _mouseSelecting;
     private bool _leftButtonDown;
     private bool _enabled = true;
@@ -141,6 +145,7 @@ internal sealed class LauncherController : IDisposable
 
             var monitor = CommandPlanner.SelectMonitor(window.VisualBounds, areas);
             var options = _settings();
+            _presetIds = LauncherPreset.NormalizeIds(options.LauncherPresets);
             try
             {
                 _spacing = MonitorGridResolver.Spacing(options, monitor.Id).ToPhysical(monitor.Scale);
@@ -158,12 +163,15 @@ internal sealed class LauncherController : IDisposable
             _lastArrangement = null;
             _windows = _arrangement.Snapshot().Select(item =>
                 new LauncherWindow(item.Handle, DisplayTitle(item.Title))).ToArray();
-            _focusedWindow = Math.Max(0, Array.FindIndex(_windows.ToArray(), window => window.Handle == handle));
+            _focusedWindow = 0;
+            _windowsExpanded = false;
+            _windowStatus = "";
+            _windowScroll = 0;
             _ignorePointerUpToMs = ignorePointerUpToMs;
             _targetTitle = DisplayTitle(window.Title);
             _scale = monitor.Scale;
             _mouseSelecting = false;
-            _applyBindings(_launcherBindings);
+            ApplyCurrentBindings();
             Draw();
         }
     }
@@ -235,11 +243,6 @@ internal sealed class LauncherController : IDisposable
             {
                 // オーバーレイ側の遅配で解放を巻き戻さないよう、グローバル通知だけで更新する。
                 _leftButtonDown = button.IsDown;
-                if (_ignoreRetargetRelease)
-                {
-                    _ignoreRetargetRelease = false;
-                    if (!button.IsDown) { return; }
-                }
             }
 
             if (ValidateTargetCore() && button.IsDown && (button.Button == MouseButtonKind.Right ||
@@ -327,7 +330,7 @@ internal sealed class LauncherController : IDisposable
         var handled = false;
         lock (_gate)
         {
-            if (_displayedWindowList?.Panel.Contains(pointer.Position) == true)
+            if (_scrollDragging || _displayedWindowList?.Panel.Contains(pointer.Position) == true)
             {
                 if (!ValidateTargetCore())
                 {
@@ -344,13 +347,29 @@ internal sealed class LauncherController : IDisposable
             return;
         }
 
-        HandleGridPointer(pointer);
+        (nint Handle, PixelRect Bounds, PixelRect Area)? center = null;
+        lock (_gate)
+        {
+            if (pointer.Kind == OverlayPointerKind.Down && ValidateTargetCore() && !_planMenuOpen &&
+                _panelLayout?.HitPreset(pointer.Position) is { } preset && LauncherPreset.All[preset].KeepSize &&
+                _inspector.TryInspect(_target, out var window))
+            {
+                var area = _selection!.WorkArea;
+                var bounds = window.VisualBounds;
+                center = (_target, new(area.X + (area.Width - bounds.Width) / 2,
+                    area.Y + (area.Height - bounds.Height) / 2, bounds.Width, bounds.Height), area);
+                CloseCore();
+            }
+        }
+
+        if (center is { } request) { _place(request.Handle, request.Bounds, request.Area); }
+        else { HandleGridPointer(pointer); }
     }
 
     private bool HandleWindowPointerCore(OverlayPointer pointer, out Action? complete)
     {
         complete = null;
-        if (_displayedWindowList is not { } list || !list.Panel.Contains(pointer.Position))
+        if (_displayedWindowList is not { } list || (!_scrollDragging && !list.Panel.Contains(pointer.Position)))
         {
             return false;
         }
@@ -358,6 +377,16 @@ internal sealed class LauncherController : IDisposable
         if (pointer.Kind == OverlayPointerKind.RightDown)
         {
             CloseCore();
+            return true;
+        }
+
+        if (_scrollDragging || (pointer.Kind == OverlayPointerKind.Down && list.Scrollbar.Contains(pointer.Position)))
+        {
+            _scrollDragging = pointer.Kind != OverlayPointerKind.Up;
+            var maximum = Math.Max(0, list.Rows.Count * (int)Math.Round(32 * _scale) - list.Viewport.Height);
+            _windowScroll = (int)Math.Round(Math.Clamp((pointer.Position.Y - list.Viewport.Y) /
+                Math.Max(1, list.Viewport.Height), 0, 1) * maximum);
+            Draw();
             return true;
         }
 
@@ -374,34 +403,23 @@ internal sealed class LauncherController : IDisposable
             return false;
         }
 
-        if (list.Rows.FirstOrDefault(row => row.Bounds.Contains(pointer.Position)) is { } row)
+        if (list.Header.Contains(pointer.Position))
         {
-            _focusedWindow = Array.FindIndex(_windows.ToArray(), window => window.Handle == row.Window.Handle);
-            if (pointer.Control)
-            {
-                _selectedWindows.Toggle(row.Window.Handle);
-                Draw();
-            }
-            else
-            {
-                var handle = row.Window.Handle;
-                var timeMs = pointer.TimeMs ?? unchecked((uint)Environment.TickCount);
-                CloseCore();
-                complete = () =>
-                {
-                    lock (_gate)
-                    {
-                        // 同じクリックの遅配をトレイと同じ時計で除外し、解放まで新しい選択を始めない。
-                        Open(handle, timeMs);
-                        _ignoreRetargetRelease = _selection is not null;
-                    }
-                };
-            }
+            _windowsExpanded = !_windowsExpanded;
+            ApplyCurrentBindings();
+            Draw();
+        }
+        else if (_windowsExpanded && list.Expanded && list.Viewport.Contains(pointer.Position) &&
+            list.Rows.FirstOrDefault(row => row.Bounds.Contains(pointer.Position)) is { } row)
+        {
+            _focusedWindow = list.First + row.Number - 1;
+            ToggleWindow(row.Window.Handle);
+            Draw();
         }
         else if (list.Buttons.FirstOrDefault(button => button.Bounds.Contains(pointer.Position)) is { } button)
         {
             // 選択解除の表示が遅れても、旧ボタンからモニター全体の整列へ切り替えない。
-            if (_selectedWindows.Count > 0)
+            if (_windowsExpanded && _selectedWindows.Count > 0)
             {
                 complete = PrepareArrangementCore(button.Layout);
             }
@@ -409,8 +427,10 @@ internal sealed class LauncherController : IDisposable
         else if (list.Previous.Contains(pointer.Position) || list.Next.Contains(pointer.Position))
         {
             var direction = list.Previous.Contains(pointer.Position) ? -1 : 1;
-            _focusedWindow = Math.Clamp(_focusedWindow + direction * Math.Max(1, list.Rows.Count),
-                0, Math.Max(0, _windows.Count - 1));
+            var lastPage = Math.Max(0, (_windows.Count - 1) / LauncherWindowListLayout.PageSize);
+            _focusedWindow = Math.Clamp(list.First + direction * LauncherWindowListLayout.PageSize,
+                0, lastPage * LauncherWindowListLayout.PageSize);
+            _windowScroll = 0;
             Draw();
         }
 
@@ -427,32 +447,33 @@ internal sealed class LauncherController : IDisposable
                 return;
             }
 
+            if (!_windowsExpanded || _windowList?.Expanded != true) { return; }
             _mouseSelecting = false;
             if (input is >= LauncherWindowInput.Grid and <= LauncherWindowInput.MainAndStack)
             {
-                // 対象の切替で押した左ボタンが続く間は、移動ループと整列を競合させない。
-                if (!_leftButtonDown)
+                if (!_leftButtonDown && _selectedWindows.Count > 0)
                 {
                     complete = PrepareArrangementCore((ArrangeLayout)(input - LauncherWindowInput.Grid));
                 }
             }
-            else if (_windows.Count > 0)
+            else
             {
-                if (input == LauncherWindowInput.Toggle)
+                var index = _focusedWindow / LauncherWindowListLayout.PageSize * LauncherWindowListLayout.PageSize +
+                    input - LauncherWindowInput.Window1;
+                if (index >= 0 && index < _windows.Count)
                 {
-                    _selectedWindows.Toggle(_windows[_focusedWindow].Handle);
+                    ToggleWindow(_windows[index].Handle);
+                    Draw();
                 }
-                else
-                {
-                    var delta = input == LauncherWindowInput.Previous ? -1 : 1;
-                    _focusedWindow = (_focusedWindow + delta + _windows.Count) % _windows.Count;
-                }
-
-                Draw();
             }
         }
 
         complete?.Invoke();
+    }
+
+    private void ToggleWindow(nint handle)
+    {
+        _windowStatus = _selectedWindows.Toggle(handle) ? "" : $"選べるのは最大 {WindowSelection.MaximumCount} 件です。";
     }
 
     private Action PrepareArrangementCore(ArrangeLayout layout)
@@ -615,13 +636,17 @@ internal sealed class LauncherController : IDisposable
         var title = _targetTitle;
         var menuOpen = _planMenuOpen;
         var showZoneLines = _settings().ShowZoneLines;
+        var presetIds = _presetIds;
         var revision = ++_drawRevision;
         var windows = _windows;
         var selected = _selectedWindows.Snapshot();
         var focused = _focusedWindow;
-        _panelLayout ??= LauncherPanelLayout.Create(selection, scale, title, menuOpen);
+        var expanded = _windowsExpanded;
+        var status = _windowStatus;
+        var scroll = _windowScroll;
+        _panelLayout ??= LauncherPanelLayout.Create(selection, scale, title, menuOpen, presetIds: _presetIds);
         _windowList = LauncherWindowListLayout.Create(selection.WorkArea, _panelLayout.Panel, scale,
-            windows, selected, focused);
+            windows, selected, focused, expanded, status, scroll);
         var generation = _displayGeneration;
         var renderedPanel = _panelLayout;
         var renderedList = _windowList;
@@ -630,9 +655,9 @@ internal sealed class LauncherController : IDisposable
             {
                 renderedPanel = layout;
                 renderedList = LauncherWindowListLayout.Create(selection.WorkArea, layout.Panel, scale,
-                    windows, selected, focused);
+                    windows, selected, focused, expanded, status, scroll);
             }, layout => LauncherWindowListLayout.Create(selection.WorkArea, layout.Panel, scale,
-                windows, selected, focused), showZoneLines), () =>
+                windows, selected, focused, expanded, status, scroll), showZoneLines, presetIds), () =>
             {
                 lock (_gate)
                 {
@@ -658,9 +683,9 @@ internal sealed class LauncherController : IDisposable
             return;
         }
 
+        _scrollDragging = false;
         _selection = null;
         _ignorePointerUpToMs = null;
-        _ignoreRetargetRelease = false;
         _target = 0;
         _selectedWindows.Clear();
         _windows = [];
@@ -697,7 +722,10 @@ internal sealed class LauncherController : IDisposable
     }
 
     private void ApplyCurrentBindings() =>
-        _applyBindings(_selection is not null ? _launcherBindings : _enabled ? _normalBindings : _pausedBindings);
+        _applyBindings(_selection is not null
+            ? _windowsExpanded ? _launcherBindings
+                : _launcherBindings.Where(binding => !LauncherWindowBindings.Contains(binding.Id)).ToArray()
+            : _enabled ? _normalBindings : _pausedBindings);
 
     private static string DisplayTitle(string title)
     {

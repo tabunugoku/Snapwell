@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Snapwell.Core.Commands;
 using Snapwell.Core.Layout;
+using Snapwell.Core.Overlay;
 using Snapwell.Core.Physics;
 using Snapwell.Core.Snapping;
 
@@ -22,7 +23,7 @@ public enum WindowCornerPreference
 /// <summary>他の端末にも持ち運べる設定。</summary>
 public sealed record PortableSettings
 {
-    public const int CurrentSchemaVersion = 6;
+    public const int CurrentSchemaVersion = 7;
 
     /// <summary>吸着半径の既定値。論理ピクセル。DESIGN.md §5.1 の feel の値。</summary>
     public const double DefaultSnapRadius = 28;
@@ -35,6 +36,8 @@ public sealed record PortableSettings
 
     // JSON のソース生成でも、欠けた値に初期化子を使うため set にする。
     public int SchemaVersion { get; set; } = CurrentSchemaVersion;
+    /// <summary>ランチャーへ表示するプリセットの ID。空の一覧も有効。</summary>
+    public string[] LauncherPresets { get; set; } = [.. LauncherPreset.DefaultIds];
     public string Feel { get; set; } = "Airy";
     public SnapMode SnapMode { get; set; } = SnapMode.Zones;
     public GridSettings Grid { get; set; } = new();
@@ -152,6 +155,7 @@ public sealed record PortableSettings
             ShowZonePreview = ShowZonePreview,
             CornerPreference = Enum.IsDefined(CornerPreference) ? CornerPreference : WindowCornerPreference.Default,
             MonitorGrids = monitorGrids,
+            LauncherPresets = LauncherPreset.NormalizeIds(LauncherPresets),
             Mass = InRange(Mass, FeelPreset.MinimumMass, FeelPreset.MaximumMass),
             Frequency = InRange(Frequency, FeelPreset.MinimumFrequency, FeelPreset.MaximumFrequency),
             DampingRatio = InRange(DampingRatio, FeelPreset.MinimumDampingRatio, FeelPreset.MaximumDampingRatio),

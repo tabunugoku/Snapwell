@@ -80,18 +80,18 @@ public sealed class LauncherPanelLayoutTests
     [Fact]
     public void PresetsRequireIntegralCellBoundaries()
     {
-        Assert.Equal(new[] { "左半分", "右半分", "左上 1/4", "左 1/3", "中央 1/3", "右 2/3", "中央", "最大化" },
-            LauncherPreset.All.Select(preset => preset.Name));
-        Assert.Equal(8, LauncherPreset.All.Select(preset => preset.Id).Distinct().Count());
-        Assert.Null(LauncherPreset.All[3].RangeFor(GridPlan.EightByEight));
-        Assert.Null(LauncherPreset.All[4].RangeFor(GridPlan.EightByEight));
-        Assert.Null(LauncherPreset.All[5].RangeFor(GridPlan.EightByEight));
-        Assert.Equal(new ZoneRange(0, 0, 4, 6), LauncherPreset.All[3].RangeFor(GridPlan.TwelveBySix));
-        Assert.Equal(new ZoneRange(4, 0, 4, 6), LauncherPreset.All[4].RangeFor(GridPlan.TwelveBySix));
-        Assert.Equal(new ZoneRange(4, 0, 8, 6), LauncherPreset.All[5].RangeFor(GridPlan.TwelveBySix));
-        Assert.Equal(new ZoneRange(2, 1, 4, 6), LauncherPreset.All[6].RangeFor(GridPlan.EightByEight));
-        Assert.Null(LauncherPreset.All[6].RangeFor(GridPlan.TwelveBySix));
-        Assert.Null(LauncherPreset.All[6].RangeFor(GridPlan.SixByFour));
+        Assert.Equal(new[] { "左半分", "右半分", "左上 1/4", "左 1/3", "右 2/3", "中央 1/3", "中央", "最大化" },
+            LauncherPreset.All.Where(preset => LauncherPreset.DefaultIds.Contains(preset.Id)).Select(preset => preset.Name));
+        Assert.Equal(16, LauncherPreset.All.Select(preset => preset.Id).Distinct().Count());
+        Assert.Null(LauncherPreset.All[8].RangeFor(GridPlan.EightByEight));
+        Assert.Null(LauncherPreset.All[12].RangeFor(GridPlan.EightByEight));
+        Assert.Null(LauncherPreset.All[11].RangeFor(GridPlan.EightByEight));
+        Assert.Equal(new ZoneRange(0, 0, 4, 6), LauncherPreset.All[8].RangeFor(GridPlan.TwelveBySix));
+        Assert.Equal(new ZoneRange(4, 0, 4, 6), LauncherPreset.All[12].RangeFor(GridPlan.TwelveBySix));
+        Assert.Equal(new ZoneRange(4, 0, 8, 6), LauncherPreset.All[11].RangeFor(GridPlan.TwelveBySix));
+        Assert.Equal(new ZoneRange(2, 1, 4, 6), LauncherPreset.All[13].RangeFor(GridPlan.EightByEight));
+        Assert.Null(LauncherPreset.All[13].RangeFor(GridPlan.TwelveBySix));
+        Assert.Null(LauncherPreset.All[13].RangeFor(GridPlan.SixByFour));
     }
 
     /// <summary>選択の中央に実際の物理ピクセルの寸法を表示する。</summary>
