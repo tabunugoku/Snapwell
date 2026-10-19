@@ -10,7 +10,9 @@ internal sealed class ForegroundTargetTracker(IWindowInspector inspector, uint o
     /// <summary>配送された前面だけを調べ、除外対象では記録を変えない。</summary>
     internal void Record(nint handle)
     {
-        if (handle != 0 && inspector.TryInspect(handle, out var window) && IsEligible(window))
+        // 自プロセスのタイトル取得はトレイの STA と同期し、常駐のロックと相互待機になる。
+        if (handle != 0 && inspector.GetProcessId(handle) != ownProcessId &&
+            inspector.TryInspect(handle, out var window) && IsEligible(window))
         {
             _lastEligible = (handle, window.ProcessId, window.ClassName);
         }
@@ -19,14 +21,16 @@ internal sealed class ForegroundTargetTracker(IWindowInspector inspector, uint o
     /// <summary>指定対象を調べ、記録した対象へ戻すかを判断する。</summary>
     internal nint Resolve(nint target)
     {
-        var window = target != 0 && inspector.TryInspect(target, out var inspected) ? inspected : null;
+        var window = target != 0 && inspector.GetProcessId(target) != ownProcessId &&
+            inspector.TryInspect(target, out var inspected) ? inspected : null;
         if (target != 0 && IsEligible(window))
         {
             return target;
         }
 
         // 閉じた HWND は再利用されるため、記録時の識別属性と照合してから戻す。
-        if (_lastEligible is { } last && inspector.TryInspect(last.Handle, out var recorded) &&
+        if (_lastEligible is { } last && inspector.GetProcessId(last.Handle) != ownProcessId &&
+            inspector.TryInspect(last.Handle, out var recorded) &&
             recorded.ProcessId == last.ProcessId && recorded.ClassName == last.ClassName && IsEligible(recorded))
         {
             return last.Handle;
