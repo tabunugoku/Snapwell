@@ -13,6 +13,33 @@ public sealed record LauncherWindowRow(LauncherWindow Window, PixelRect Bounds, 
     /// <summary>右端に固定幅で置く役割の表示。行をまたいで縦にそろう。選択中の行だけ有効。</summary>
     public PixelRect RoleBounds(double scale) => new(Bounds.Right - (int)Math.Round(84 * scale),
         Bounds.Y + (int)Math.Round(4 * scale), (int)Math.Round(76 * scale), Bounds.Height - 2 * (int)Math.Round(4 * scale));
+
+    /// <summary>ラジオ形式アイコンの輪の線幅。整数ピクセルにそろえ、拡大率でもぼやけない。</summary>
+    public static int IconRingThickness(double scale) => Math.Max(1, (int)Math.Round(scale));
+
+    /// <summary>役割の枠の左寄せに置く輪の外接矩形。直径は偶数ピクセルで、枠の上下の中央に整数で置く。</summary>
+    public PixelRect IconBounds(double scale)
+    {
+        var role = RoleBounds(scale);
+        var diameter = Math.Max(2, (int)Math.Round(5 * scale)) * 2;
+        return new(role.X + (int)Math.Round(9 * scale), role.Y + (role.Height - diameter) / 2, diameter, diameter);
+    }
+
+    /// <summary>輪の内側に隙間を一つ空けて置く塗りつぶしの点。輪と同じ中心で、整数ピクセルにそろう。</summary>
+    public PixelRect IconDotBounds(double scale)
+    {
+        var icon = IconBounds(scale);
+        var inset = 2 * IconRingThickness(scale);
+        return new(icon.X + inset, icon.Y + inset, icon.Width - 2 * inset, icon.Height - 2 * inset);
+    }
+
+    /// <summary>アイコンの右から枠の右端までの文字の領域。文字幅が違っても左端がそろう。</summary>
+    public PixelRect RoleLabelBounds(double scale)
+    {
+        var role = RoleBounds(scale);
+        var left = IconBounds(scale).Right + (int)Math.Round(5 * scale);
+        return new(left, role.Y, role.Right - left, role.Height);
+    }
 }
 
 /// <summary>整列ボタンの方式と物理ピクセルの矩形。</summary>
