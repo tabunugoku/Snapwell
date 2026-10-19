@@ -108,7 +108,7 @@ internal static class Program
         }
     }
 
-    private static Vec2 CursorPosition() => PInvoke.GetCursorPos(out var point) ? new(point.X, point.Y) : default;
+    private static Vec2? CursorPosition() => PInvoke.GetCursorPos(out var point) ? new Vec2(point.X, point.Y) : null;
 }
 
 /// <summary>停止中はスレッドを持たず、次の表示要求で STA を作り直す接続。</summary>

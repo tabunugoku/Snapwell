@@ -47,16 +47,17 @@ public sealed class Win32MonitorSource : IMonitorSource
         {
             var info = new MONITORINFOEXW();
             info.monitorInfo.cbSize = (uint)sizeof(MONITORINFOEXW);
+            // 抜き差しの最中に失敗した一台だけを飛ばし、残りのモニターは返す。
             if (!PInvoke.GetMonitorInfo(monitor, (MONITORINFO*)&info))
             {
-                throw new Win32Exception(Marshal.GetLastPInvokeError());
+                return true;
             }
 
             var result = PInvoke.GetDpiForMonitor(monitor, MONITOR_DPI_TYPE.MDT_EFFECTIVE_DPI,
                 out var dpiX, out var dpiY);
             if (result.Failed)
             {
-                throw new InvalidOperationException($"DPI を取得できない: {result.Value:X8}");
+                return true;
             }
 
             state.Monitors.Add(new MonitorInfo(info.szDevice.ToString(), ConvertRect(info.monitorInfo.rcMonitor),

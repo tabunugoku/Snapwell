@@ -147,7 +147,7 @@ internal sealed class AppHost
             }
 
             // Toggle はトレイのスレッドへ渡し、入力配送では保存や同意の待機を行わない。
-            _runtime = _createRuntime(portable.Value, () => Enabled,
+            _runtime = _createRuntime(_portable, () => Enabled,
                 () => _tray.Post(ToggleEnabled));
             try
             {
@@ -620,7 +620,15 @@ internal sealed class AppHost
                     break;
                 }
 
-                Volatile.Read(ref _runtime)!.Handle(value);
+                try
+                {
+                    Volatile.Read(ref _runtime)!.Handle(value);
+                }
+                catch (Exception exception) when (!_deliveryStop.IsCancellationRequested)
+                {
+                    // 失敗したイベントだけを捨てる。常駐プロセス全体を止めない。
+                    Log(exception);
+                }
             }
         }
         catch (OperationCanceledException) when (_deliveryStop.IsCancellationRequested)

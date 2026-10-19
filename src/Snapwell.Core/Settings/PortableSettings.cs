@@ -96,13 +96,7 @@ public sealed record PortableSettings
         };
     }
 
-    private static FeelPreset BasePreset(string feel) => feel switch
-    {
-        "Snappy" => FeelPreset.Snappy,
-        "Heavy" => FeelPreset.Heavy,
-        "Bouncy" => FeelPreset.Bouncy,
-        _ => FeelPreset.Airy,
-    };
+    private static FeelPreset BasePreset(string feel) => FeelPreset.ByName(feel) ?? FeelPreset.Airy;
 
     /// <summary>検証済みの分割案を返す。</summary>
     public GridPlan ToGridPlan() => new(Grid.Columns, Grid.Rows);
@@ -122,7 +116,7 @@ public sealed record PortableSettings
         return this with
         {
             SchemaVersion = CurrentSchemaVersion,
-            Feel = Feel is "Airy" or "Snappy" or "Heavy" or "Bouncy" ? Feel : defaults.Feel,
+            Feel = Feel is not null && FeelPreset.ByName(Feel) is not null ? Feel : defaults.Feel,
             SnapMode = Enum.IsDefined(SnapMode) ? SnapMode : defaults.SnapMode,
             Grid = new(Grid?.Columns is >= 1 and <= 64 ? Grid.Columns : 8,
                 Grid?.Rows is >= 1 and <= 64 ? Grid.Rows : 8),
