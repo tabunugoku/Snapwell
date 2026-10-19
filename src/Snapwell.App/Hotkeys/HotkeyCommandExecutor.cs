@@ -150,8 +150,8 @@ internal sealed class HotkeyCommandExecutor(IWindowInspector inspector, IMonitor
     }
 
     // 設定は呼び出しごとに読み、変更を次の操作から反映する。
-    private bool IsTarget(WindowKind kind) =>
-        kind != WindowKind.Excluded && (kind != WindowKind.FixedSize || settings().MoveFixedSizeWindows);
+    // 整列の対象は Normal と FixedSize だけで、ポップアップは設定にかかわらず含めない。
+    private bool IsTarget(WindowKind kind) => WindowTargetPolicy.IsTarget(kind, settings);
 
     private IReadOnlyList<WindowSnapshot> GetArrangementWindows()
     {

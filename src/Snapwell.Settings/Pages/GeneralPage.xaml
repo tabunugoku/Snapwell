@@ -143,7 +143,6 @@
                                       VerticalAlignment="Center" AutomationProperties.Name="サイズ固定のウィンドウも動かす"
                                       Toggled="MoveFixedSize_Toggled" />
                     </Grid>
-                    <!-- デモ状態 (未実装) -->
                     <Border Style="{StaticResource SnapwellRowDividerStyle}" />
                     <Grid Style="{StaticResource SnapwellRowGridStyle}">
                         <Grid.ColumnDefinitions>
@@ -151,30 +150,18 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
-                            <Grid ColumnSpacing="6" HorizontalAlignment="Left">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="ポップアップとフライアウトも動かす" Style="{StaticResource SnapwellRowTitleStyle}" />
-                                <Border Grid.Column="1" Style="{StaticResource SnapwellTagPendingStyle}">
-                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellTagPendingTextStyle}" />
-                                </Border>
-                            </Grid>
+                            <TextBlock Text="ポップアップとフライアウトも動かす" Style="{StaticResource SnapwellRowTitleStyle}" />
                             <TextBlock
-                                Text="タスクバーから開く小さなウィンドウなど。フォーカスを奪わずに移動します"
+                                Text="タスクバーから開く小さなウィンドウなど。フォーカスを奪わずに、ホットキーとドラッグで動かします（整列の対象にはなりません。ドラッグで動かせないものもあります）"
                                 Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <ToggleSwitch IsEnabled="False"
-                                Style="{StaticResource DemoSwitchStyle}"
-                                IsOn="True"
-                                AutomationProperties.Name="ポップアップ" />
-                        </StackPanel>
+                        <ToggleSwitch x:Name="MovePopupToggle" Grid.Column="1" OnContent="" OffContent="" MinWidth="0"
+                                      Style="{StaticResource SnapwellToggleSwitchStyle}"
+                                      VerticalAlignment="Center" AutomationProperties.Name="ポップアップとフライアウトも動かす"
+                                      Toggled="MovePopup_Toggled" />
                     </Grid>
                 </StackPanel>
             </Border>
-            <!-- デモ状態 (未実装) ここまで -->
         </StackPanel>
     </ScrollViewer>
 </Page>

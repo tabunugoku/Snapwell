@@ -132,7 +132,7 @@ internal sealed class LauncherController : IDisposable
             }
 
             if (handle == 0 || !_inspector.TryInspect(handle, out var window) ||
-                WindowClassifier.Classify(window, _ownProcessId) == WindowKind.Excluded)
+                !WindowTargetPolicy.IsTarget(WindowClassifier.Classify(window, _ownProcessId), _settings))
             {
                 return;
             }
@@ -630,7 +630,7 @@ internal sealed class LauncherController : IDisposable
         }
 
         if (!_presenter.IsAvailable || !_inspector.TryInspect(_target, out var window) ||
-            WindowClassifier.Classify(window, _ownProcessId) == WindowKind.Excluded ||
+            !WindowTargetPolicy.IsTarget(WindowClassifier.Classify(window, _ownProcessId), _settings) ||
             !_monitors.GetMonitors().Any(monitor => monitor.ToMonitorArea() == _destination))
         {
             CloseCore();
