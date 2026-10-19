@@ -200,8 +200,7 @@ public sealed class CornerStyler
         }
 
         var current = _api.Read(handle);
-        if (original.ThreadId == 0 || string.IsNullOrEmpty(original.ClassName) ||
-            (current is not null && !SameOwner(original, current)))
+        if (current is not null && !SameOwner(original, current))
         {
             _log?.Invoke($"角設定の復元対象が一致しないため記録を破棄: {handle}");
             _modified.Remove((long)handle);
@@ -228,8 +227,10 @@ public sealed class CornerStyler
 
     private static bool SameOwner(CornerState left, CornerState right) =>
         left.ProcessId == right.ProcessId && left.ProcessStartTicks == right.ProcessStartTicks &&
-        left.ThreadId != 0 && left.ThreadId == right.ThreadId && !string.IsNullOrEmpty(left.ClassName) &&
-        string.Equals(left.ClassName, right.ClassName, StringComparison.Ordinal);
+        // 旧形式にはウィンドウ識別がないため、従来どおりプロセスの一致で復元する。
+        ((left.ThreadId == 0 && string.IsNullOrEmpty(left.ClassName)) ||
+            (left.ThreadId != 0 && left.ThreadId == right.ThreadId && !string.IsNullOrEmpty(left.ClassName) &&
+                string.Equals(left.ClassName, right.ClassName, StringComparison.Ordinal)));
 
     private void Save()
     {

@@ -33,8 +33,10 @@ public sealed class CornerStylerTests
         }
     }
 
-    [Fact]
-    public void LegacyBackupWithoutWindowIdentityIsReadAndDiscardedWithoutRestoring()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void LegacyBackupWithMatchingProcessRestoresOriginalAndRetainsBackupUntilSuccess(bool success)
     {
         var directory = Path.Combine(Path.GetTempPath(), "Snapwell-corner-legacy-" + Guid.NewGuid());
         Directory.CreateDirectory(directory);
@@ -44,13 +46,52 @@ public sealed class CornerStylerTests
             File.WriteAllText(path, """
                 [{"Handle":1,"ProcessId":123,"ProcessStartTicks":1,"Original":1}]
                 """);
-            var api = new FakeCornerApi();
+            var api = new FakeCornerApi { Value = CornerStyle.Round, Success = success };
             var messages = new List<string>();
             var restarted = new CornerStyler(api, path, messages.Add);
             restarted.RestoreAll();
-            Assert.Equal(0, api.SetCount);
+            Assert.Equal(1, api.SetCount);
+            Assert.Equal(success ? CornerStyle.DoNotRound : CornerStyle.Round, api.Value);
+            Assert.Equal(success ? 0 : 1, restarted.TrackedCount);
+            Assert.Equal(success ? 0 : 1, new CornerStyler(api, path).TrackedCount);
+            Assert.Equal(success ? 0 : 1, messages.Count);
+
+            if (!success)
+            {
+                api.Success = true;
+                restarted.Apply(1, CornerStyle.RoundSmall);
+                restarted.RestoreAll();
+                Assert.Equal(CornerStyle.DoNotRound, api.Value);
+            }
+
             Assert.Equal(0, new CornerStyler(api, path).TrackedCount);
-            Assert.Single(messages);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData(124u, 1L)]
+    [InlineData(123u, 2L)]
+    public void LegacyBackupWithDifferentProcessIdentityIsDiscardedWithoutRestoring(uint processId, long startTicks)
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "Snapwell-corner-legacy-owner-" + Guid.NewGuid());
+        Directory.CreateDirectory(directory);
+        try
+        {
+            var path = Path.Combine(directory, "corners.json");
+            File.WriteAllText(path, $$"""
+                [{"Handle":1,"ProcessId":{{processId}},"ProcessStartTicks":{{startTicks}},"Original":1}]
+                """);
+            var api = new FakeCornerApi { Value = CornerStyle.Round };
+            var restarted = new CornerStyler(api, path);
+            restarted.RestoreAll();
+            Assert.Equal(CornerStyle.Round, api.Value);
+            Assert.Equal(0, api.SetCount);
+            Assert.Equal(0, restarted.TrackedCount);
+            Assert.Equal(0, new CornerStyler(api, path).TrackedCount);
         }
         finally
         {
