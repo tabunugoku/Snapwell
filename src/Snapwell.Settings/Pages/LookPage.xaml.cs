@@ -37,6 +37,7 @@ public sealed partial class LookPage : Page
             WindowCornerPreference.DoNotRound => 2,
             _ => 3,
         };
+        ZonePreviewToggle.IsOn = _session.Current.ShowZonePreview;
         ZoneLinesToggle.IsOn = _session.Current.ShowZoneLines;
         PredictionLineToggle.IsOn = _session.Current.ShowPredictionLine;
         _refreshing = false;
@@ -54,6 +55,14 @@ public sealed partial class LookPage : Page
                 _ => WindowCornerPreference.Default,
             };
             _session.Update(_session.Current with { CornerPreference = preference });
+        }
+    }
+
+    private void ZonePreview_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (!_refreshing)
+        {
+            _session.Update(_session.Current with { ShowZonePreview = ZonePreviewToggle.IsOn });
         }
     }
 

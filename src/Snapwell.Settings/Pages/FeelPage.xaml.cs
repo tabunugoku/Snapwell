@@ -48,7 +48,6 @@ public sealed partial class FeelPage : Page
 
         var value = session.Current;
         IsEnabled = !session.IsReadOnly;
-        FeelBox.SelectedIndex = value.Feel switch { "Snappy" => 1, "Heavy" => 2, "Bouncy" => 3, _ => 0 };
         ModeBox.SelectedIndex = value.SnapMode == SnapMode.Corners ? 1 : 0;
         MotionSwitch.IsOn = value.ReduceMotion;
         foreach (var tuning in _tunings)
@@ -181,21 +180,10 @@ public sealed partial class FeelPage : Page
 
     private void FeelReset_Click(object sender, RoutedEventArgs e) => SelectPreset(_session.Current.Feel);
 
-    private void Feel_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (!_refreshing && FeelBox.SelectedItem is ComboBoxItem { Tag: string feel })
-        {
-            SelectPreset(feel);
-        }
-    }
-
-    // 同じプリセットを選び直す（カスタムから戻す）ときも値を入れ直すため、コンボボックスの変更を経由しない。
+    // 同じプリセットを選び直す（カスタムから戻す）ときも値を入れ直す。
     private void SelectPreset(string feel)
     {
         _session.Update(_session.Current.WithPreset(feel));
-        _refreshing = true;
-        FeelBox.SelectedIndex = feel switch { "Snappy" => 1, "Heavy" => 2, "Bouncy" => 3, _ => 0 };
-        _refreshing = false;
         ShowValues();
     }
 
