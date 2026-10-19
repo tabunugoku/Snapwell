@@ -40,17 +40,29 @@ public sealed partial class GeneralPage : Page
 
     private void Refresh()
     {
+        _lastState = _autoStart.GetState();
+        SetToggle(_lastState != AutoStartState.Off);
+        ShowStatus();
+    }
+
+    // 登録の説明だけを更新する。トグル自身は書き換えない。
+    private void ShowStatus()
+    {
+        RegistrationStatus.Text = _lastState == AutoStartState.Elsewhere
+            ? "別の場所の Snapwell が登録されています。オフにしてからオンにすると、このフォルダーの Snapwell に置き換えます"
+            : "";
+        RegistrationStatus.Visibility = RegistrationStatus.Text.Length > 0
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+    }
+
+    // 表示を合わせるだけの IsOn の書き込み。Toggled を登録の操作として扱わせない。
+    private void SetToggle(bool isOn)
+    {
         _refreshing = true;
         try
         {
-            _lastState = _autoStart.GetState();
-            AutoStartToggle.IsOn = _lastState != AutoStartState.Off;
-            RegistrationStatus.Text = _lastState == AutoStartState.Elsewhere
-                ? "別の場所の Snapwell が登録されています。オフにしてからオンにすると、このフォルダーの Snapwell に置き換えます"
-                : "";
-            RegistrationStatus.Visibility = RegistrationStatus.Text.Length > 0
-                ? Visibility.Visible
-                : Visibility.Collapsed;
+            AutoStartToggle.IsOn = isOn;
         }
         finally
         {
@@ -68,8 +80,10 @@ public sealed partial class GeneralPage : Page
         ErrorNotice.IsOpen = false;
         try
         {
+            // 成功したらトグルはそのまま（利用者が切り替えた表示が正）。ばねの動きの途中で IsOn を書き戻さない。
             _autoStart.SetEnabled(AutoStartToggle.IsOn);
-            Refresh();
+            _lastState = _autoStart.GetState();
+            ShowStatus();
         }
         catch (Exception exception) when (IsRegistryFailure(exception))
         {
@@ -81,10 +95,8 @@ public sealed partial class GeneralPage : Page
             catch (Exception readException) when (IsRegistryFailure(readException))
             {
                 // 再取得も拒否された場合は、最後に読めた表示に戻して操作を止める。
-                _refreshing = true;
-                AutoStartToggle.IsOn = _lastState != AutoStartState.Off;
+                SetToggle(_lastState != AutoStartState.Off);
                 AutoStartToggle.IsEnabled = false;
-                _refreshing = false;
             }
         }
     }
