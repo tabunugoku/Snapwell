@@ -12,6 +12,7 @@ public enum SettingsField
     Grid, Gap, Edge, Feel, SnapMode, ReduceMotion, ShowZonePreview,
     MagnetStrength, SnapRadius, Hotkey, ResizeStep, ResizeAnchor,
     CornerPreference, ShowZoneLines, ShowPredictionLine, SnapAfterResize, MonitorGrids, LauncherPresets,
+    MoveFixedSizeWindows,
 }
 
 /// <summary>ホットキーはコマンドごと、それ以外は項目ごとに識別する。</summary>
@@ -171,6 +172,10 @@ public static class SettingsTransfer
                 SettingsField.ShowZoneLines => value with { ShowZoneLines = imported.ShowZoneLines },
                 SettingsField.ShowPredictionLine => value with { ShowPredictionLine = imported.ShowPredictionLine },
                 SettingsField.SnapAfterResize => value with { SnapAfterResize = imported.SnapAfterResize },
+                SettingsField.MoveFixedSizeWindows => value with
+                {
+                    MoveFixedSizeWindows = imported.MoveFixedSizeWindows,
+                },
                 SettingsField.MonitorGrids => value with { MonitorGrids = imported.MonitorGrids },
                 SettingsField.Gap => value with { Gap = imported.Gap },
                 SettingsField.Edge => value with { Edge = imported.Edge },
@@ -220,6 +225,8 @@ public static class SettingsTransfer
         Add(SettingsField.ShowPredictionLine, "予測の線", current.ShowPredictionLine, imported.ShowPredictionLine, OnOff);
         Add(SettingsField.SnapAfterResize, "手動リサイズ後に区画へ揃える", current.SnapAfterResize,
             imported.SnapAfterResize, OnOff);
+        Add(SettingsField.MoveFixedSizeWindows, "サイズ固定のウィンドウも動かす", current.MoveFixedSizeWindows,
+            imported.MoveFixedSizeWindows, OnOff);
         Add(SettingsField.MonitorGrids, "モニター別の分割案", current.MonitorGrids, imported.MonitorGrids,
             MonitorPlans, SameMonitorPlans);
         Add(SettingsField.LauncherPresets, "ランチャーのプリセット", current.LauncherPresets,
