@@ -14,7 +14,7 @@ internal interface IOverlaySurface : IDisposable
 internal enum OverlayPointerKind { Down, Move, Up, RightDown }
 
 /// <summary>物理ピクセルの画面座標によるポインタ入力。</summary>
-internal sealed record OverlayPointer(OverlayPointerKind Kind, Vec2 Position);
+internal sealed record OverlayPointer(OverlayPointerKind Kind, Vec2 Position, bool Control = false);
 
 /// <summary>描画を専用スレッドへ要求し、入力を受け取る窓口。</summary>
 internal interface IOverlayPresenter : IDisposable

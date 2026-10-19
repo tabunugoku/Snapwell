@@ -10,6 +10,7 @@ internal sealed class LauncherPanelRenderer
     [ThreadStatic]
     private static LauncherPanelRenderer? _current;
     private readonly LauncherRasterCache _raster = new();
+    private readonly LauncherWindowListRenderer _windows = new();
     private (GridLayout Grid, double Scale, string Target, bool Menu, OverlayTheme Theme)? _key;
     private LauncherPanelLayout? _layout;
     private LauncherPanelLayer? _panel;
@@ -28,6 +29,7 @@ internal sealed class LauncherPanelRenderer
         if (_current is { } renderer)
         {
             renderer._raster.Clear();
+            renderer._windows.Clear();
             renderer._key = null;
             renderer._layout = null;
             renderer._panel = null;
@@ -44,7 +46,8 @@ internal sealed class LauncherPanelRenderer
 
     /// <summary>描画スレッドで静的パネルを再利用し、選択の差分を描く。</summary>
     internal OverlayFrame Render(ZoneSelection selection, string target, double scale, bool menuOpen,
-        OverlayTheme theme, Action<LauncherPanelLayout> publishLayout)
+        OverlayTheme theme, Action<LauncherPanelLayout> publishLayout,
+        Func<LauncherPanelLayout, LauncherWindowListLayout>? windowList = null)
     {
         using var text = new GdiOverlayText(scale);
         var palette = OverlayPalette.For(theme);
@@ -79,7 +82,8 @@ internal sealed class LauncherPanelRenderer
 
         var layout = _layout!.WithSelection(selection, scale, text.Measure);
         var label = OverlayPainter.CreateSelectionLabelLayer(layout, theme, scale, DrawText);
-        var frame = _raster.Render(selection, _panel!, label, theme, scale);
+        var extra = windowList is null ? null : _windows.Render(windowList(layout), theme, scale, text);
+        var frame = _raster.Render(selection, _panel!, label, theme, scale, extra);
         publishLayout(layout);
         return frame;
     }

@@ -342,7 +342,7 @@ internal sealed unsafe class LayeredOverlayWindow : IOverlaySurface, IOverlayLoo
                 _ => OverlayPointerKind.Move,
             };
             Pointer?.Invoke(new(kind, OverlayCoordinates.ToScreen(new(client.X, client.Y),
-                new(origin.X, origin.Y))));
+                new(origin.X, origin.Y)), ((nuint)wParam.Value & 0x0008) != 0));
             return default;
         }
 

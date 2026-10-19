@@ -10,12 +10,14 @@ public sealed class LauncherRasterCache
     private ZoneSelection? _previous;
     private LauncherPanelLayer? _panel;
     private LauncherPanelLayer? _label;
+    private IReadOnlyList<LauncherPanelLayer> _extra = [];
     private OverlayTheme _theme;
     private double _scale;
 
     /// <summary>保持している全画面・パネル・ラベルの画素配列の合計バイト数。</summary>
     public long RetainedPixelBytes => (_frame?.Pixels.LongLength ?? 0) +
-        (_panel?.Frame.Pixels.LongLength ?? 0) + (_label?.Frame.Pixels.LongLength ?? 0);
+        (_panel?.Frame.Pixels.LongLength ?? 0) + (_label?.Frame.Pixels.LongLength ?? 0) +
+        _extra.Sum(layer => layer.Frame.Pixels.LongLength);
 
     /// <summary>非表示時に画素を手放し、次の描画を全面更新にする。</summary>
     public void Clear()
@@ -24,12 +26,14 @@ public sealed class LauncherRasterCache
         _previous = null;
         _panel = null;
         _label = null;
+        _extra = [];
     }
 
     /// <summary>同じ寸法の全画面バッファを再利用し、変わった領域だけを初期化する。</summary>
     public OverlayFrame Render(ZoneSelection selection, LauncherPanelLayer panel, LauncherPanelLayer label,
-        OverlayTheme theme, double scale)
+        OverlayTheme theme, double scale, IReadOnlyList<LauncherPanelLayer>? extra = null)
     {
+        extra ??= [];
         var area = selection.WorkArea;
         if (_frame is null || _frame.Width != area.Width || _frame.Height != area.Height)
         {
@@ -63,6 +67,19 @@ public sealed class LauncherRasterCache
                 AddDirty(dirty, Local(_label!.Bounds, area));
                 AddDirty(dirty, Local(label.Bounds, area));
             }
+
+            for (var index = 0; index < Math.Max(_extra.Count, extra.Count); index++)
+            {
+                var oldLayer = index < _extra.Count ? _extra[index] : null;
+                var newLayer = index < extra.Count ? extra[index] : null;
+                if (ReferenceEquals(oldLayer, newLayer))
+                {
+                    continue;
+                }
+
+                if (oldLayer is not null) { AddDirty(dirty, Local(oldLayer.Bounds, area)); }
+                if (newLayer is not null) { AddDirty(dirty, Local(newLayer.Bounds, area)); }
+            }
         }
 
         foreach (var region in dirty)
@@ -76,11 +93,16 @@ public sealed class LauncherRasterCache
             OverlayPainter.PaintLauncher(clipped, selection, theme, scale);
             OverlayPainter.Composite(clipped, label.Frame, label.Bounds.X - area.X, label.Bounds.Y - area.Y);
             OverlayPainter.Composite(clipped, panel.Frame, panel.Bounds.X - area.X, panel.Bounds.Y - area.Y);
+            foreach (var layer in extra)
+            {
+                OverlayPainter.Composite(clipped, layer.Frame, layer.Bounds.X - area.X, layer.Bounds.Y - area.Y);
+            }
         }
 
         _previous = selection;
         _panel = panel;
         _label = label;
+        _extra = extra;
         _theme = theme;
         _scale = scale;
         _frame.BaseRevision = _frame.Revision;
