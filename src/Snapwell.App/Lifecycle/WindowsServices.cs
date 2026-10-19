@@ -88,6 +88,7 @@ internal sealed class WindowsConsentPrompt : IConsentPrompt
 /// <summary>外部へ送らず、端末内だけに障害を記録する。</summary>
 internal sealed class FileAppLog : IAppLog
 {
+    private const long MaximumBytes = 1024 * 1024;
     private readonly object _gate = new();
     public void Error(Exception exception)
     {
@@ -96,7 +97,14 @@ internal sealed class FileAppLog : IAppLog
             var directory = Path.Combine(Environment.GetFolderPath(
                 Environment.SpecialFolder.LocalApplicationData), "Snapwell");
             Directory.CreateDirectory(directory);
-            File.AppendAllText(Path.Combine(directory, "app.log"),
+            var path = Path.Combine(directory, "app.log");
+            // 同じ失敗が続いても無制限に増やさない。上限を超えたら一世代だけ残して入れ替える。
+            if (File.Exists(path) && new FileInfo(path).Length > MaximumBytes)
+            {
+                File.Move(path, path + ".1", overwrite: true);
+            }
+
+            File.AppendAllText(path,
                 DateTimeOffset.Now.ToString("O") + " " + exception + Environment.NewLine);
         }
     }

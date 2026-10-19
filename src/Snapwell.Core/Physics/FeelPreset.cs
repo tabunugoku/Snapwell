@@ -133,6 +133,16 @@ public sealed record FeelPreset
             words.Magnet > 0 ? Math.Min(words.Magnet, MaximumMagnetStrength) : DefaultMagnetStrength);
     }
 
+    /// <summary>プリセット名から操作感を返し、未知の名前は null を返す。名前の一覧はここだけに持つ。</summary>
+    public static FeelPreset? ByName(string name) => name switch
+    {
+        "Airy" => Airy,
+        "Snappy" => Snappy,
+        "Heavy" => Heavy,
+        "Bouncy" => Bouncy,
+        _ => null,
+    };
+
     /// <summary>airy, slightly magnetic に対応する操作感。</summary>
     public static FeelPreset Airy { get; } = FromWords("airy, slightly magnetic");
 

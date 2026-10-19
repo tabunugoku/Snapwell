@@ -272,7 +272,7 @@ public sealed class DragSnapControllerTests
         internal List<bool> Tracking { get; } = [];
         internal PortableSettings Settings { get; } = new();
         internal DragSnapController Controller { get; }
-        internal Fixture(Func<Vec2>? cursorPosition = null, Func<nint, IReadOnlyList<PixelRect>>? neighbors = null) =>
+        internal Fixture(Func<Vec2?>? cursorPosition = null, Func<nint, IReadOnlyList<PixelRect>>? neighbors = null) =>
             Controller = new(Inspector, new FakeMonitors(), Motion,
                 () => Settings, Tracking.Add, 999, () => Now, Preview, cursorPosition, neighbors);
 
