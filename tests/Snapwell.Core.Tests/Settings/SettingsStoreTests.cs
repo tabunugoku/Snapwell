@@ -9,6 +9,37 @@ public sealed class SettingsStoreTests : IDisposable
 
     public SettingsStoreTests() => Directory.CreateDirectory(_directory);
 
+    /// <summary>廃止したキーは型にかかわらず無視し、既存の値を保ったまま次の保存で除く。</summary>
+    [Theory]
+    [InlineData(3, "800", "12")]
+    [InlineData(6, "800", "12")]
+    [InlineData(6, "\"unused\"", "null")]
+    public void RetiredLauncherSettingsAreIgnoredAndRemovedOnSave(int version, string milliseconds, string distance)
+    {
+        var path = Path.Combine(_directory, "retired-settings.json");
+        File.WriteAllText(path, $$"""
+            {
+              "SchemaVersion": {{version}}, "Grid": { "Columns": 6, "Rows": 4 }, "Gap": 21, "Feel": "Heavy",
+              "LongPressMilliseconds": {{milliseconds}}, "LongPressDistance": {{distance}}
+            }
+            """);
+        var store = SettingsStores.Portable(path);
+        var result = store.Load();
+        Assert.False(result.IsReadOnly);
+        Assert.False(result.ResetToDefaults);
+        Assert.Equal(new GridSettings(6, 4), result.Value.Grid);
+        Assert.Equal(21, result.Value.Gap);
+        Assert.Equal("Heavy", result.Value.Feel);
+        Assert.Equal(6, PortableSettings.CurrentSchemaVersion);
+
+        store.Save(result.Value);
+        Assert.DoesNotContain("LongPress", File.ReadAllText(path));
+        var loaded = store.Load().Value;
+        Assert.Equal(result.Value.Grid, loaded.Grid);
+        Assert.Equal(result.Value.Gap, loaded.Gap);
+        Assert.Equal(result.Value.Feel, loaded.Feel);
+    }
+
     /// <summary>追加前の設定はプレビュー有効になり、明示した無効は正規化と保存を通して保つ。</summary>
     [Fact]
     public void ZonePreviewDefaultsForOldFilesAndRoundTripsFalse()
@@ -21,54 +52,6 @@ public sealed class SettingsStoreTests : IDisposable
         var loaded = store.Load().Value;
         Assert.False(loaded.ShowZonePreview);
         Assert.Equal(PortableSettings.CurrentSchemaVersion, loaded.SchemaVersion);
-    }
-
-    /// <summary>版 3 の既存ファイルでも長押し設定は既定値になり、読み取り専用にならず往復できる。</summary>
-    [Fact]
-    public void LongPressSettingsDefaultForVersion3FilesAndRoundTrip()
-    {
-        var defaults = new PortableSettings();
-        Assert.Equal(450, defaults.LongPressMilliseconds);
-        Assert.Equal(6, defaults.LongPressDistance);
-
-        var path = Path.Combine(_directory, "longpress.json");
-        File.WriteAllText(path, "{\"SchemaVersion\":3}");
-        var store = SettingsStores.Portable(path);
-        var initial = store.Load();
-        Assert.False(initial.IsReadOnly);
-        Assert.False(initial.ResetToDefaults);
-        Assert.Equal(450, initial.Value.LongPressMilliseconds);
-        Assert.Equal(6, initial.Value.LongPressDistance);
-
-        store.Save(new() { LongPressMilliseconds = 800, LongPressDistance = 12 });
-        var loaded = store.Load();
-        Assert.False(loaded.IsReadOnly);
-        Assert.Equal(800, loaded.Value.LongPressMilliseconds);
-        Assert.Equal(12, loaded.Value.LongPressDistance);
-    }
-
-    /// <summary>長押しの時間と距離は境界値を保ち、範囲外と非有限値を既定値へ戻す。</summary>
-    [Theory]
-    [InlineData(150, 2, 150, 2)]
-    [InlineData(2000, 32, 2000, 32)]
-    [InlineData(100, 0.5, 450, 6)]
-    [InlineData(5000, 100, 450, 6)]
-    [InlineData(-10, -3, 450, 6)]
-    [InlineData(149, 1.9, 450, 6)]
-    [InlineData(2001, 32.1, 450, 6)]
-    [InlineData(600, double.NaN, 600, 6)]
-    [InlineData(600, double.PositiveInfinity, 600, 6)]
-    [InlineData(600, double.NegativeInfinity, 600, 6)]
-    public void LongPressSettingsNormalizeBoundsAndOutOfRangeValues(
-        int milliseconds, double distance, int expectedMilliseconds, double expectedDistance)
-    {
-        var normalized = SettingsTransfer.Normalize(new()
-        {
-            LongPressMilliseconds = milliseconds,
-            LongPressDistance = distance,
-        });
-        Assert.Equal(expectedMilliseconds, normalized.LongPressMilliseconds);
-        Assert.Equal(expectedDistance, normalized.LongPressDistance);
     }
 
     /// <summary>版 4 の既存ファイルではサイズ変更の設定が既定になり、保存した値は往復する。</summary>

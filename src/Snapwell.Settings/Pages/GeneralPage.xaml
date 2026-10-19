@@ -195,45 +195,6 @@
                 </StackPanel>
             </Border>
             <!-- デモ状態 (未実装) ここまで -->
-            <TextBlock Text="タイトルバーの長押し" Style="{StaticResource SnapwellGroupTitleStyle}" />
-            <Border Style="{StaticResource SnapwellRowsBorderStyle}">
-                <StackPanel>
-                    <Grid Style="{StaticResource SnapwellRowGridStyle}">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="長押しの時間 (ms)" Style="{StaticResource SnapwellRowTitleStyle}" />
-                            <TextBlock Text="150〜2000 ms で指定できます" Style="{StaticResource SnapwellRowDescriptionStyle}" />
-                        </StackPanel>
-                        <NumberBox x:Name="LongPressMillisecondsBox" Grid.Column="1" Width="140"
-                                   VerticalAlignment="Center" Minimum="150" Maximum="2000"
-                                   SmallChange="50" LargeChange="100" SpinButtonPlacementMode="Compact"
-                                   AutomationProperties.Name="長押しの時間 (ms)"
-                                   ValueChanged="LongPressMilliseconds_ValueChanged"
-                                   ValidationMode="InvalidInputOverwritten" />
-                    </Grid>
-                    <Border Style="{StaticResource SnapwellRowDividerStyle}" />
-                    <Grid Style="{StaticResource SnapwellRowGridStyle}">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="長押し中に動いてよい距離 (px)" Style="{StaticResource SnapwellRowTitleStyle}" />
-                            <TextBlock Text="2〜32 px で指定できます。距離はモニターの DPI に合わせて換算されます"
-                                       Style="{StaticResource SnapwellRowDescriptionStyle}" />
-                        </StackPanel>
-                        <NumberBox x:Name="LongPressDistanceBox" Grid.Column="1" Width="140"
-                                   VerticalAlignment="Center" Minimum="2" Maximum="32"
-                                   SmallChange="1" LargeChange="5" SpinButtonPlacementMode="Compact"
-                                   AutomationProperties.Name="長押し中に動いてよい距離 (px)"
-                                   ValueChanged="LongPressDistance_ValueChanged"
-                                   ValidationMode="InvalidInputOverwritten" />
-                    </Grid>
-                </StackPanel>
-            </Border>
         </StackPanel>
     </ScrollViewer>
 </Page>
