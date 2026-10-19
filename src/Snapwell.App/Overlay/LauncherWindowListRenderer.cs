@@ -128,8 +128,21 @@ internal sealed class LauncherWindowListRenderer
                             if (row.Main) { OverlayPainter.FillRounded(frame, pill, palette.BlueBackground, 999, scale); }
                             OverlayPainter.StrokeRounded(frame, pill, row.Main ? palette.BlueText : palette.Border,
                                 999, 1, scale);
-                            text.Draw(frame, clipped, new(row.Main ? "★ メイン" : "☆ スタック", role, 10.5, Center: true),
-                                row.Main ? palette.BlueText : palette.Muted);
+                            var tint = row.Main ? palette.BlueText : palette.Muted;
+                            // 図形で描く。メインは輪と点 (◉)、スタックは輪だけ (○)。フォントのグリフに頼らない。
+                            var ring = row.IconBounds(scale);
+                            var ringLocal = new PixelRect(ring.X - clipped.X, ring.Y - clipped.Y, ring.Width, ring.Height);
+                            OverlayPainter.StrokeRounded(frame, ringLocal, tint, ring.Width / (double)scale / 2,
+                                LauncherWindowRow.IconRingThickness(scale) / scale, scale);
+                            if (row.Main)
+                            {
+                                var dot = row.IconDotBounds(scale);
+                                OverlayPainter.FillRounded(frame, new(dot.X - clipped.X, dot.Y - clipped.Y,
+                                    dot.Width, dot.Height), tint, dot.Width / (double)scale / 2, scale);
+                            }
+
+                            text.Draw(frame, clipped, new(row.Main ? "メイン" : "スタック", row.RoleLabelBounds(scale),
+                                10.5), tint);
                         }
                     });
                 }
