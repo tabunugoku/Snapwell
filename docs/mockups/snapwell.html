@@ -370,6 +370,21 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
   cursor: pointer;
   font-size: 12px;
 }
+.preset.keep svg rect.on { fill: none; stroke: var(--muted); stroke-dasharray: 1.5 1; }
+.pgroup { display: grid; grid-template-columns: 110px 1fr; gap: 8px 12px; align-items: start; padding: 8px 0; border-top: 1px solid var(--border); }
+.pgroup:first-of-type { border-top: 0; }
+.pgroup > .gname { font-size: 12.5px; color: var(--muted); padding-top: 6px; }
+.pgroup .opts { display: flex; flex-wrap: wrap; gap: 6px; }
+.popt { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--border); background: var(--surface); border-radius: 6px; padding: 5px 10px 5px 8px; font-size: 13px; cursor: pointer; user-select: none; }
+.popt input { accent-color: var(--ink); margin: 0; }
+.popt svg { width: 18px; height: 12px; }
+.popt svg rect.bg { fill: none; stroke: var(--muted); stroke-width: 1; }
+.popt svg rect.on { fill: var(--muted); }
+.popt.keep svg rect.on { fill: none; stroke: var(--muted); stroke-dasharray: 1.5 1; }
+.popt:has(input:checked) { border-color: var(--ink); }
+.ppreview { margin-top: 10px; border: 1px solid var(--border); border-radius: 8px; padding: 10px; background: var(--surface); }
+.ppreview .lbl { font-size: 11.5px; color: var(--muted); margin-bottom: 6px; }
+.ppreview .presets { margin: 0; }
 .preset:disabled { opacity: 0.4; cursor: not-allowed; }
 .preset svg { width: 18px; height: 12px; }
 .preset svg rect.bg { fill: none; stroke: var(--muted); stroke-width: 1; }
@@ -836,6 +851,18 @@ table.list tr:last-child td { border-bottom: 0; }
               <div class="row"><div><div class="t">手動でリサイズしたら区画に揃える</div></div><div class="ctl"><label class="switch"><input type="checkbox" aria-label="区画に揃える"><span></span></label></div></div>
             </div>
             <p class="hint" style="margin-top: 10px">見た目の枠（DWMWA_EXTENDED_FRAME_BOUNDS）で計算するため、間隔 0 でも隙間はできません。</p>
+          </div>
+
+          <!-- ランチャー -->
+          <div class="spage" data-page="launcher">
+            <h3>ランチャー</h3>
+            <p class="lead">ランチャーに並べるプリセットを選びます。チェックしたものだけが、下の並びで表示されます。</p>
+            <div class="rows">
+              <div class="row"><div><div class="t">表示するプリセット</div><div class="d" id="pCount"></div></div><div class="ctl"><button class="btn" type="button" id="pAll">すべて選ぶ</button><button class="btn" type="button" id="pNone">すべて外す</button><button class="btn" type="button" id="pDefault">既定に戻す</button></div></div>
+            </div>
+            <div id="pGroups" style="margin-top: 8px"></div>
+            <p class="hint" style="margin-top: 6px">破線の枠は、ウィンドウの大きさを変えずに位置だけを動かすプリセットです。分割案の区画の整数倍にならないプリセットは、その分割案では押せません。</p>
+            <div class="ppreview"><div class="lbl">ランチャーでの表示</div><div class="presets" id="pPreview"></div></div>
           </div>
 
           <!-- ホットキー -->
@@ -1570,16 +1597,31 @@ function paintSel() {
   dd[2].textContent = `${Math.round(rect.w * scale)} × ${Math.round(rect.h * scale)} px`;
 }
 
+// group: 設定画面での分類。keep: ウィンドウの大きさを変えず、位置だけを動かす
 const PRESETS = [
-  { name: '左半分', frac: [0, 0.5, 0, 1] },
-  { name: '右半分', frac: [0.5, 1, 0, 1] },
-  { name: '左上 1/4', frac: [0, 0.5, 0, 0.5] },
-  { name: '左 1/3', frac: [0, 1 / 3, 0, 1] },
-  { name: '中央 1/3', frac: [1 / 3, 2 / 3, 0, 1] },
-  { name: '右 2/3', frac: [1 / 3, 1, 0, 1] },
-  { name: '中央', frac: [0.25, 0.75, 0.125, 0.875] },
-  { name: '最大化', frac: [0, 1, 0, 1] },
+  { id: 'top', group: '上下左右の半分', name: '上半分', frac: [0, 1, 0, 0.5], on: false },
+  { id: 'bottom', group: '上下左右の半分', name: '下半分', frac: [0, 1, 0.5, 1], on: false },
+  { id: 'left', group: '上下左右の半分', name: '左半分', frac: [0, 0.5, 0, 1], on: true },
+  { id: 'right', group: '上下左右の半分', name: '右半分', frac: [0.5, 1, 0, 1], on: true },
+  { id: 'tl', group: '四隅の 1/4', name: '左上 1/4', frac: [0, 0.5, 0, 0.5], on: true },
+  { id: 'tr', group: '四隅の 1/4', name: '右上 1/4', frac: [0.5, 1, 0, 0.5], on: false },
+  { id: 'bl', group: '四隅の 1/4', name: '左下 1/4', frac: [0, 0.5, 0.5, 1], on: false },
+  { id: 'br', group: '四隅の 1/4', name: '右下 1/4', frac: [0.5, 1, 0.5, 1], on: false },
+  { id: 'l3', group: '左右の 1/3', name: '左 1/3', frac: [0, 1 / 3, 0, 1], on: true },
+  { id: 'r3', group: '左右の 1/3', name: '右 1/3', frac: [2 / 3, 1, 0, 1], on: false },
+  { id: 'l23', group: '左右の 2/3', name: '左 2/3', frac: [0, 2 / 3, 0, 1], on: false },
+  { id: 'r23', group: '左右の 2/3', name: '右 2/3', frac: [1 / 3, 1, 0, 1], on: true },
+  { id: 'c3', group: '左右中央の 1/3', name: '中央 1/3', frac: [1 / 3, 2 / 3, 0, 1], on: true },
+  { id: 'center', group: '中央', name: '中央', frac: [0.25, 0.75, 0.125, 0.875], on: true },
+  { id: 'centerKeep', group: '中央', name: '中央（サイズ維持）', frac: [0.375, 0.625, 0.3, 0.7], keep: true, on: false },
+  { id: 'max', group: '最大化', name: '最大化', frac: [0, 1, 0, 1], on: true },
 ];
+const PRESET_DEFAULT = PRESETS.map((p) => p.on);
+function presetIcon(p) {
+  const [x0, x1, y0, y1] = p.frac;
+  return `<svg viewBox="0 0 18 12"><rect class="bg" x="0.5" y="0.5" width="17" height="11" rx="1.5"/>`
+    + `<rect class="on" x="${1.5 + x0 * 15}" y="${1.5 + y0 * 9}" width="${(x1 - x0) * 15}" height="${(y1 - y0) * 9}" rx="0.5"/></svg>`;
+}
 function presetCells(p) {
   const [x0, x1, y0, y1] = p.frac;
   const c0 = x0 * L.cols;
@@ -1591,27 +1633,62 @@ function presetCells(p) {
   return { c0: Math.round(c0), c1: Math.round(c1) - 1, r0: Math.round(r0), r1: Math.round(r1) - 1 };
 }
 function buildPresets() {
-  const box = $('#lPresets');
+  fillPresets($('#lPresets'), true);
+}
+function fillPresets(box, live) {
   box.innerHTML = '';
-  for (const p of PRESETS) {
-    const cells = presetCells(p);
+  const shown = PRESETS.filter((p) => p.on);
+  if (!shown.length) {
+    box.innerHTML = '<span class="hint">表示するプリセットがありません（設定の「ランチャー」で選べます）</span>';
+    return;
+  }
+  for (const p of shown) {
+    const cells = p.keep ? null : presetCells(p);
     const b = document.createElement('button');
     b.type = 'button';
-    b.className = 'preset';
-    b.disabled = !cells;
-    if (!cells) b.title = 'この分割案では、区画の整数倍で作れません';
-    const [x0, x1, y0, y1] = p.frac;
-    b.innerHTML = `<svg viewBox="0 0 18 12"><rect class="bg" x="0.5" y="0.5" width="17" height="11" rx="1.5"/>`
-      + `<rect class="on" x="${1.5 + x0 * 15}" y="${1.5 + y0 * 9}" width="${(x1 - x0) * 15}" height="${(y1 - y0) * 9}" rx="0.5"/></svg>${p.name}`;
-    b.addEventListener('click', () => {
-      L.anchor = { c: cells.c0, r: cells.r0 };
-      L.end = { c: cells.c1, r: cells.r1 };
-      L.cursor = { ...L.end };
-      paintSel();
-      launcher.focus();
-    });
+    b.className = p.keep ? 'preset keep' : 'preset';
+    b.disabled = !p.keep && !cells;
+    if (b.disabled) b.title = 'この分割案では、区画の整数倍で作れません';
+    b.innerHTML = presetIcon(p) + p.name;
+    if (live) {
+      b.addEventListener('click', () => {
+        if (p.keep) {
+          const { W, H } = areaSize(lArea);
+          closeLauncher();
+          placeWin(L.win, { ...L.win.r, x: (W - L.win.r.w) / 2, y: (H - L.win.r.h) / 2 });
+          return;
+        }
+        L.anchor = { c: cells.c0, r: cells.r0 };
+        L.end = { c: cells.c1, r: cells.r1 };
+        L.cursor = { ...L.end };
+        paintSel();
+        launcher.focus();
+      });
+    }
     box.appendChild(b);
   }
+}
+function initPresetPage() {
+  const groups = $('#pGroups');
+  const names = [...new Set(PRESETS.map((p) => p.group))];
+  groups.innerHTML = names.map((g) => `<div class="pgroup"><div class="gname">${g}</div><div class="opts">`
+    + PRESETS.filter((p) => p.group === g).map((p) => `<label class="popt${p.keep ? ' keep' : ''}">`
+      + `<input type="checkbox" data-id="${p.id}">${presetIcon(p)}<span>${p.name}</span></label>`).join('')
+    + '</div></div>').join('');
+  const sync = () => {
+    $$('#pGroups input').forEach((c) => { c.checked = PRESETS.find((p) => p.id === c.dataset.id).on; });
+    $('#pCount').textContent = `${PRESETS.filter((p) => p.on).length} / ${PRESETS.length} 件を表示`;
+    fillPresets($('#pPreview'), false);
+    buildPresets();
+  };
+  groups.addEventListener('change', (ev) => {
+    PRESETS.find((p) => p.id === ev.target.dataset.id).on = ev.target.checked;
+    sync();
+  });
+  $('#pAll').addEventListener('click', () => { PRESETS.forEach((p) => { p.on = true; }); sync(); });
+  $('#pNone').addEventListener('click', () => { PRESETS.forEach((p) => { p.on = false; }); sync(); });
+  $('#pDefault').addEventListener('click', () => { PRESETS.forEach((p, i) => { p.on = PRESET_DEFAULT[i]; }); sync(); });
+  sync();
 }
 
 function openLauncher() {
@@ -1862,6 +1939,7 @@ const NAV = [
   ['rules', 'アプリのルール', '<path d="M2.5 3.5h11M2.5 8h11M2.5 12.5h7"/>'],
   ['os', '標準機能', '<rect x="1.5" y="1.5" width="5.5" height="5.5" rx="1"/><rect x="9" y="1.5" width="5.5" height="5.5" rx="1"/><rect x="1.5" y="9" width="5.5" height="5.5" rx="1"/><rect x="9" y="9" width="5.5" height="5.5" rx="1"/>'],
   ['sync', '同期とバックアップ', '<path d="M13 6.5A5 5 0 0 0 3.6 4.4M3 9.5a5 5 0 0 0 9.4 2.1"/><path d="M13.5 2.5v4h-4M2.5 13.5v-4h4"/>'],
+  ['launcher', 'ランチャー', '<rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/><path d="M1.5 6h13M5 6v7.5"/>'],
   ['look', '外観', '<path d="M1.5 13.5v-6a6 6 0 0 1 6-6h6"/><path d="M5 13.5v-6a2.5 2.5 0 0 1 2.5-2.5h6"/>'],
 ];
 function initSettings() {
@@ -1876,6 +1954,7 @@ function initSettings() {
   showPage('grid');
   initGridPage();
   initFeelPage();
+  initPresetPage();
   const cornerSel = $('#cornerSel');
   cornerSel.addEventListener('change', () => {
     const v = cornerSel.value;
