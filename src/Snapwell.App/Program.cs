@@ -71,7 +71,8 @@ internal static class Program
                         previewSurface.SetEnabled(value);
                         launcherSurface.SetEnabled(value);
                         ringSurface.SetEnabled(value);
-                    }, [holdRing, ringSurface, previewSurface, launcherSurface], longPress);
+                    }, [holdRing, ringSurface, previewSurface, launcherSurface], longPress,
+                    new ForegroundTargetTracker(inspector, (uint)Environment.ProcessId));
             }, new SettingsWatcher(SettingsStores.PortablePath()),
             () => new SettingsLauncher(log).Open("--setup"), new SettingsWatcher(SettingsStores.DevicePath()));
         UnhandledExceptionEventHandler unhandled = (_, args) => host.HandleUnhandledException(

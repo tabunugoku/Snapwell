@@ -11,17 +11,9 @@ internal static unsafe class MinimumWindowSize
 
     // OverlappedPresenter.PreferredMinimumWidth はこの構成では効かなかったため、サブクラス化で WM_GETMINMAXINFO に答える。
     // 設定の各ページは幅が足りないと折り返しが崩れる。
-    private static int _minWidth;
-    private static int _minHeight;
-
-    /// <summary>ウィンドウの現在の DPI で最小サイズを物理ピクセルに換算して設定する。</summary>
-    internal static void Apply(nint window, double minWidthDip, double minHeightDip)
-    {
-        var scale = GetDpiForWindow(window) / 96.0;
-        _minWidth = (int)(minWidthDip * scale);
-        _minHeight = (int)(minHeightDip * scale);
-        SetWindowSubclass(window, &SubclassProc, SubclassId, 0);
-    }
+    // 論理サイズはサブクラスの dwRefData に上位・下位 32 bit で持ち、DPI が変わっても問い合わせのたびに換算する。
+    internal static void Apply(nint window, int minWidthDip, int minHeightDip) =>
+        SetWindowSubclass(window, &SubclassProc, SubclassId, ((nuint)(uint)minWidthDip << 32) | (uint)minHeightDip);
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
     private static nint SubclassProc(nint window, uint message, nuint wParam, nint lParam, nuint id, nuint data)
@@ -29,8 +21,9 @@ internal static unsafe class MinimumWindowSize
         if (message == WmGetMinMaxInfo)
         {
             var info = (MinMaxInfo*)lParam;
-            info->MinTrackWidth = Math.Max(info->MinTrackWidth, _minWidth);
-            info->MinTrackHeight = Math.Max(info->MinTrackHeight, _minHeight);
+            var scale = GetDpiForWindow(window) / 96.0;
+            info->MinTrackWidth = Math.Max(info->MinTrackWidth, (int)((int)(data >> 32) * scale));
+            info->MinTrackHeight = Math.Max(info->MinTrackHeight, (int)((int)(uint)data * scale));
         }
 
         return DefSubclassProc(window, message, wParam, lParam);

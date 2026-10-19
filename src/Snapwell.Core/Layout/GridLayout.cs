@@ -133,20 +133,36 @@ public sealed class GridLayout
 
     private (int Start, int End) NearestSpan(long[] starts, int minimum, int maximum)
     {
+        var count = starts.Length - 1;
+        // 左辺と右辺の誤差は独立なので、開始ごとの最良の終了を末尾からの最小値として一度で求める。
+        var bestEnd = new int[count];
+        var bestRight = new double[count];
+        for (var end = count - 1; end >= 0; end--)
+        {
+            var rightError = starts[end + 1] - _gap - (double)maximum;
+            var squared = rightError * rightError;
+            if (end == count - 1 || squared <= bestRight[end + 1])
+            {
+                bestEnd[end] = end;
+                bestRight[end] = squared;
+            }
+            else
+            {
+                bestEnd[end] = bestEnd[end + 1];
+                bestRight[end] = bestRight[end + 1];
+            }
+        }
+
         var best = (Start: 0, End: 0);
         var bestError = double.PositiveInfinity;
-        for (var start = 0; start < starts.Length - 1; start++)
+        for (var start = 0; start < count; start++)
         {
-            for (var end = start; end < starts.Length - 1; end++)
+            var leftError = (double)starts[start] - minimum;
+            var error = leftError * leftError + bestRight[start];
+            if (error < bestError)
             {
-                var leftError = (double)starts[start] - minimum;
-                var rightError = starts[end + 1] - _gap - (double)maximum;
-                var error = leftError * leftError + rightError * rightError;
-                if (error < bestError)
-                {
-                    bestError = error;
-                    best = (start, end);
-                }
+                bestError = error;
+                best = (start, bestEnd[start]);
             }
         }
 

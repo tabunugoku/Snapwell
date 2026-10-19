@@ -76,7 +76,6 @@ internal sealed unsafe class TrayMenuWindow : ITrayMenuView, ITrayMenuPresentati
     {
         _selected = selected;
         _keyboard = keyboard;
-        _toggle.Show(snapshot.Enabled);
         if (!ReferenceEquals(_snapshot, snapshot))
         {
             _renderer?.Dispose();
@@ -84,6 +83,9 @@ internal sealed unsafe class TrayMenuWindow : ITrayMenuView, ITrayMenuPresentati
             _snapshot = snapshot;
             _renderer = new(snapshot);
         }
+
+        // レンダラーを作れた後で駆動を始め、失敗した表示にフレームを配送しない。
+        _toggle.Show(snapshot.Enabled);
 
         // HWND の標準アクセシビリティプロキシへ選択名を渡す。個別の UIA peer は持たない。
         var name = selected == 0 ? $"Snapwell、有効スイッチ、{(snapshot.Enabled ? "オン" : "オフ")}" :
@@ -202,6 +204,12 @@ internal sealed unsafe class TrayMenuWindow : ITrayMenuView, ITrayMenuPresentati
             return new(1);
         }
 
+        if (message == ToggleFrameMessage && wParam.Value == _toggleGeneration)
+        {
+            // 表示の状態で捨てるフレームも受領し、次の配送を止めない。
+            _toggleTicker?.Acknowledge();
+        }
+
         if (_presentation.IsOpen && Controller is { } controller && _snapshot is { } snapshot)
         {
             var point = new Vec2(snapshot.Layout.Bounds.X + unchecked((short)(long)lParam.Value),
@@ -209,7 +217,6 @@ internal sealed unsafe class TrayMenuWindow : ITrayMenuView, ITrayMenuPresentati
             switch (message)
             {
                 case ToggleFrameMessage when wParam.Value == _toggleGeneration:
-                    _toggleTicker?.Acknowledge();
                     if (_toggle.Frame())
                     {
                         ((ITrayMenuPresentationPlatform)this).Present(snapshot.Layout.Bounds, Render());

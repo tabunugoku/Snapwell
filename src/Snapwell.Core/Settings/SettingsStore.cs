@@ -86,7 +86,7 @@ public sealed class SettingsStore<T>(string path, JsonTypeInfo<T> typeInfo, Func
 
             if (_readOnly)
             {
-                throw new InvalidOperationException("新しい版の設定は上書きできない。");
+                throw new FutureSettingsVersionException("新しい版の設定は上書きできない。");
             }
 
             Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
@@ -122,7 +122,7 @@ public sealed class SettingsStore<T>(string path, JsonTypeInfo<T> typeInfo, Func
                     {
                         File.Replace(backupPath, _path, null);
                         _readOnly = true;
-                        throw new InvalidOperationException("新しい版の設定は上書きできない。");
+                        throw new FutureSettingsVersionException("新しい版の設定は上書きできない。");
                     }
                 }
                 else

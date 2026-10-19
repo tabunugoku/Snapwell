@@ -102,7 +102,7 @@ public sealed class TrayMenuLayout
 
     /// <summary>丸め済みの物理矩形の中心から一度だけ丸め、半ピクセルの誤差を蓄積しない。</summary>
     public static PixelRect CenterVertically(PixelRect row, int x, int width, int height) =>
-        new(x, row.Y + (int)Math.Round((row.Height - height) / 2.0), width, height);
+        new(x, row.Y + (int)Math.Round((row.Height - height) / 2.0, MidpointRounding.AwayFromZero), width, height);
 
     /// <summary>キーの枠を、スクロール後の項目の中心にそろえる。</summary>
     public PixelRect KeyBounds(PixelRect row, double x, double width) =>

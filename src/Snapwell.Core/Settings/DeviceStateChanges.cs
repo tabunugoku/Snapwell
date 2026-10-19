@@ -45,7 +45,7 @@ public static class DeviceStateChanges
         var loaded = store.TryReload() ?? store.Load();
         if (loaded.IsReadOnly)
         {
-            throw new InvalidOperationException("新しい版の端末状態は上書きできない。");
+            throw new FutureSettingsVersionException("新しい版の端末状態は上書きできない。");
         }
         var value = update(loaded.Value);
         store.Save(value);
