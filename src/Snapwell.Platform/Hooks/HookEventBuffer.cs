@@ -5,6 +5,8 @@ internal enum RawHookKind
     MoveStart,
     MoveEnd,
     Foreground,
+    WindowShown,
+    WindowDestroyed,
     MouseButton,
     MouseMove,
     Key,

@@ -12,6 +12,7 @@ public sealed class LauncherRasterCache
     private LauncherPanelLayer? _label;
     private OverlayTheme _theme;
     private double _scale;
+    private bool _showZoneLines;
 
     /// <summary>保持している全画面・パネル・ラベルの画素配列の合計バイト数。</summary>
     public long RetainedPixelBytes => (_frame?.Pixels.LongLength ?? 0) +
@@ -28,7 +29,7 @@ public sealed class LauncherRasterCache
 
     /// <summary>同じ寸法の全画面バッファを再利用し、変わった領域だけを初期化する。</summary>
     public OverlayFrame Render(ZoneSelection selection, LauncherPanelLayer panel, LauncherPanelLayer label,
-        OverlayTheme theme, double scale)
+        OverlayTheme theme, double scale, bool showZoneLines = true)
     {
         var area = selection.WorkArea;
         if (_frame is null || _frame.Width != area.Width || _frame.Height != area.Height)
@@ -39,7 +40,8 @@ public sealed class LauncherRasterCache
 
         var dirty = new List<PixelRect>();
         if (_previous is null || !ReferenceEquals(_previous.Grid, selection.Grid) ||
-            _previous.WorkArea != area || _theme != theme || _scale != scale || !ReferenceEquals(_panel, panel))
+            _previous.WorkArea != area || _theme != theme || _scale != scale || _showZoneLines != showZoneLines ||
+            !ReferenceEquals(_panel, panel))
         {
             dirty.Add(new(0, 0, area.Width, area.Height));
         }
@@ -73,7 +75,7 @@ public sealed class LauncherRasterCache
             }
 
             var clipped = _frame with { Clip = region };
-            OverlayPainter.PaintLauncher(clipped, selection, theme, scale);
+            OverlayPainter.PaintLauncher(clipped, selection, theme, scale, showZoneLines);
             OverlayPainter.Composite(clipped, label.Frame, label.Bounds.X - area.X, label.Bounds.Y - area.Y);
             OverlayPainter.Composite(clipped, panel.Frame, panel.Bounds.X - area.X, panel.Bounds.Y - area.Y);
         }
@@ -83,6 +85,7 @@ public sealed class LauncherRasterCache
         _label = label;
         _theme = theme;
         _scale = scale;
+        _showZoneLines = showZoneLines;
         _frame.BaseRevision = _frame.Revision;
         _frame.Revision++;
         _frame.DirtyRegions = dirty;
