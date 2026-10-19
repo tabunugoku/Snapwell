@@ -85,6 +85,40 @@ public sealed class LauncherWindowListLayoutTests
         Assert.Equal([false, true, false], list.Rows.Select(row => row.Main));
     }
 
+    /// <summary>ラジオ形式のアイコンは各拡大率で整数ピクセルにそろい、役割の枠の中で全行の縦位置が同じになる。</summary>
+    [Theory]
+    [InlineData(1)]
+    [InlineData(1.25)]
+    [InlineData(1.5)]
+    [InlineData(1.75)]
+    [InlineData(2)]
+    [InlineData(2.5)]
+    [InlineData(3)]
+    public void RoleIconStaysInsideRoleAndAlignsAcrossRows(double scale)
+    {
+        var height = (int)Math.Round(28 * scale);
+        var rows = Enumerable.Range(0, 4).Select(i => new LauncherWindowRow(new(i + 1, "w"),
+            new(100, 50 + i * (height + 4), 480, height), true, false, i + 1, i == 0)).ToArray();
+        Assert.All(rows, row =>
+        {
+            var role = row.RoleBounds(scale);
+            var icon = row.IconBounds(scale);
+            var dot = row.IconDotBounds(scale);
+            Assert.True(role.Contains(icon));
+            Assert.True(icon.Contains(dot));
+            Assert.Equal(icon.Width, icon.Height);
+            // 偶数の差のときは上下が等しく、奇数のときも整数ピクセルの中で 1 だけずれる。
+            Assert.InRange((icon.Y - role.Y) - (role.Bottom - icon.Bottom), -1, 0);
+            Assert.Equal(dot.X - icon.X, icon.Right - dot.Right);
+            Assert.Equal(dot.Y - icon.Y, icon.Bottom - dot.Bottom);
+            Assert.True(dot.X - icon.X > LauncherWindowRow.IconRingThickness(scale));
+            Assert.True(role.Contains(row.RoleLabelBounds(scale)));
+            Assert.True(row.RoleLabelBounds(scale).X > icon.Right);
+        });
+        Assert.Single(rows.Select(row => row.IconBounds(scale).Y - row.Bounds.Y).Distinct());
+        Assert.Single(rows.Select(row => row.IconBounds(scale).X - row.Bounds.Right).Distinct());
+    }
+
     /// <summary>負座標と各倍率で全対象へ到達でき、行とボタンの当たり判定が重ならない。</summary>
     [Theory]
     [InlineData(1)]
