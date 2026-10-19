@@ -182,7 +182,7 @@ public sealed class SettingsTransferTests : IDisposable
     [InlineData("")]
     [InlineData("null")]
     [InlineData("[]")]
-    [InlineData("{\"SchemaVersion\":9,\"Feel\":{\"future\":true}}")]
+    [InlineData("{\"SchemaVersion\":10,\"Feel\":{\"future\":true}}")]
     [InlineData("{\"SchemaVersion\":999999999999,\"Feel\":\"Airy\"}")]
     public void InvalidOrFutureFilesAreRejectedWithoutChangingAnything(string json)
     {
@@ -319,6 +319,25 @@ public sealed class SettingsTransferTests : IDisposable
         Assert.True(SettingsTransfer.Apply(current, result, [new(SettingsField.Gap)]).MoveFixedSizeWindows);
         Assert.True(SettingsTransfer.Apply(current, result, []).MoveFixedSizeWindows);
         Assert.False(SettingsTransfer.Apply(current, result).MoveFixedSizeWindows);
+    }
+
+    /// <summary>ポップアップを動かす設定は単独で差分に出て、個別に取り込める。</summary>
+    [Fact]
+    public void MovePopupWindowsIsDetectedAndImportedIndividually()
+    {
+        var current = new PortableSettings();
+        var imported = current with { MovePopupWindows = false, Hotkeys = new(current.Hotkeys) };
+        var key = new SettingsTransferKey(SettingsField.MovePopupWindows);
+        var difference = Assert.Single(SettingsTransfer.GetDifferences(current, imported));
+        Assert.Equal(key, difference.Key);
+        Assert.Equal("オン", difference.CurrentValue);
+        Assert.Equal("オフ", difference.ImportedValue);
+
+        var result = ReadExport(imported, current);
+        Assert.Equal([key], result.Differences.Select(item => item.Key));
+        Assert.False(SettingsTransfer.Apply(current, result, [key]).MovePopupWindows);
+        Assert.True(SettingsTransfer.Apply(current, result, [new(SettingsField.Gap)]).MovePopupWindows);
+        Assert.False(SettingsTransfer.Apply(current, result).MovePopupWindows);
     }
 
     private SettingsImportResult ReadExport(PortableSettings imported, PortableSettings current)

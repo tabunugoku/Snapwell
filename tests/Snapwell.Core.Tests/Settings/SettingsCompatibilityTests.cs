@@ -87,7 +87,8 @@ public sealed class SettingsCompatibilityTests : IDisposable
     [InlineData(6, false, true)]
     [InlineData(7, false, true)]
     [InlineData(8, false, true)]
-    [InlineData(9, true, true)]
+    [InlineData(9, false, true)]
+    [InlineData(10, true, true)]
     [InlineData(999999999999, true, true)]
     public void FutureVersionsUseEachStoresCurrentVersion(long version, bool portableFuture, bool deviceFuture)
     {

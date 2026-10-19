@@ -148,6 +148,8 @@ public sealed partial class GeneralPage : Page
         {
             MoveFixedSizeToggle.IsEnabled = !_session.IsReadOnly;
             MoveFixedSizeToggle.IsOn = _session.Current.MoveFixedSizeWindows;
+            MovePopupToggle.IsEnabled = !_session.IsReadOnly;
+            MovePopupToggle.IsOn = _session.Current.MovePopupWindows;
         }
         finally
         {
@@ -160,6 +162,14 @@ public sealed partial class GeneralPage : Page
         if (!_syncingFixedSize)
         {
             _session.Update(_session.Current with { MoveFixedSizeWindows = MoveFixedSizeToggle.IsOn });
+        }
+    }
+
+    private void MovePopup_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (!_syncingFixedSize)
+        {
+            _session.Update(_session.Current with { MovePopupWindows = MovePopupToggle.IsOn });
         }
     }
 

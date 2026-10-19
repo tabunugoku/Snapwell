@@ -140,9 +140,8 @@ internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSou
         }
     }
 
-    // 設定は呼び出しごとに読み、変更を次のドラッグから反映する。サイズ固定を外すと吸着も予測線も出ない。
-    private bool IsTarget(WindowKind kind) =>
-        kind != WindowKind.Excluded && (kind != WindowKind.FixedSize || settings().MoveFixedSizeWindows);
+    // 設定は呼び出しごとに読み、変更を次のドラッグから反映する。サイズ固定・ポップアップを外すと吸着も予測線も出ない。
+    private bool IsTarget(WindowKind kind) => WindowTargetPolicy.IsTarget(kind, settings);
 
     private void UpdatePreview(Vec2 point, double seconds)
     {

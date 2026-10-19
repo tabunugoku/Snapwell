@@ -17,7 +17,7 @@ public sealed class LookGridSettingsTests : IDisposable
         File.WriteAllText(SettingsPath, "{" + version +
             "\"Grid\":{\"Columns\":12,\"Rows\":6},\"Gap\":12,\"Edge\":4,\"Feel\":\"Heavy\",\"ShowZonePreview\":false}");
         var value = SettingsStores.Portable(SettingsPath).Load().Value;
-        Assert.Equal(8, value.SchemaVersion);
+        Assert.Equal(PortableSettings.CurrentSchemaVersion, value.SchemaVersion);
         Assert.Equal(new(12, 6), value.Grid);
         Assert.Equal(12, value.Gap);
         Assert.Equal(4, value.Edge);
@@ -71,7 +71,7 @@ public sealed class LookGridSettingsTests : IDisposable
     }
 
     [Theory]
-    [InlineData(9)]
+    [InlineData(10)]
     [InlineData(99)]
     public void FutureFilesRemainUnchangedWhenSavingOrExporting(int version)
     {

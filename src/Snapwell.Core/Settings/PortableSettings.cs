@@ -23,7 +23,7 @@ public enum WindowCornerPreference
 /// <summary>他の端末にも持ち運べる設定。</summary>
 public sealed record PortableSettings
 {
-    public const int CurrentSchemaVersion = 8;
+    public const int CurrentSchemaVersion = 9;
 
     /// <summary>吸着半径の既定値。論理ピクセル。DESIGN.md §5.1 の feel の値。</summary>
     public const double DefaultSnapRadius = 28;
@@ -56,6 +56,8 @@ public sealed record PortableSettings
     public bool SnapAfterResize { get; set; }
     /// <summary>サイズ固定のウィンドウも動かす。オフなら吸着・整列・ランチャーの対象から外す。</summary>
     public bool MoveFixedSizeWindows { get; set; } = true;
+    /// <summary>ポップアップ・フライアウトもホットキーとドラッグで動かす。整列・隣接吸着・ランチャーの一覧には含めない。</summary>
+    public bool MovePopupWindows { get; set; } = true;
     /// <summary>モニターごとの分割案と間隔。未指定の間隔は共通値を使う。</summary>
     public Dictionary<string, GridSettings> MonitorGrids { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
@@ -156,6 +158,7 @@ public sealed record PortableSettings
             Edge = double.IsFinite(Edge) && Edge is >= 0 and <= 200 ? Edge : defaults.Edge,
             ShowZonePreview = ShowZonePreview,
             MoveFixedSizeWindows = MoveFixedSizeWindows,
+            MovePopupWindows = MovePopupWindows,
             CornerPreference = Enum.IsDefined(CornerPreference) ? CornerPreference : WindowCornerPreference.Default,
             MonitorGrids = monitorGrids,
             LauncherPresets = LauncherPreset.NormalizeIds(LauncherPresets),
