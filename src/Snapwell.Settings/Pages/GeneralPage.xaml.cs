@@ -2,6 +2,7 @@ using System.Security;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Snapwell.Core.Settings;
+using Snapwell.Platform.Startup;
 
 namespace Snapwell.Settings.Pages;
 
@@ -9,12 +10,15 @@ namespace Snapwell.Settings.Pages;
 public sealed partial class GeneralPage : Page
 {
     private readonly SettingsSession _session;
-    private readonly AutoStart _autoStart;
+    private readonly StartupController _startup;
+    private readonly string _executable;
+    private bool _startupBusy;
+    private readonly bool _startupAvailable;
     private readonly ISettingsStore<DeviceState> _deviceStore = SettingsStores.Device();
     private bool _syncingEnabled = true;
     private bool _refreshing = true;
     private bool _syncingFixedSize = true;
-    private AutoStartState _lastState;
+    private (StartupMode Mode, AutoStartState State) _lastStartup;
 
     /// <summary>同じフォルダーに本体がある場合だけ自動起動を操作できる画面を作る。</summary>
     public GeneralPage(SettingsSession session)
@@ -31,10 +35,13 @@ public sealed partial class GeneralPage : Page
         Unloaded += (_, _) => _session.Changed -= Session_Changed;
 
         var executable = Path.Combine(AppContext.BaseDirectory, "Snapwell.exe");
-        _autoStart = new(new RegistryRunKey(), executable);
+        _executable = executable;
+        _startup = new(new RegistryRunKey(), new TaskSchedulerService(), new ElevatedRunner(executable),
+            new StartupMemory(), executable);
         if (!File.Exists(executable))
         {
             AutoStartToggle.IsEnabled = false;
+            AdminStartToggle.IsEnabled = false;
             RegistrationStatus.Text = "Snapwell.exe が同じフォルダーに無いため、自動起動を設定できません";
             RegistrationStatus.Visibility = Visibility.Visible;
             return;
@@ -42,12 +49,14 @@ public sealed partial class GeneralPage : Page
 
         try
         {
+            _startupAvailable = true;
             Refresh();
         }
-        catch (Exception exception) when (IsRegistryFailure(exception))
+        catch (Exception exception) when (IsStartupFailure(exception))
         {
             ReportFailure();
             AutoStartToggle.IsEnabled = false;
+            AdminStartToggle.IsEnabled = false;
         }
     }
 
@@ -165,29 +174,37 @@ public sealed partial class GeneralPage : Page
 
     private void Refresh()
     {
-        _lastState = _autoStart.GetState();
-        SetToggle(_lastState != AutoStartState.Off);
+        _lastStartup = _startup.Read();
+        SetStartupToggles();
         ShowStatus();
     }
 
     // 登録の説明だけを更新する。トグル自身は書き換えない。
     private void ShowStatus()
     {
-        RegistrationStatus.Text = _lastState == AutoStartState.Elsewhere
+        RegistrationStatus.Text = _lastStartup.State == AutoStartState.Elsewhere
             ? "別の場所の Snapwell が登録されています。オフにしてからオンにすると、このフォルダーの Snapwell に置き換えます"
             : "";
         RegistrationStatus.Visibility = RegistrationStatus.Text.Length > 0
             ? Visibility.Visible
             : Visibility.Collapsed;
+        var protectedLocation = ExecutableLocation.IsProtected(_executable);
+        AdminStartToggle.IsEnabled = _startupAvailable && !_startupBusy &&
+            (protectedLocation || _lastStartup.Mode == StartupMode.Admin);
+        AutoStartToggle.IsEnabled = _startupAvailable && !_startupBusy;
+        AdminStartStatus.Text = protectedLocation ? "" :
+            "管理者以外が書き込めない場所（Program Files など）に配置すると、オンにできます";
+        AdminStartStatus.Visibility = protectedLocation ? Visibility.Collapsed : Visibility.Visible;
     }
 
     // 表示を合わせるだけの IsOn の書き込み。Toggled を登録の操作として扱わせない。
-    private void SetToggle(bool isOn)
+    private void SetStartupToggles()
     {
         _refreshing = true;
         try
         {
-            AutoStartToggle.IsOn = isOn;
+            AutoStartToggle.IsOn = _lastStartup.Mode != StartupMode.None;
+            AdminStartToggle.IsOn = _lastStartup.Mode == StartupMode.Admin;
         }
         finally
         {
@@ -197,41 +214,92 @@ public sealed partial class GeneralPage : Page
 
     private void AutoStart_Toggled(object sender, RoutedEventArgs e)
     {
-        if (_refreshing)
+        if (_refreshing || _startupBusy)
         {
             return;
         }
 
+        _ = ChangeStartupAsync(admin: false, AutoStartToggle.IsOn);
+    }
+
+    private void AdminStart_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (_refreshing || _startupBusy)
+        {
+            return;
+        }
+
+        _ = ChangeStartupAsync(admin: true, AdminStartToggle.IsOn);
+    }
+
+    private async Task ChangeStartupAsync(bool admin, bool enabled)
+    {
+        _startupBusy = true;
+        AutoStartToggle.IsEnabled = false;
+        AdminStartToggle.IsEnabled = false;
         ErrorNotice.IsOpen = false;
+        ErrorNotice.Severity = InfoBarSeverity.Error;
         try
         {
-            // 成功したらトグルはそのまま（利用者が切り替えた表示が正）。ばねの動きの途中で IsOn を書き戻さない。
-            _autoStart.SetEnabled(AutoStartToggle.IsOn);
-            _lastState = _autoStart.GetState();
-            ShowStatus();
+            var result = admin
+                ? await _startup.SetAdminAsync(enabled)
+                : await _startup.SetAutoStartAsync(enabled);
+            if (result == StartupChangeResult.Cancelled)
+            {
+                ErrorNotice.Severity = InfoBarSeverity.Informational;
+                ErrorNotice.Message = "管理者権限の許可が得られなかったため変更していません";
+                ErrorNotice.IsOpen = true;
+            }
+            else if (result != StartupChangeResult.Success)
+            {
+                ErrorNotice.Message = result == StartupChangeResult.UnprotectedLocation
+                    ? "管理者以外が書き込めない場所に配置してください"
+                    : "タスク スケジューラに登録できませんでした";
+                ErrorNotice.IsOpen = true;
+            }
+            else if (admin && enabled)
+            {
+                ErrorNotice.Severity = InfoBarSeverity.Informational;
+                ErrorNotice.Message = "次のサインインから管理者として起動します";
+                ErrorNotice.IsOpen = true;
+            }
         }
-        catch (Exception exception) when (IsRegistryFailure(exception))
+        catch (Exception exception) when (IsStartupFailure(exception))
         {
             ReportFailure();
-            try
-            {
-                Refresh();
-            }
-            catch (Exception readException) when (IsRegistryFailure(readException))
-            {
-                // 再取得も拒否された場合は、最後に読めた表示に戻して操作を止める。
-                SetToggle(_lastState != AutoStartState.Off);
-                AutoStartToggle.IsEnabled = false;
-            }
+        }
+        finally
+        {
+            // Toggled の呼び出しが戻った後だけ表示を合わせ、NativeAOT のアニメーション再入を避ける。
+            DispatcherQueue.TryEnqueue(FinishStartupChange);
+        }
+    }
+
+    private void FinishStartupChange()
+    {
+        _startupBusy = false;
+        try
+        {
+            Refresh();
+        }
+        catch (Exception exception) when (IsStartupFailure(exception))
+        {
+            ReportFailure();
+            SetStartupToggles();
+            AutoStartToggle.IsEnabled = false;
+            AdminStartToggle.IsEnabled = false;
         }
     }
 
     private void ReportFailure()
     {
+        ErrorNotice.Severity = InfoBarSeverity.Error;
         ErrorNotice.Message = "自動起動の登録を読み書きできませんでした。アクセス権を確認してください。";
         ErrorNotice.IsOpen = true;
     }
 
-    private static bool IsRegistryFailure(Exception exception) =>
-        exception is UnauthorizedAccessException or IOException or SecurityException;
+    private static bool IsStartupFailure(Exception exception) =>
+        exception is UnauthorizedAccessException or IOException or SecurityException or
+            System.Runtime.InteropServices.COMException or System.ComponentModel.Win32Exception or
+            System.Xml.XmlException or InvalidOperationException;
 }
