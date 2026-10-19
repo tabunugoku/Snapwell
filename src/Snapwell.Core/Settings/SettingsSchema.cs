@@ -77,6 +77,11 @@ internal static class SettingsSchema
             normalized.MoveFixedSizeWindows = true;
         }
 
+        if (sourceVersion < 9)
+        {
+            normalized.MovePopupWindows = true;
+        }
+
         // 版 6 の追加分は初期化子で補う。版 5 以前の既存値には触れない。
         return normalized;
     }

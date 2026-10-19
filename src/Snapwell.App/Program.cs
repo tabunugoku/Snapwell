@@ -75,7 +75,7 @@ internal static class Program
                         previewSurface.SetEnabled(value);
                         launcherSurface.SetEnabled(value);
                     }, [previewSurface, launcherSurface],
-                    new ForegroundTargetTracker(inspector, (uint)Environment.ProcessId),
+                    new ForegroundTargetTracker(inspector, (uint)Environment.ProcessId, () => settings),
                     new CornerWindowController(corners, inspector, () => settings, (uint)Environment.ProcessId, log),
                     new ResizeSnapController(inspector, monitors, motion, () => settings,
                         new Win32ResizeConstraints(), (uint)Environment.ProcessId));

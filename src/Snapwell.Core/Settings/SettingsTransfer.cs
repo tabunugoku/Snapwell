@@ -12,7 +12,7 @@ public enum SettingsField
     Grid, Gap, Edge, Feel, SnapMode, ReduceMotion, ShowZonePreview,
     MagnetStrength, SnapRadius, Hotkey, ResizeStep, ResizeAnchor,
     CornerPreference, ShowZoneLines, ShowPredictionLine, SnapAfterResize, MonitorGrids, LauncherPresets,
-    MoveFixedSizeWindows,
+    MoveFixedSizeWindows, MovePopupWindows,
 }
 
 /// <summary>ホットキーはコマンドごと、それ以外は項目ごとに識別する。</summary>
@@ -176,6 +176,7 @@ public static class SettingsTransfer
                 {
                     MoveFixedSizeWindows = imported.MoveFixedSizeWindows,
                 },
+                SettingsField.MovePopupWindows => value with { MovePopupWindows = imported.MovePopupWindows },
                 SettingsField.MonitorGrids => value with { MonitorGrids = imported.MonitorGrids },
                 SettingsField.Gap => value with { Gap = imported.Gap },
                 SettingsField.Edge => value with { Edge = imported.Edge },
@@ -227,6 +228,8 @@ public static class SettingsTransfer
             imported.SnapAfterResize, OnOff);
         Add(SettingsField.MoveFixedSizeWindows, "サイズ固定のウィンドウも動かす", current.MoveFixedSizeWindows,
             imported.MoveFixedSizeWindows, OnOff);
+        Add(SettingsField.MovePopupWindows, "ポップアップとフライアウトも動かす", current.MovePopupWindows,
+            imported.MovePopupWindows, OnOff);
         Add(SettingsField.MonitorGrids, "モニター別の分割案", current.MonitorGrids, imported.MonitorGrids,
             MonitorPlans, SameMonitorPlans);
         Add(SettingsField.LauncherPresets, "ランチャーのプリセット", current.LauncherPresets,
