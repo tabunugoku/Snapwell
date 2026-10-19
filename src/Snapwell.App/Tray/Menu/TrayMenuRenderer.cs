@@ -18,12 +18,13 @@ internal sealed class TrayMenuRenderer : IDisposable
 
     internal TrayMenuRenderer(TrayMenuSnapshot snapshot)
     {
-        _snapshot = snapshot;
         _text = new(snapshot.Layout.Scale);
         _palette = OverlayPalette.For(snapshot.Theme);
         try
         {
-            var layout = snapshot.Layout;
+            var layout = snapshot.Layout.WithStatusTagTextWidth(
+                _text.Measure(snapshot.StatusLabel, 10.5, true, true));
+            _snapshot = snapshot with { Layout = layout };
             _background = OverlayPainter.Create(layout.Bounds.Width, layout.Bounds.Height);
             var panel = Local(layout.Panel);
             var shadow = OverlayPainter.CreatePanelShadow(panel.Width, panel.Height, layout.Scale);
@@ -34,21 +35,18 @@ internal sealed class TrayMenuRenderer : IDisposable
                 OverlayPainter.Fill(_background, Local(separator), _palette.Border);
             }
 
-            // SVG の viewBox 44 を 22 論理 px に写す。
-            OverlayPainter.StrokeRounded(_background, Local(layout.HeaderIcon),
-                _palette.Ink, 4.5, 1.5, layout.Scale);
-            OverlayPainter.FillRounded(_background, Local(layout.Rect(28.5, 20.5, 7, 7)),
-                _palette.Ink, 1.5, layout.Scale);
+            DrawHeaderIcon(_background);
             Text(_background, "Snapwell", TrayMenuLayout.CenterVertically(layout.HeaderIcon,
                 layout.Panel.X + layout.Px(49), layout.Px(110), layout.Px(24)), 13, _palette.Ink, bold: true);
-            var dark = snapshot.Theme == OverlayTheme.Dark;
-            var tagBackground = !snapshot.Enabled ? _palette.Surface2
-                : dark ? new OverlayColor(52, 101, 56, 77) : new(237, 243, 236, 255);
-            var tagText = !snapshot.Enabled ? _palette.Muted
-                : dark ? new OverlayColor(166, 209, 169, 255) : new(52, 101, 56, 255);
+            var (tagBackground, tagText) = snapshot.IconKind switch
+            {
+                TrayIconKind.Attention => (_palette.RedBackground, _palette.RedText),
+                TrayIconKind.Paused => (_palette.YellowBackground, _palette.YellowText),
+                _ => (_palette.GreenBackground, _palette.GreenText),
+            };
             OverlayPainter.FillRounded(_background, Local(layout.StatusTag),
-                tagBackground, 4, layout.Scale);
-            Text(_background, snapshot.Enabled ? "有効" : "無効", layout.StatusTag,
+                tagBackground, 9999, layout.Scale);
+            Text(_background, snapshot.StatusLabel, layout.StatusTag,
                 10.5, tagText, bold: true, center: true);
             if (!layout.IsCompact)
             {
@@ -67,19 +65,7 @@ internal sealed class TrayMenuRenderer : IDisposable
                 var row = layout.Rows[index];
                 var frame = OverlayPainter.Create(row.Width, row.Height);
                 var color = item.Enabled ? _palette.Text : _palette.Muted with { Alpha = 128 };
-                // 長い利用者定義の割り当てではラベルの表示幅だけを縮める。
-                var right = row.Width / layout.Scale - 10;
-                foreach (var key in item.Keys.Reverse())
-                {
-                    var width = Math.Max(22, Math.Ceiling(_text.Measure(key, 11.5, true)) + 12);
-                    right -= width;
-                    var keyRect = layout.KeyBounds(row, right, width);
-                    Box(frame, keyRect, _palette.Surface2, _palette.BorderStrong, 4, row);
-                    Text(frame, key, keyRect, 11.5, color, mono: true, center: true, origin: row);
-                    right -= 3;
-                }
-
-                var available = Math.Max(0, right - 34 - (item.Keys.Count > 0 ? 10 : 0));
+                var available = Math.Max(0, row.Width / layout.Scale - 44);
                 var label = Ellipsize(item.Name, available, 13);
                 Text(frame, label, new(row.X + layout.Px(34), row.Y, layout.Px(available), row.Height),
                     13, color, origin: row);
@@ -160,6 +146,40 @@ internal sealed class TrayMenuRenderer : IDisposable
         var onColor = _snapshot.Theme == OverlayTheme.Dark
             ? new OverlayColor(17, 17, 17, 255) : new(255, 255, 255, 255);
         OverlayPainter.FillRounded(frame, thumb, Opacity(onColor, fill), 6, layout.Scale);
+    }
+
+    private void DrawHeaderIcon(OverlayFrame background)
+    {
+        var bounds = Local(_snapshot.Layout.HeaderIcon);
+        var icon = OverlayPainter.Create(bounds.Width, bounds.Height);
+        // viewBox の座標を小数のまま写し、線幅と丸い端を同じ倍率で保つ。
+        var scale = bounds.Width / 44.0;
+        void Rounded(double x, double y, double width, double height, double radius, OverlayColor color,
+            double? stroke = null) => OverlayPainter.DrawRounded(icon, new(x * scale, y * scale),
+                new(width * scale, height * scale), color, radius * scale, stroke * scale);
+        Rounded(3, 3, 38, 38, 9, _palette.Ink, 4);
+        switch (_snapshot.IconKind)
+        {
+            case TrayIconKind.Paused:
+                Rounded(24.5, 8.5, 11, 11, 2, _palette.Ink, 3);
+                break;
+            case TrayIconKind.Attention:
+                var badge = OverlayPainter.Create(bounds.Width, bounds.Height);
+                var mask = OverlayPainter.Create(bounds.Width, bounds.Height);
+                OverlayPainter.FillCircle(badge, new(30 * scale, 14 * scale), 8.5 * scale, _palette.RedText);
+                var opaque = new OverlayColor(255, 255, 255, 255);
+                OverlayPainter.StrokeLine(mask, new(30 * scale, 8.8 * scale), new(30 * scale, 14.2 * scale),
+                    3 * scale, opaque);
+                OverlayPainter.FillCircle(mask, new(30 * scale, 18.4 * scale), 1.7 * scale, opaque);
+                OverlayPainter.Cutout(badge, mask);
+                OverlayPainter.Composite(icon, badge, 0, 0);
+                break;
+            default:
+                Rounded(23, 7, 14, 14, 3, _palette.BlueText);
+                break;
+        }
+        OverlayPainter.Composite(background, icon, bounds.X, bounds.Y,
+            _snapshot.IconKind == TrayIconKind.Paused ? .38 : 1);
     }
 
     private PixelRect Local(PixelRect rect) => new(rect.X - _snapshot.Layout.Bounds.X,

@@ -1,7 +1,6 @@
 using Snapwell.App.Hotkeys;
 using Snapwell.Core.Commands;
 using Snapwell.Core.Settings;
-using Snapwell.Core.Tray;
 
 namespace Snapwell.App.Lifecycle;
 
@@ -690,13 +689,7 @@ internal sealed class AppHost
     {
         var status = string.Join(" / ", new[] { _status, _reloadStatus, _deviceSaveStatus, _deviceReloadStatus }
             .Where(value => value is not null));
-        var shortcuts = TrayMenuModel.Shortcuts(_hooksStarted
-            ? HotkeyBindingsBuilder.Build(_portable.Hotkeys).Bindings.Select(binding =>
-                new KeyValuePair<WindowCommand, KeyChordSpec>((WindowCommand)binding.Id,
-                    new((ChordModifiers)binding.Modifiers, binding.VirtualKey)))
-            : []);
-        return new(_enabled, _device.DisableStandardSnap, status.Length == 0 ? null : status,
-            _hooksStarted, shortcuts);
+        return new(_enabled, _device.DisableStandardSnap, status.Length == 0 ? null : status, _hooksStarted);
     }
 
     private void ApplyDevice(DeviceState device)
