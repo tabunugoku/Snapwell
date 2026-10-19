@@ -4,6 +4,7 @@ using Snapwell.App.Motion;
 using Snapwell.App.Overlay;
 using Snapwell.Core.Commands;
 using Snapwell.Platform.Hooks;
+using Snapwell.Platform.Windows;
 
 namespace Snapwell.App.Lifecycle;
 
@@ -18,6 +19,7 @@ internal sealed class ResidentRuntime : IAppRuntime
     private readonly IReadOnlyList<HotkeyBinding> _paused;
     private readonly Action<IReadOnlyList<HotkeyBinding>> _applyBindings;
     private readonly LauncherController? _launcher;
+    private readonly ForegroundTargetTracker? _foregroundTargets;
     private readonly IZonePreview? _preview;
     private readonly Action<bool>? _setOverlayEnabled;
     private readonly IReadOnlyList<IDisposable>? _overlays;
@@ -29,7 +31,8 @@ internal sealed class ResidentRuntime : IAppRuntime
         IMotionEngine motion, IReadOnlyList<HotkeyBinding> bindings,
         Action<IReadOnlyList<HotkeyBinding>> applyBindings, LauncherController? launcher = null,
         IZonePreview? preview = null, Action<bool>? setOverlayEnabled = null,
-        IReadOnlyList<IDisposable>? overlays = null, LongPressDetector? longPress = null)
+        IReadOnlyList<IDisposable>? overlays = null, LongPressDetector? longPress = null,
+        ForegroundTargetTracker? foregroundTargets = null)
     {
         _drag = drag;
         _hotkeys = hotkeys;
@@ -38,6 +41,8 @@ internal sealed class ResidentRuntime : IAppRuntime
         _paused = HotkeyBindingsBuilder.Paused(bindings);
         _applyBindings = applyBindings;
         _launcher = launcher;
+        _foregroundTargets = launcher is null ? null : foregroundTargets ??
+            new ForegroundTargetTracker(new Win32WindowInspector(), (uint)Environment.ProcessId);
         _preview = preview;
         _setOverlayEnabled = setOverlayEnabled;
         _overlays = overlays;
@@ -133,6 +138,7 @@ internal sealed class ResidentRuntime : IAppRuntime
                 }
                 else if (value is ForegroundChanged foreground)
                 {
+                    _foregroundTargets?.Record(foreground.Handle);
                     _launcher?.HandleForegroundChanged(foreground);
                 }
 
@@ -223,7 +229,7 @@ internal sealed class ResidentRuntime : IAppRuntime
 
             _longPress?.Cancel();
             _preview?.Hide();
-            _launcher.Open(target, ignorePointerUpToMs);
+            _launcher.Open(_foregroundTargets!.Resolve(target), ignorePointerUpToMs);
             if (_launcher.IsOpen)
             {
                 _drag.Enabled = false;
