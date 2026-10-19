@@ -110,7 +110,8 @@ internal sealed class LauncherWindowListRenderer
                             text.Draw(frame, clipped, new("✓", check, 11, Center: true), palette.BlueText);
                         }
 
-                        var roleWidth = row.Selected ? Px(94) : 0;
+                        var role = row.RoleBounds(scale);
+                        var roleWidth = row.Selected ? row.Bounds.Right - role.X : 0;
                         var titleBounds = new PixelRect(check.Right + Px(8), row.Bounds.Y,
                             Math.Max(0, row.Bounds.Right - Px(8) - roleWidth - check.Right - Px(8)), row.Bounds.Height);
                         var title = row.Window.Title;
@@ -122,7 +123,11 @@ internal sealed class LauncherWindowListRenderer
                         text.Draw(frame, clipped, new(title, titleBounds, 12), palette.Text);
                         if (row.Selected)
                         {
-                            var role = new PixelRect(row.Bounds.Right - Px(94), row.Bounds.Y, Px(86), row.Bounds.Height);
+                            // 固定幅の枠の中央に置き、文字幅が違っても右端と枠が縦にそろう。
+                            var pill = new PixelRect(role.X - clipped.X, role.Y - clipped.Y, role.Width, role.Height);
+                            if (row.Main) { OverlayPainter.FillRounded(frame, pill, palette.BlueBackground, 999, scale); }
+                            OverlayPainter.StrokeRounded(frame, pill, row.Main ? palette.BlueText : palette.Border,
+                                999, 1, scale);
                             text.Draw(frame, clipped, new(row.Main ? "★ メイン" : "☆ スタック", role, 10.5, Center: true),
                                 row.Main ? palette.BlueText : palette.Muted);
                         }
@@ -150,14 +155,13 @@ internal sealed class LauncherWindowListRenderer
                         OverlayPainter.FillRounded(frame, rect, palette.Surface2, 6, scale);
                         OverlayPainter.StrokeRounded(frame, rect, palette.Border, 6, 1, scale);
                         int Px(double value) => (int)Math.Round(value * scale);
-                        var iconX = (frame.Width - 44 * scale) / 2;
-                        var iconY = 6 * scale;
-                        var border = new PixelRect((int)Math.Round(iconX), Px(6), Px(44), Px(28));
-                        OverlayPainter.StrokeRounded(frame, border, palette.Muted, 3, 1, scale);
-                        foreach (var (shape, index) in button.IconRects.Select((shape, index) => (shape, index)))
+                        // 枠も図形も整数ピクセルの端で描く。線の太さも整数ピクセルにそろえ、ぼやけを防ぐ。
+                        var icon = button.IconBounds(scale);
+                        var line = Math.Max(1, Math.Round(scale)) / scale;
+                        OverlayPainter.StrokeRounded(frame, icon, palette.Muted with { Alpha = 153 }, 3, line, scale);
+                        foreach (var (shape, index) in button.IconPixelRects(scale).Select((shape, index) => (shape, index)))
                         {
-                            var fill = new PixelRect((int)Math.Round(iconX + shape.X * scale),
-                                (int)Math.Round(iconY + shape.Y * scale), Px(shape.Width), Px(shape.Height));
+                            var fill = new PixelRect(icon.X + shape.X, icon.Y + shape.Y, shape.Width, shape.Height);
                             OverlayPainter.FillRounded(frame, fill,
                                 button.Layout == Snapwell.Core.Layout.ArrangeLayout.MainAndStack && index == 0
                                     ? palette.BlueText : palette.Muted with { Alpha = 115 }, 2, scale);

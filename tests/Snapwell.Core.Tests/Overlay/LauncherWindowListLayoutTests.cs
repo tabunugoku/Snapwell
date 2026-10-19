@@ -40,6 +40,51 @@ public sealed class LauncherWindowListLayoutTests
         Assert.Equal(new LauncherIconRect(3, 3, 22, 22), main.IconRects[0]);
     }
 
+    /// <summary>各倍率でアイコンの矩形は整数の端で左右・上下に対称になり、枠の中に収まる。</summary>
+    [Theory]
+    [InlineData(1)]
+    [InlineData(1.25)]
+    [InlineData(1.5)]
+    [InlineData(1.75)]
+    [InlineData(2)]
+    [InlineData(2.5)]
+    [InlineData(3)]
+    public void ArrangementIconRectsSnapToSymmetricPixels(double scale)
+    {
+        foreach (var mode in Enum.GetValues<ArrangeLayout>())
+        {
+            var button = new LauncherArrangeButton(mode, new(0, 0, 130, 76), "");
+            var icon = button.IconBounds(scale);
+            Assert.Equal((int)Math.Round(44 * scale), icon.Width);
+            var rects = button.IconPixelRects(scale);
+            Assert.All(rects, rect => Assert.True(rect.X >= 0 && rect.Y >= 0 && rect.Right <= icon.Width &&
+                rect.Bottom <= icon.Height && rect.Width > 0 && rect.Height > 0));
+            Assert.Equal(rects.Min(rect => rect.X), icon.Width - rects.Max(rect => rect.Right));
+            Assert.Equal(rects.Min(rect => rect.Y), icon.Height - rects.Max(rect => rect.Bottom));
+            if (mode != ArrangeLayout.MainAndStack)
+            {
+                Assert.Equal(rects.Select(rect => (rect.X, rect.Right)).Order(),
+                    rects.Select(rect => (icon.Width - rect.Right, icon.Width - rect.X)).Order());
+                Assert.Equal(rects.Select(rect => (rect.Y, rect.Bottom)).Order(),
+                    rects.Select(rect => (icon.Height - rect.Bottom, icon.Height - rect.Y)).Order());
+            }
+        }
+    }
+
+    /// <summary>役割の表示は行の右端の固定幅で、全行で同じ位置・同じ幅になる。</summary>
+    [Fact]
+    public void RoleBoundsAreFixedWidthAtRowRightEdge()
+    {
+        var windows = Enumerable.Range(1, 3).Select(i => new LauncherWindow(i, "w" + i)).ToArray();
+        var list = LauncherWindowListLayout.Create(new(0, 0, 1600, 900), new(100, 50, 560, 120), 1.5, windows,
+            [2, 1], 0, expanded: true);
+        var roles = list.Rows.Select(row => row.RoleBounds(1.5)).ToArray();
+        Assert.Single(roles.Select(role => role.Right - list.Rows[0].Bounds.Right).Distinct());
+        Assert.Single(roles.Select(role => role.Width).Distinct());
+        Assert.All(list.Rows, row => Assert.True(row.Bounds.Contains(row.RoleBounds(1.5))));
+        Assert.Equal([false, true, false], list.Rows.Select(row => row.Main));
+    }
+
     /// <summary>負座標と各倍率で全対象へ到達でき、行とボタンの当たり判定が重ならない。</summary>
     [Theory]
     [InlineData(1)]
