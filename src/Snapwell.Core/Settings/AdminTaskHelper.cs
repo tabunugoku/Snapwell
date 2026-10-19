@@ -30,7 +30,8 @@ public static class AdminTaskHelper
 
     /// <summary>SID と場所の検証後だけ、偽に差し替えられるタスクサービスへ渡す。</summary>
     public static int Execute(string[] args, string currentSid, string executablePath,
-        Func<string, bool> isProtected, IAdminTaskService service)
+        Func<TaskExecutablePath, bool> isProtected, IAdminTaskService service,
+        Func<string, string>? normalizePath = null)
     {
         if (!TryParse(args, out var enabled, out var requestedSid))
         {
@@ -46,17 +47,18 @@ public static class AdminTaskHelper
         {
             if (enabled)
             {
-                if (!ProtectedLocation.IsLiteralTaskPath(executablePath))
+                var path = TaskExecutablePath.Create(executablePath, normalizePath);
+                if (!path.IsLiteral)
                 {
                     return 4;
                 }
 
-                if (!isProtected(executablePath))
+                if (!isProtected(path))
                 {
                     return 3;
                 }
 
-                service.Register(executablePath, currentSid);
+                service.Register(path, currentSid);
             }
             else
             {

@@ -8,11 +8,18 @@ namespace Snapwell.Platform.Startup;
 public static class ExecutableLocation
 {
     /// <summary>ACL を読めない場合や reparse point を含む場合も、保護された場所とは扱わない。</summary>
-    public static bool IsProtected(string executablePath)
+    public static bool IsProtected(string executablePath) =>
+        IsProtected(() => ProtectedLocation.IsProtected(executablePath, new LocationSource()));
+
+    /// <summary>ヘルパーが検査した正規化結果を、再び正規化せず ACL 判定に使う。</summary>
+    public static bool IsProtected(TaskExecutablePath executablePath) =>
+        IsProtected(() => ProtectedLocation.IsProtected(executablePath, new LocationSource()));
+
+    private static bool IsProtected(Func<bool> check)
     {
         try
         {
-            return ProtectedLocation.IsProtected(executablePath, new LocationSource());
+            return check();
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or
             System.Security.SecurityException or ArgumentException)
@@ -27,7 +34,7 @@ public static class ExecutableLocation
 
         public IEnumerable<LocationEntry> ReadHierarchy(string path)
         {
-            var file = new FileInfo(Path.GetFullPath(path));
+            var file = new FileInfo(path);
             if (!file.Exists)
             {
                 throw new FileNotFoundException();

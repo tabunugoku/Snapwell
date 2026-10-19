@@ -374,6 +374,11 @@ g と e は対象モニターの DPI で物理ピクセルに換算する。隣�
 所有者 Administrators、継承なしの DACL（SYSTEM と Administrators のフルコントロール、現在のユーザーの読み取りのみ）を SDDL で指定する。
 CsWin32 の `allowMarshaling:false` による unmanaged COM 呼び出しを使う。
 現在のユーザーの SID を LogonTrigger と Principal に指定し、InteractiveToken / HighestAvailable で実行する。
+Principal の子要素は UserId、LogonType、RunLevel、RequiredPrivileges の順にし、
+RequiredPrivileges には `SeImpersonatePrivilege` だけを指定する。XML の version は 1.3 とする
+（[Microsoft のスキーマ](https://learn.microsoft.com/en-us/windows/win32/taskschd/task-scheduler-schema)）。
+これは `CreateProcessWithTokenW` で設定画面を通常権限で起動するために必要。
+指定がないタスクでは ERROR_PRIVILEGE_NOT_HELD (1314) になりうる（仕様からの推論、実機未確認）。
 実行パスは本体の完全パス、作業フォルダーは本体のフォルダーとする。バッテリーでの開始・継続を許可し、
 時間制限なし（PT0S）、IgnoreNew、StartWhenAvailable=false、AllowHardTerminate=true、Hidden=false とする。
 状態の読み取りは昇格せず、タスクがなければ Off、Exec の Command が現在の exe と一致すれば On、別の場所なら Elsewhere とする。
@@ -386,8 +391,11 @@ Principal と LogonTrigger の UserId のどちらかが自分の SID と違う�
 実行パスを引数で受け取らず、自身の `Environment.ProcessPath` だけを登録する。
 昇格後のユーザー SID が指定した SID と違う場合は登録せず失敗とする（別の管理者の資格情報での昇格は不可）。
 終了コードは 0:成功、1:失敗、2:SID 不一致、3:保護されていない場所。
-実行パスに `%` がある場合は、Task Scheduler の環境変数展開で検証先と実行先が変わるため拒否する（終了コード 4）。
-XML 生成、画面のオン判定、昇格ヘルパーのすべてで拒否する。
+実行パスは `Path.GetFullPath` で一度だけ正規化し、その結果に `%` がある場合は、
+Task Scheduler の環境変数展開で検証先と実行先が変わるため拒否する（終了コード 4）。
+8.3 の短い名前の展開で `%` が現れる場合も、XML 生成、画面のオン判定、昇格ヘルパーのすべてで拒否する。
+正規化結果は `TaskExecutablePath` に保持し、ヘルパーの検査、保護された場所の判定、
+XML の Command と WorkingDirectory に同じ文字列を使う。検査後は再び正規化しない。
 
 オンにできるのは、exe と親フォルダーを管理者以外が書き換えられない場所（Program Files など）だけ。
 ローカル固定ディスク（GetDriveType が DriveType.Fixed）に限り、UNC・ネットワークドライブ・リムーバブル・光学・RAM ディスクは拒否する。

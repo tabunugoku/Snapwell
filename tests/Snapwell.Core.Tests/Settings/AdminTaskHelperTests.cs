@@ -1,3 +1,4 @@
+using System.Xml.Linq;
 using Snapwell.Core.Settings;
 
 namespace Snapwell.Core.Tests.Settings;
@@ -6,6 +7,61 @@ public sealed class AdminTaskHelperTests
 {
     private const string Sid = "S-1-5-21-123-456-789-1001";
     private const string Executable = @"C:\Program Files\Snapwell\Snapwell.exe";
+
+    [Theory]
+    [InlineData(@"C:\Program Files\Snapwell-%SW%\Snapwell.exe")]
+    [InlineData(@"C:\Program Files\Snapwell\Snapwell-%SW%.exe")]
+    public void ExpandedShortNameIsRejectedByXmlHelperAndSettingsPolicy(string expanded)
+    {
+        const string ShortPath = @"C:\PROGRA~1\SNAPWE~1\SNAPWE~1.EXE";
+        var calls = 0;
+        string Normalize(string path)
+        {
+            Assert.Equal(ShortPath, path);
+            calls++;
+            return expanded;
+        }
+
+        Assert.DoesNotContain('%', ShortPath);
+        Assert.Throws<ArgumentException>(() => AdminTaskXml.Create(ShortPath, Sid, Normalize));
+        Assert.Equal(1, calls);
+        var service = new FakeTasks();
+        Assert.Equal(4, AdminTaskHelper.Execute(["--set-admin-task", "on", "--for-sid", Sid], Sid,
+            ShortPath, _ => throw new InvalidOperationException("ACL を読む前に拒否する。"), service, Normalize));
+        Assert.Equal(2, calls);
+        Assert.Equal(0, service.Calls);
+        Assert.False(ProtectedLocation.IsLiteralTaskPath(ShortPath, Normalize));
+        Assert.Equal(3, calls);
+    }
+
+    [Fact]
+    public void HelperSharesOneNormalizationWithLocationCheckAndTaskXml()
+    {
+        const string ShortPath = @"C:\PROGRA~1\SNAPWE~1\Snapwell.exe";
+        var calls = 0;
+        TaskExecutablePath? checkedPath = null;
+        var service = new FakeTasks();
+        Assert.Equal(0, AdminTaskHelper.Execute(["--set-admin-task", "on", "--for-sid", Sid], Sid,
+            ShortPath, path =>
+            {
+                checkedPath = path;
+                Assert.Equal(Executable, path.Value);
+                return true;
+            }, service, path =>
+            {
+                Assert.Equal(ShortPath, path);
+                Assert.Equal(1, ++calls);
+                return Executable;
+            }));
+        Assert.Equal(1, calls);
+        Assert.Same(checkedPath, service.Path);
+        Assert.Equal(Executable, service.Command);
+        var xml = AdminTaskXml.Create(service.Path!, Sid);
+        Assert.Equal(Executable, AdminTaskXml.ReadCommand(xml));
+        XNamespace ns = AdminTaskXml.Namespace;
+        Assert.Equal(@"C:\Program Files\Snapwell",
+            (string?)XElement.Parse(xml).Descendants(ns + "WorkingDirectory").Single());
+    }
 
     [Theory]
     [InlineData(@"C:\Program Files\%SW%\Snapwell.exe")]
@@ -69,8 +125,9 @@ public sealed class AdminTaskHelperTests
         internal int Calls;
         internal string? Command;
         internal string? UserSid;
+        internal TaskExecutablePath? Path;
         public string? ReadCommand() => Command;
-        public void Register(string executablePath, string userSid)
+        public void Register(TaskExecutablePath executablePath, string userSid)
         {
             Calls++;
             if (Fail)
@@ -78,7 +135,8 @@ public sealed class AdminTaskHelperTests
                 throw new IOException();
             }
 
-            Command = executablePath;
+            Command = executablePath.Value;
+            Path = executablePath;
             UserSid = userSid;
         }
 

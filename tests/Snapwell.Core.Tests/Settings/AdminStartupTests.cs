@@ -9,6 +9,21 @@ public sealed class AdminStartupTests
     private const string Sid = "S-1-5-21-123-456-789-1001";
 
     [Fact]
+    public void TaskRequestsOnlyImpersonationPrivilegeToOpenUnelevatedSettings()
+    {
+        XNamespace ns = AdminTaskXml.Namespace;
+        var task = XElement.Parse(AdminTaskXml.Create(Executable, Sid));
+        Assert.Equal("1.3", (string?)task.Attribute("version"));
+        var principal = task.Element(ns + "Principals")!.Element(ns + "Principal")!;
+        Assert.Equal(new[] { "UserId", "LogonType", "RunLevel", "RequiredPrivileges" },
+            principal.Elements().Select(element => element.Name.LocalName));
+        var required = Assert.Single(principal.Elements(ns + "RequiredPrivileges"));
+        var privilege = Assert.Single(required.Elements());
+        Assert.Equal(ns + "Privilege", privilege.Name);
+        Assert.Equal("SeImpersonatePrivilege", privilege.Value);
+    }
+
+    [Fact]
     public void XmlPreservesPathsAndEscapesValuesAndDefinesSafeLogonSettings()
     {
         var xml = AdminTaskXml.Create(Executable, Sid);
@@ -287,7 +302,7 @@ public sealed class AdminStartupTests
             Run = null;
         }
         public string? ReadCommand() => Command;
-        public void Register(string executablePath, string userSid) => Command = executablePath;
+        public void Register(TaskExecutablePath executablePath, string userSid) => Command = executablePath.Value;
         public void Delete() => Command = null;
         public StartupRunBackup? Read() => Backup;
         public void Write(StartupRunBackup? value)
