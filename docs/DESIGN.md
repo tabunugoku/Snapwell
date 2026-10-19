@@ -374,10 +374,9 @@ g と e は対象モニターの DPI で物理ピクセルに換算する。隣�
 所有者 Administrators、継承なしの DACL（SYSTEM と Administrators のフルコントロール、現在のユーザーの読み取りのみ）を SDDL で指定する。
 CsWin32 の `allowMarshaling:false` による unmanaged COM 呼び出しを使う。
 現在のユーザーの SID を LogonTrigger と Principal に指定し、InteractiveToken / HighestAvailable で実行する。
-Principal の子要素は UserId、LogonType、RunLevel、RequiredPrivileges の順にし、
-RequiredPrivileges には `SeImpersonatePrivilege` だけを指定する。XML の version は 1.3 とする
+Principal の子要素は UserId、LogonType、RunLevel だけにする。XML の version は 1.3 とする
 （[Microsoft のスキーマ](https://learn.microsoft.com/en-us/windows/win32/taskschd/task-scheduler-schema)）。
-これは `CreateProcessWithTokenW` で設定画面を通常権限で起動するために必要。
+RequiredPrivileges に `SeImpersonatePrivilege` を入れると、タスク スケジューラが 0x80041316 で登録を拒否する（ARM64 実機で確認）ため指定しない。
 指定がないタスクでは ERROR_PRIVILEGE_NOT_HELD (1314) になりうる（仕様からの推論、実機未確認）。
 実行パスは本体の完全パス、作業フォルダーは本体のフォルダーとする。バッテリーでの開始・継続を許可し、
 時間制限なし（PT0S）、IgnoreNew、StartWhenAvailable=false、AllowHardTerminate=true、Hidden=false とする。
