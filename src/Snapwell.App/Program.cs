@@ -59,7 +59,8 @@ internal static class Program
                 var launcherSurface = new OverlaySession(interactive: true, diagnostic: LauncherLog.Write);
                 var preview = new ZonePreview(previewSurface, monitors, settings: () => settings);
                 var tracking = new MouseTrackingVotes(value => hooks.MouseTrackingEnabled = value);
-                var neighbors = new NeighborWindowSource(inspector, monitors, (uint)Environment.ProcessId);
+                var neighbors = new NeighborWindowSource(inspector, monitors, (uint)Environment.ProcessId,
+                    () => settings);
                 var drag = new DragSnapController(inspector, monitors, motion, () => settings,
                     tracking.SetDrag, (uint)Environment.ProcessId,
                     preview: preview, cursorPosition: CursorPosition, neighbors: neighbors.Snapshot);

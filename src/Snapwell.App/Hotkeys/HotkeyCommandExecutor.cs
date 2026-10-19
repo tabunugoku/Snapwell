@@ -134,7 +134,7 @@ internal sealed class HotkeyCommandExecutor(IWindowInspector inspector, IMonitor
 
         var foregroundHandle = inspector.GetForegroundWindow();
         if (foregroundHandle == 0 || !inspector.TryInspect(foregroundHandle, out var foreground) ||
-            WindowClassifier.Classify(foreground, ownProcessId) == WindowKind.Excluded)
+            !IsTarget(WindowClassifier.Classify(foreground, ownProcessId)))
         {
             return;
         }
@@ -149,6 +149,10 @@ internal sealed class HotkeyCommandExecutor(IWindowInspector inspector, IMonitor
         Arrange(layout, areas, targetMonitor, GetArrangementWindows(), foregroundHandle);
     }
 
+    // 設定は呼び出しごとに読み、変更を次の操作から反映する。
+    private bool IsTarget(WindowKind kind) =>
+        kind != WindowKind.Excluded && (kind != WindowKind.FixedSize || settings().MoveFixedSizeWindows);
+
     private IReadOnlyList<WindowSnapshot> GetArrangementWindows()
     {
         var windows = new List<WindowSnapshot>();
@@ -162,7 +166,8 @@ internal sealed class HotkeyCommandExecutor(IWindowInspector inspector, IMonitor
 
             // クロークされた別仮想デスクトップのウィンドウや最小化・ポップアップ・所有されたダイアログは除外する。
             var kind = WindowClassifier.Classify(window, ownProcessId);
-            if (kind is not (WindowKind.Normal or WindowKind.FixedSize) || inspector.GetOwner(handle) != 0)
+            if (kind is not (WindowKind.Normal or WindowKind.FixedSize) || !IsTarget(kind) ||
+                inspector.GetOwner(handle) != 0)
             {
                 continue;
             }
@@ -210,7 +215,7 @@ internal sealed class HotkeyCommandExecutor(IWindowInspector inspector, IMonitor
         }
 
         if (!enabled() || handle == 0 || !inspector.TryInspect(handle, out var window) ||
-            WindowClassifier.Classify(window, ownProcessId) == WindowKind.Excluded)
+            !IsTarget(WindowClassifier.Classify(window, ownProcessId)))
         {
             return;
         }
@@ -257,7 +262,7 @@ internal sealed class HotkeyCommandExecutor(IWindowInspector inspector, IMonitor
             // 最大化中の寸法や不可視枠は使わず、通常状態を取り直して計画する。実機未確認。
             if (!Volatile.Read(ref _stopped) && positionApi.Restore(handle) &&
                 inspector.TryInspect(handle, out var window) && !window.IsMaximized &&
-                WindowClassifier.Classify(window, ownProcessId) != WindowKind.Excluded)
+                IsTarget(WindowClassifier.Classify(window, ownProcessId)))
             {
                 PlanAndRequest(command, window, selected, area);
             }

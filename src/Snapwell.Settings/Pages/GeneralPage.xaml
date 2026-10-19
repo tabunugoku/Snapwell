@@ -28,28 +28,19 @@
             <InfoBar x:Name="ErrorNotice" Severity="Error" IsClosable="True" />
             <Border Style="{StaticResource SnapwellRowsBorderStyle}">
                 <StackPanel>
-                    <!-- デモ状態 (未実装) -->
                     <Grid Style="{StaticResource SnapwellRowGridStyle}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
-                            <Grid ColumnSpacing="6" HorizontalAlignment="Left">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="Snapwell を有効にする" Style="{StaticResource SnapwellRowTitleStyle}" />
-                                <Border Grid.Column="1" Style="{StaticResource SnapwellTagPendingStyle}">
-                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellTagPendingTextStyle}" />
-                                </Border>
-                            </Grid>
-                            <TextBlock Text="オフにすると、標準のスナップ機能を元の状態に戻します。トレイメニューから操作できます" Style="{StaticResource SnapwellRowDescriptionStyle}" />
+                            <TextBlock Text="Snapwell を有効にする" Style="{StaticResource SnapwellRowTitleStyle}" />
+                            <TextBlock Text="オフにすると、標準のスナップ機能を元の状態に戻します。トレイメニューからも操作できます。保存を待たず、すぐに反映されます" Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <ToggleSwitch IsEnabled="False" Style="{StaticResource DemoSwitchStyle}" IsOn="True" AutomationProperties.Name="有効" />
-                        </StackPanel>
+                        <ToggleSwitch x:Name="EnabledToggle" Grid.Column="1" OnContent="" OffContent="" MinWidth="0"
+                                      Style="{StaticResource SnapwellToggleSwitchStyle}"
+                                      VerticalAlignment="Center" AutomationProperties.Name="Snapwell を有効にする"
+                                      Toggled="Enabled_Toggled" />
                     </Grid>
                     <Border Style="{StaticResource SnapwellRowDividerStyle}" />
                     <!-- デモ状態 (未実装) ここまで -->
@@ -133,7 +124,6 @@
                 </StackPanel>
             </Border>
 
-            <!-- デモ状態 (未実装) -->
             <TextBlock Text="対象のウィンドウ" Style="{StaticResource SnapwellGroupTitleStyle}" />
             <Border Style="{StaticResource SnapwellRowsBorderStyle}">
                 <StackPanel>
@@ -143,27 +133,17 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
-                            <Grid ColumnSpacing="6" HorizontalAlignment="Left">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="サイズ固定のウィンドウも動かす" Style="{StaticResource SnapwellRowTitleStyle}" />
-                                <Border Grid.Column="1" Style="{StaticResource SnapwellTagPendingStyle}">
-                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellTagPendingTextStyle}" />
-                                </Border>
-                            </Grid>
+                            <TextBlock Text="サイズ固定のウィンドウも動かす" Style="{StaticResource SnapwellRowTitleStyle}" />
                             <TextBlock
                                 Text="サイズは変えず、区画の中で位置だけを合わせます"
                                 Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <ToggleSwitch IsEnabled="False"
-                                Style="{StaticResource DemoSwitchStyle}"
-                                IsOn="True"
-                                AutomationProperties.Name="サイズ固定" />
-                        </StackPanel>
+                        <ToggleSwitch x:Name="MoveFixedSizeToggle" Grid.Column="1" OnContent="" OffContent="" MinWidth="0"
+                                      Style="{StaticResource SnapwellToggleSwitchStyle}"
+                                      VerticalAlignment="Center" AutomationProperties.Name="サイズ固定のウィンドウも動かす"
+                                      Toggled="MoveFixedSize_Toggled" />
                     </Grid>
+                    <!-- デモ状態 (未実装) -->
                     <Border Style="{StaticResource SnapwellRowDividerStyle}" />
                     <Grid Style="{StaticResource SnapwellRowGridStyle}">
                         <Grid.ColumnDefinitions>

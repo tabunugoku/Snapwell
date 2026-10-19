@@ -1,13 +1,18 @@
 using Snapwell.Core.Geometry;
+using Snapwell.Core.Settings;
 using Snapwell.Platform.Monitors;
 using Snapwell.Platform.Windows;
 
 namespace Snapwell.App.Dragging;
 
 /// <summary>ドラッグ開始時に隣接吸着の対象となる見た目の矩形を取得する。</summary>
-internal sealed class NeighborWindowSource(IWindowInspector inspector, IMonitorSource monitors, uint ownProcessId)
+internal sealed class NeighborWindowSource(IWindowInspector inspector, IMonitorSource monitors, uint ownProcessId,
+    Func<PortableSettings>? settings = null)
 {
-    /// <summary>通常・固定サイズの所有者なしウィンドウを、ドラッグ対象と最大化を除いて返す。</summary>
+    /// <summary>
+    /// 通常・固定サイズの所有者なしウィンドウを、ドラッグ対象と最大化を除いて返す。
+    /// 設定で固定サイズを動かさないときは固定サイズを除く。
+    /// </summary>
     internal IReadOnlyList<PixelRect> Snapshot(nint draggedHandle)
     {
         IReadOnlyList<nint> handles;
@@ -23,6 +28,8 @@ internal sealed class NeighborWindowSource(IWindowInspector inspector, IMonitorS
             return [];
         }
 
+        // 設定は呼び出しごとに読み、変更を次のドラッグから反映する。
+        var moveFixedSize = settings?.Invoke().MoveFixedSizeWindows ?? true;
         var bounds = new List<PixelRect>();
         var seen = new HashSet<nint>();
         foreach (var handle in handles)
@@ -40,7 +47,8 @@ internal sealed class NeighborWindowSource(IWindowInspector inspector, IMonitorS
                 }
 
                 var kind = WindowClassifier.Classify(window, ownProcessId);
-                if (kind is not (WindowKind.Normal or WindowKind.FixedSize) || inspector.GetOwner(handle) != 0 ||
+                if (kind is not (WindowKind.Normal or WindowKind.FixedSize) ||
+                    (kind == WindowKind.FixedSize && !moveFixedSize) || inspector.GetOwner(handle) != 0 ||
                     !areas.Any(area => area.Intersects(window.VisualBounds)))
                 {
                     continue;

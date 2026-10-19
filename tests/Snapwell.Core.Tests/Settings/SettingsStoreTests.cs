@@ -30,7 +30,7 @@ public sealed class SettingsStoreTests : IDisposable
         Assert.Equal(new GridSettings(6, 4), result.Value.Grid);
         Assert.Equal(21, result.Value.Gap);
         Assert.Equal("Heavy", result.Value.Feel);
-        Assert.Equal(7, PortableSettings.CurrentSchemaVersion);
+        Assert.Equal(8, PortableSettings.CurrentSchemaVersion);
 
         store.Save(result.Value);
         Assert.DoesNotContain("LongPress", File.ReadAllText(path));
@@ -174,6 +174,39 @@ public sealed class SettingsStoreTests : IDisposable
         store.Save(new() { Gap = 19 });
         Assert.Equal(19, store.Load().Value.Gap);
         AssertNoTemporaryFiles();
+    }
+
+    /// <summary>サイズ固定を動かす設定は既定でオンで、オフの保存は読み戻しても保たれる。</summary>
+    [Fact]
+    public void MoveFixedSizeWindowsDefaultsToTrueAndRoundTripsFalse()
+    {
+        Assert.True(new PortableSettings().MoveFixedSizeWindows);
+        Assert.True(SettingsTransfer.Normalize(new()).MoveFixedSizeWindows);
+
+        var path = Path.Combine(_directory, "fixed-size.json");
+        var store = SettingsStores.Portable(path);
+        store.Save(new() { MoveFixedSizeWindows = false });
+        Assert.False(store.Load().Value.MoveFixedSizeWindows);
+        Assert.False(SettingsTransfer.Normalize(new() { MoveFixedSizeWindows = false }).MoveFixedSizeWindows);
+        store.Save(new() { MoveFixedSizeWindows = true });
+        Assert.True(store.Load().Value.MoveFixedSizeWindows);
+    }
+
+    /// <summary>版 7 以下のファイルはオンとして読み、版 8 の明示したオフは保つ。</summary>
+    [Theory]
+    [InlineData(1, "", true)]
+    [InlineData(7, "", true)]
+    [InlineData(8, "", true)]
+    [InlineData(8, ",\"MoveFixedSizeWindows\":false", false)]
+    public void MoveFixedSizeWindowsIsEnabledForFilesBeforeVersionEight(int version, string field, bool expected)
+    {
+        var path = Path.Combine(_directory, "fixed-size-old.json");
+        File.WriteAllText(path, $$"""{"SchemaVersion":{{version}},"Gap":21{{field}}}""");
+        var result = SettingsStores.Portable(path).Load();
+        Assert.False(result.IsReadOnly);
+        Assert.False(result.ResetToDefaults);
+        Assert.Equal(expected, result.Value.MoveFixedSizeWindows);
+        Assert.Equal(21, result.Value.Gap);
     }
 
     private static SettingsStore<PortableSettings> StoreWithCallback(string path, Action beforeReplace) =>

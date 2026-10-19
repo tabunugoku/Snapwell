@@ -48,4 +48,53 @@ public sealed class DeviceStateChangesTests
             Directory.Delete(directory, recursive: true);
         }
     }
+
+    /// <summary>有効・無効の書き込みは、ほかの項目と並行して動く本体の保存値を壊さない。</summary>
+    [Fact]
+    public void SetEnabledKeepsOtherFields()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "Snapwell-device-enabled-" + Guid.NewGuid());
+        Directory.CreateDirectory(directory);
+        try
+        {
+            var store = SettingsStores.Device(Path.Combine(directory, "device.json"));
+            store.Save(new() { DisableStandardSnap = true, StandardSnapConsentGiven = true, SetupCompleted = true });
+
+            Assert.False(DeviceStateChanges.SetEnabled(store, false).Enabled);
+            var paused = store.Load().Value;
+            Assert.False(paused.Enabled);
+            Assert.True(paused.DisableStandardSnap);
+            Assert.True(paused.StandardSnapConsentGiven);
+
+            DeviceStateChanges.SetEnabled(store, true);
+            Assert.True(store.Load().Value.Enabled);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    /// <summary>端末状態が無くても、既定値に有効・無効だけを足して作る。</summary>
+    [Fact]
+    public void SetEnabledCreatesMissingFile()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "Snapwell-device-enabled-" + Guid.NewGuid());
+        try
+        {
+            var path = Path.Combine(directory, "device.json");
+            var store = SettingsStores.Device(path);
+
+            DeviceStateChanges.SetEnabled(store, false);
+
+            Assert.False(SettingsStores.Device(path).Load().Value.Enabled);
+        }
+        finally
+        {
+            if (Directory.Exists(directory))
+            {
+                Directory.Delete(directory, recursive: true);
+            }
+        }
+    }
 }

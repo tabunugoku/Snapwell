@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
@@ -331,7 +332,7 @@ public static class SpringToggle
     private static class SpringDriver
     {
         private static readonly List<Attachment> _active = [];
-        private static TimeSpan _last;
+        private static long _last;
 
         public static void Add(Attachment attachment)
         {
@@ -343,7 +344,7 @@ public static class SpringToggle
             _active.Add(attachment);
             if (_active.Count == 1)
             {
-                _last = TimeSpan.Zero;
+                _last = 0;
                 CompositionTarget.Rendering += OnRendering;
             }
         }
@@ -358,9 +359,11 @@ public static class SpringToggle
 
         private static void OnRendering(object? sender, object e)
         {
-            var time = ((RenderingEventArgs)e).RenderingTime;
-            var seconds = _last == TimeSpan.Zero ? 1.0 / 60 : (time - _last).TotalSeconds;
-            _last = time;
+            // イベント引数は RenderingEventArgs へキャストしない。NativeAOT では InvalidCastException（E_NOINTERFACE）になり、
+            // 設定画面が落ちるため。経過時間は自前の時計で測る。
+            var now = Stopwatch.GetTimestamp();
+            var seconds = _last == 0 ? 1.0 / 60 : Stopwatch.GetElapsedTime(_last, now).TotalSeconds;
+            _last = now;
             for (var i = _active.Count - 1; i >= 0; i--)
             {
                 if (_active[i].Step(seconds))
