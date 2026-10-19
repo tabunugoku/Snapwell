@@ -261,6 +261,7 @@ g と e は対象モニターの DPI で物理ピクセルに換算する。隣�
 | スナップレイアウト（最大化ボタンのフライアウト） | `HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced` の関連値 | 要検証。値の名前と効き方はWindowsビルドで変わる可能性がある |
 | 画面上端のスナップバー（24H2以降） | 同上 | 要検証 |
 | Win+矢印キー | 本ツールが有効な間だけ、低レベルキーボードフックで握りつぶして自前の操作に割り当てる | Explorerが予約しているため `RegisterHotKey` では登録できない |
+| 他プロセスのウィンドウの角 | `DWMWA_WINDOW_CORNER_PREFERENCE`（§13） | 変更前の値を `corners.json` に退避し、既定へ戻したとき・無効化・終了・異常終了後の起動で復元する |
 
 **安全策:**
 
