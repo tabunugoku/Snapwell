@@ -243,6 +243,14 @@ internal sealed class OverlayThread : IOverlayPresenter, IOverlaySurface
             {
                 if (_disposed || _pending is not null || _pendingMove is not null)
                 {
+                    // 移動だけが残る場合、配送先が再要求しないとフレームが失われる。次の Process へ持ち越す。
+                    // 配送先が再要求すれば、その要求が上書きする。
+                    if (!_disposed && _pending is null)
+                    {
+                        _pending = (request.Bounds, () => frame);
+                        _loop?.Wake();
+                    }
+
                     return !_disposed;
                 }
             }

@@ -23,6 +23,7 @@ internal sealed class LongPressDetector(IWindowInspector inspector, IMonitorSour
     // 手ぶれを許し、通常のドラッグと区別する論理距離。モニターの DPI で換算する。
     internal const double MovementLogicalPixels = 6;
     private readonly object _gate = new();
+    private readonly List<Action> _notifications = [];
     private LongPressCandidate? _press;
     private LongPressCandidate? _launcherOwner;
     private nint? _consumedMoveSizeHandle;
@@ -68,6 +69,13 @@ internal sealed class LongPressDetector(IWindowInspector inspector, IMonitorSour
     /// <summary>移動への切り替えで、長押しが開いたランチャーだけを閉じるよう通知する。</summary>
     internal bool Handle(HookEvent value, bool canStart)
     {
+        var close = HandleCore(value, canStart);
+        Flush();
+        return close;
+    }
+
+    private bool HandleCore(HookEvent value, bool canStart)
+    {
         lock (_gate)
         {
             if (_disposed)
@@ -110,7 +118,7 @@ internal sealed class LongPressDetector(IWindowInspector inspector, IMonitorSour
                             TopBandRule.Contains(window.VisualBounds, monitor.WorkArea,
                                 new(button.X, button.Y), monitor.Scale));
                         _press = candidate;
-                        HoldStarted?.Invoke(candidate, holdMilliseconds);
+                        _notifications.Add(() => HoldStarted?.Invoke(candidate, holdMilliseconds));
                         trackMouse(true);
                         _timer = (schedule ?? Schedule)(TimeSpan.FromMilliseconds(holdMilliseconds),
                             () => Elapsed(candidate));
@@ -174,6 +182,8 @@ internal sealed class LongPressDetector(IWindowInspector inspector, IMonitorSour
         {
             ResetLauncher();
         }
+
+        Flush();
     }
 
     /// <summary>一時停止や別操作への切り替えで、配送済みのタイマーも無効にする。</summary>
@@ -183,6 +193,8 @@ internal sealed class LongPressDetector(IWindowInspector inspector, IMonitorSour
         {
             Reset();
         }
+
+        Flush();
     }
 
     /// <summary>タイマーを止め、あとから到着する候補を無効にする。</summary>
@@ -193,6 +205,8 @@ internal sealed class LongPressDetector(IWindowInspector inspector, IMonitorSour
             _disposed = true;
             Reset();
         }
+
+        Flush();
     }
 
     private void Elapsed(LongPressCandidate candidate)
@@ -205,12 +219,13 @@ internal sealed class LongPressDetector(IWindowInspector inspector, IMonitorSour
             }
 
             _elapsed = true;
-            HoldEnded?.Invoke();
+            _notifications.Add(() => HoldEnded?.Invoke());
             _timer?.Dispose();
             _timer = null;
         }
 
         // 受け手は ResidentRuntime のロックを取るため、判定側のロックから外へ通知する。
+        Flush();
         CandidateReady?.Invoke(candidate);
     }
 
@@ -232,9 +247,25 @@ internal sealed class LongPressDetector(IWindowInspector inspector, IMonitorSour
         _moveSizeEnded = false;
     }
 
+    // 購読者が別のロックを取っても逆順にならないよう、通知は状態ロックを離してから届ける。
+    private void Flush()
+    {
+        Action[] pending;
+        lock (_gate)
+        {
+            pending = [.. _notifications];
+            _notifications.Clear();
+        }
+
+        foreach (var notify in pending)
+        {
+            notify();
+        }
+    }
+
     private void ResetPress()
     {
-        HoldEnded?.Invoke();
+        _notifications.Add(() => HoldEnded?.Invoke());
         _generation++;
         _timer?.Dispose();
         _timer = null;

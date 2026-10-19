@@ -91,7 +91,8 @@ public sealed class CommandPlannerTests
     public void EveryPlacementPreservesFixedSize()
     {
         foreach (var command in Enum.GetValues<WindowCommand>().Where(c =>
-            c is not (WindowCommand.ToggleEnabled or WindowCommand.ArrangeGrid or
+            c is not (WindowCommand.ToggleEnabled or WindowCommand.OpenLauncher or
+                WindowCommand.ArrangeAllMonitors or WindowCommand.ArrangeGrid or
                 WindowCommand.ArrangeColumns or WindowCommand.ArrangeRows or WindowCommand.ArrangeMainAndStack or
                 WindowCommand.SnapAdjacentLeft or WindowCommand.SnapAdjacentRight or
                 WindowCommand.SnapAdjacentUp or WindowCommand.SnapAdjacentDown)))

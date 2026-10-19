@@ -367,8 +367,10 @@ internal sealed class LauncherController : IDisposable
         {
             var selection = new ZoneSelection(old.WorkArea, plan, _spacing);
             var snapped = selection.Grid.SnapToGrid(old.Bounds);
-            var anchor = selection.HitTest(new(snapped.X, snapped.Y))!.Value;
-            var cursor = selection.HitTest(new(snapped.Right - 1, snapped.Bottom - 1))!.Value;
+            var anchor = selection.HitTest(new(snapped.X, snapped.Y))
+                ?? throw new ArgumentException("区画に当たらない。");
+            var cursor = selection.HitTest(new(snapped.Right - 1, snapped.Bottom - 1))
+                ?? throw new ArgumentException("区画に当たらない。");
             _selection = selection.Select(anchor, cursor);
         }
         catch (ArgumentException)

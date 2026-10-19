@@ -14,7 +14,8 @@ public static class CommandPlanner
     {
         resize ??= new();
         if (monitors.Count == 0 ||
-            command is WindowCommand.ToggleEnabled or WindowCommand.ArrangeGrid or
+            command is WindowCommand.ToggleEnabled or WindowCommand.OpenLauncher or
+                WindowCommand.ArrangeAllMonitors or WindowCommand.ArrangeGrid or
                 WindowCommand.ArrangeColumns or WindowCommand.ArrangeRows or WindowCommand.ArrangeMainAndStack or
                 WindowCommand.SnapAdjacentLeft or WindowCommand.SnapAdjacentRight or
                 WindowCommand.SnapAdjacentUp or WindowCommand.SnapAdjacentDown ||

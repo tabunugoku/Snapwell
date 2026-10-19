@@ -126,49 +126,78 @@ internal sealed class MotionEngine : IMotionEngine
         {
             while (true)
             {
-                Application[] applications;
-                bool reduceMotion;
-                lock (_gate)
+                try
                 {
-                    while (!_disposed && _entries.Count == 0)
-                    {
-                        Monitor.Wait(_gate);
-                    }
-
-                    if (_disposed)
+                    if (!RunFrame())
                     {
                         return;
                     }
-
-                    reduceMotion = ReadReduceMotion();
-                    // 削減時は合成フレームを待たず、一度だけ最終矩形を適用する。
-                    applications = reduceMotion
-                        ? [.. _entries.Select(pair => new Application(pair.Key, pair.Value, ApplyKind.Bounds,
-                            pair.Value.Body.Target.ToPixelRect(), pair.Value.Body.Walls.ToPixelRect(),
-                            pair.Value.Version, true))]
-                        : [];
                 }
-
-                if (!reduceMotion)
+                catch (Exception) when (!_stop.IsCancellationRequested)
                 {
-                    _pacer.Wait(_stop.Token);
+                    // 物理の発散による変換の失敗などで、常駐プロセスを落とさない。動いている対象を外して続ける。
                     lock (_gate)
                     {
-                        if (_disposed)
-                        {
-                            return;
-                        }
-
-                        applications = PlanFrame(_clock.Seconds);
+                        _entries.Clear();
                     }
                 }
-
-                ApplyFrame(applications, reduceMotion);
             }
         }
         catch (OperationCanceledException) when (_stop.IsCancellationRequested)
         {
         }
+    }
+
+    private bool RunFrame()
+    {
+        Application[] applications = [];
+        lock (_gate)
+        {
+            while (!_disposed && _entries.Count == 0)
+            {
+                Monitor.Wait(_gate);
+            }
+
+            if (_disposed)
+            {
+                return false;
+            }
+        }
+
+        // システム呼び出しを含むので、ロックの外で読む。
+        var reduceMotion = ReadReduceMotion();
+        if (reduceMotion)
+        {
+            lock (_gate)
+            {
+                if (_disposed)
+                {
+                    return false;
+                }
+
+                // 削減時は合成フレームを待たず、一度だけ最終矩形を適用する。
+                applications = [.. _entries.Select(pair => new Application(pair.Key, pair.Value, ApplyKind.Bounds,
+                    pair.Value.Body.Target.ToPixelRect(), pair.Value.Body.Walls.ToPixelRect(),
+                    pair.Value.Version, true))];
+            }
+        }
+
+        if (!reduceMotion)
+        {
+            _pacer.Wait(_stop.Token);
+            lock (_gate)
+            {
+                if (_disposed)
+                {
+                    return false;
+                }
+
+                applications = PlanFrame(_clock.Seconds);
+            }
+        }
+
+        ApplyFrame(applications, reduceMotion);
+        return true;
     }
 
     private Application[] PlanFrame(double now)

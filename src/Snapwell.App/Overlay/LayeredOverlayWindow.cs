@@ -33,6 +33,7 @@ internal sealed unsafe class LayeredOverlayWindow : IOverlaySurface, IOverlayLoo
     private int _height;
     private OverlayFrame? _lastFrame;
     private long _lastRevision;
+    private bool _captured;
 
     internal LayeredOverlayWindow(bool interactive, long generation,
         Action<long, string, Exception?>? diagnostic)
@@ -186,6 +187,7 @@ internal sealed unsafe class LayeredOverlayWindow : IOverlaySurface, IOverlayLoo
 
     public void Hide()
     {
+        _captured = false;
         if (PInvoke.GetCapture() == _window)
         {
             PInvoke.ReleaseCapture();
@@ -294,6 +296,18 @@ internal sealed unsafe class LayeredOverlayWindow : IOverlaySurface, IOverlayLoo
             return default;
         }
 
+        // 他の操作でキャプチャーを失うと Up が届かない。選択の操作が終わらないよう、Up 相当を通知する。
+        if (message == 0x0215 && _interactive && _captured)
+        {
+            _captured = false;
+            if (PInvoke.GetCursorPos(out var cursor))
+            {
+                Pointer?.Invoke(new(OverlayPointerKind.Up, new(cursor.X, cursor.Y)));
+            }
+
+            return default;
+        }
+
         if (message == 0x0021)
         {
             return new(3); // MA_NOACTIVATE。対象のフライアウトが閉じないことは実機未確認。
@@ -312,9 +326,11 @@ internal sealed unsafe class LayeredOverlayWindow : IOverlaySurface, IOverlayLoo
             if (message == 0x0201)
             {
                 PInvoke.SetCapture(window);
+                _captured = true;
             }
             else if (message is 0x0202 or 0x0204)
             {
+                _captured = false;
                 PInvoke.ReleaseCapture();
             }
 
