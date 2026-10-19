@@ -55,8 +55,7 @@ public static class SettingsTransfer
         var noMonitors = new Dictionary<string, GridSettings>();
         return left with { Hotkeys = noHotkeys, MonitorGrids = noMonitors } !=
             right with { Hotkeys = noHotkeys, MonitorGrids = noMonitors } ||
-            left.MonitorGrids.Count != right.MonitorGrids.Count ||
-            left.MonitorGrids.Any(pair => !right.MonitorGrids.TryGetValue(pair.Key, out var grid) || grid != pair.Value) ||
+            !SameMonitorPlans(left.MonitorGrids, right.MonitorGrids) ||
             left.Hotkeys.Count != right.Hotkeys.Count ||
             left.Hotkeys.Any(pair => !right.Hotkeys.TryGetValue(pair.Key, out var chord) || chord != pair.Value);
     }
@@ -217,33 +216,32 @@ public static class SettingsTransfer
     private static IReadOnlyList<SettingsDifference> Compare(PortableSettings current, PortableSettings imported)
     {
         var differences = new List<SettingsDifference>();
-        Add(SettingsField.CornerPreference, "ウィンドウの角", CornerName(current.CornerPreference),
-            CornerName(imported.CornerPreference));
-        Add(SettingsField.ShowZoneLines, "区画の線", OnOff(current.ShowZoneLines), OnOff(imported.ShowZoneLines));
-        Add(SettingsField.ShowPredictionLine, "予測の線", OnOff(current.ShowPredictionLine), OnOff(imported.ShowPredictionLine));
-        Add(SettingsField.SnapAfterResize, "手動リサイズ後に区画へ揃える", OnOff(current.SnapAfterResize),
-            OnOff(imported.SnapAfterResize));
-        Add(SettingsField.MonitorGrids, "モニター別の分割案", MonitorPlans(current), MonitorPlans(imported));
-        Add(SettingsField.Grid, "分割案", $"{current.Grid.Columns} × {current.Grid.Rows}",
-            $"{imported.Grid.Columns} × {imported.Grid.Rows}");
-        Add(SettingsField.Gap, "ウィンドウの間隔", Pixels(current.Gap), Pixels(imported.Gap));
-        Add(SettingsField.Edge, "画面端の余白", Pixels(current.Edge), Pixels(imported.Edge));
-        Add(SettingsField.Feel, "操作感", FeelName(current), FeelName(imported));
-        Add(SettingsField.SnapMode, "吸着の方式", ModeName(current.SnapMode), ModeName(imported.SnapMode));
-        Add(SettingsField.ReduceMotion, "動きを減らす", current.ReduceMotion ? "オン" : "オフ",
-            imported.ReduceMotion ? "オン" : "オフ");
-        Add(SettingsField.ShowZonePreview, "区画のプレビュー", current.ShowZonePreview ? "オン" : "オフ",
-            imported.ShowZonePreview ? "オン" : "オフ");
-        Add(SettingsField.LongPressMilliseconds, "長押しの時間", Milliseconds(current.LongPressMilliseconds),
-            Milliseconds(imported.LongPressMilliseconds));
-        Add(SettingsField.LongPressDistance, "長押し中に動いてよい距離", Pixels(current.LongPressDistance),
-            Pixels(imported.LongPressDistance));
-        Add(SettingsField.MagnetStrength, "磁石の強さ", Strength(current.MagnetStrength),
-            Strength(imported.MagnetStrength));
-        Add(SettingsField.SnapRadius, "吸着半径", Pixels(current.SnapRadius), Pixels(imported.SnapRadius));
-        Add(SettingsField.ResizeStep, "1 回の拡大・縮小の幅", $"{current.ResizeStep} 区画", $"{imported.ResizeStep} 区画");
-        Add(SettingsField.ResizeAnchor, "拡大・縮小で固定する位置", AnchorName(current.ResizeAnchor),
-            AnchorName(imported.ResizeAnchor));
+        Add(SettingsField.CornerPreference, "ウィンドウの角", current.CornerPreference,
+            imported.CornerPreference, CornerName);
+        Add(SettingsField.ShowZoneLines, "区画の線", current.ShowZoneLines, imported.ShowZoneLines, OnOff);
+        Add(SettingsField.ShowPredictionLine, "予測の線", current.ShowPredictionLine, imported.ShowPredictionLine, OnOff);
+        Add(SettingsField.SnapAfterResize, "手動リサイズ後に区画へ揃える", current.SnapAfterResize,
+            imported.SnapAfterResize, OnOff);
+        Add(SettingsField.MonitorGrids, "モニター別の分割案", current.MonitorGrids, imported.MonitorGrids,
+            MonitorPlans, SameMonitorPlans);
+        Add(SettingsField.Grid, "分割案", current.Grid, imported.Grid, grid => $"{grid.Columns} × {grid.Rows}");
+        Add(SettingsField.Gap, "ウィンドウの間隔", current.Gap, imported.Gap, Pixels);
+        Add(SettingsField.Edge, "画面端の余白", current.Edge, imported.Edge, Pixels);
+        Add(SettingsField.Feel, "操作感", (current.Feel, current.Mass, current.Frequency, current.DampingRatio),
+            (imported.Feel, imported.Mass, imported.Frequency, imported.DampingRatio), FeelName);
+        Add(SettingsField.SnapMode, "吸着の方式", current.SnapMode, imported.SnapMode, ModeName);
+        Add(SettingsField.ReduceMotion, "動きを減らす", current.ReduceMotion, imported.ReduceMotion, OnOff);
+        Add(SettingsField.ShowZonePreview, "区画のプレビュー", current.ShowZonePreview, imported.ShowZonePreview, OnOff);
+        Add(SettingsField.LongPressMilliseconds, "長押しの時間", current.LongPressMilliseconds,
+            imported.LongPressMilliseconds, Milliseconds);
+        Add(SettingsField.LongPressDistance, "長押し中に動いてよい距離", current.LongPressDistance,
+            imported.LongPressDistance, Pixels);
+        Add(SettingsField.MagnetStrength, "磁石の強さ", current.MagnetStrength, imported.MagnetStrength, Strength);
+        Add(SettingsField.SnapRadius, "吸着半径", current.SnapRadius, imported.SnapRadius, Pixels);
+        Add(SettingsField.ResizeStep, "1 回の拡大・縮小の幅", current.ResizeStep, imported.ResizeStep,
+            step => $"{step} 区画");
+        Add(SettingsField.ResizeAnchor, "拡大・縮小で固定する位置", current.ResizeAnchor,
+            imported.ResizeAnchor, AnchorName);
         foreach (var command in current.Hotkeys.Keys.Union(imported.Hotkeys.Keys).OrderBy(HotkeyCatalog.GetDisplayOrder))
         {
             current.Hotkeys.TryGetValue(command, out var before);
@@ -258,11 +256,12 @@ public static class SettingsTransfer
 
         return differences.AsReadOnly();
 
-        void Add(SettingsField field, string name, string before, string after)
+        void Add<T>(SettingsField field, string name, T before, T after, Func<T, string> format,
+            Func<T, T, bool>? equals = null)
         {
-            if (before != after)
+            if (!(equals ?? EqualityComparer<T>.Default.Equals)(before, after))
             {
-                differences.Add(new(new(field), name, before, after));
+                differences.Add(new(new(field), name, format(before), format(after)));
             }
         }
     }
@@ -279,12 +278,16 @@ public static class SettingsTransfer
         _ => "Windows の既定",
     };
 
-    private static string MonitorPlans(PortableSettings value) => string.Join(" / ",
-        value.MonitorGrids.OrderBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase).Select(pair =>
+    private static bool SameMonitorPlans(Dictionary<string, GridSettings> left, Dictionary<string, GridSettings> right) =>
+        left.Count == right.Count && left.All(pair => right.TryGetValue(pair.Key, out var grid) && grid == pair.Value);
+
+    private static string MonitorPlans(Dictionary<string, GridSettings> value) => string.Join(" / ",
+        value.OrderBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase).Select(pair =>
             $"{pair.Key.ToUpperInvariant()}: {pair.Value.Columns} × {pair.Value.Rows}, " +
             $"間隔 {Number(pair.Value.Gap)}, 余白 {Number(pair.Value.Edge)}"));
 
-    private static string FeelName(PortableSettings value) => value.Mass is null && value.Frequency is null &&
+    private static string FeelName((string Feel, double? Mass, double? Frequency, double? DampingRatio) value) =>
+        value.Mass is null && value.Frequency is null &&
         value.DampingRatio is null
         ? value.Feel
         : $"カスタム（{value.Feel} から。質量 {Number(value.Mass)}、振動数 {Number(value.Frequency)}、減衰比 {Number(value.DampingRatio)}）";

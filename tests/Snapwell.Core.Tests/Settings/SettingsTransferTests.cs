@@ -11,6 +11,53 @@ public sealed class SettingsTransferTests : IDisposable
 
     public SettingsTransferTests() => Directory.CreateDirectory(_directory);
 
+    [Theory]
+    [InlineData(8.499, 8.501, 1)]
+    [InlineData(8.499, 8.499, 0)]
+    public void MonitorSpacingDifferencesUseNumbersBeforeFormatting(double before, double after, int count)
+    {
+        var current = new PortableSettings { MonitorGrids = new() { ["one"] = new(8, 8, before) } };
+        var imported = current with { MonitorGrids = new() { ["ONE"] = new(8, 8, after) } };
+        var differences = SettingsTransfer.GetDifferences(current, imported);
+        Assert.Equal(count, differences.Count);
+        if (count != 0)
+        {
+            Assert.Equal(SettingsField.MonitorGrids, Assert.Single(differences).Key.Field);
+            var result = ReadExport(imported, current);
+            var applied = SettingsTransfer.Apply(current, result, [new(SettingsField.MonitorGrids)]);
+            Assert.Equal(after, applied.MonitorGrids["one"].Gap);
+        }
+    }
+
+    [Theory]
+    [InlineData(SettingsField.Feel, 0)]
+    [InlineData(SettingsField.Feel, 1)]
+    [InlineData(SettingsField.Feel, 2)]
+    [InlineData(SettingsField.MagnetStrength, 3)]
+    public void RoundedPhysicalParametersStillProduceSelectableDifferences(SettingsField field, int parameter)
+    {
+        var current = new PortableSettings
+        {
+            Mass = 1.2341,
+            Frequency = 2.2341,
+            DampingRatio = 0.7341,
+            MagnetStrength = 0.8341,
+        };
+        var imported = parameter switch
+        {
+            0 => current with { Mass = 1.2342 },
+            1 => current with { Frequency = 2.2342 },
+            2 => current with { DampingRatio = 0.7342 },
+            _ => current with { MagnetStrength = 0.8342 },
+        };
+        var difference = Assert.Single(SettingsTransfer.GetDifferences(current, imported));
+        Assert.Equal(field, difference.Key.Field);
+        Assert.Empty(SettingsTransfer.GetDifferences(current, current));
+        var result = ReadExport(imported, current);
+        var applied = SettingsTransfer.Apply(current, result, [new(field)]);
+        Assert.False(SettingsTransfer.HasChanges(applied, imported));
+    }
+
     [Fact]
     public void ExportRoundTripsWithNoDifferences()
     {
