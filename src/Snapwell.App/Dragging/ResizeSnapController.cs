@@ -24,6 +24,7 @@ internal sealed class ResizeSnapController(IWindowInspector inspector, IMonitorS
 {
     private WindowSnapshot? _start;
     private uint _startDpi;
+    private uint _startMonitorDpi;
 
     internal void Handle(HookEvent value, bool enabled)
     {
@@ -37,6 +38,7 @@ internal sealed class ResizeSnapController(IWindowInspector inspector, IMonitorS
         {
             _start = inspector.TryInspect(start.Handle, out var window) && Eligible(window) ? window : null;
             _startDpi = _start is null ? 0 : constraints.GetDpi(start.Handle);
+            _startMonitorDpi = _start is null ? 0 : GetMonitorDpi(_start, GetMonitorsOrEmpty());
         }
         else if (value is WindowDestroyed closed && _start?.Handle == closed.Handle)
         {
@@ -50,14 +52,22 @@ internal sealed class ResizeSnapController(IWindowInspector inspector, IMonitorS
                 window.ProcessId != original.ProcessId || !Eligible(window) ||
                 _startDpi == 0 || currentDpi == 0 || _startDpi != currentDpi ||
                 (original.VisualBounds.Width == window.VisualBounds.Width &&
-                    original.VisualBounds.Height == window.VisualBounds.Height) ||
+                    original.VisualBounds.Height == window.VisualBounds.Height))
+            {
+                return;
+            }
+
+            var currentMonitors = GetMonitorsOrEmpty();
+            var currentMonitorDpi = GetMonitorDpi(window, currentMonitors);
+            // DPI 非対応・システム DPI 対応の対象は、ウィンドウの DPI だけでは倍率の変化を検出できない。
+            if (_startMonitorDpi == 0 || currentMonitorDpi == 0 || _startMonitorDpi != currentMonitorDpi ||
                 !constraints.TryGetMinimum(window, out var width, out var height))
             {
                 return;
             }
 
             var options = settings();
-            var areas = monitors.GetMonitors().Select(monitor => monitor.ToMonitorArea()).ToArray();
+            var areas = currentMonitors.Select(monitor => monitor.ToMonitorArea()).ToArray();
             var plan = ResizeSnapPlanner.Plan(options, enabled, true, original.VisualBounds,
                 window.VisualBounds, areas, _startDpi, currentDpi, width, height);
             if (plan is not null)
@@ -69,6 +79,22 @@ internal sealed class ResizeSnapController(IWindowInspector inspector, IMonitorS
     }
 
     internal void Cancel() => _start = null;
+
+    private IReadOnlyList<MonitorInfo> GetMonitorsOrEmpty()
+    {
+        try
+        {
+            return monitors.GetMonitors();
+        }
+        catch (Exception)
+        {
+            // 抜き差しなどで取得できない間は、倍率の変化を判定できないため揃えない。
+            return [];
+        }
+    }
+
+    private static uint GetMonitorDpi(WindowSnapshot window, IReadOnlyList<MonitorInfo> availableMonitors) =>
+        availableMonitors.FirstOrDefault(monitor => monitor.Bounds.Contains(window.VisualBounds.Center))?.DpiX ?? 0;
 
     private bool Eligible(WindowSnapshot window) => !window.IsMaximized &&
         WindowClassifier.CanResize(window, ownProcessId);
