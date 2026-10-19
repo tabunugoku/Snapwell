@@ -6,7 +6,19 @@ namespace Snapwell.App.Tray.Menu;
 
 /// <summary>表示を始める時点の、設定を推測しないスナップショット。</summary>
 internal sealed record TrayMenuSnapshot(TrayMenuLayout Layout, IReadOnlyList<TrayMenuEntry> Items,
-    bool Enabled, string? Status, int MonitorCount, OverlayTheme Theme);
+    bool Enabled, string? Status, int MonitorCount, OverlayTheme Theme)
+{
+    /// <summary>タスクバーと同じ判断で異常を最優先する。</summary>
+    internal TrayIconKind IconKind => TrayIconPolicy.KindOf(new(Enabled, false, Status));
+
+    /// <summary>色だけに頼らず実行状態を伝える。</summary>
+    internal string StatusLabel => IconKind switch
+    {
+        TrayIconKind.Attention => "異常",
+        TrayIconKind.Paused => "一時停止中",
+        _ => "有効",
+    };
+}
 
 /// <summary>ネイティブの描画と入力を差し替える境界。</summary>
 internal interface ITrayMenuView : IDisposable

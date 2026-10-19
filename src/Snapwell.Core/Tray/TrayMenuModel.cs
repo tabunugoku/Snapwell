@@ -1,4 +1,3 @@
-using Snapwell.Core.Commands;
 using Snapwell.Core.Geometry;
 
 namespace Snapwell.Core.Tray;
@@ -7,50 +6,20 @@ namespace Snapwell.Core.Tray;
 public enum TrayMenuCommand : uint { Toggle = 1, Exit = 4, Settings = 5, Arrange = 6, Launcher = 7 }
 
 /// <summary>メニュー項目の名前と選択可否。</summary>
-public sealed record TrayMenuEntry(TrayMenuCommand Command, string Name, bool Enabled,
-    IReadOnlyList<string> Keys);
+public sealed record TrayMenuEntry(TrayMenuCommand Command, string Name, bool Enabled);
 
 /// <summary>Win32 に依存しないトレイメニューの項目と入力の判断。</summary>
 public static class TrayMenuModel
 {
-    /// <summary>
-    /// 有効な割り当てから、トレイにある操作の表示部品だけを返す。整列は対象のモニターが違う
-    /// (トレイはカーソル、キーは前面ウィンドウ) ため、同じ操作として表示しない。
-    /// </summary>
-    public static IReadOnlyDictionary<TrayMenuCommand, IReadOnlyList<string>> Shortcuts(
-        IEnumerable<KeyValuePair<WindowCommand, KeyChordSpec>> effective)
+    /// <summary>マウスで使う四項目を現在の操作可否とともに返す。</summary>
+    public static IReadOnlyList<TrayMenuEntry> Create(bool enabled, bool launcherAvailable = false)
     {
-        var shortcuts = new Dictionary<TrayMenuCommand, IReadOnlyList<string>>();
-        foreach (var (command, chord) in effective)
-        {
-            TrayMenuCommand? menuCommand = command switch
-            {
-                WindowCommand.ToggleEnabled => TrayMenuCommand.Toggle,
-                WindowCommand.OpenLauncher => TrayMenuCommand.Launcher,
-                _ => null,
-            };
-            if (menuCommand is { } mapped)
-            {
-                shortcuts[mapped] = HotkeyCatalog.FormatChordParts(chord);
-            }
-        }
-
-        return shortcuts;
-    }
-
-    /// <summary>割り当てを受け取れない操作には、推測したキーを表示しない。</summary>
-    public static IReadOnlyList<TrayMenuEntry> Create(bool enabled, bool launcherAvailable = false,
-        IReadOnlyDictionary<TrayMenuCommand, IReadOnlyList<string>>? shortcuts = null)
-    {
-        TrayMenuEntry Item(TrayMenuCommand command, string name, bool available = true) =>
-            new(command, name, available, shortcuts?.GetValueOrDefault(command) ?? []);
         return Array.AsReadOnly<TrayMenuEntry>(
         [
-            Item(TrayMenuCommand.Arrange, "現在のモニターを整列", enabled),
-            Item(TrayMenuCommand.Launcher, "ランチャーを開く", enabled && launcherAvailable),
-            Item(TrayMenuCommand.Toggle, enabled ? "一時的に無効化" : "再開"),
-            Item(TrayMenuCommand.Settings, "設定を開く"),
-            Item(TrayMenuCommand.Exit, "終了（標準の動作に戻す）"),
+            new(TrayMenuCommand.Arrange, "現在のモニターを整列", enabled),
+            new(TrayMenuCommand.Launcher, "ランチャーを開く", enabled && launcherAvailable),
+            new(TrayMenuCommand.Settings, "設定を開く", true),
+            new(TrayMenuCommand.Exit, "終了（標準の動作に戻す）", true),
         ]);
     }
 

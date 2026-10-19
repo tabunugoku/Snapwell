@@ -46,7 +46,7 @@ public sealed class TrayMenuLayoutTests
         Assert.Equal(edge, TrayMenuLayout.DetectEdge(monitor, work, anchor));
         var layout = TrayMenuLayout.Create(anchor, work, edge, scale);
         Assert.Equal((int)(320 * scale), layout.Panel.Width);
-        Assert.Equal((int)(266 * scale), layout.Panel.Height);
+        Assert.Equal((int)(234 * scale), layout.Panel.Height);
         Assert.Equal((int)(40 * scale), layout.Toggle.Width);
         Assert.Equal((int)(20 * scale), layout.Toggle.Height);
         Assert.True(work.Contains(layout.Panel));
@@ -104,7 +104,7 @@ public sealed class TrayMenuLayoutTests
     {
         var layout = TrayMenuLayout.Create(new(900, 900, 20, 20), new(0, 0, 1000, 900),
             TrayTaskbarEdge.Bottom, 2, hasStatus: true);
-        Assert.Equal(580, layout.Panel.Height);
+        Assert.Equal(516, layout.Panel.Height);
         Assert.Equal(layout.Rect(7, 113, 306, 32), layout.Rows[0]);
         Assert.All(layout.Separators, separator =>
             Assert.All(layout.Rows, row => Assert.False(row.Intersects(separator))));
@@ -124,13 +124,13 @@ public sealed class TrayMenuLayoutTests
     [Fact]
     public void SmallWorkAreaClipsInsteadOfThrowing()
     {
-        var work = new PixelRect(0, 0, 300, 200);
+        var work = new PixelRect(0, 0, 300, 150);
         var layout = TrayMenuLayout.Create(new(0, 0, 1, 1), work, TrayTaskbarEdge.Bottom, 1);
         Assert.True(work.Contains(layout.Bounds));
         Assert.True(work.Contains(layout.Panel));
         Assert.True(layout.IsCompact);
         Assert.True(layout.MaxScrollOffset > 0);
-        Assert.True(layout.EnsureVisible(5).ItemsViewport.Contains(layout.EnsureVisible(5).Rows[4]));
+        Assert.True(layout.EnsureVisible(4).ItemsViewport.Contains(layout.EnsureVisible(4).Rows[3]));
     }
 
     /// <summary>小さい作業領域、100〜250% の拡大率、状態案内の有無を組み合わせる。</summary>
@@ -156,10 +156,10 @@ public sealed class TrayMenuLayoutTests
         var work = new PixelRect(-1200, -700, 1200, height);
         var layout = TrayMenuLayout.Create(new(-100, work.Bottom, 24, 24), work,
             TrayTaskbarEdge.Bottom, scale, status);
-        var compact = Math.Round((status ? 290 : 266) * scale) > height;
+        var compact = Math.Round((status ? 258 : 234) * scale) > height;
         Assert.Equal(compact, layout.IsCompact);
-        Assert.Equal(Math.Min(height, (int)Math.Round((compact ? (status ? 248 : 224)
-            : (status ? 290 : 266)) * scale)), layout.Panel.Height);
+        Assert.Equal(Math.Min(height, (int)Math.Round((compact ? (status ? 216 : 192)
+            : (status ? 258 : 234)) * scale)), layout.Panel.Height);
         Assert.True(work.Contains(layout.Bounds));
         Assert.True(work.Contains(layout.Panel));
         var items = TrayMenuModel.Create(true, launcherAvailable: true);
@@ -170,7 +170,7 @@ public sealed class TrayMenuLayoutTests
             Assert.Equal(selected, TrayMenuModel.HitTest(layout, items, layout.Rows[selected - 1].Center));
         }
 
-        Assert.Equal(TrayMenuCommand.Exit, TrayMenuModel.CommandAt(items, 5));
+        Assert.Equal(TrayMenuCommand.Exit, TrayMenuModel.CommandAt(items, 4));
         Assert.Equal(layout.MaxScrollOffset, layout.ScrollOffset);
         layout = layout.WithScrollOffset(int.MinValue);
         Assert.Equal(0, layout.ScrollOffset);
