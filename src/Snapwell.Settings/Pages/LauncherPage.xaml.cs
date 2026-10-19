@@ -11,6 +11,7 @@ public sealed partial class LauncherPage : Page
 {
     private readonly SettingsSession _session;
     private readonly Dictionary<string, CheckBox> _choices = [];
+    private readonly Dictionary<string, Border> _borders = [];
     private readonly PresetWrapPanel _preview = new();
     private bool _refreshing;
 
@@ -47,7 +48,9 @@ public sealed partial class LauncherPage : Page
                 choice.Checked += Choice_Changed;
                 choice.Unchecked += Choice_Changed;
                 _choices.Add(preset.Id, choice);
-                options.Children.Add(new Border { Child = choice, Style = (Style)Resources["PresetOptionBorder"] });
+                var border = new Border { Child = choice, Style = (Style)Resources["PresetOptionBorder"] };
+                _borders.Add(preset.Id, border);
+                options.Children.Add(border);
             }
 
             section.Children.Add(options);
@@ -86,7 +89,7 @@ public sealed partial class LauncherPage : Page
         foreach (var (id, choice) in _choices)
         {
             choice.IsChecked = ids.Contains(id);
-            ((Border)choice.Parent).Style = (Style)Resources[
+            _borders[id].Style = (Style)Resources[
                 choice.IsChecked == true ? "PresetOptionSelectedBorder" : "PresetOptionBorder"];
         }
         Count.Text = $"{ids.Length} / {LauncherPreset.All.Count} 件を表示";
