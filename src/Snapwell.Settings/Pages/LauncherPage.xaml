@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      x:Class="Snapwell.Settings.Pages.LauncherPage">
+    <Page.Resources>
+        <Style x:Key="PresetOptionBorder" TargetType="Border">
+            <Setter Property="Background" Value="{ThemeResource SnapwellSurfaceBrush}" />
+            <Setter Property="BorderBrush" Value="{ThemeResource SnapwellBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Padding" Value="8,5,10,5" />
+            <Setter Property="Margin" Value="0,0,6,6" />
+        </Style>
+        <Style x:Key="PresetOptionSelectedBorder" TargetType="Border" BasedOn="{StaticResource PresetOptionBorder}">
+            <Setter Property="BorderBrush" Value="{ThemeResource SnapwellInkBrush}" />
+        </Style>
+    </Page.Resources>
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Padding="32,28,32,40">
+            <TextBlock Text="ランチャー" Style="{StaticResource SnapwellPageTitleStyle}" />
+            <TextBlock Text="ランチャーに並べるプリセットを選びます。区画の整数倍で作れないものは、ランチャーでは選べません。"
+                       Style="{StaticResource SnapwellLeadTextStyle}" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button Content="すべて選ぶ" Style="{StaticResource SnapwellButtonStyle}" Click="All_Click" />
+                <Button Content="すべて外す" Style="{StaticResource SnapwellButtonStyle}" Click="None_Click" />
+                <Button Content="既定に戻す" Style="{StaticResource SnapwellButtonStyle}" Click="Default_Click" />
+            </StackPanel>
+            <TextBlock x:Name="Count" Margin="0,12,0,12" Style="{StaticResource SnapwellHintTextStyle}" />
+            <StackPanel x:Name="Groups" Spacing="14" />
+            <TextBlock Text="ランチャーでの表示" Style="{StaticResource SnapwellGroupTitleStyle}" />
+            <Border Style="{StaticResource SnapwellRowsBorderStyle}" Padding="14">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="対象　ウィンドウ　　8 × 8" Style="{StaticResource SnapwellHintTextStyle}" />
+                    <Grid x:Name="Preview" />
+                    <TextBlock x:Name="EmptyHint" TextWrapping="Wrap" Style="{StaticResource SnapwellHintTextStyle}"
+                               Text="表示するプリセットがありません（設定の「ランチャー」で選べます）" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

@@ -352,6 +352,8 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
   display: grid;
   gap: 10px;
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.05);
+  max-height: calc(100% - 28px);
+  overflow: auto;
 }
 .lpanel-top { display: flex; align-items: center; gap: 10px; font-size: 12.5px; }
 .lpanel-top .target { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -368,11 +370,64 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
   cursor: pointer;
   font-size: 12px;
 }
+.preset.keep svg rect.on { fill: none; stroke: var(--muted); stroke-dasharray: 1.5 1; }
+.pgroup { display: grid; grid-template-columns: 110px 1fr; gap: 8px 12px; align-items: start; padding: 8px 0; border-top: 1px solid var(--border); }
+.pgroup:first-of-type { border-top: 0; }
+.pgroup > .gname { font-size: 12.5px; color: var(--muted); padding-top: 6px; }
+.pgroup .opts { display: flex; flex-wrap: wrap; gap: 6px; }
+.popt { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--border); background: var(--surface); border-radius: 6px; padding: 5px 10px 5px 8px; font-size: 13px; cursor: pointer; user-select: none; }
+.popt input { accent-color: var(--ink); margin: 0; }
+.popt svg { width: 18px; height: 12px; }
+.popt svg rect.bg { fill: none; stroke: var(--muted); stroke-width: 1; }
+.popt svg rect.on { fill: var(--muted); }
+.popt.keep svg rect.on { fill: none; stroke: var(--muted); stroke-dasharray: 1.5 1; }
+.popt:has(input:checked) { border-color: var(--ink); }
+.ppreview { margin-top: 10px; border: 1px solid var(--border); border-radius: 8px; padding: 10px; background: var(--surface); }
+.ppreview .lbl { font-size: 11.5px; color: var(--muted); margin-bottom: 6px; }
+.ppreview .presets { margin: 0; }
 .preset:disabled { opacity: 0.4; cursor: not-allowed; }
 .preset svg { width: 18px; height: 12px; }
 .preset svg rect.bg { fill: none; stroke: var(--muted); stroke-width: 1; }
 .preset svg rect.on { fill: var(--muted); }
 .lpanel-keys { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 11.5px; color: var(--muted); }
+/* ウィンドウを選んで整列。既定では折りたたみ、見出しをクリックすると展開する */
+.lwin { border-top: 1px solid var(--border); padding-top: 8px; display: grid; gap: 8px; }
+.lwin-head { display: flex; align-items: center; gap: 8px; width: 100%; border: 0; background: transparent; padding: 4px 2px; font-size: 12.5px; color: var(--ink); cursor: pointer; text-align: left; border-radius: 6px; }
+.lwin-head:hover { background: var(--surface-2); }
+.lwin-head .chev { width: 12px; transition: transform 0.15s; color: var(--muted); }
+.lwin.open .lwin-head .chev { transform: rotate(90deg); }
+.lwin-head .grow { flex: 1; }
+.lwin-count { font-size: 11.5px; color: var(--muted); }
+.lwin-count.has { color: var(--blue-tx); }
+.lwin-body { display: none; gap: 8px; }
+.lwin.open .lwin-body { display: grid; }
+.lwin-list { display: grid; gap: 4px; max-height: 160px; overflow: auto; }
+.lwin-row { display: flex; align-items: center; gap: 8px; border: 1px solid var(--border); background: var(--surface-2); border-radius: 6px; padding: 4px 8px; font-size: 12px; cursor: pointer; text-align: left; width: 100%; color: var(--ink); }
+.lwin-row.sel { border-color: var(--blue-line); background: var(--blue-bg); }
+.lwin-row .key { flex: none; width: 24px; display: grid; place-items: center; }
+.lwin-row .key kbd { min-width: 20px; text-align: center; }
+.lwin-row .box { flex: none; width: 16px; height: 16px; border-radius: 4px; border: 1px solid var(--muted); display: grid; place-items: center; font-size: 11px; line-height: 1; color: var(--blue-tx); }
+.lwin-row.sel .box { border-color: var(--blue-line); font-weight: 700; }
+.lwin-row .ttl { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lwin-row .role { flex: none; font-size: 10.5px; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); }
+.lwin-row .role.main { background: var(--blue-bg); color: var(--blue-tx); border-color: var(--blue-line); font-weight: 600; }
+.lwin-row .setmain { flex: none; border: 0; background: transparent; color: var(--muted); font-size: 11px; cursor: pointer; padding: 1px 4px; border-radius: 4px; }
+.lwin-row .setmain:hover { background: var(--surface); color: var(--blue-tx); }
+.lwin-pager { display: flex; align-items: center; justify-content: space-between; font-size: 11.5px; color: var(--muted); }
+.lwin-pager button { border: 0; background: transparent; color: var(--blue-tx); font-size: 11.5px; cursor: pointer; padding: 2px 6px; border-radius: 4px; }
+.lwin-pager button:disabled { color: var(--muted); opacity: 0.5; cursor: not-allowed; }
+.lwin-arrange { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.arr { border: 1px solid var(--border); background: var(--surface-2); border-radius: 6px; padding: 6px 4px 5px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 12px; color: var(--ink); cursor: pointer; text-align: center; }
+.arr:hover:not(:disabled) { border-color: var(--blue-line); }
+.arr:disabled { opacity: 0.4; cursor: not-allowed; }
+.arr svg { width: 44px; height: 28px; }
+.arr svg rect { fill: var(--muted); opacity: 0.45; }
+.arr svg rect.main { fill: var(--blue-tx); opacity: 1; }
+.arr svg rect.bg { fill: none; stroke: var(--muted); stroke-width: 1; opacity: 0.6; }
+.arr .lbl { display: block; width: 100%; text-align: center; line-height: 1.2; }
+.arr kbd { font-size: 10px; }
+.lwin-note { font-size: 11.5px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.lwin-status { font-size: 11.5px; color: var(--blue-tx); min-height: 1.2em; }
 
 /* 設定画面 (Windows 11 の設定アプリに近い構成) */
 .app-frame { border: 1px solid var(--border); border-radius: 12px; background: var(--surface); overflow: hidden; }
@@ -650,7 +705,7 @@ table.list tr:last-child td { border-bottom: 0; }
     <div class="screen-head">
       <div>
         <h2>区画をなぞって配置する</h2>
-        <p>グリッドをドラッグして範囲を選び、<kbd>Enter</kbd> で配置します。<kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Space</kbd>、またはトレイのメニューから開きます（下のボタンでも開けます）。</p>
+        <p>グリッドをドラッグして範囲を選び、<kbd>Enter</kbd> で配置します。<kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Space</kbd> かトレイのメニューで開きます（下のボタンでも開けます）。</p>
       </div>
       <span class="ref">DESIGN §6, §9.2</span>
     </div>
@@ -677,6 +732,24 @@ table.list tr:last-child td { border-bottom: 0; }
                 <span><kbd>Enter</kbd> 配置</span>
                 <span><kbd>Esc</kbd> 閉じる</span>
               </div>
+              <div class="lwin" id="lWin">
+                <button class="lwin-head" type="button" id="lWinHead" aria-expanded="false" aria-controls="lWinBody">
+                  <svg class="chev" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M4 2l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+                  <span class="grow">ウィンドウを選んで整列</span>
+                  <span class="lwin-count" id="lWinCount">未選択</span>
+                </button>
+                <div class="lwin-body" id="lWinBody">
+                  <div class="lwin-list" id="lWinList" role="listbox" aria-multiselectable="true" aria-label="整列するウィンドウ"></div>
+                  <div class="lwin-pager"><span id="lWinPage"></span><span><button type="button" id="lWinPrev">前へ</button><button type="button" id="lWinNext">次へ</button></span></div>
+                  <div class="lwin-arrange" id="lWinArrange"></div>
+                  <div class="lwin-status" id="lWinStatus" aria-live="polite"></div>
+                  <div class="lwin-note">
+                    <span><kbd>1</kbd>–<kbd>9</kbd> ウィンドウを選択（最大 9 件）</span>
+                    <span><kbd>Alt</kbd> + <kbd>1</kbd>–<kbd>4</kbd> 方式を選んで整列</span>
+                    <span>☆ をクリックでメインを変更</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -689,6 +762,7 @@ table.list tr:last-child td { border-bottom: 0; }
         <div class="panel">
           <h3>呼び出し</h3>
           <p class="hint">ホットキー <kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Space</kbd></p>
+          <p class="hint">トレイのメニューの「ランチャーを開く」</p>
           <div style="margin-top: 12px"><button class="btn primary" type="button" id="lOpen">ランチャーを開く</button></div>
         </div>
         <div class="panel">
@@ -777,6 +851,18 @@ table.list tr:last-child td { border-bottom: 0; }
               <div class="row"><div><div class="t">手動でリサイズしたら区画に揃える</div></div><div class="ctl"><label class="switch"><input type="checkbox" aria-label="区画に揃える"><span></span></label></div></div>
             </div>
             <p class="hint" style="margin-top: 10px">見た目の枠（DWMWA_EXTENDED_FRAME_BOUNDS）で計算するため、間隔 0 でも隙間はできません。</p>
+          </div>
+
+          <!-- ランチャー -->
+          <div class="spage" data-page="launcher">
+            <h3>ランチャー</h3>
+            <p class="lead">ランチャーに並べるプリセットを選びます。チェックしたものだけが、下の並びで表示されます。</p>
+            <div class="rows">
+              <div class="row"><div><div class="t">表示するプリセット</div><div class="d" id="pCount"></div></div><div class="ctl"><button class="btn" type="button" id="pAll">すべて選ぶ</button><button class="btn" type="button" id="pNone">すべて外す</button><button class="btn" type="button" id="pDefault">既定に戻す</button></div></div>
+            </div>
+            <div id="pGroups" style="margin-top: 8px"></div>
+            <p class="hint" style="margin-top: 6px">破線の枠は、ウィンドウの大きさを変えずに位置だけを動かすプリセットです。分割案の区画の整数倍にならないプリセットは、その分割案では押せません。</p>
+            <div class="ppreview"><div class="lbl">ランチャーでの表示</div><div class="presets" id="pPreview"></div></div>
           </div>
 
           <!-- ホットキー -->
@@ -1511,16 +1597,31 @@ function paintSel() {
   dd[2].textContent = `${Math.round(rect.w * scale)} × ${Math.round(rect.h * scale)} px`;
 }
 
+// group: 設定画面での分類。keep: ウィンドウの大きさを変えず、位置だけを動かす
 const PRESETS = [
-  { name: '左半分', frac: [0, 0.5, 0, 1] },
-  { name: '右半分', frac: [0.5, 1, 0, 1] },
-  { name: '左上 1/4', frac: [0, 0.5, 0, 0.5] },
-  { name: '左 1/3', frac: [0, 1 / 3, 0, 1] },
-  { name: '中央 1/3', frac: [1 / 3, 2 / 3, 0, 1] },
-  { name: '右 2/3', frac: [1 / 3, 1, 0, 1] },
-  { name: '中央', frac: [0.25, 0.75, 0.125, 0.875] },
-  { name: '最大化', frac: [0, 1, 0, 1] },
+  { id: 'top', group: '上下左右の半分', name: '上半分', frac: [0, 1, 0, 0.5], on: false },
+  { id: 'bottom', group: '上下左右の半分', name: '下半分', frac: [0, 1, 0.5, 1], on: false },
+  { id: 'left', group: '上下左右の半分', name: '左半分', frac: [0, 0.5, 0, 1], on: true },
+  { id: 'right', group: '上下左右の半分', name: '右半分', frac: [0.5, 1, 0, 1], on: true },
+  { id: 'tl', group: '四隅の 1/4', name: '左上 1/4', frac: [0, 0.5, 0, 0.5], on: true },
+  { id: 'tr', group: '四隅の 1/4', name: '右上 1/4', frac: [0.5, 1, 0, 0.5], on: false },
+  { id: 'bl', group: '四隅の 1/4', name: '左下 1/4', frac: [0, 0.5, 0.5, 1], on: false },
+  { id: 'br', group: '四隅の 1/4', name: '右下 1/4', frac: [0.5, 1, 0.5, 1], on: false },
+  { id: 'l3', group: '左右の 1/3', name: '左 1/3', frac: [0, 1 / 3, 0, 1], on: true },
+  { id: 'r3', group: '左右の 1/3', name: '右 1/3', frac: [2 / 3, 1, 0, 1], on: false },
+  { id: 'l23', group: '左右の 2/3', name: '左 2/3', frac: [0, 2 / 3, 0, 1], on: false },
+  { id: 'r23', group: '左右の 2/3', name: '右 2/3', frac: [1 / 3, 1, 0, 1], on: true },
+  { id: 'c3', group: '左右中央の 1/3', name: '中央 1/3', frac: [1 / 3, 2 / 3, 0, 1], on: true },
+  { id: 'center', group: '中央', name: '中央', frac: [0.25, 0.75, 0.125, 0.875], on: true },
+  { id: 'centerKeep', group: '中央', name: '中央（サイズ維持）', frac: [0.375, 0.625, 0.3, 0.7], keep: true, on: false },
+  { id: 'max', group: '最大化', name: '最大化', frac: [0, 1, 0, 1], on: true },
 ];
+const PRESET_DEFAULT = PRESETS.map((p) => p.on);
+function presetIcon(p) {
+  const [x0, x1, y0, y1] = p.frac;
+  return `<svg viewBox="0 0 18 12"><rect class="bg" x="0.5" y="0.5" width="17" height="11" rx="1.5"/>`
+    + `<rect class="on" x="${1.5 + x0 * 15}" y="${1.5 + y0 * 9}" width="${(x1 - x0) * 15}" height="${(y1 - y0) * 9}" rx="0.5"/></svg>`;
+}
 function presetCells(p) {
   const [x0, x1, y0, y1] = p.frac;
   const c0 = x0 * L.cols;
@@ -1532,27 +1633,62 @@ function presetCells(p) {
   return { c0: Math.round(c0), c1: Math.round(c1) - 1, r0: Math.round(r0), r1: Math.round(r1) - 1 };
 }
 function buildPresets() {
-  const box = $('#lPresets');
+  fillPresets($('#lPresets'), true);
+}
+function fillPresets(box, live) {
   box.innerHTML = '';
-  for (const p of PRESETS) {
-    const cells = presetCells(p);
+  const shown = PRESETS.filter((p) => p.on);
+  if (!shown.length) {
+    box.innerHTML = '<span class="hint">表示するプリセットがありません（設定の「ランチャー」で選べます）</span>';
+    return;
+  }
+  for (const p of shown) {
+    const cells = p.keep ? null : presetCells(p);
     const b = document.createElement('button');
     b.type = 'button';
-    b.className = 'preset';
-    b.disabled = !cells;
-    if (!cells) b.title = 'この分割案では、区画の整数倍で作れません';
-    const [x0, x1, y0, y1] = p.frac;
-    b.innerHTML = `<svg viewBox="0 0 18 12"><rect class="bg" x="0.5" y="0.5" width="17" height="11" rx="1.5"/>`
-      + `<rect class="on" x="${1.5 + x0 * 15}" y="${1.5 + y0 * 9}" width="${(x1 - x0) * 15}" height="${(y1 - y0) * 9}" rx="0.5"/></svg>${p.name}`;
-    b.addEventListener('click', () => {
-      L.anchor = { c: cells.c0, r: cells.r0 };
-      L.end = { c: cells.c1, r: cells.r1 };
-      L.cursor = { ...L.end };
-      paintSel();
-      launcher.focus();
-    });
+    b.className = p.keep ? 'preset keep' : 'preset';
+    b.disabled = !p.keep && !cells;
+    if (b.disabled) b.title = 'この分割案では、区画の整数倍で作れません';
+    b.innerHTML = presetIcon(p) + p.name;
+    if (live) {
+      b.addEventListener('click', () => {
+        if (p.keep) {
+          const { W, H } = areaSize(lArea);
+          closeLauncher();
+          placeWin(L.win, { ...L.win.r, x: (W - L.win.r.w) / 2, y: (H - L.win.r.h) / 2 });
+          return;
+        }
+        L.anchor = { c: cells.c0, r: cells.r0 };
+        L.end = { c: cells.c1, r: cells.r1 };
+        L.cursor = { ...L.end };
+        paintSel();
+        launcher.focus();
+      });
+    }
     box.appendChild(b);
   }
+}
+function initPresetPage() {
+  const groups = $('#pGroups');
+  const names = [...new Set(PRESETS.map((p) => p.group))];
+  groups.innerHTML = names.map((g) => `<div class="pgroup"><div class="gname">${g}</div><div class="opts">`
+    + PRESETS.filter((p) => p.group === g).map((p) => `<label class="popt${p.keep ? ' keep' : ''}">`
+      + `<input type="checkbox" data-id="${p.id}">${presetIcon(p)}<span>${p.name}</span></label>`).join('')
+    + '</div></div>').join('');
+  const sync = () => {
+    $$('#pGroups input').forEach((c) => { c.checked = PRESETS.find((p) => p.id === c.dataset.id).on; });
+    $('#pCount').textContent = `${PRESETS.filter((p) => p.on).length} / ${PRESETS.length} 件を表示`;
+    fillPresets($('#pPreview'), false);
+    buildPresets();
+  };
+  groups.addEventListener('change', (ev) => {
+    PRESETS.find((p) => p.id === ev.target.dataset.id).on = ev.target.checked;
+    sync();
+  });
+  $('#pAll').addEventListener('click', () => { PRESETS.forEach((p) => { p.on = true; }); sync(); });
+  $('#pNone').addEventListener('click', () => { PRESETS.forEach((p) => { p.on = false; }); sync(); });
+  $('#pDefault').addEventListener('click', () => { PRESETS.forEach((p, i) => { p.on = PRESET_DEFAULT[i]; }); sync(); });
+  sync();
 }
 
 function openLauncher() {
@@ -1607,7 +1743,120 @@ launcher.addEventListener('pointermove', (ev) => {
   paintSel();
 });
 window.addEventListener('pointerup', () => { L.selecting = false; });
+// ---------- ウィンドウを選んで整列（提案） ----------
+const WIN_PAGE = 9;
+const LW = {
+  open: false,
+  page: 0,
+  sel: [], // 選んだ順。先頭が既定のメイン
+  main: null,
+  wins: [
+    '週次レポート — ドキュメント', 'ブラウザー — 設計メモ', 'ターミナル', 'エクスプローラー — 写真', 'メモ帳 — todo',
+    '表計算 — 売上', 'チャット', 'カレンダー', 'ミュージック', 'ブラウザー — 資料', '電卓',
+  ],
+};
+const LW_MODES = [
+  // 44 × 28 の枠の中で、上下左右の余白をそろえる
+  { id: 'grid', label: 'グリッド', rects: [[3, 3, 18, 10], [23, 3, 18, 10], [3, 15, 18, 10], [23, 15, 18, 10]], main: -1 },
+  { id: 'cols', label: '横一列', rects: [[3, 4, 11, 20], [16.5, 4, 11, 20], [30, 4, 11, 20]], main: -1 },
+  { id: 'rows', label: '縦一列', rects: [[4, 3, 36, 6], [4, 11, 36, 6], [4, 19, 36, 6]], main: -1 },
+  { id: 'main', label: 'メインとスタック', rects: [[3, 3, 22, 22], [28, 3, 13, 6], [28, 11, 13, 6], [28, 19, 13, 6]], main: 0 },
+];
+function lwMain() { return LW.sel.includes(LW.main) ? LW.main : LW.sel[0]; }
+function lwArrangeSvg(m) {
+  const rs = m.rects.map(([x, y, w, h], i) => `<rect class="${i === m.main ? 'main' : ''}" x="${x}" y="${y}" width="${w}" height="${h}" rx="2"/>`).join('');
+  return `<svg viewBox="0 0 44 28" aria-hidden="true"><rect class="bg" x="0.5" y="0.5" width="43" height="27" rx="3"/>${rs}</svg>`;
+}
+function renderWin() {
+  const box = $('#lWin');
+  box.classList.toggle('open', LW.open);
+  $('#lWinHead').setAttribute('aria-expanded', String(LW.open));
+  const n = LW.sel.length;
+  const cnt = $('#lWinCount');
+  cnt.textContent = n ? `選択 ${n} / ${WIN_PAGE}` : '未選択';
+  cnt.classList.toggle('has', n > 0);
+  const pages = Math.max(1, Math.ceil(LW.wins.length / WIN_PAGE));
+  LW.page = Math.min(LW.page, pages - 1);
+  const from = LW.page * WIN_PAGE;
+  const list = $('#lWinList');
+  list.innerHTML = '';
+  LW.wins.slice(from, from + WIN_PAGE).forEach((title, k) => {
+    const id = from + k;
+    const order = LW.sel.indexOf(id);
+    const on = order >= 0;
+    const isMain = on && lwMain() === id;
+    const row = document.createElement('div');
+    row.className = 'lwin-row' + (on ? ' sel' : '');
+    row.setAttribute('role', 'option');
+    row.setAttribute('aria-selected', String(on));
+    row.tabIndex = 0;
+    row.dataset.id = id;
+    row.innerHTML = `<span class="key"><kbd>${k + 1}</kbd></span>`
+      + `<span class="box">${on ? '✓' : ''}</span>`
+      + `<span class="ttl"></span>`
+      + (on ? (isMain ? '<span class="role main">★ メイン</span>' : '<button class="setmain" type="button" title="メインにする" aria-label="メインにする">☆</button><span class="role">スタック</span>') : '');
+    row.querySelector('.ttl').textContent = title;
+    list.appendChild(row);
+  });
+  $('#lWinPage').textContent = `${from + 1}–${Math.min(from + WIN_PAGE, LW.wins.length)} / ${LW.wins.length}`;
+  $('#lWinPrev').disabled = LW.page === 0;
+  $('#lWinNext').disabled = LW.page >= pages - 1;
+  const arr = $('#lWinArrange');
+  arr.innerHTML = LW_MODES.map((m, i) => `<button class="arr" type="button" data-mode="${m.id}" ${n ? '' : 'disabled'}>`
+    + `${lwArrangeSvg(m)}<span class="lbl">${m.label}</span><kbd>Alt+${i + 1}</kbd></button>`).join('');
+}
+function lwToggle(id) {
+  const i = LW.sel.indexOf(id);
+  if (i >= 0) {
+    LW.sel.splice(i, 1);
+  } else if (LW.sel.length < WIN_PAGE) {
+    LW.sel.push(id);
+  } else {
+    $('#lWinStatus').textContent = `選べるのは最大 ${WIN_PAGE} 件です。`;
+    return;
+  }
+  $('#lWinStatus').textContent = '';
+  renderWin();
+}
+function lwArrange(modeId) {
+  const m = LW_MODES.find((x) => x.id === modeId);
+  if (!m || !LW.sel.length) return;
+  $('#lWinStatus').textContent = `${LW.sel.length} 件を「${m.label}」で整列します（モックアップでは動きません）。`;
+}
+$('#lWinHead').addEventListener('click', () => { LW.open = !LW.open; renderWin(); });
+$('#lWinList').addEventListener('click', (ev) => {
+  const row = ev.target.closest('.lwin-row');
+  if (!row) return;
+  const id = Number(row.dataset.id);
+  if (ev.target.closest('.setmain')) {
+    LW.main = id;
+    renderWin();
+    return;
+  }
+  lwToggle(id);
+});
+$('#lWinPrev').addEventListener('click', () => { LW.page = Math.max(0, LW.page - 1); renderWin(); });
+$('#lWinNext').addEventListener('click', () => { LW.page += 1; renderWin(); });
+$('#lWinArrange').addEventListener('click', (ev) => {
+  const b = ev.target.closest('.arr');
+  if (b && !b.disabled) lwArrange(b.dataset.mode);
+});
+renderWin();
+
 launcher.addEventListener('keydown', (ev) => {
+  // 一覧を展開しているとき、数字 1〜9 は一覧の n 番目を選び、Alt+数字 1〜4 は方式を選んで整列する
+  if (LW.open && /^Digit[1-9]$/.test(ev.code) && !ev.ctrlKey && !ev.shiftKey && !ev.metaKey) {
+    const n = Number(ev.code.slice(5));
+    if (!ev.altKey) {
+      ev.preventDefault();
+      const id = LW.page * WIN_PAGE + n - 1;
+      if (id < LW.wins.length) lwToggle(id);
+    } else if (n <= LW_MODES.length) {
+      ev.preventDefault();
+      lwArrange(LW_MODES[n - 1].id);
+    }
+    return;
+  }
   const moves = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
   if (moves[ev.key]) {
     ev.preventDefault();
@@ -1690,6 +1939,7 @@ const NAV = [
   ['rules', 'アプリのルール', '<path d="M2.5 3.5h11M2.5 8h11M2.5 12.5h7"/>'],
   ['os', '標準機能', '<rect x="1.5" y="1.5" width="5.5" height="5.5" rx="1"/><rect x="9" y="1.5" width="5.5" height="5.5" rx="1"/><rect x="1.5" y="9" width="5.5" height="5.5" rx="1"/><rect x="9" y="9" width="5.5" height="5.5" rx="1"/>'],
   ['sync', '同期とバックアップ', '<path d="M13 6.5A5 5 0 0 0 3.6 4.4M3 9.5a5 5 0 0 0 9.4 2.1"/><path d="M13.5 2.5v4h-4M2.5 13.5v-4h4"/>'],
+  ['launcher', 'ランチャー', '<rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/><path d="M1.5 6h13M5 6v7.5"/>'],
   ['look', '外観', '<path d="M1.5 13.5v-6a6 6 0 0 1 6-6h6"/><path d="M5 13.5v-6a2.5 2.5 0 0 1 2.5-2.5h6"/>'],
 ];
 function initSettings() {
@@ -1704,6 +1954,7 @@ function initSettings() {
   showPage('grid');
   initGridPage();
   initFeelPage();
+  initPresetPage();
   const cornerSel = $('#cornerSel');
   cornerSel.addEventListener('change', () => {
     const v = cornerSel.value;

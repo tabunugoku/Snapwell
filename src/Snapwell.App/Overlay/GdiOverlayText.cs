@@ -112,7 +112,8 @@ internal sealed unsafe partial class GdiOverlayText : IDisposable
         var runs = SplitRuns(text.Value, text.Mono, text.LetterSpacing > 0);
         var widths = runs.Select(run => MeasureRunPixels(run, text.Size, text.Mono, text.Bold)).ToArray();
         var spacing = text.LetterSpacing * _scale;
-        var x = text.Center ? (bounds.Width - widths.Sum() - runs.Length * spacing) / 2 : 0;
+        var measuredWidth = widths.Sum() + Math.Max(0, runs.Length - 1) * spacing;
+        var x = text.Center ? CenteredTextLeft(bounds.Width, measuredWidth) : 0;
         for (var index = 0; index < runs.Length; index++)
         {
             var width = widths[index];
@@ -138,6 +139,9 @@ internal sealed unsafe partial class GdiOverlayText : IDisposable
 
         return result;
     }
+
+    /// <summary>描画と同じフォントで測った送り幅を、ラベルの全幅の中央へ置く。</summary>
+    internal static double CenteredTextLeft(double boxWidth, double measuredWidth) => (boxWidth - measuredWidth) / 2;
 
     /// <summary>実測した字面の ascent と descent を中央に置き、行の描画原点へ戻す。</summary>
     internal static int CenteredFontTop(int boxHeight, int ascent, int inkAscent, int inkDescent)

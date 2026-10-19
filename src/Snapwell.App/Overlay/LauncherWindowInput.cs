@@ -6,7 +6,8 @@ namespace Snapwell.App.Overlay;
 /// <summary>区画操作と重ならない一覧の一時キー。</summary>
 internal enum LauncherWindowInput
 {
-    Next = 0x11000, Previous, Toggle, Grid, Columns, Rows, MainAndStack,
+    Grid = 0x11000, Columns, Rows, MainAndStack,
+    Window1, Window2, Window3, Window4, Window5, Window6, Window7, Window8, Window9,
 }
 
 /// <summary>一覧を開いている間だけ有効なキーの定義。</summary>
@@ -20,17 +21,16 @@ internal static class LauncherWindowBindings
         return All.Where(binding => available.Contains(Chord(binding))).ToArray();
     }
 
-    internal static bool Contains(int id) => id is >= (int)LauncherWindowInput.Next and
-        <= (int)LauncherWindowInput.MainAndStack;
+    internal static bool Contains(int id) => id is >= (int)LauncherWindowInput.Grid and
+        <= (int)LauncherWindowInput.Window9;
 
     internal static IReadOnlyList<HotkeyBinding> All { get; } =
     [
-        new((int)LauncherWindowInput.Next, KeyModifiers.None, 0x09, true),
-        new((int)LauncherWindowInput.Previous, KeyModifiers.Shift, 0x09, true),
-        new((int)LauncherWindowInput.Toggle, KeyModifiers.Control, 0x20, true, AllowRepeat: false),
-        new((int)LauncherWindowInput.Grid, KeyModifiers.Control, 0x31, true, AllowRepeat: false),
-        new((int)LauncherWindowInput.Columns, KeyModifiers.Control, 0x32, true, AllowRepeat: false),
-        new((int)LauncherWindowInput.Rows, KeyModifiers.Control, 0x33, true, AllowRepeat: false),
-        new((int)LauncherWindowInput.MainAndStack, KeyModifiers.Control, 0x34, true, AllowRepeat: false),
+        new((int)LauncherWindowInput.Grid, KeyModifiers.Alt, 0x31, true, AllowRepeat: false),
+        new((int)LauncherWindowInput.Columns, KeyModifiers.Alt, 0x32, true, AllowRepeat: false),
+        new((int)LauncherWindowInput.Rows, KeyModifiers.Alt, 0x33, true, AllowRepeat: false),
+        new((int)LauncherWindowInput.MainAndStack, KeyModifiers.Alt, 0x34, true, AllowRepeat: false),
+        .. Enumerable.Range(0, 9).Select(index => new HotkeyBinding(
+            (int)LauncherWindowInput.Window1 + index, KeyModifiers.None, (uint)(0x31 + index), true, AllowRepeat: false)),
     ];
 }
