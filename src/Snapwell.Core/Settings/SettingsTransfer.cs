@@ -9,7 +9,7 @@ namespace Snapwell.Core.Settings;
 /// <summary>選んで取り込める設定の種類。</summary>
 public enum SettingsField
 {
-    Grid, Gap, Edge, Feel, SnapMode, ReduceMotion, ShowZonePreview, LongPressMilliseconds, LongPressDistance,
+    Grid, Gap, Edge, Feel, SnapMode, ReduceMotion, ShowZonePreview,
     MagnetStrength, SnapRadius, Hotkey, ResizeStep, ResizeAnchor,
     CornerPreference, ShowZoneLines, ShowPredictionLine, SnapAfterResize, MonitorGrids,
 }
@@ -181,11 +181,6 @@ public static class SettingsTransfer
                 SettingsField.SnapMode => value with { SnapMode = imported.SnapMode },
                 SettingsField.ReduceMotion => value with { ReduceMotion = imported.ReduceMotion },
                 SettingsField.ShowZonePreview => value with { ShowZonePreview = imported.ShowZonePreview },
-                SettingsField.LongPressMilliseconds => value with
-                {
-                    LongPressMilliseconds = imported.LongPressMilliseconds,
-                },
-                SettingsField.LongPressDistance => value with { LongPressDistance = imported.LongPressDistance },
                 SettingsField.MagnetStrength => value with { MagnetStrength = imported.MagnetStrength },
                 SettingsField.SnapRadius => value with { SnapRadius = imported.SnapRadius },
                 SettingsField.ResizeStep => value with { ResizeStep = imported.ResizeStep },
@@ -232,10 +227,6 @@ public static class SettingsTransfer
         Add(SettingsField.SnapMode, "吸着の方式", current.SnapMode, imported.SnapMode, ModeName);
         Add(SettingsField.ReduceMotion, "動きを減らす", current.ReduceMotion, imported.ReduceMotion, OnOff);
         Add(SettingsField.ShowZonePreview, "区画のプレビュー", current.ShowZonePreview, imported.ShowZonePreview, OnOff);
-        Add(SettingsField.LongPressMilliseconds, "長押しの時間", current.LongPressMilliseconds,
-            imported.LongPressMilliseconds, Milliseconds);
-        Add(SettingsField.LongPressDistance, "長押し中に動いてよい距離", current.LongPressDistance,
-            imported.LongPressDistance, Pixels);
         Add(SettingsField.MagnetStrength, "磁石の強さ", current.MagnetStrength, imported.MagnetStrength, Strength);
         Add(SettingsField.SnapRadius, "吸着半径", current.SnapRadius, imported.SnapRadius, Pixels);
         Add(SettingsField.ResizeStep, "1 回の拡大・縮小の幅", current.ResizeStep, imported.ResizeStep,
@@ -265,8 +256,6 @@ public static class SettingsTransfer
             }
         }
     }
-
-    private static string Milliseconds(int value) => value.ToString(CultureInfo.InvariantCulture) + " ms";
 
     private static string OnOff(bool value) => value ? "オン" : "オフ";
 

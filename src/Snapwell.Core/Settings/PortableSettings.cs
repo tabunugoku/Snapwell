@@ -53,8 +53,6 @@ public sealed record PortableSettings
     public bool SnapAfterResize { get; set; }
     /// <summary>モニターごとの分割案と間隔。未指定の間隔は共通値を使う。</summary>
     public Dictionary<string, GridSettings> MonitorGrids { get; set; } = new(StringComparer.OrdinalIgnoreCase);
-    public int LongPressMilliseconds { get; set; } = 450;
-    public double LongPressDistance { get; set; } = 6;
 
     /// <summary>質量。null なら選んだプリセット（Feel）の値を使う。</summary>
     public double? Mass { get; set; }
@@ -154,12 +152,6 @@ public sealed record PortableSettings
             ShowZonePreview = ShowZonePreview,
             CornerPreference = Enum.IsDefined(CornerPreference) ? CornerPreference : WindowCornerPreference.Default,
             MonitorGrids = monitorGrids,
-            LongPressMilliseconds = LongPressMilliseconds is >= 150 and <= 2000
-                ? LongPressMilliseconds
-                : defaults.LongPressMilliseconds,
-            LongPressDistance = double.IsFinite(LongPressDistance) && LongPressDistance is >= 2 and <= 32
-                ? LongPressDistance
-                : defaults.LongPressDistance,
             Mass = InRange(Mass, FeelPreset.MinimumMass, FeelPreset.MaximumMass),
             Frequency = InRange(Frequency, FeelPreset.MinimumFrequency, FeelPreset.MaximumFrequency),
             DampingRatio = InRange(DampingRatio, FeelPreset.MinimumDampingRatio, FeelPreset.MaximumDampingRatio),

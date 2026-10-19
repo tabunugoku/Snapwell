@@ -902,7 +902,6 @@ table.list tr:last-child td { border-bottom: 0; }
                 <tbody>
                   <tr><td class="mono">game-launcher.exe</td><td>プロセス名</td><td><span class="tag red">対象外</span></td></tr>
                   <tr><td class="mono">^ピクチャー イン ピクチャー$</td><td>タイトル（正規表現）</td><td><span class="tag yellow">位置だけ</span></td></tr>
-                  <tr><td class="mono">Chrome_WidgetWin_1</td><td>ウィンドウ クラス</td><td><span class="tag blue">サイズ固定</span></td></tr>
                   <tr><td class="mono">Shell_TrayWnd</td><td>ウィンドウ クラス</td><td><span class="tag red">対象外（既定）</span></td></tr>
                 </tbody>
               </table>
@@ -1615,15 +1614,9 @@ function buildPresets() {
   }
 }
 
-function openLauncher(at) {
+function openLauncher() {
   launcher.classList.add('open');
   buildCells();
-  if (at) {
-    const { W, H } = areaSize(lArea);
-    const cw = W / L.cols;
-    const ch = H / L.rows;
-    L.cursor = { c: Math.min(L.cols - 1, Math.floor(at.x / cw)), r: Math.min(L.rows - 1, Math.floor(at.y / ch)) };
-  }
   paintSel();
   launcher.focus();
 }
@@ -1841,6 +1834,22 @@ function initLauncher() {
   keepProportions(lArea, () => [L.win], () => {
     if (launcher.classList.contains('open')) buildCells();
   });
+  const title = $('.win-title', L.win.el);
+  let dragging = null;
+  title.addEventListener('pointerdown', (ev) => {
+    title.setPointerCapture(ev.pointerId);
+    dragging = { ox: ev.clientX - L.win.r.x, oy: ev.clientY - L.win.r.y };
+  });
+  title.addEventListener('pointermove', (ev) => {
+    if (!dragging) return;
+    const { W: aw, H: ah } = areaSize(lArea);
+    const x = Math.max(-L.win.r.w + 60, Math.min(aw - 60, ev.clientX - dragging.ox));
+    const y = Math.max(0, Math.min(ah - 30, ev.clientY - dragging.oy));
+    placeWin(L.win, { ...L.win.r, x, y });
+  });
+  const end = () => { dragging = null; };
+  title.addEventListener('pointerup', end);
+  title.addEventListener('pointercancel', end);
   buildPresets();
 }
 

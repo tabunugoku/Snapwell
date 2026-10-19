@@ -430,7 +430,7 @@ internal sealed class LauncherController : IDisposable
             _mouseSelecting = false;
             if (input is >= LauncherWindowInput.Grid and <= LauncherWindowInput.MainAndStack)
             {
-                // 長押しで開いた元の押下が続く間は、移動ループと整列を競合させない。
+                // 対象の切替で押した左ボタンが続く間は、移動ループと整列を競合させない。
                 if (!_leftButtonDown)
                 {
                     complete = PrepareArrangementCore((ArrangeLayout)(input - LauncherWindowInput.Grid));
