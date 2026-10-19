@@ -352,6 +352,8 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
   display: grid;
   gap: 10px;
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.05);
+  max-height: calc(100% - 28px);
+  overflow: auto;
 }
 .lpanel-top { display: flex; align-items: center; gap: 10px; font-size: 12.5px; }
 .lpanel-top .target { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -373,11 +375,44 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
 .preset svg rect.bg { fill: none; stroke: var(--muted); stroke-width: 1; }
 .preset svg rect.on { fill: var(--muted); }
 .lpanel-keys { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 11.5px; color: var(--muted); }
-.hold-ring { position: absolute; width: 34px; height: 34px; margin: -17px 0 0 -17px; pointer-events: none; display: none; z-index: 1001; }
-.hold-ring.on { display: block; }
-.hold-ring circle { fill: none; stroke: var(--blue-tx); stroke-width: 3; stroke-dasharray: 94.25; stroke-dashoffset: 94.25; transform: rotate(-90deg); transform-origin: 50% 50%; }
-.hold-ring.on circle { animation: hold var(--hold, 450ms) linear forwards; }
-@keyframes hold { to { stroke-dashoffset: 0; } }
+/* ウィンドウを選んで整列。既定では折りたたみ、見出しをクリックすると展開する */
+.lwin { border-top: 1px solid var(--border); padding-top: 8px; display: grid; gap: 8px; }
+.lwin-head { display: flex; align-items: center; gap: 8px; width: 100%; border: 0; background: transparent; padding: 4px 2px; font-size: 12.5px; color: var(--ink); cursor: pointer; text-align: left; border-radius: 6px; }
+.lwin-head:hover { background: var(--surface-2); }
+.lwin-head .chev { width: 12px; transition: transform 0.15s; color: var(--muted); }
+.lwin.open .lwin-head .chev { transform: rotate(90deg); }
+.lwin-head .grow { flex: 1; }
+.lwin-count { font-size: 11.5px; color: var(--muted); }
+.lwin-count.has { color: var(--blue-tx); }
+.lwin-body { display: none; gap: 8px; }
+.lwin.open .lwin-body { display: grid; }
+.lwin-list { display: grid; gap: 4px; max-height: 160px; overflow: auto; }
+.lwin-row { display: flex; align-items: center; gap: 8px; border: 1px solid var(--border); background: var(--surface-2); border-radius: 6px; padding: 4px 8px; font-size: 12px; cursor: pointer; text-align: left; width: 100%; color: var(--ink); }
+.lwin-row.sel { border-color: var(--blue-line); background: var(--blue-bg); }
+.lwin-row .key { flex: none; width: 24px; display: grid; place-items: center; }
+.lwin-row .key kbd { min-width: 20px; text-align: center; }
+.lwin-row .box { flex: none; width: 16px; height: 16px; border-radius: 4px; border: 1px solid var(--muted); display: grid; place-items: center; font-size: 11px; line-height: 1; color: var(--blue-tx); }
+.lwin-row.sel .box { border-color: var(--blue-line); font-weight: 700; }
+.lwin-row .ttl { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lwin-row .role { flex: none; font-size: 10.5px; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); }
+.lwin-row .role.main { background: var(--blue-bg); color: var(--blue-tx); border-color: var(--blue-line); font-weight: 600; }
+.lwin-row .setmain { flex: none; border: 0; background: transparent; color: var(--muted); font-size: 11px; cursor: pointer; padding: 1px 4px; border-radius: 4px; }
+.lwin-row .setmain:hover { background: var(--surface); color: var(--blue-tx); }
+.lwin-pager { display: flex; align-items: center; justify-content: space-between; font-size: 11.5px; color: var(--muted); }
+.lwin-pager button { border: 0; background: transparent; color: var(--blue-tx); font-size: 11.5px; cursor: pointer; padding: 2px 6px; border-radius: 4px; }
+.lwin-pager button:disabled { color: var(--muted); opacity: 0.5; cursor: not-allowed; }
+.lwin-arrange { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.arr { border: 1px solid var(--border); background: var(--surface-2); border-radius: 6px; padding: 6px 4px 5px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 12px; color: var(--ink); cursor: pointer; text-align: center; }
+.arr:hover:not(:disabled) { border-color: var(--blue-line); }
+.arr:disabled { opacity: 0.4; cursor: not-allowed; }
+.arr svg { width: 44px; height: 28px; }
+.arr svg rect { fill: var(--muted); opacity: 0.45; }
+.arr svg rect.main { fill: var(--blue-tx); opacity: 1; }
+.arr svg rect.bg { fill: none; stroke: var(--muted); stroke-width: 1; opacity: 0.6; }
+.arr .lbl { display: block; width: 100%; text-align: center; line-height: 1.2; }
+.arr kbd { font-size: 10px; }
+.lwin-note { font-size: 11.5px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.lwin-status { font-size: 11.5px; color: var(--blue-tx); min-height: 1.2em; }
 
 /* 設定画面 (Windows 11 の設定アプリに近い構成) */
 .app-frame { border: 1px solid var(--border); border-radius: 12px; background: var(--surface); overflow: hidden; }
@@ -655,9 +690,9 @@ table.list tr:last-child td { border-bottom: 0; }
     <div class="screen-head">
       <div>
         <h2>区画をなぞって配置する</h2>
-        <p>グリッドをドラッグして範囲を選び、<kbd>Enter</kbd> で配置します。<kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Space</kbd> で開くほか、ウィンドウのタイトルバーを長押ししても開きます（下のボタンでも開けます）。</p>
+        <p>グリッドをドラッグして範囲を選び、<kbd>Enter</kbd> で配置します。<kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Space</kbd> かトレイのメニューで開きます（下のボタンでも開けます）。</p>
       </div>
-      <span class="ref">DESIGN §6, §9.2, §9.3</span>
+      <span class="ref">DESIGN §6, §9.2</span>
     </div>
     <div class="stage">
       <div class="monitor" id="lMonitor">
@@ -682,9 +717,26 @@ table.list tr:last-child td { border-bottom: 0; }
                 <span><kbd>Enter</kbd> 配置</span>
                 <span><kbd>Esc</kbd> 閉じる</span>
               </div>
+              <div class="lwin" id="lWin">
+                <button class="lwin-head" type="button" id="lWinHead" aria-expanded="false" aria-controls="lWinBody">
+                  <svg class="chev" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M4 2l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+                  <span class="grow">ウィンドウを選んで整列</span>
+                  <span class="lwin-count" id="lWinCount">未選択</span>
+                </button>
+                <div class="lwin-body" id="lWinBody">
+                  <div class="lwin-list" id="lWinList" role="listbox" aria-multiselectable="true" aria-label="整列するウィンドウ"></div>
+                  <div class="lwin-pager"><span id="lWinPage"></span><span><button type="button" id="lWinPrev">前へ</button><button type="button" id="lWinNext">次へ</button></span></div>
+                  <div class="lwin-arrange" id="lWinArrange"></div>
+                  <div class="lwin-status" id="lWinStatus" aria-live="polite"></div>
+                  <div class="lwin-note">
+                    <span><kbd>1</kbd>–<kbd>9</kbd> ウィンドウを選択（最大 9 件）</span>
+                    <span><kbd>Alt</kbd> + <kbd>1</kbd>–<kbd>4</kbd> 方式を選んで整列</span>
+                    <span>☆ をクリックでメインを変更</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-          <svg class="hold-ring" id="holdRing" viewBox="0 0 34 34"><circle cx="17" cy="17" r="15"/></svg>
         </div>
         <div class="taskbar">
           <i class="tb-app start"></i><i class="tb-app"></i><i class="tb-app"></i>
@@ -695,7 +747,7 @@ table.list tr:last-child td { border-bottom: 0; }
         <div class="panel">
           <h3>呼び出し</h3>
           <p class="hint">ホットキー <kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Space</kbd></p>
-          <p class="hint">タイトルバーを <span class="mono" id="holdMsLabel">450 ms</span> 長押し（6 px 以上動くと通常のドラッグ）</p>
+          <p class="hint">トレイのメニューの「ランチャーを開く」</p>
           <div style="margin-top: 12px"><button class="btn primary" type="button" id="lOpen">ランチャーを開く</button></div>
         </div>
         <div class="panel">
@@ -850,7 +902,7 @@ table.list tr:last-child td { border-bottom: 0; }
                 <tbody>
                   <tr><td class="mono">game-launcher.exe</td><td>プロセス名</td><td><span class="tag red">対象外</span></td></tr>
                   <tr><td class="mono">^ピクチャー イン ピクチャー$</td><td>タイトル（正規表現）</td><td><span class="tag yellow">位置だけ</span></td></tr>
-                  <tr><td class="mono">Chrome_WidgetWin_1</td><td>ウィンドウ クラス</td><td><span class="tag blue">長押しの範囲を上端 40 px に</span></td></tr>
+                  <tr><td class="mono">Chrome_WidgetWin_1</td><td>ウィンドウ クラス</td><td><span class="tag blue">サイズ固定</span></td></tr>
                   <tr><td class="mono">Shell_TrayWnd</td><td>ウィンドウ クラス</td><td><span class="tag red">対象外（既定）</span></td></tr>
                 </tbody>
               </table>
@@ -969,7 +1021,7 @@ table.list tr:last-child td { border-bottom: 0; }
           <p>ウィンドウを投げると、近い区画に吸い込まれて止まります。ホットキーとランチャーでも配置できます。</p>
           <div class="rows">
             <div class="row"><div><div class="t">投げて配置</div><div class="d">タイトルバーをつかんで、置きたい方向へ投げます</div></div></div>
-            <div class="row"><div><div class="t">なぞって配置</div><div class="d"><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Space</kbd>、またはタイトルバーの長押しでランチャーを開きます</div></div></div>
+            <div class="row"><div><div class="t">なぞって配置</div><div class="d"><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Space</kbd>、またはトレイのメニューでランチャーを開きます</div></div></div>
             <div class="row"><div><div class="t">キーで配置</div><div class="d"><kbd>Ctrl</kbd> <kbd>Alt</kbd> + 矢印で半分、<kbd>Shift</kbd> を足すと 1 区画ずつ拡大・縮小</div></div></div>
           </div>
         </div></div>
@@ -1448,9 +1500,6 @@ $('#resetBtn').addEventListener('click', () => {
 const L = { cols: 8, rows: 8, gap: 8, anchor: null, end: null, cursor: { c: 0, r: 0 }, win: null, body: null };
 const lArea = $('#lArea');
 const launcher = $('#launcher');
-const HOLD_MS = 450;
-$('#holdMsLabel').textContent = `${HOLD_MS} ms`;
-document.documentElement.style.setProperty('--hold', `${HOLD_MS}ms`);
 
 /** 区画 (列 i, 行 j) の矩形。DESIGN §6.1 の式 */
 function cellRect(i, j, W, H, cols, rows, g) {
@@ -1624,7 +1673,120 @@ launcher.addEventListener('pointermove', (ev) => {
   paintSel();
 });
 window.addEventListener('pointerup', () => { L.selecting = false; });
+// ---------- ウィンドウを選んで整列（提案） ----------
+const WIN_PAGE = 9;
+const LW = {
+  open: false,
+  page: 0,
+  sel: [], // 選んだ順。先頭が既定のメイン
+  main: null,
+  wins: [
+    '週次レポート — ドキュメント', 'ブラウザー — 設計メモ', 'ターミナル', 'エクスプローラー — 写真', 'メモ帳 — todo',
+    '表計算 — 売上', 'チャット', 'カレンダー', 'ミュージック', 'ブラウザー — 資料', '電卓',
+  ],
+};
+const LW_MODES = [
+  // 44 × 28 の枠の中で、上下左右の余白をそろえる
+  { id: 'grid', label: 'グリッド', rects: [[3, 3, 18, 10], [23, 3, 18, 10], [3, 15, 18, 10], [23, 15, 18, 10]], main: -1 },
+  { id: 'cols', label: '横一列', rects: [[3, 4, 11, 20], [16.5, 4, 11, 20], [30, 4, 11, 20]], main: -1 },
+  { id: 'rows', label: '縦一列', rects: [[4, 3, 36, 6], [4, 11, 36, 6], [4, 19, 36, 6]], main: -1 },
+  { id: 'main', label: 'メインとスタック', rects: [[3, 3, 22, 22], [28, 3, 13, 6], [28, 11, 13, 6], [28, 19, 13, 6]], main: 0 },
+];
+function lwMain() { return LW.sel.includes(LW.main) ? LW.main : LW.sel[0]; }
+function lwArrangeSvg(m) {
+  const rs = m.rects.map(([x, y, w, h], i) => `<rect class="${i === m.main ? 'main' : ''}" x="${x}" y="${y}" width="${w}" height="${h}" rx="2"/>`).join('');
+  return `<svg viewBox="0 0 44 28" aria-hidden="true"><rect class="bg" x="0.5" y="0.5" width="43" height="27" rx="3"/>${rs}</svg>`;
+}
+function renderWin() {
+  const box = $('#lWin');
+  box.classList.toggle('open', LW.open);
+  $('#lWinHead').setAttribute('aria-expanded', String(LW.open));
+  const n = LW.sel.length;
+  const cnt = $('#lWinCount');
+  cnt.textContent = n ? `選択 ${n} / ${WIN_PAGE}` : '未選択';
+  cnt.classList.toggle('has', n > 0);
+  const pages = Math.max(1, Math.ceil(LW.wins.length / WIN_PAGE));
+  LW.page = Math.min(LW.page, pages - 1);
+  const from = LW.page * WIN_PAGE;
+  const list = $('#lWinList');
+  list.innerHTML = '';
+  LW.wins.slice(from, from + WIN_PAGE).forEach((title, k) => {
+    const id = from + k;
+    const order = LW.sel.indexOf(id);
+    const on = order >= 0;
+    const isMain = on && lwMain() === id;
+    const row = document.createElement('div');
+    row.className = 'lwin-row' + (on ? ' sel' : '');
+    row.setAttribute('role', 'option');
+    row.setAttribute('aria-selected', String(on));
+    row.tabIndex = 0;
+    row.dataset.id = id;
+    row.innerHTML = `<span class="key"><kbd>${k + 1}</kbd></span>`
+      + `<span class="box">${on ? '✓' : ''}</span>`
+      + `<span class="ttl"></span>`
+      + (on ? (isMain ? '<span class="role main">★ メイン</span>' : '<button class="setmain" type="button" title="メインにする" aria-label="メインにする">☆</button><span class="role">スタック</span>') : '');
+    row.querySelector('.ttl').textContent = title;
+    list.appendChild(row);
+  });
+  $('#lWinPage').textContent = `${from + 1}–${Math.min(from + WIN_PAGE, LW.wins.length)} / ${LW.wins.length}`;
+  $('#lWinPrev').disabled = LW.page === 0;
+  $('#lWinNext').disabled = LW.page >= pages - 1;
+  const arr = $('#lWinArrange');
+  arr.innerHTML = LW_MODES.map((m, i) => `<button class="arr" type="button" data-mode="${m.id}" ${n ? '' : 'disabled'}>`
+    + `${lwArrangeSvg(m)}<span class="lbl">${m.label}</span><kbd>Alt+${i + 1}</kbd></button>`).join('');
+}
+function lwToggle(id) {
+  const i = LW.sel.indexOf(id);
+  if (i >= 0) {
+    LW.sel.splice(i, 1);
+  } else if (LW.sel.length < WIN_PAGE) {
+    LW.sel.push(id);
+  } else {
+    $('#lWinStatus').textContent = `選べるのは最大 ${WIN_PAGE} 件です。`;
+    return;
+  }
+  $('#lWinStatus').textContent = '';
+  renderWin();
+}
+function lwArrange(modeId) {
+  const m = LW_MODES.find((x) => x.id === modeId);
+  if (!m || !LW.sel.length) return;
+  $('#lWinStatus').textContent = `${LW.sel.length} 件を「${m.label}」で整列します（モックアップでは動きません）。`;
+}
+$('#lWinHead').addEventListener('click', () => { LW.open = !LW.open; renderWin(); });
+$('#lWinList').addEventListener('click', (ev) => {
+  const row = ev.target.closest('.lwin-row');
+  if (!row) return;
+  const id = Number(row.dataset.id);
+  if (ev.target.closest('.setmain')) {
+    LW.main = id;
+    renderWin();
+    return;
+  }
+  lwToggle(id);
+});
+$('#lWinPrev').addEventListener('click', () => { LW.page = Math.max(0, LW.page - 1); renderWin(); });
+$('#lWinNext').addEventListener('click', () => { LW.page += 1; renderWin(); });
+$('#lWinArrange').addEventListener('click', (ev) => {
+  const b = ev.target.closest('.arr');
+  if (b && !b.disabled) lwArrange(b.dataset.mode);
+});
+renderWin();
+
 launcher.addEventListener('keydown', (ev) => {
+  // 一覧を展開しているとき、数字 1〜9 は一覧の n 番目を選び、Alt+数字 1〜4 は方式を選んで整列する
+  if (LW.open && /^Digit[1-9]$/.test(ev.code) && !ev.ctrlKey && !ev.shiftKey && !ev.metaKey) {
+    const n = Number(ev.code.slice(5));
+    if (!ev.altKey) {
+      ev.preventDefault();
+      const id = LW.page * WIN_PAGE + n - 1;
+      if (id < LW.wins.length) lwToggle(id);
+    } else if (n <= LW_MODES.length) {
+      ev.preventDefault();
+      lwArrange(LW_MODES[n - 1].id);
+    }
+    return;
+  }
   const moves = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
   if (moves[ev.key]) {
     ev.preventDefault();
@@ -1679,49 +1841,6 @@ function initLauncher() {
   keepProportions(lArea, () => [L.win], () => {
     if (launcher.classList.contains('open')) buildCells();
   });
-  // 長押しでランチャーを開く。6 px 以上動いたら通常のドラッグとして扱う
-  const title = $('.win-title', L.win.el);
-  const ring = $('#holdRing');
-  let hold = null;
-  title.addEventListener('pointerdown', (ev) => {
-    title.setPointerCapture(ev.pointerId);
-    const box = lArea.getBoundingClientRect();
-    const at = { x: ev.clientX - box.left, y: ev.clientY - box.top };
-    hold = { sx: ev.clientX, sy: ev.clientY, ox: ev.clientX - L.win.r.x, oy: ev.clientY - L.win.r.y, dragging: false, at };
-    ring.style.left = `${at.x}px`;
-    ring.style.top = `${at.y}px`;
-    ring.classList.remove('on');
-    void ring.getBoundingClientRect();
-    ring.classList.add('on');
-    hold.timer = setTimeout(() => {
-      ring.classList.remove('on');
-      const at2 = hold.at;
-      hold = null;
-      openLauncher(at2);
-    }, HOLD_MS);
-  });
-  title.addEventListener('pointermove', (ev) => {
-    if (!hold) return;
-    if (!hold.dragging && Math.hypot(ev.clientX - hold.sx, ev.clientY - hold.sy) >= 6) {
-      hold.dragging = true;
-      clearTimeout(hold.timer);
-      ring.classList.remove('on');
-    }
-    if (hold.dragging) {
-      const { W: aw, H: ah } = areaSize(lArea);
-      const x = Math.max(-L.win.r.w + 60, Math.min(aw - 60, ev.clientX - hold.ox));
-      const y = Math.max(0, Math.min(ah - 30, ev.clientY - hold.oy));
-      placeWin(L.win, { ...L.win.r, x, y });
-    }
-  });
-  const end = () => {
-    if (!hold) return;
-    clearTimeout(hold.timer);
-    ring.classList.remove('on');
-    hold = null;
-  };
-  title.addEventListener('pointerup', end);
-  title.addEventListener('pointercancel', end);
   buildPresets();
 }
 
