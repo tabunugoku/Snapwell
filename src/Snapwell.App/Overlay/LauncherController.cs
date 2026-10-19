@@ -419,7 +419,13 @@ internal sealed class LauncherController : IDisposable
             list.Rows.FirstOrDefault(row => row.Bounds.Contains(pointer.Position)) is { } row)
         {
             _focusedWindow = list.First + row.Number - 1;
-            ToggleWindow(row.Window.Handle);
+            // スタックの役割の表示を押すと、その行をメインにする。それ以外は選択の切り替え。
+            if (row.Selected && !row.Main && row.RoleBounds(_scale).Contains(pointer.Position))
+            {
+                _selectedWindows.SetMain(row.Window.Handle);
+                _windowStatus = "";
+            }
+            else { ToggleWindow(row.Window.Handle); }
             Draw();
         }
         else if (list.Buttons.FirstOrDefault(button => button.Bounds.Contains(pointer.Position)) is { } button)

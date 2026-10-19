@@ -8,7 +8,12 @@ public sealed record LauncherWindow(nint Handle, string Title);
 
 /// <summary>一覧の一行と選択・キーボードフォーカスの表示状態。</summary>
 public sealed record LauncherWindowRow(LauncherWindow Window, PixelRect Bounds, bool Selected, bool Focused,
-    int Number = 0, bool Main = false);
+    int Number = 0, bool Main = false)
+{
+    /// <summary>右端に固定幅で置く役割の表示。行をまたいで縦にそろう。選択中の行だけ有効。</summary>
+    public PixelRect RoleBounds(double scale) => new(Bounds.Right - (int)Math.Round(84 * scale),
+        Bounds.Y + (int)Math.Round(4 * scale), (int)Math.Round(76 * scale), Bounds.Height - 2 * (int)Math.Round(4 * scale));
+}
 
 /// <summary>整列ボタンの方式と物理ピクセルの矩形。</summary>
 public sealed record LauncherArrangeButton(ArrangeLayout Layout, PixelRect Bounds, string Label)
@@ -16,6 +21,31 @@ public sealed record LauncherArrangeButton(ArrangeLayout Layout, PixelRect Bound
     /// <summary>ラベルはアイコンと独立にボタンの幅いっぱいへ置く。</summary>
     public PixelRect LabelBounds(double scale) =>
         new(Bounds.X, Bounds.Y + (int)Math.Round(36 * scale), Bounds.Width, (int)Math.Round(18 * scale));
+
+    /// <summary>ボタンの左上を原点にした、44 × 28 のアイコンの枠。</summary>
+    public PixelRect IconBounds(double scale)
+    {
+        var width = (int)Math.Round(44 * scale);
+        return new((Bounds.Width - width) / 2, (int)Math.Round(6 * scale), width, (int)Math.Round(28 * scale));
+    }
+
+    /// <summary>
+    /// アイコン枠の左上を原点にした整数ピクセルの矩形。左右・上下の中心に対して対称に丸め、端を画素にそろえる。
+    /// </summary>
+    public IReadOnlyList<PixelRect> IconPixelRects(double scale)
+    {
+        var frame = IconBounds(scale);
+        int Edge(double value, double extent, int total) => value * 2 <= extent
+            ? (int)Math.Round(value * scale, MidpointRounding.AwayFromZero)
+            : total - (int)Math.Round((extent - value) * scale, MidpointRounding.AwayFromZero);
+        return IconRects.Select(rect =>
+        {
+            var x = Edge(rect.X, 44, frame.Width);
+            var y = Edge(rect.Y, 28, frame.Height);
+            return new PixelRect(x, y, Math.Max(1, Edge(rect.Right, 44, frame.Width) - x),
+                Math.Max(1, Edge(rect.Bottom, 28, frame.Height) - y));
+        }).ToArray();
+    }
 
     /// <summary>対称な 44 × 28 の viewBox 内の図形。</summary>
     public IReadOnlyList<LauncherIconRect> IconRects => Layout switch

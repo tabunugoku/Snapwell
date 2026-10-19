@@ -21,6 +21,48 @@ public sealed class SelectedWindowArrangementTests
         Assert.Equal((nint)10, selection.Snapshot()[^1]);
     }
 
+    /// <summary>メインは選択順の先頭でなく選べ、解除や全解除で壊れず、残りの先頭に戻る。</summary>
+    [Fact]
+    public void MainCanBeChosenAndFallsBackToFirstRemaining()
+    {
+        var selection = new WindowSelection();
+        Assert.Equal((nint)0, selection.Main);
+        Assert.False(selection.SetMain(5));
+        selection.Toggle(1);
+        selection.Toggle(2);
+        selection.Toggle(3);
+        Assert.Equal((nint)1, selection.Main);
+        Assert.True(selection.SetMain(3));
+        Assert.Equal(new nint[] { 3, 1, 2 }, selection.Snapshot());
+        selection.Toggle(2);
+        Assert.Equal(new nint[] { 3, 1 }, selection.Snapshot());
+        selection.Toggle(3);
+        Assert.Equal((nint)1, selection.Main);
+        selection.Toggle(3);
+        Assert.Equal(new nint[] { 1, 3 }, selection.Snapshot());
+        selection.SetMain(3);
+        selection.Clear();
+        selection.Toggle(3);
+        selection.Toggle(4);
+        Assert.Equal(new nint[] { 3, 4 }, selection.Snapshot());
+    }
+
+    /// <summary>選んだメインが整列のメインの区画に入る。</summary>
+    [Fact]
+    public void ChosenMainGetsTheMainRegion()
+    {
+        var selection = new WindowSelection();
+        selection.Toggle(1);
+        selection.Toggle(2);
+        selection.Toggle(3);
+        selection.SetMain(2);
+        var plan = SelectedWindowArrangement.Plan(ArrangeLayout.MainAndStack, selection.Snapshot(), _monitor, new(),
+            _ => new(100, 100, 300, 200));
+        var main = plan.Targets.Single(target => target.Handle == 2).Bounds;
+        Assert.All(plan.Targets.Where(target => target.Handle != 2),
+            target => Assert.True(main.Width * main.Height > target.Bounds.Width * target.Bounds.Height));
+    }
+
     private static readonly MonitorArea _monitor = new("left", new(-1920, -200, 1920, 1080), 1.5);
 
     /// <summary>再選択は末尾へ入り、スナップショットは後の操作に影響されない。</summary>
