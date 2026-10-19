@@ -8,14 +8,24 @@ namespace Snapwell.Settings.Pages;
 /// <summary>自動起動の登録を編集する。</summary>
 public sealed partial class GeneralPage : Page
 {
+    private readonly SettingsSession _session;
     private readonly AutoStart _autoStart;
     private bool _refreshing = true;
+    private bool _syncingFixedSize = true;
     private AutoStartState _lastState;
 
     /// <summary>同じフォルダーに本体がある場合だけ自動起動を操作できる画面を作る。</summary>
     public GeneralPage(SettingsSession session)
     {
+        _session = session;
         InitializeComponent();
+        SyncFixedSizeToggle();
+        Loaded += (_, _) =>
+        {
+            _session.Changed += Session_Changed;
+            SyncFixedSizeToggle();
+        };
+        Unloaded += (_, _) => _session.Changed -= Session_Changed;
 
         var executable = Path.Combine(AppContext.BaseDirectory, "Snapwell.exe");
         _autoStart = new(new RegistryRunKey(), executable);
@@ -35,6 +45,31 @@ public sealed partial class GeneralPage : Page
         {
             ReportFailure();
             AutoStartToggle.IsEnabled = false;
+        }
+    }
+
+    private void Session_Changed(object? sender, EventArgs e) => SyncFixedSizeToggle();
+
+    // 設定側の値を表示へ反映するだけ。Toggled を設定の更新として扱わせない。
+    private void SyncFixedSizeToggle()
+    {
+        _syncingFixedSize = true;
+        try
+        {
+            MoveFixedSizeToggle.IsEnabled = !_session.IsReadOnly;
+            MoveFixedSizeToggle.IsOn = _session.Current.MoveFixedSizeWindows;
+        }
+        finally
+        {
+            _syncingFixedSize = false;
+        }
+    }
+
+    private void MoveFixedSize_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (!_syncingFixedSize)
+        {
+            _session.Update(_session.Current with { MoveFixedSizeWindows = MoveFixedSizeToggle.IsOn });
         }
     }
 
