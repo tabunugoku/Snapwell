@@ -11,7 +11,7 @@ public enum SettingsField
 {
     Grid, Gap, Edge, Feel, SnapMode, ReduceMotion, ShowZonePreview,
     MagnetStrength, SnapRadius, Hotkey, ResizeStep, ResizeAnchor,
-    CornerPreference, ShowZoneLines, ShowPredictionLine, SnapAfterResize, MonitorGrids,
+    CornerPreference, ShowZoneLines, ShowPredictionLine, SnapAfterResize, MonitorGrids, LauncherPresets,
 }
 
 /// <summary>ホットキーはコマンドごと、それ以外は項目ごとに識別する。</summary>
@@ -52,9 +52,11 @@ public static class SettingsTransfer
         var left = current.Normalize();
         var right = other.Normalize();
         var noHotkeys = new Dictionary<WindowCommand, KeyChordSpec>();
+        var noPresets = Array.Empty<string>();
         var noMonitors = new Dictionary<string, GridSettings>();
-        return left with { Hotkeys = noHotkeys, MonitorGrids = noMonitors } !=
-            right with { Hotkeys = noHotkeys, MonitorGrids = noMonitors } ||
+        return left with { Hotkeys = noHotkeys, MonitorGrids = noMonitors, LauncherPresets = noPresets } !=
+            right with { Hotkeys = noHotkeys, MonitorGrids = noMonitors, LauncherPresets = noPresets } ||
+            !left.LauncherPresets.SequenceEqual(right.LauncherPresets) ||
             !SameMonitorPlans(left.MonitorGrids, right.MonitorGrids) ||
             left.Hotkeys.Count != right.Hotkeys.Count ||
             left.Hotkeys.Any(pair => !right.Hotkeys.TryGetValue(pair.Key, out var chord) || chord != pair.Value);
@@ -163,6 +165,7 @@ public static class SettingsTransfer
         {
             value = key.Field switch
             {
+                SettingsField.LauncherPresets => value with { LauncherPresets = imported.LauncherPresets },
                 SettingsField.Grid => value with { Grid = imported.Grid },
                 SettingsField.CornerPreference => value with { CornerPreference = imported.CornerPreference },
                 SettingsField.ShowZoneLines => value with { ShowZoneLines = imported.ShowZoneLines },
@@ -219,6 +222,8 @@ public static class SettingsTransfer
             imported.SnapAfterResize, OnOff);
         Add(SettingsField.MonitorGrids, "モニター別の分割案", current.MonitorGrids, imported.MonitorGrids,
             MonitorPlans, SameMonitorPlans);
+        Add(SettingsField.LauncherPresets, "ランチャーのプリセット", current.LauncherPresets,
+            imported.LauncherPresets, ids => string.Join(" / ", ids), (left, right) => left.SequenceEqual(right));
         Add(SettingsField.Grid, "分割案", current.Grid, imported.Grid, grid => $"{grid.Columns} × {grid.Rows}");
         Add(SettingsField.Gap, "ウィンドウの間隔", current.Gap, imported.Gap, Pixels);
         Add(SettingsField.Edge, "画面端の余白", current.Edge, imported.Edge, Pixels);

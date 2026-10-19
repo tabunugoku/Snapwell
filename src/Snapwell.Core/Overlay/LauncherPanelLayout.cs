@@ -18,12 +18,19 @@ public sealed record LauncherPresetButton(int Index, PixelRect Bounds, LauncherI
     /// <summary>SVG の背景の枠線の中心。</summary>
     public LauncherIconRect IconBorder => Icon.Map(.5, .5, 17, 11);
 
+    /// <summary>サイズ維持の破線を、小矩形の集合で表す。</summary>
+    public IReadOnlyList<LauncherIconRect> IconDashes => !LauncherPreset.All[Index].KeepSize ? [] :
+        [Icon.Map(7.125, 4.2, 1.5, .8), Icon.Map(9.375, 4.2, 1.5, .8),
+         Icon.Map(7.125, 7, 1.5, .8), Icon.Map(9.375, 7, 1.5, .8),
+         Icon.Map(7.125, 5.6, .8, .8), Icon.Map(10.075, 5.6, .8, .8)];
+
     /// <summary>割合の境界を保ち、外周に接する辺だけを枠線の内端まで延ばした塗り。</summary>
     public LauncherIconRect IconFill
     {
         get
         {
             var preset = LauncherPreset.All[Index];
+            if (preset.KeepSize) { return default; }
             // SVG の 0.5 px の余白が拡大率によって隙間になるため、外周だけを連続させる。
             var left = preset.X0 == 0 ? 1 : 1.5 + preset.X0 * 15;
             var top = preset.Y0 == 0 ? 1 : 1.5 + preset.Y0 * 9;
@@ -73,9 +80,30 @@ public sealed class LauncherPanelLayout
 
     private LauncherPanelLayout() { }
 
+    /// <summary>項目の配置を保ち、一覧と共通の背景だけを下へ延ばす。</summary>
+    public LauncherPanelLayout WithPanelHeight(int height)
+    {
+        var result = new LauncherPanelLayout
+        {
+            Panel = new(Panel.X, Panel.Y, Panel.Width, height),
+            Top = Top,
+            Tag = Tag,
+            Target = Target,
+            Plan = Plan,
+            PresetsBounds = PresetsBounds,
+            KeysBounds = KeysBounds,
+            SelectionLabel = SelectionLabel,
+        };
+        result._text.AddRange(_text);
+        result._presets.AddRange(_presets);
+        result._keys.AddRange(_keys);
+        result._options.AddRange(_options);
+        return result;
+    }
+
     /// <summary>文字幅は論理 px で受け取り、すべての矩形を物理画面座標で返す。</summary>
     public static LauncherPanelLayout Create(ZoneSelection selection, double scale = 1, string target = "",
-        bool menuOpen = false, Func<string, double, bool, bool, double>? measure = null)
+        bool menuOpen = false, Func<string, double, bool, bool, double>? measure = null, IEnumerable<string>? presetIds = null)
     {
         if (!double.IsFinite(scale) || scale <= 0)
         {
@@ -86,6 +114,7 @@ public sealed class LauncherPanelLayout
         // 各ラベルを独立に切り上げ、配置の端数で一画素狭くなることを防ぐ。
         double Width(string text, double size, bool mono = false, bool bold = false) =>
             Math.Ceiling(measure(text, size, mono, bold) * scale) / scale;
+        var shown = LauncherPreset.NormalizeIds(presetIds);
         var result = new LauncherPanelLayout();
         var area = selection.WorkArea;
         int Px(double value) => (int)Math.Round(value * scale);
@@ -122,6 +151,7 @@ public sealed class LauncherPanelLayout
             for (var index = 0; index < LauncherPreset.All.Count; index++)
             {
                 var preset = LauncherPreset.All[index];
+                if (!shown.Contains(preset.Id)) { continue; }
                 var buttonWidth = 42 + Width(preset.Name, 12);
                 if (used > 0 && used + buttonWidth > inner)
                 {
@@ -129,13 +159,19 @@ public sealed class LauncherPanelLayout
                     y += ButtonHeight + 6;
                 }
 
-                var enabled = preset.RangeFor(selection.Grid.Plan) is not null;
+                var enabled = preset.KeepSize || preset.RangeFor(selection.Grid.Plan) is not null;
                 var buttonBounds = Rect(x + used, y, buttonWidth, ButtonHeight);
                 result._presets.Add(new(index, buttonBounds,
                     new(area.X + (x + used + 9) * scale, area.Y + (y + 8.6) * scale, 18 * scale, 12 * scale), enabled));
                 result._text.Add(new(preset.Name, Rect(x + used + 33, y + 5, buttonWidth - 42, 19.2),
                     12, enabled ? LauncherTextKind.Text : LauncherTextKind.Disabled));
                 used += buttonWidth + 6;
+            }
+
+            if (shown.Length == 0)
+            {
+                result._text.Add(new("表示するプリセットがありません（設定の「ランチャー」で選べます）",
+                    Rect(x, y, inner, ButtonHeight), 12, LauncherTextKind.Muted));
             }
 
             result.PresetsBounds = Rect(x, presetsTop, inner, y + ButtonHeight - presetsTop);

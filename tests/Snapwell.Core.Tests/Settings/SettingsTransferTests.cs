@@ -182,7 +182,7 @@ public sealed class SettingsTransferTests : IDisposable
     [InlineData("")]
     [InlineData("null")]
     [InlineData("[]")]
-    [InlineData("{\"SchemaVersion\":7,\"Feel\":{\"future\":true}}")]
+    [InlineData("{\"SchemaVersion\":8,\"Feel\":{\"future\":true}}")]
     [InlineData("{\"SchemaVersion\":999999999999,\"Feel\":\"Airy\"}")]
     public void InvalidOrFutureFilesAreRejectedWithoutChangingAnything(string json)
     {

@@ -30,7 +30,7 @@ public sealed class SettingsStoreTests : IDisposable
         Assert.Equal(new GridSettings(6, 4), result.Value.Grid);
         Assert.Equal(21, result.Value.Gap);
         Assert.Equal("Heavy", result.Value.Feel);
-        Assert.Equal(6, PortableSettings.CurrentSchemaVersion);
+        Assert.Equal(7, PortableSettings.CurrentSchemaVersion);
 
         store.Save(result.Value);
         Assert.DoesNotContain("LongPress", File.ReadAllText(path));

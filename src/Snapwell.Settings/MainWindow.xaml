@@ -227,6 +227,12 @@
                         <TextBlock Text="同期とバックアップ" VerticalAlignment="Center" />
                     </StackPanel>
                 </controls:NavigationItem>
+                <controls:NavigationItem Tag="launcher" AutomationProperties.Name="ランチャー">
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Path Style="{StaticResource SnapwellNavIconPathStyle}" Data="M2 3 H14 V13 H2 Z M2 6 H14 M6 6 V13" />
+                        <TextBlock Text="ランチャー" VerticalAlignment="Center" />
+                    </StackPanel>
+                </controls:NavigationItem>
                 <controls:NavigationItem Tag="look" AutomationProperties.Name="外観">
                     <StackPanel Orientation="Horizontal" Spacing="10">
                         <Path Style="{StaticResource SnapwellNavIconPathStyle}"
