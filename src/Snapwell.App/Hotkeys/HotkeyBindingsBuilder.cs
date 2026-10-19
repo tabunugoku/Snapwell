@@ -1,5 +1,6 @@
 using Snapwell.Core.Commands;
 using Snapwell.Platform.Hooks;
+using Windows.Win32.UI.Input.KeyboardAndMouse;
 
 namespace Snapwell.App.Hotkeys;
 
@@ -51,16 +52,16 @@ internal static class HotkeyBindingsBuilder
     internal static IReadOnlyList<HotkeyBinding> Launcher(IEnumerable<HotkeyBinding> normal) =>
     [
         .. Paused(normal),
-        new((int)LauncherInput.Left, KeyModifiers.None, 0x25, true),
-        new((int)LauncherInput.Right, KeyModifiers.None, 0x27, true),
-        new((int)LauncherInput.Up, KeyModifiers.None, 0x26, true),
-        new((int)LauncherInput.Down, KeyModifiers.None, 0x28, true),
-        new((int)LauncherInput.ExtendLeft, KeyModifiers.Shift, 0x25, true),
-        new((int)LauncherInput.ExtendRight, KeyModifiers.Shift, 0x27, true),
-        new((int)LauncherInput.ExtendUp, KeyModifiers.Shift, 0x26, true),
-        new((int)LauncherInput.ExtendDown, KeyModifiers.Shift, 0x28, true),
-        new((int)LauncherInput.Accept, KeyModifiers.None, 0x0D, true),
-        new((int)LauncherInput.Cancel, KeyModifiers.None, 0x1B, true),
+        new((int)LauncherInput.Left, KeyModifiers.None, (uint)VIRTUAL_KEY.VK_LEFT, true),
+        new((int)LauncherInput.Right, KeyModifiers.None, (uint)VIRTUAL_KEY.VK_RIGHT, true),
+        new((int)LauncherInput.Up, KeyModifiers.None, (uint)VIRTUAL_KEY.VK_UP, true),
+        new((int)LauncherInput.Down, KeyModifiers.None, (uint)VIRTUAL_KEY.VK_DOWN, true),
+        new((int)LauncherInput.ExtendLeft, KeyModifiers.Shift, (uint)VIRTUAL_KEY.VK_LEFT, true),
+        new((int)LauncherInput.ExtendRight, KeyModifiers.Shift, (uint)VIRTUAL_KEY.VK_RIGHT, true),
+        new((int)LauncherInput.ExtendUp, KeyModifiers.Shift, (uint)VIRTUAL_KEY.VK_UP, true),
+        new((int)LauncherInput.ExtendDown, KeyModifiers.Shift, (uint)VIRTUAL_KEY.VK_DOWN, true),
+        new((int)LauncherInput.Accept, KeyModifiers.None, (uint)VIRTUAL_KEY.VK_RETURN, true),
+        new((int)LauncherInput.Cancel, KeyModifiers.None, (uint)VIRTUAL_KEY.VK_ESCAPE, true),
         // 失敗通知の遅配中でも回復要求を配送する。同じキーなら先に並ぶ選択操作を優先する。
         .. normal.Where(binding => binding.Id == (int)WindowCommand.OpenLauncher),
     ];

@@ -12,7 +12,7 @@ namespace Snapwell.App.Dragging;
 /// <summary>システムのドラッグ終了から投げの速度を求め、Core の吸着先へ移動を要求する。</summary>
 internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSource monitors,
     IMotionEngine motion, Func<PortableSettings> settings, Action<bool> trackMouse, uint ownProcessId,
-    Func<uint>? tickCount = null, IZonePreview? preview = null, Func<Vec2>? cursorPosition = null,
+    Func<uint>? tickCount = null, IZonePreview? preview = null, Func<Vec2?>? cursorPosition = null,
     Func<nint, IReadOnlyList<PixelRect>>? neighbors = null)
 {
     // 120 Hz の全イベントで予測せず、16 px または約二フレームごとに更新する。
@@ -100,9 +100,16 @@ internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSou
                     var velocity = _velocity.Release(Time(end.TimeMs));
                     var pointer = _pointer ?? cursorPosition?.Invoke();
                     var dragNeighbors = _neighbors;
+                    var startSize = (_startBounds.Width, _startBounds.Height);
                     StopTracking();
                     if (!inspector.TryInspect(end.Handle, out var current) || current.IsMaximized ||
                         WindowClassifier.Classify(current, ownProcessId) == WindowKind.Excluded)
+                    {
+                        return;
+                    }
+
+                    // リサイズの移動ループも同じイベントで届く。利用者が決めたサイズを吸着で上書きしない。
+                    if ((current.VisualBounds.Width, current.VisualBounds.Height) != startSize)
                     {
                         return;
                     }

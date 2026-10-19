@@ -411,7 +411,11 @@ internal sealed unsafe class TrayIcon(IAppLog log, ISettingsLauncher? settings =
             try
             {
                 owner.WriteError(exception);
-                owner.ExitRequested?.Invoke();
+                // 表示系の失敗では常駐を止めない。終了するのは終了要求の処理が失敗したときだけ。
+                if (message == WmClose)
+                {
+                    owner.ExitRequested?.Invoke();
+                }
             }
             catch (Exception)
             {

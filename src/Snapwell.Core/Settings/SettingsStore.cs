@@ -66,6 +66,7 @@ public sealed class SettingsStore<T>(string path, JsonTypeInfo<T> typeInfo, Func
                 // 時刻に加えて乱数を付け、同時刻の隔離でも元のファイルを失わない。
                 var suffix = DateTime.UtcNow.ToString("yyyyMMddTHHmmssfffffff") + "-" + Guid.NewGuid().ToString("N");
                 File.Move(_path, _path + ".broken-" + suffix);
+                _readOnly = false;
                 return new(defaults(), ResetToDefaults: true);
             }
         }
@@ -76,14 +77,7 @@ public sealed class SettingsStore<T>(string path, JsonTypeInfo<T> typeInfo, Func
     {
         lock (_gate)
         {
-            // 別プロセスや同期によって読み込み後に新しい版になった場合も保護する。
-            if (!_readOnly && File.Exists(_path))
-            {
-                using var stream = File.OpenRead(_path);
-                using var document = JsonDocument.Parse(stream);
-                _readOnly = IsFuture(document.RootElement);
-            }
-
+            // 読み込み後に新しい版へ変わった場合は、置き換え後のバックアップの確認で守る。
             if (_readOnly)
             {
                 throw new FutureSettingsVersionException("新しい版の設定は上書きできない。");
@@ -166,9 +160,10 @@ public sealed class SettingsStore<T>(string path, JsonTypeInfo<T> typeInfo, Func
         using var stream = File.OpenRead(_path);
         using var document = JsonDocument.Parse(stream);
         var root = document.RootElement;
-        if (IsFuture(root))
+        // 新しい版のファイルが現在の版に置き換わった場合は、保護を解く。
+        _readOnly = IsFuture(root);
+        if (_readOnly)
         {
-            _readOnly = true;
             return new(defaults(), IsReadOnly: true);
         }
 

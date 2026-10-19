@@ -63,3 +63,4 @@ GetForegroundWindow
 SetFocus
 SetWindowText
 NotifyWinEvent
+VIRTUAL_KEY
