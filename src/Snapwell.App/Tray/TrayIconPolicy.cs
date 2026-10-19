@@ -14,9 +14,9 @@ public enum TrayIconKind
 /// <summary>状態・タスクバーの明暗・DPI からトレイのアイコンを選ぶ判断。Win32 に触れない。</summary>
 internal static class TrayIconPolicy
 {
-    /// <summary>現在の操作可否と実効割り当てをメニューへ反映する。</summary>
+    /// <summary>現在の操作可否をメニューへ反映する。</summary>
     public static IReadOnlyList<TrayMenuEntry> MenuItems(TrayState state) =>
-        TrayMenuModel.Create(state.Enabled, state.LauncherAvailable, state.Shortcuts);
+        TrayMenuModel.Create(state.Enabled, state.LauncherAvailable);
 
     /// <summary>注意 (Status あり) を最優先し、次に一時停止中、それ以外は有効。</summary>
     public static TrayIconKind KindOf(TrayState state) =>

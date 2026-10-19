@@ -18,12 +18,12 @@ namespace Snapwell.App.Tests.Lifecycle;
 
 public sealed class AppHostTests
 {
-    /// <summary>フックの開始可否と有効状態を、メニューの可否と実効キーへ反映する。</summary>
+    /// <summary>フックの開始可否と有効状態を、メニューの可否へ反映する。</summary>
     [Theory]
     [InlineData(true, true)]
     [InlineData(true, false)]
     [InlineData(false, true)]
-    public void TrayMenuUsesHookAvailabilityAndEffectiveDefaultShortcuts(bool hooksStarted, bool enabled)
+    public void TrayMenuUsesHookAvailabilityWithoutShortcutState(bool hooksStarted, bool enabled)
     {
         using var fixture = new Fixture(new() { Enabled = enabled });
         fixture.Hooks.Starts = hooksStarted;
@@ -32,16 +32,8 @@ public sealed class AppHostTests
         Assert.Equal(hooksStarted, state.LauncherAvailable);
         var items = TrayIconPolicy.MenuItems(state);
         Assert.Equal(hooksStarted && enabled, items.Single(item => item.Command == TrayMenuCommand.Launcher).Enabled);
-        if (!hooksStarted)
-        {
-            Assert.Empty(state.Shortcuts!);
-            Assert.All(items, item => Assert.Empty(item.Keys));
-            return;
-        }
-
-        Assert.Equal(["Ctrl", "Alt", "Space"], items.Single(item => item.Command == TrayMenuCommand.Launcher).Keys);
-        Assert.Equal(["Ctrl", "Alt", "Pause"], items.Single(item => item.Command == TrayMenuCommand.Toggle).Keys);
-        Assert.Empty(items.Single(item => item.Command == TrayMenuCommand.Arrange).Keys);
+        Assert.Equal(4, items.Count);
+        Assert.DoesNotContain(items, item => item.Command == TrayMenuCommand.Toggle);
     }
 
     /// <summary>対象と選択時刻を現在の Runtime へ渡し、再読込後は交換先だけへ渡す。</summary>
@@ -84,27 +76,6 @@ public sealed class AppHostTests
         fixture.Tray.RequestToggle();
         fixture.Tray.RequestLauncher(43);
         Assert.Equal(hooksStarted ? [(nint)43] : Array.Empty<nint>(), fixture.Runtime.LauncherTargets);
-    }
-
-    /// <summary>保存したキーへ表示を更新し、先勝ちで落ちた操作にはキーを表示しない。</summary>
-    [Fact]
-    public void ReloadSettingsUpdatesTrayShortcutsAndOmitsDroppedBindings()
-    {
-        using var fixture = new Fixture();
-        Assert.True(fixture.Host.Start());
-        var settings = new PortableSettings();
-        settings.Hotkeys[WindowCommand.OpenLauncher] = new(ChordModifiers.Win | ChordModifiers.Shift, 0x20);
-        fixture.Portable.ReloadResult = new(settings);
-        fixture.Host.ReloadSettings();
-        Assert.Equal(["Shift", "Win", "Space"], fixture.Tray.State!.Shortcuts![TrayMenuCommand.Launcher]);
-
-        var conflicting = new PortableSettings();
-        conflicting.Hotkeys[WindowCommand.OpenLauncher] = conflicting.Hotkeys[WindowCommand.LeftHalf];
-        fixture.Portable.ReloadResult = new(conflicting);
-        fixture.Host.ReloadSettings();
-        Assert.False(fixture.Tray.State!.Shortcuts!.ContainsKey(TrayMenuCommand.Launcher));
-        Assert.Empty(TrayIconPolicy.MenuItems(fixture.Tray.State)
-            .Single(item => item.Command == TrayMenuCommand.Launcher).Keys);
     }
 
     /// <summary>保存例外でも停止は保存前に完了し、再読込や保存失敗では解除されない。</summary>
