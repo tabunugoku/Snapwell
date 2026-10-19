@@ -40,6 +40,10 @@ public static class DeviceStateChanges
         }
     }
 
+    /// <summary>有効・無効だけを書き換える。標準スナップの選択など、ほかの項目は最新値のまま残す。</summary>
+    public static DeviceState SetEnabled(ISettingsStore<DeviceState> store, bool enabled) =>
+        Update(store, current => current with { Enabled = enabled });
+
     private static DeviceState Apply(ISettingsStore<DeviceState> store, Func<DeviceState, DeviceState> update)
     {
         var loaded = store.TryReload() ?? store.Load();
