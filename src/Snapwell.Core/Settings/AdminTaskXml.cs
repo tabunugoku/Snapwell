@@ -18,8 +18,11 @@ public static class AdminTaskXml
         return @"\Snapwell-" + userSid;
     }
 
-    /// <summary>Principal とログオントリガーの両方が自分の SID の場合だけ認める。</summary>
-    public static bool IsForUser(string xml, string userSid)
+    /// <summary>
+    /// Principal とログオントリガーの両方が自分の場合だけ認める。登録後にサービスがトリガーの UserId を
+    /// 「PC名\ユーザー名」へ変換して保存する（実機確認）ため、SID に加えて自分のアカウント名も許す。
+    /// </summary>
+    public static bool IsForUser(string xml, string userSid, string? accountName = null)
     {
         XNamespace ns = Namespace;
         var task = XElement.Parse(xml);
@@ -27,8 +30,11 @@ public static class AdminTaskXml
         var triggers = task.Element(ns + "Triggers")?.Elements().ToArray();
         return principals is { Length: 1 } && principals[0].Name == ns + "Principal" &&
             triggers is { Length: 1 } && triggers[0].Name == ns + "LogonTrigger" &&
-            (string?)principals[0].Element(ns + "UserId") == userSid &&
-            (string?)triggers[0].Element(ns + "UserId") == userSid;
+            IsUser((string?)principals[0].Element(ns + "UserId")) &&
+            IsUser((string?)triggers[0].Element(ns + "UserId"));
+
+        bool IsUser(string? id) => id == userSid ||
+            (accountName is { Length: > 0 } && string.Equals(id, accountName, StringComparison.OrdinalIgnoreCase));
     }
 
     /// <summary>パスを引数に分割せず、現在のユーザーの対話セッションで起動する。</summary>

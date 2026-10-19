@@ -18,6 +18,23 @@ public sealed class AdminTaskRegistrationTests
     }
 
     [Fact]
+    public void TriggerUserIdStoredAsAccountNameIsStillOwnTaskAndCanBeDeleted()
+    {
+        // 実機: 登録後にサービスが LogonTrigger の UserId を「PC名\ユーザー名」へ変換して保存する。
+        const string Account = @"PC\user";
+        var xml = XElement.Parse(AdminTaskXml.Create(Executable, Sid));
+        XNamespace ns = AdminTaskXml.Namespace;
+        xml.Descendants(ns + "LogonTrigger").Single().Element(ns + "UserId")!.Value = Account;
+        var store = new FakeStore { Xml = xml.ToString() };
+        var service = new AdminTaskRegistration(store, Sid, Account);
+        Assert.Equal(Executable, service.ReadCommand());
+        service.Delete();
+        Assert.Contains("delete", store.Calls);
+        Assert.Null(new AdminTaskRegistration(new FakeStore { Xml = xml.ToString() }, Sid).ReadCommand());
+        Assert.Null(new AdminTaskRegistration(new FakeStore { Xml = xml.ToString() }, Sid, @"PC\other").ReadCommand());
+    }
+
+    [Fact]
     public void CreationRaceFailsWithoutRetryingAsUpdate()
     {
         var store = new FakeStore { Xml = AdminTaskXml.Create(Executable, Sid), FailCreate = true };

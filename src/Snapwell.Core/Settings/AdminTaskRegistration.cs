@@ -14,7 +14,7 @@ public interface IAdminTaskStore
 }
 
 /// <summary>OS に依存せず、昇格用タスクの安全な置き換えを決定する。</summary>
-public sealed class AdminTaskRegistration(IAdminTaskStore store, string currentSid) : IAdminTaskService
+public sealed class AdminTaskRegistration(IAdminTaskStore store, string currentSid, string? accountName = null) : IAdminTaskService
 {
     private readonly string _name = AdminTaskXml.GetTaskName(currentSid);
 
@@ -22,7 +22,7 @@ public sealed class AdminTaskRegistration(IAdminTaskStore store, string currentS
     public string? ReadCommand()
     {
         var xml = store.ReadXml(_name);
-        return xml is null || !AdminTaskXml.IsForUser(xml, currentSid) ? null : AdminTaskXml.ReadCommand(xml);
+        return xml is null || !AdminTaskXml.IsForUser(xml, currentSid, accountName) ? null : AdminTaskXml.ReadCommand(xml);
     }
 
     /// <summary>既存のセキュリティ記述子を捨て、競合時は更新せず失敗する。</summary>
@@ -41,7 +41,7 @@ public sealed class AdminTaskRegistration(IAdminTaskStore store, string currentS
         var existing = store.ReadXml(_name);
         if (existing is not null)
         {
-            if (!AdminTaskXml.IsForUser(existing, currentSid))
+            if (!AdminTaskXml.IsForUser(existing, currentSid, accountName))
             {
                 throw new InvalidOperationException("別のユーザーの登録は変更できない。");
             }
@@ -58,7 +58,7 @@ public sealed class AdminTaskRegistration(IAdminTaskStore store, string currentS
     public void Delete()
     {
         var xml = store.ReadXml(_name);
-        if (xml is not null && AdminTaskXml.IsForUser(xml, currentSid))
+        if (xml is not null && AdminTaskXml.IsForUser(xml, currentSid, accountName))
         {
             store.Delete(_name);
         }
