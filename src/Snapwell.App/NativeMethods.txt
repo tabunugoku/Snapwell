@@ -43,10 +43,8 @@ DestroyIcon
 GetDpiForWindow
 GetSystemMetricsForDpi
 SendMessageTimeout
-WM_NCHITTEST
 WM_GETMINMAXINFO
 MINMAXINFO
-HTCAPTION
 SEND_MESSAGE_TIMEOUT_FLAGS
 LoadCursor
 IDC_ARROW
@@ -58,8 +56,6 @@ GetWindow
 IsWindowVisible
 SetWindowPos
 HWND_TOPMOST
-WindowFromPoint
-GetAncestor
 Shell_NotifyIconGetRect
 GetForegroundWindow
 SetFocus

@@ -84,7 +84,7 @@ public sealed partial class SetupWindow
         var rows = Rows();
         AddRow(rows, "投げて配置", Text("タイトルバーをつかんで、置きたい方向へ投げます", "SnapwellRowDescriptionStyle"));
         AddRow(rows, "なぞって配置", InlineDescription(Keys("Ctrl", "Alt", "Space"),
-            "、またはタイトルバーの長押しでランチャーを開きます"));
+            "、またはトレイのメニューでランチャーを開きます"));
         AddRow(rows, "キーで配置", InlineDescription(Keys("Ctrl", "Alt"), " + 矢印で半分、",
             Keys("Shift"), " を足すと 1 区画ずつ拡大・縮小"));
     }

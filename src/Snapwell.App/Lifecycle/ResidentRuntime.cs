@@ -23,7 +23,6 @@ internal sealed class ResidentRuntime : IAppRuntime
     private readonly IZonePreview? _preview;
     private readonly Action<bool>? _setOverlayEnabled;
     private readonly IReadOnlyList<IDisposable>? _overlays;
-    private readonly LongPressDetector? _longPress;
     private readonly CornerWindowController? _corners;
     private readonly ResizeSnapController? _resize;
     private bool _disposed;
@@ -33,7 +32,7 @@ internal sealed class ResidentRuntime : IAppRuntime
         IMotionEngine motion, IReadOnlyList<HotkeyBinding> bindings,
         Action<IReadOnlyList<HotkeyBinding>> applyBindings, LauncherController? launcher = null,
         IZonePreview? preview = null, Action<bool>? setOverlayEnabled = null,
-        IReadOnlyList<IDisposable>? overlays = null, LongPressDetector? longPress = null,
+        IReadOnlyList<IDisposable>? overlays = null,
         ForegroundTargetTracker? foregroundTargets = null, CornerWindowController? corners = null,
         ResizeSnapController? resize = null)
     {
@@ -49,13 +48,8 @@ internal sealed class ResidentRuntime : IAppRuntime
         _preview = preview;
         _setOverlayEnabled = setOverlayEnabled;
         _overlays = overlays;
-        _longPress = longPress;
         _corners = corners;
         _resize = resize;
-        if (_longPress is not null)
-        {
-            _longPress.CandidateReady += HandleLongPress;
-        }
     }
 
     public void SetEnabled(bool enabled)
@@ -74,7 +68,6 @@ internal sealed class ResidentRuntime : IAppRuntime
             if (!enabled)
             {
                 _resize?.Cancel();
-                _longPress?.Cancel();
                 _preview?.Hide();
             }
 
@@ -104,35 +97,14 @@ internal sealed class ResidentRuntime : IAppRuntime
 
             _launcher?.ValidateTarget();
             _corners?.Handle(value);
-            if (_launcher?.IsOpen != true && _longPress?.HasOpenedLauncher == true)
-            {
-                // 描画失敗やオーバーレイ側の操作で閉じた表示の所有権を、次の表示へ持ち越さない。
-                _longPress.CancelLauncher();
-            }
-
-            // 終了の処理で記録を消す前に判定し、その終了通知自体もドラッグへ渡さない。
-            var consumeMoveSize = value switch
-            {
-                MoveSizeStarted start => _longPress?.OwnsMoveSizeFor(start.Handle) == true,
-                MoveSizeEnded end => _longPress?.OwnsMoveSizeFor(end.Handle) == true,
-                _ => false
-            };
-            if (_longPress?.Handle(value, _enabled && _launcher is { IsOpen: false }) == true)
-            {
-                _launcher?.Close();
-            }
-
             if (value is KeyChord chord)
             {
                 if (chord.Id == (int)WindowCommand.ToggleEnabled)
                 {
-                    _longPress?.Cancel();
                     _launcher?.Close();
                 }
 
-                // 移動ループ中の押下と配置を競合させず、解放まではランチャーの抑止割り当てを保つ。
-                var suppressAccept = chord.Id == (int)LauncherInput.Accept && _longPress?.IsHoldingLauncher == true;
-                if (!suppressAccept && _launcher?.Handle(chord) != true &&
+                if (_launcher?.Handle(chord) != true &&
                     ((_enabled && _launcher?.IsOpen != true) || chord.Id == (int)WindowCommand.ToggleEnabled))
                 {
                     _hotkeys.Handle(chord);
@@ -144,8 +116,7 @@ internal sealed class ResidentRuntime : IAppRuntime
                 {
                     _launcher?.HandleGlobalPointer(button);
                 }
-                else if (value is MoveSizeStarted start && !consumeMoveSize &&
-                    _longPress?.OwnsLauncherFor(start.Handle) != true)
+                else if (value is MoveSizeStarted)
                 {
                     // 別のドラッグへ操作を返し、ランチャーとプレビューを同時に表示しない。
                     _launcher?.Close();
@@ -156,61 +127,15 @@ internal sealed class ResidentRuntime : IAppRuntime
                 }
 
                 _drag.Enabled = _enabled && _launcher?.IsOpen != true;
-                if (!consumeMoveSize)
-                {
-                    _drag.Handle(value);
-                }
+                _drag.Handle(value);
 
-                _resize?.Handle(value, _enabled && !consumeMoveSize && _launcher?.IsOpen != true);
+                _resize?.Handle(value, _enabled && _launcher?.IsOpen != true);
             }
 
             _drag.Enabled = _enabled && _launcher?.IsOpen != true;
             if (_launcher?.IsOpen == true)
             {
-                if (_longPress?.HasOpenedLauncher != true)
-                {
-                    _longPress?.CancelLauncher();
-                }
-
                 _preview?.Hide();
-            }
-            else if (_longPress?.HasOpenedLauncher == true)
-            {
-                _longPress.CancelLauncher();
-            }
-        }
-    }
-
-    private void HandleLongPress(LongPressCandidate candidate)
-    {
-        lock (_gate)
-        {
-            if (_disposed || !_enabled || _launcher is null || _launcher.IsOpen)
-            {
-                return;
-            }
-        }
-
-        // 応答しない対象への SendMessageTimeout 中も、解放・一時停止・終了を配送する。
-        if (_longPress!.CheckTarget(candidate))
-        {
-            lock (_gate)
-            {
-                if (_disposed || !_enabled || _launcher!.IsOpen || !_longPress.TryActivate(candidate))
-                {
-                    return;
-                }
-
-                _launcher.Open(candidate.Handle);
-                if (_launcher.IsOpen)
-                {
-                    _drag.Enabled = false;
-                    _preview?.Hide();
-                }
-                else
-                {
-                    _longPress.Cancel();
-                }
             }
         }
     }
@@ -225,7 +150,6 @@ internal sealed class ResidentRuntime : IAppRuntime
                 return;
             }
 
-            _longPress?.Cancel();
             _launcher?.Close();
             _preview?.Hide();
             _hotkeys.ArrangeCurrentMonitor();
@@ -242,7 +166,6 @@ internal sealed class ResidentRuntime : IAppRuntime
                 return;
             }
 
-            _longPress?.Cancel();
             _preview?.Hide();
             _launcher.Open(_foregroundTargets!.Resolve(target), ignorePointerUpToMs);
             if (_launcher.IsOpen)
@@ -266,12 +189,6 @@ internal sealed class ResidentRuntime : IAppRuntime
             _disposed = true;
             _resize?.Cancel();
             _corners?.SetEnabled(false);
-            if (_longPress is not null)
-            {
-                _longPress.CandidateReady -= HandleLongPress;
-                _longPress.Dispose();
-            }
-
             _hotkeys.Stop();
             _applyBindings([]);
             _launcher?.Dispose();
