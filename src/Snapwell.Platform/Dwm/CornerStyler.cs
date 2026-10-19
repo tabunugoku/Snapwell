@@ -10,8 +10,9 @@ namespace Snapwell.Platform.Dwm;
 /// <summary>DWM_WINDOW_CORNER_PREFERENCE と同じ値を持つ角の指定。</summary>
 public enum CornerStyle { Default = 0, DoNotRound = 1, Round = 2, RoundSmall = 3 }
 
-/// <summary>ハンドル再利用時の誤復元を防ぐ、プロセスの識別と変更前の値。</summary>
-public sealed record CornerState(long Handle, uint ProcessId, long ProcessStartTicks, CornerStyle Original);
+/// <summary>ハンドル再利用時の誤復元を防ぐ、所有元の識別と変更前の値。</summary>
+public sealed record CornerState(long Handle, uint ProcessId, long ProcessStartTicks, CornerStyle Original,
+    uint ThreadId = 0, string? ClassName = null);
 
 /// <summary>角の設定に使う API の境界。</summary>
 public interface ICornerApi
@@ -39,11 +40,19 @@ public sealed class Win32CornerApi : ICornerApi
         }
 
         uint processId;
-        PInvoke.GetWindowThreadProcessId(window, &processId);
+        var threadId = PInvoke.GetWindowThreadProcessId(window, &processId);
+        Span<char> className = stackalloc char[256];
+        var classLength = PInvoke.GetClassName(window, className);
+        if (threadId == 0 || classLength == 0)
+        {
+            return null;
+        }
+
         try
         {
             using var process = Process.GetProcessById((int)processId);
-            return new((long)handle, processId, process.StartTime.ToUniversalTime().Ticks, (CornerStyle)preference);
+            return new((long)handle, processId, process.StartTime.ToUniversalTime().Ticks, (CornerStyle)preference,
+                threadId, className[..classLength].ToString());
         }
         catch (Exception exception) when (exception is ArgumentException or InvalidOperationException or
             System.ComponentModel.Win32Exception)
@@ -191,6 +200,15 @@ public sealed class CornerStyler
         }
 
         var current = _api.Read(handle);
+        if (original.ThreadId == 0 || string.IsNullOrEmpty(original.ClassName) ||
+            (current is not null && !SameOwner(original, current)))
+        {
+            _log?.Invoke($"角設定の復元対象が一致しないため記録を破棄: {handle}");
+            _modified.Remove((long)handle);
+            Save();
+            return true;
+        }
+
         if (current is null && _api.IsWindow(handle))
         {
             _log?.Invoke($"角設定の復元対象を確認できない: {handle}");
@@ -209,7 +227,9 @@ public sealed class CornerStyler
     }
 
     private static bool SameOwner(CornerState left, CornerState right) =>
-        left.ProcessId == right.ProcessId && left.ProcessStartTicks == right.ProcessStartTicks;
+        left.ProcessId == right.ProcessId && left.ProcessStartTicks == right.ProcessStartTicks &&
+        left.ThreadId != 0 && left.ThreadId == right.ThreadId && !string.IsNullOrEmpty(left.ClassName) &&
+        string.Equals(left.ClassName, right.ClassName, StringComparison.Ordinal);
 
     private void Save()
     {
