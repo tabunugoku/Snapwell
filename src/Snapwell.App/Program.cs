@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Security.Principal;
 using Snapwell.App.Dragging;
 using Snapwell.App.Hotkeys;
 using Snapwell.App.Lifecycle;
@@ -11,6 +12,7 @@ using Snapwell.Core.Settings;
 using Snapwell.Platform.Dwm;
 using Snapwell.Platform.Hooks;
 using Snapwell.Platform.Monitors;
+using Snapwell.Platform.Startup;
 using Snapwell.Platform.SystemSettings;
 using Snapwell.Platform.Windows;
 using Windows.Win32;
@@ -22,8 +24,21 @@ internal static class Program
 {
     /// <summary>STA のトレイと、操作・移動の専用スレッドを組み立てる。</summary>
     [STAThread]
-    private static int Main()
+    private static int Main(string[] args)
     {
+        if (args.Length > 0)
+        {
+            // 専用プロセスでは Mutex・トレイ・フックや通常の起動処理を一切作らない。
+            if (!AdminTaskHelper.TryParse(args, out _, out _))
+            {
+                return 1;
+            }
+
+            using var identity = WindowsIdentity.GetCurrent();
+            return AdminTaskHelper.Execute(args, identity.User?.Value ?? "", Environment.ProcessPath!,
+                ExecutableLocation.IsProtected, new TaskSchedulerService());
+        }
+
         if (!OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000))
         {
             return 1;

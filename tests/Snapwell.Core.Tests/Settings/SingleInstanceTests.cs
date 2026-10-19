@@ -4,6 +4,12 @@ namespace Snapwell.Core.Tests.Settings;
 
 public sealed class SingleInstanceTests
 {
+    [Fact]
+    public void MutexAccessDeniedMeansAlreadyRunning()
+    {
+        Assert.Null(SingleInstance.TryAcquireNamed("fake", _ => throw new UnauthorizedAccessException()));
+    }
+
     /// <summary>起動の種類によらず、同じユーザーでは同じ排他を使う。</summary>
     [Theory]
     [InlineData(false, false)]
