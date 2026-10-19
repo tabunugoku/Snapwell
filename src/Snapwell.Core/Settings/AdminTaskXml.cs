@@ -51,8 +51,7 @@ public static class AdminTaskXml
             Element("Triggers", Element("LogonTrigger", Element("UserId", userSid))),
             Element("Principals", new XElement(ns + "Principal", new XAttribute("id", "Author"),
                 Element("UserId", userSid), Element("LogonType", "InteractiveToken"),
-                Element("RunLevel", "HighestAvailable"),
-                Element("RequiredPrivileges", Element("Privilege", "SeImpersonatePrivilege")))),
+                Element("RunLevel", "HighestAvailable"))),
             Element("Settings", new object[]
             {
                 Element("MultipleInstancesPolicy", "IgnoreNew"),
