@@ -233,6 +233,7 @@ internal sealed class LauncherController : IDisposable
 
             if (button.Button == MouseButtonKind.Left)
             {
+                // オーバーレイ側の遅配で解放を巻き戻さないよう、グローバル通知だけで更新する。
                 _leftButtonDown = button.IsDown;
                 if (_ignoreRetargetRelease)
                 {
@@ -393,14 +394,17 @@ internal sealed class LauncherController : IDisposable
                         // 同じクリックの遅配をトレイと同じ時計で除外し、解放まで新しい選択を始めない。
                         Open(handle, timeMs);
                         _ignoreRetargetRelease = _selection is not null;
-                        _leftButtonDown = _ignoreRetargetRelease;
                     }
                 };
             }
         }
         else if (list.Buttons.FirstOrDefault(button => button.Bounds.Contains(pointer.Position)) is { } button)
         {
-            complete = PrepareArrangementCore(button.Layout);
+            // 選択解除の表示が遅れても、旧ボタンからモニター全体の整列へ切り替えない。
+            if (_selectedWindows.Count > 0)
+            {
+                complete = PrepareArrangementCore(button.Layout);
+            }
         }
         else if (list.Previous.Contains(pointer.Position) || list.Next.Contains(pointer.Position))
         {
