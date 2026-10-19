@@ -496,6 +496,10 @@ table.list tr:last-child td { border-bottom: 0; }
 .tm-item .check { width: 14px; color: var(--ink); }
 .tm-sep { height: 1px; background: var(--border); margin: 4px 6px; }
 .tm-sub { font-size: 11.5px; color: var(--muted); padding: 6px 10px 2px; }
+.tm-ico { display: grid; place-items: center; width: 22px; height: 22px; }
+.tray-probe { margin-top: 10px; display: flex; align-items: center; gap: 12px; font-size: 11.5px; color: var(--muted); }
+.tray-probe .seg { width: 280px; }
+.tray-probe .seg button { padding: 3px 8px; font-size: 11.5px; }
 .tray-ico { width: 20px; height: 20px; border-radius: 4px; display: grid; place-items: center; outline: 1px solid var(--blue-line); outline-offset: 3px; }
 
 /* 初回セットアップ */
@@ -908,14 +912,14 @@ table.list tr:last-child td { border-bottom: 0; }
     <div class="screen-head">
       <div>
         <h2>トレイからすぐ切り替える</h2>
-        <p>通知領域のアイコンをクリックすると開きます。有効・無効、配置のプロファイル、よく使う操作をここで選べます。</p>
+        <p>通知領域のアイコンをクリックすると開きます。実行・一時停止の切り替え、配置のプロファイル、よく使う操作をここで選べます。アイコンは状態（有効・一時停止中・異常）に合わせて変わります。</p>
       </div>
       <span class="ref">DESIGN §9, §10.3</span>
     </div>
     <div class="tray-stage">
       <div class="tray-menu" role="menu" aria-label="Snapwell">
         <div class="tm-head">
-          <svg width="22" height="22" viewBox="0 0 44 44" aria-hidden="true"><rect x="2" y="2" width="40" height="40" rx="9" fill="none" stroke="currentColor" stroke-width="3" style="color: var(--ink)"/><rect x="23" y="7" width="14" height="14" rx="3" style="fill: var(--ink)"/></svg>
+          <span class="tm-ico" id="trayHeadIco"></span>
           <span class="n">Snapwell</span>
           <span class="tag green" id="trayState">有効</span>
           <label class="switch"><input type="checkbox" id="trayToggle" checked aria-label="有効"><span></span></label>
@@ -924,9 +928,8 @@ table.list tr:last-child td { border-bottom: 0; }
         <div class="tm-sub">プロファイル</div>
         <div id="trayProfiles"></div>
         <div class="tm-sep"></div>
-        <button class="tm-item" type="button" role="menuitem"><span class="check"></span><span class="grow">現在のモニターを整列</span><span><kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>A</kbd></span></button>
-        <button class="tm-item" type="button" role="menuitem"><span class="check"></span><span class="grow">ランチャーを開く</span><span><kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>Space</kbd></span></button>
-        <button class="tm-item" type="button" role="menuitem"><span class="check"></span><span class="grow">一時的に無効化</span><span><kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>Pause</kbd></span></button>
+        <button class="tm-item" type="button" role="menuitem"><span class="check"></span><span class="grow">現在のモニターを整列</span></button>
+        <button class="tm-item" type="button" role="menuitem"><span class="check"></span><span class="grow">ランチャーを開く</span></button>
         <div class="tm-sep"></div>
         <button class="tm-item" type="button" role="menuitem"><span class="check"></span><span class="grow">設定を開く</span></button>
         <button class="tm-item" type="button" role="menuitem"><span class="check"></span><span class="grow">終了（標準の動作に戻す）</span></button>
@@ -934,9 +937,17 @@ table.list tr:last-child td { border-bottom: 0; }
       <div class="taskbar">
         <i class="tb-app start"></i><i class="tb-app"></i><i class="tb-app"></i><i class="tb-app"></i>
         <div class="tray">
-          <span class="tray-ico"><svg width="16" height="16" viewBox="0 0 44 44"><rect x="3" y="3" width="38" height="38" rx="9" fill="none" stroke="currentColor" stroke-width="4" style="color: var(--ink)"/><rect x="23" y="7" width="14" height="14" rx="3" style="fill: var(--ink)"/></svg></span>
+          <span class="tray-ico" id="trayTaskIco"></span>
           <span class="clock">10:24<br>2026/10/17</span>
         </div>
+      </div>
+    </div>
+    <div class="tray-probe">
+      <span>状態を試す（モックアップの確認用）</span>
+      <div class="seg" id="trayProbe">
+        <button type="button" data-v="active" aria-pressed="true">有効</button>
+        <button type="button" data-v="paused" aria-pressed="false">一時停止中</button>
+        <button type="button" data-v="error" aria-pressed="false">異常</button>
       </div>
     </div>
   </section>
@@ -2233,12 +2244,55 @@ function initTray() {
     render();
   });
   render();
-  $('#trayToggle').addEventListener('change', (ev) => {
-    const on = ev.target.checked;
+  // 状態ごとの図柄。assets/icons/tray-{active,paused,attention}-*.svg と同じ形（色はテーマ変数）
+  let icoSeq = 0;
+  const trayIcon = (state, size) => {
+    const frame = '<rect x="3" y="3" width="38" height="38" rx="9" fill="none" stroke="var(--ink)" stroke-width="4"/>';
+    let body;
+    if (state === 'paused') {
+      body = '<g opacity="0.38">' + frame
+        + '<rect x="24.5" y="8.5" width="11" height="11" rx="2" fill="none" stroke="var(--ink)" stroke-width="3"/></g>';
+    } else if (state === 'error') {
+      const id = 'bang' + (icoSeq++);
+      body = frame + `<mask id="${id}" maskUnits="userSpaceOnUse" x="0" y="0" width="44" height="44">`
+        + '<rect width="44" height="44" fill="#fff"/><path d="M30 8.8 V14.2" stroke="#000" stroke-width="3" stroke-linecap="round"/>'
+        + `<circle cx="30" cy="18.4" r="1.7" fill="#000"/></mask><circle cx="30" cy="14" r="8.5" fill="var(--red-tx)" mask="url(#${id})"/>`;
+    } else {
+      body = frame + '<rect x="23" y="7" width="14" height="14" rx="3" fill="var(--blue-tx)"/>';
+    }
+    return `<svg width="${size}" height="${size}" viewBox="0 0 44 44" aria-hidden="true">${body}</svg>`;
+  };
+  const states = {
+    active: ['有効', 'green'],
+    paused: ['一時停止中', 'yellow'],
+    error: ['異常', 'red'],
+  };
+  let syncing = false;
+  const apply = (state) => {
+    const [label, color] = states[state];
     const st = $('#trayState');
-    st.textContent = on ? '有効' : '無効';
-    st.className = 'tag ' + (on ? 'green' : 'red');
-  });
+    st.dataset.state = state; // 下の change から apply が呼ばれる前に書く（onchange がこの値を読む）
+    st.textContent = label;
+    st.className = 'tag ' + color;
+    $('#trayHeadIco').innerHTML = trayIcon(state, 22);
+    $('#trayTaskIco').innerHTML = trayIcon(state, 16);
+    const tg = $('#trayToggle');
+    if (tg.checked !== (state !== 'paused')) {
+      tg.checked = state !== 'paused';
+      syncing = true; // change で onchange が apply を再入させ、状態を上書きしないようにする
+      tg.dispatchEvent(new Event('change', { bubbles: true })); // スイッチの動きは change で進む
+      syncing = false;
+    }
+    $$('#trayProbe button').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.v === state)));
+  };
+  // 異常のまま実行・一時停止を切り替えられる。一時停止から戻すと有効になる
+  // initTray は画面を開くたびに呼ばれるので、重ねて登録しないよう on* に代入する
+  $('#trayToggle').onchange = (ev) => !syncing && apply(ev.target.checked ? ($('#trayState').dataset.state === 'error' ? 'error' : 'active') : 'paused');
+  $('#trayProbe').onclick = (ev) => {
+    const btn = ev.target.closest('[data-v]');
+    if (btn) apply(btn.dataset.v);
+  };
+  apply($('#trayState').dataset.state || 'active');
 }
 
 // ---------- 05 初回セットアップ ----------
