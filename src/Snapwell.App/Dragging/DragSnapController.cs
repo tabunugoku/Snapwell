@@ -71,7 +71,7 @@ internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSou
                 case MoveSizeStarted start:
                     StopTracking();
                     if (!inspector.TryInspect(start.Handle, out var window) || window.IsMaximized ||
-                        WindowClassifier.Classify(window, ownProcessId) == WindowKind.Excluded)
+                        !IsTarget(WindowClassifier.Classify(window, ownProcessId)))
                     {
                         return;
                     }
@@ -104,7 +104,7 @@ internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSou
                     var startSize = (_startBounds.Width, _startBounds.Height);
                     StopTracking();
                     if (!inspector.TryInspect(end.Handle, out var current) || current.IsMaximized ||
-                        WindowClassifier.Classify(current, ownProcessId) == WindowKind.Excluded)
+                        !IsTarget(WindowClassifier.Classify(current, ownProcessId)))
                     {
                         return;
                     }
@@ -139,6 +139,10 @@ internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSou
             }
         }
     }
+
+    // 設定は呼び出しごとに読み、変更を次のドラッグから反映する。サイズ固定を外すと吸着も予測線も出ない。
+    private bool IsTarget(WindowKind kind) =>
+        kind != WindowKind.Excluded && (kind != WindowKind.FixedSize || settings().MoveFixedSizeWindows);
 
     private void UpdatePreview(Vec2 point, double seconds)
     {

@@ -182,7 +182,7 @@ public sealed class SettingsTransferTests : IDisposable
     [InlineData("")]
     [InlineData("null")]
     [InlineData("[]")]
-    [InlineData("{\"SchemaVersion\":8,\"Feel\":{\"future\":true}}")]
+    [InlineData("{\"SchemaVersion\":9,\"Feel\":{\"future\":true}}")]
     [InlineData("{\"SchemaVersion\":999999999999,\"Feel\":\"Airy\"}")]
     public void InvalidOrFutureFilesAreRejectedWithoutChangingAnything(string json)
     {
@@ -296,6 +296,29 @@ public sealed class SettingsTransferTests : IDisposable
         Assert.Equal(19, SettingsStores.Portable(path).Load().Value.Gap);
         Assert.Empty(Directory.GetFiles(_directory, "*.tmp"));
         Assert.Empty(Directory.GetFiles(_directory, "*.bak"));
+    }
+
+    /// <summary>サイズ固定を動かす設定は単独で差分に出て、個別に取り込める。</summary>
+    [Fact]
+    public void MoveFixedSizeWindowsIsDetectedAndImportedIndividually()
+    {
+        var current = new PortableSettings();
+        var imported = current with { MoveFixedSizeWindows = false, Hotkeys = new(current.Hotkeys) };
+        var key = new SettingsTransferKey(SettingsField.MoveFixedSizeWindows);
+        var difference = Assert.Single(SettingsTransfer.GetDifferences(current, imported));
+        Assert.Equal(key, difference.Key);
+        Assert.Equal("オン", difference.CurrentValue);
+        Assert.Equal("オフ", difference.ImportedValue);
+        Assert.True(SettingsTransfer.HasChanges(current, imported));
+
+        var result = ReadExport(imported, current);
+        Assert.Equal([key], result.Differences.Select(item => item.Key));
+        var applied = SettingsTransfer.Apply(current, result, [key]);
+        Assert.False(applied.MoveFixedSizeWindows);
+        Assert.False(SettingsTransfer.HasChanges(applied, imported));
+        Assert.True(SettingsTransfer.Apply(current, result, [new(SettingsField.Gap)]).MoveFixedSizeWindows);
+        Assert.True(SettingsTransfer.Apply(current, result, []).MoveFixedSizeWindows);
+        Assert.False(SettingsTransfer.Apply(current, result).MoveFixedSizeWindows);
     }
 
     private SettingsImportResult ReadExport(PortableSettings imported, PortableSettings current)
