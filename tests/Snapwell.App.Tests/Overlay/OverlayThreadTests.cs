@@ -9,6 +9,77 @@ namespace Snapwell.App.Tests.Overlay;
 /// <summary>ネイティブ API を使わず、要求の集約と終了の上限を検証する。</summary>
 public sealed class OverlayThreadTests
 {
+    /// <summary>表示成功の通知は計算完了時ではなく、表示先が戻ってから届く。</summary>
+    [Fact]
+    public void PresentationNotificationWaitsForSuccessfulSurfaceShow()
+    {
+        using var release = new ManualResetEventSlim(false);
+        using var presented = new ManualResetEventSlim(false);
+        var fake = new FakeOverlay { Block = release };
+        using var overlay = new OverlayThread(() => (fake, fake));
+        try
+        {
+            ((IOverlayPresenter)overlay).Request(new(0, 0, 1, 1),
+                () => OverlayPainter.Create(1, 1), () => presented.Set());
+            Assert.True(fake.Entered.Wait(2000));
+            Assert.False(presented.IsSet);
+            release.Set();
+            Assert.True(presented.Wait(2000));
+            Assert.Single(fake.Shown);
+        }
+        finally
+        {
+            release.Set();
+        }
+    }
+
+    /// <summary>表示に失敗したフレームのヒットテストは公開しない。</summary>
+    [Fact]
+    public void FailedSurfaceShowDoesNotNotifyPresentation()
+    {
+        using var faulted = new ManualResetEventSlim(false);
+        var presented = false;
+        var fake = new FakeOverlay { ThrowOnShow = true };
+        using var overlay = new OverlayThread(() => (fake, fake));
+        overlay.Faulted += () => faulted.Set();
+        ((IOverlayPresenter)overlay).Request(new(0, 0, 1, 1),
+            () => OverlayPainter.Create(1, 1), () => presented = true);
+        Assert.True(faulted.Wait(2000));
+        Assert.False(presented);
+    }
+
+    /// <summary>計算中に新しい要求で破棄された版の対応表は公開しない。</summary>
+    [Fact]
+    public void SupersededPaintDoesNotNotifyPresentation()
+    {
+        using var entered = new ManualResetEventSlim(false);
+        using var release = new ManualResetEventSlim(false);
+        using var presented = new ManualResetEventSlim(false);
+        var discardedPresented = false;
+        var fake = new FakeOverlay();
+        using var overlay = new OverlayThread(() => (fake, fake));
+        try
+        {
+            ((IOverlayPresenter)overlay).Request(new(0, 0, 1, 1), () =>
+            {
+                entered.Set();
+                release.Wait();
+                return OverlayPainter.Create(1, 1);
+            }, () => discardedPresented = true);
+            Assert.True(entered.Wait(2000));
+            ((IOverlayPresenter)overlay).Request(new(1, 0, 1, 1),
+                () => OverlayPainter.Create(1, 1), () => presented.Set());
+            release.Set();
+            Assert.True(presented.Wait(2000));
+            Assert.False(discardedPresented);
+            Assert.Equal(new PixelRect(1, 0, 1, 1), Assert.Single(fake.Shown));
+        }
+        finally
+        {
+            release.Set();
+        }
+    }
+
     /// <summary>作成・計算・描画・片付けの失敗を、ロックを持たずに一度だけ通知する。</summary>
     [Theory]
     [InlineData("factory")]

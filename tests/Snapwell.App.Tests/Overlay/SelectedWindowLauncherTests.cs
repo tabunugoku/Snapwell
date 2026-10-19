@@ -2,6 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using Snapwell.App.Hotkeys;
 using Snapwell.App.Motion;
 using Snapwell.App.Overlay;
+using Snapwell.Core.Commands;
 using Snapwell.Core.Geometry;
 using Snapwell.Core.Layout;
 using Snapwell.Core.Overlay;
@@ -16,6 +17,221 @@ namespace Snapwell.App.Tests.Overlay;
 /// <summary>一覧からの選択と、既存のモーション経路への整列を検証する。</summary>
 public sealed class SelectedWindowLauncherTests
 {
+    /// <summary>Ctrl+1 の既存割り当てを保ち、整列ボタンとほかの一時キーも使える。</summary>
+    [Theory]
+    [InlineData(WindowCommand.ToggleEnabled)]
+    [InlineData(WindowCommand.OpenLauncher)]
+    public void ExistingControlOneBindingWinsWhileButtonsAndOtherArrangementKeysRemainAvailable(WindowCommand command)
+    {
+        using var fixture = new Fixture([new((int)command, KeyModifiers.Control, 0x31, AllowRepeat: false)]);
+        fixture.Launcher.Open(1);
+        Assert.DoesNotContain(fixture.Bindings, binding => binding.Id == (int)LauncherWindowInput.Grid);
+        var matcher = new HotkeyMatcher();
+        matcher.SetBindings(fixture.Bindings);
+        matcher.ProcessKey(0x11, true);
+        Assert.Equal((int)command, matcher.ProcessKey(0x31, true).Id);
+        Assert.Empty(fixture.Motion.Requests);
+        fixture.ClickWindow(2, true);
+        fixture.Presenter.Raise(new(OverlayPointerKind.Down,
+            fixture.Launcher.WindowList!.Buttons.Single(button => button.Layout == ArrangeLayout.Grid).Bounds.Center));
+        Assert.Single(fixture.Motion.Requests);
+        fixture.Launcher.Open(1);
+        fixture.ClickWindow(2, true);
+        matcher.SetBindings(fixture.Bindings);
+        var columns = matcher.ProcessKey(0x32, true);
+        Assert.Equal((int)LauncherWindowInput.Columns, columns.Id);
+        fixture.Launcher.Handle(new(columns.Id));
+        Assert.Equal(2, fixture.Motion.Requests.Count);
+    }
+
+    /// <summary>競合がなければ一覧の一時キーをすべて登録する。</summary>
+    [Fact]
+    public void NonConflictingExistingBindingsPreserveEveryWindowListBinding()
+    {
+        using var fixture = new Fixture(HotkeyBindingsBuilder.Build(DefaultHotkeys.Create()).Bindings);
+        fixture.Launcher.Open(1);
+        Assert.All(LauncherWindowBindings.All, binding => Assert.Contains(binding, fixture.Bindings));
+    }
+
+    /// <summary>計画中と最終調査中の構成変更は、配置を一件も渡さず一度だけ記録する。</summary>
+    [Theory]
+    [InlineData("removed", 1)]
+    [InlineData("work-area", 1)]
+    [InlineData("dpi-x", 1)]
+    [InlineData("dpi-y", 1)]
+    [InlineData("removed", 2)]
+    [InlineData("unchanged", 1)]
+    public void MonitorChangeDuringInspectionAbortsEntireArrangement(string change, int inspection)
+    {
+        using var fixture = new Fixture();
+        var calls = 0;
+        fixture.Inspector.Inspected = handle =>
+        {
+            if (handle != 3 || ++calls != inspection) { return; }
+            var monitor = fixture.Monitors.Items[0];
+            fixture.Monitors.Items = change switch
+            {
+                "removed" => [fixture.Monitors.Items[1]],
+                "work-area" => [monitor with { WorkArea = new(-1920, -200, 1920, 1000) }, fixture.Monitors.Items[1]],
+                "dpi-x" => [monitor with { DpiX = 192 }, fixture.Monitors.Items[1]],
+                "dpi-y" => [monitor with { DpiY = 192 }, fixture.Monitors.Items[1]],
+                _ => fixture.Monitors.Items,
+            };
+        };
+        var placements = new List<nint>();
+        var logs = 0;
+        var arrangement = new LauncherArrangement(fixture.Inspector, fixture.Monitors, 999,
+            (handle, _, _) => placements.Add(handle), () => logs++);
+        var result = arrangement.Execute(ArrangeLayout.Grid, [2, 3],
+            fixture.Monitors.Items[0].ToMonitorArea(), new(), 1);
+        if (change == "unchanged")
+        {
+            Assert.Equal(new nint[] { 2, 3 }, placements);
+            Assert.Equal(0, logs);
+        }
+        else
+        {
+            Assert.Empty(placements);
+            Assert.Empty(result.Targets);
+            Assert.Equal(2, result.ExcludedCount);
+            Assert.Equal(1, logs);
+        }
+    }
+
+    /// <summary>Tab が次ページへ先行しても、マウスは最後に表示した行を指す。</summary>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void PageBoundaryClickUsesPresentedRowsUntilNextFrameIsPresented(bool control)
+    {
+        using var fixture = new Fixture();
+        for (var i = 4; i <= 20; i++)
+        {
+            fixture.Inspector.Windows[i] = fixture.Inspector.Windows[2] with { Handle = i, Title = $"Window {i}" };
+        }
+
+        fixture.Launcher.Open(1);
+        fixture.Presenter.Requests[^1].Paint();
+        var oldList = fixture.Launcher.WindowList!;
+        fixture.Presenter.DelayPresentation = true;
+        for (var i = 0; i < oldList.Rows.Count; i++)
+        {
+            fixture.Launcher.Handle(new((int)LauncherWindowInput.Next));
+        }
+
+        var nextList = fixture.Launcher.WindowList!;
+        Assert.NotEqual(oldList.First, nextList.First);
+        fixture.Presenter.Raise(new(OverlayPointerKind.Down, oldList.Rows[0].Bounds.Center, control));
+        if (control)
+        {
+            Assert.Equal(new[] { oldList.Rows[0].Window.Handle }, fixture.Launcher.SelectedWindows);
+        }
+        else
+        {
+            fixture.Launcher.Handle(new((int)LauncherInput.Accept));
+            Assert.Equal(oldList.Rows[0].Window.Handle, Assert.Single(fixture.Motion.Requests).Handle);
+        }
+    }
+
+    /// <summary>表示が確定した後は新しいページの行をクリックできる。</summary>
+    [Fact]
+    public void PageBoundaryClickUsesNewRowsAfterPresentation()
+    {
+        using var fixture = new Fixture();
+        for (var i = 4; i <= 20; i++)
+        {
+            fixture.Inspector.Windows[i] = fixture.Inspector.Windows[2] with { Handle = i, Title = $"Window {i}" };
+        }
+
+        fixture.Launcher.Open(1);
+        fixture.Presenter.Requests[^1].Paint();
+        var oldList = fixture.Launcher.WindowList!;
+        fixture.Presenter.DelayPresentation = true;
+        for (var i = 0; i < oldList.Rows.Count; i++)
+        {
+            fixture.Launcher.Handle(new((int)LauncherWindowInput.Next));
+        }
+
+        fixture.Presenter.Requests[^1].Paint();
+        var newRow = fixture.Launcher.WindowList!.Rows[0];
+        Assert.NotEqual(oldList.Rows[0].Window.Handle, newRow.Window.Handle);
+        fixture.Presenter.Raise(new(OverlayPointerKind.Down, newRow.Bounds.Center, true));
+        Assert.Equal(new[] { newRow.Window.Handle }, fixture.Launcher.SelectedWindows);
+    }
+
+    /// <summary>次の要求があっても、途中の版が表示されたならその行を使う。</summary>
+    [Fact]
+    public void PresentedIntermediatePageWinsOverNewerPendingPage()
+    {
+        using var fixture = new Fixture();
+        for (var i = 4; i <= 60; i++)
+        {
+            fixture.Inspector.Windows[i] = fixture.Inspector.Windows[2] with { Handle = i, Title = $"Window {i}" };
+        }
+
+        fixture.Launcher.Open(1);
+        fixture.Presenter.Requests[^1].Paint();
+        var pageSize = fixture.Launcher.WindowList!.Rows.Count;
+        fixture.Presenter.DelayPresentation = true;
+        for (var i = 0; i < pageSize; i++)
+        {
+            fixture.Launcher.Handle(new((int)LauncherWindowInput.Next));
+        }
+
+        var displayedRow = fixture.Launcher.WindowList!.Rows[0];
+        var intermediateFrame = fixture.Presenter.Requests[^1];
+        for (var i = 0; i < pageSize; i++)
+        {
+            fixture.Launcher.Handle(new((int)LauncherWindowInput.Next));
+        }
+
+        Assert.NotEqual(displayedRow.Window.Handle, fixture.Launcher.WindowList!.Rows[0].Window.Handle);
+        intermediateFrame.Paint();
+        fixture.Presenter.Raise(new(OverlayPointerKind.Down, displayedRow.Bounds.Center, true));
+        Assert.Equal(new[] { displayedRow.Window.Handle }, fixture.Launcher.SelectedWindows);
+    }
+
+    /// <summary>閉じる前の描画完了で、開き直した表示の行を巻き戻さない。</summary>
+    [Fact]
+    public void PreviousOpeningPresentationCannotReplaceReopenedWindowRows()
+    {
+        using var fixture = new Fixture();
+        fixture.Launcher.Open(1);
+        var previousFrame = fixture.Presenter.Requests[^1];
+        fixture.Launcher.Close();
+        fixture.Launcher.Open(3);
+        fixture.Presenter.Requests[^1].Paint();
+        var displayedRow = fixture.Launcher.WindowList!.Rows[0];
+        previousFrame.Paint();
+        fixture.Presenter.Raise(new(OverlayPointerKind.Down, displayedRow.Bounds.Center, true));
+        Assert.Equal(new[] { displayedRow.Window.Handle }, fixture.Launcher.SelectedWindows);
+    }
+
+    /// <summary>切替元の押下と解放が遅配されても、新しいモニターの表示を保つ。</summary>
+    [Theory]
+    [InlineData(false, 100u)]
+    [InlineData(true, 100u)]
+    [InlineData(false, uint.MaxValue)]
+    public void CrossMonitorTargetClickIgnoresOriginPressAndRelease(bool globalPressFirst, uint timeMs)
+    {
+        using var fixture = new Fixture();
+        fixture.Launcher.Open(1);
+        var point = fixture.Launcher.WindowList!.Rows.Single(row => row.Window.Handle == 3).Bounds.Center;
+        var press = new MouseButton(MouseButtonKind.Left, true, (int)point.X, (int)point.Y, timeMs);
+        if (globalPressFirst) { fixture.Launcher.HandleGlobalPointer(press); }
+        fixture.Presenter.Raise(new(OverlayPointerKind.Down, point, TimeMs: timeMs));
+        if (!globalPressFirst) { fixture.Launcher.HandleGlobalPointer(press); }
+        Assert.True(fixture.Launcher.IsOpen);
+        Assert.Equal(new PixelRect(0, 0, 1920, 1080), fixture.Launcher.Selection!.WorkArea);
+        fixture.Launcher.HandleGlobalPointer(new(MouseButtonKind.Left, false,
+            (int)point.X, (int)point.Y, unchecked(timeMs + 1)));
+        fixture.Presenter.Raise(new(OverlayPointerKind.Up, point, TimeMs: unchecked(timeMs + 1)));
+        Assert.True(fixture.Launcher.IsOpen);
+        Assert.Empty(fixture.Motion.Requests);
+        fixture.Launcher.HandleGlobalPointer(new(MouseButtonKind.Left, true, -100, 100, unchecked(timeMs + 2)));
+        Assert.False(fixture.Launcher.IsOpen);
+    }
+
     /// <summary>Ctrl のときだけトグルし、通常クリックは配置対象を切り替える。</summary>
     [Fact]
     public void ControlClickTogglesAndPlainClickChangesPlacementTarget()
@@ -266,7 +482,7 @@ public sealed class SelectedWindowLauncherTests
         internal IReadOnlyList<HotkeyBinding> Bindings { get; private set; } = [];
         internal LauncherController Launcher { get; }
 
-        internal Fixture()
+        internal Fixture(IReadOnlyList<HotkeyBinding>? normalBindings = null)
         {
             for (var i = 1; i <= 3; i++)
             {
@@ -278,7 +494,7 @@ public sealed class SelectedWindowLauncherTests
             var executor = new HotkeyCommandExecutor(Inspector, Monitors, Motion, new Position(), () => new(),
                 () => true, () => { }, 999);
             Launcher = new(Inspector, Monitors, () => new PortableSettings(), Presenter, executor.Place,
-                bindings => Bindings = bindings, [], 999, () => OverlayTheme.Light);
+                bindings => Bindings = bindings, normalBindings ?? [], 999, () => OverlayTheme.Light);
         }
 
         internal void ClickWindow(nint handle, bool control) => Presenter.Raise(new(OverlayPointerKind.Down,

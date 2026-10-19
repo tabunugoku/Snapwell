@@ -8,6 +8,14 @@ public sealed record HotkeyConflict(KeyChordSpec Chord, IReadOnlyList<WindowComm
 /// <summary>ホットキーの競合と、設定画面に表示する名前。</summary>
 public static class HotkeyCatalog
 {
+    /// <summary>既存の修飾キーと仮想キーの組を優先し、重ならない一時キーだけを返す。</summary>
+    public static IReadOnlyList<KeyChordSpec> AvailableTemporaryChords(IEnumerable<KeyChordSpec> temporary,
+        IEnumerable<KeyChordSpec> existing)
+    {
+        var occupied = existing.ToHashSet();
+        return temporary.Where(chord => !occupied.Contains(chord)).ToArray();
+    }
+
     /// <summary>修飾キーと仮想キーの両方が一致する割り当てを列挙順で返す。</summary>
     public static IReadOnlyList<HotkeyConflict> FindConflicts(
         IReadOnlyDictionary<WindowCommand, KeyChordSpec> hotkeys) => hotkeys

@@ -32,6 +32,9 @@ internal sealed class LauncherController : IDisposable
     private readonly WindowSelection _selectedWindows = new();
     private IReadOnlyList<LauncherWindow> _windows = [];
     private LauncherWindowListLayout? _windowList;
+    private LauncherWindowListLayout? _displayedWindowList;
+    private long _displayGeneration;
+    private long _displayedRevision;
     private MonitorArea? _destination;
     private int _focusedWindow;
     private SelectedArrangementPlan? _lastArrangement;
@@ -44,6 +47,7 @@ internal sealed class LauncherController : IDisposable
     private ZoneSelection? _selection;
     private nint _target;
     private uint? _ignorePointerUpToMs;
+    private bool _ignoreRetargetRelease;
     private bool _mouseSelecting;
     private bool _leftButtonDown;
     private bool _enabled = true;
@@ -62,7 +66,8 @@ internal sealed class LauncherController : IDisposable
         _applyBindings = applyBindings;
         _normalBindings = normalBindings;
         _pausedBindings = HotkeyBindingsBuilder.Paused(normalBindings);
-        _launcherBindings = [.. LauncherWindowBindings.All, .. HotkeyBindingsBuilder.Launcher(normalBindings)];
+        _launcherBindings =
+            [.. LauncherWindowBindings.WithoutConflicts(normalBindings), .. HotkeyBindingsBuilder.Launcher(normalBindings)];
         _ownProcessId = ownProcessId;
         _theme = theme ?? OverlayThemeSource.Read;
         _arrangement = new(inspector, monitors, ownProcessId, place);
@@ -229,6 +234,11 @@ internal sealed class LauncherController : IDisposable
             if (button.Button == MouseButtonKind.Left)
             {
                 _leftButtonDown = button.IsDown;
+                if (_ignoreRetargetRelease)
+                {
+                    _ignoreRetargetRelease = false;
+                    if (!button.IsDown) { return; }
+                }
             }
 
             if (ValidateTargetCore() && button.IsDown && (button.Button == MouseButtonKind.Right ||
@@ -316,7 +326,7 @@ internal sealed class LauncherController : IDisposable
         var handled = false;
         lock (_gate)
         {
-            if (_windowList?.Panel.Contains(pointer.Position) == true)
+            if (_displayedWindowList?.Panel.Contains(pointer.Position) == true)
             {
                 if (!ValidateTargetCore())
                 {
@@ -339,7 +349,7 @@ internal sealed class LauncherController : IDisposable
     private bool HandleWindowPointerCore(OverlayPointer pointer, out Action? complete)
     {
         complete = null;
-        if (_windowList is not { } list || !list.Panel.Contains(pointer.Position))
+        if (_displayedWindowList is not { } list || !list.Panel.Contains(pointer.Position))
         {
             return false;
         }
@@ -374,8 +384,18 @@ internal sealed class LauncherController : IDisposable
             else
             {
                 var handle = row.Window.Handle;
+                var timeMs = pointer.TimeMs ?? unchecked((uint)Environment.TickCount);
                 CloseCore();
-                complete = () => Open(handle);
+                complete = () =>
+                {
+                    lock (_gate)
+                    {
+                        // 同じクリックの遅配をトレイと同じ時計で除外し、解放まで新しい選択を始めない。
+                        Open(handle, timeMs);
+                        _ignoreRetargetRelease = _selection is not null;
+                        _leftButtonDown = _ignoreRetargetRelease;
+                    }
+                };
             }
         }
         else if (list.Buttons.FirstOrDefault(button => button.Bounds.Contains(pointer.Position)) is { } button)
@@ -520,7 +540,7 @@ internal sealed class LauncherController : IDisposable
             }
             else if (_mouseSelecting && pointer.Kind is OverlayPointerKind.Move or OverlayPointerKind.Up)
             {
-                if (panel.Panel.Contains(pointer.Position) || _windowList?.Panel.Contains(pointer.Position) == true ||
+                if (panel.Panel.Contains(pointer.Position) || _displayedWindowList?.Panel.Contains(pointer.Position) == true ||
                     panel.Options.Any(rect => rect.Contains(pointer.Position)))
                 {
                     _mouseSelecting = pointer.Kind != OverlayPointerKind.Up;
@@ -597,21 +617,33 @@ internal sealed class LauncherController : IDisposable
         _panelLayout ??= LauncherPanelLayout.Create(selection, scale, title, menuOpen);
         _windowList = LauncherWindowListLayout.Create(selection.WorkArea, _panelLayout.Panel, scale,
             windows, selected, focused);
+        var generation = _displayGeneration;
+        var renderedPanel = _panelLayout;
+        var renderedList = _windowList;
         _presenter.Request(selection.WorkArea, () =>
             LauncherPanelRenderer.Current.Render(selection, title, scale, menuOpen, _theme(), layout =>
             {
+                renderedPanel = layout;
+                renderedList = LauncherWindowListLayout.Create(selection.WorkArea, layout.Panel, scale,
+                    windows, selected, focused);
+            }, layout => LauncherWindowListLayout.Create(selection.WorkArea, layout.Panel, scale,
+                windows, selected, focused)), () =>
+            {
                 lock (_gate)
                 {
-                    // 閉じた後や新しい要求の後に完了した描画で、当たり判定を巻き戻さない。
-                    if (_selection is not null && revision == _drawRevision)
+                    // 計算だけで破棄されたフレームは反映せず、実際に表示した版でヒットさせる。
+                    if (_selection is not null && generation == _displayGeneration && revision >= _displayedRevision)
                     {
-                        _panelLayout = layout;
-                        _windowList = LauncherWindowListLayout.Create(selection.WorkArea, layout.Panel, scale,
-                            windows, selected, focused);
+                        _displayedRevision = revision;
+                        _displayedWindowList = renderedList;
+                        if (revision == _drawRevision)
+                        {
+                            _panelLayout = renderedPanel;
+                            _windowList = renderedList;
+                        }
                     }
                 }
-            }, layout => LauncherWindowListLayout.Create(selection.WorkArea, layout.Panel, scale,
-                windows, selected, focused)));
+            });
     }
 
     private void CloseCore()
@@ -623,10 +655,13 @@ internal sealed class LauncherController : IDisposable
 
         _selection = null;
         _ignorePointerUpToMs = null;
+        _ignoreRetargetRelease = false;
         _target = 0;
         _selectedWindows.Clear();
         _windows = [];
         _windowList = null;
+        _displayedWindowList = null;
+        _displayGeneration++;
         _destination = null;
         _targetTitle = "";
         _panelLayout = null;

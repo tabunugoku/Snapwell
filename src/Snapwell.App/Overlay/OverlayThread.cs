@@ -257,6 +257,7 @@ internal sealed class OverlayThread : IOverlayPresenter, IOverlaySurface
 
             _state = "show";
             surface.Show(request.Bounds, frame);
+            frame.Presented?.Invoke();
         }
         _state = "message-loop";
         return true;

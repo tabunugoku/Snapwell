@@ -134,8 +134,21 @@ internal sealed class RecordingPresenter : IOverlayPresenter
     internal List<(PixelRect Bounds, Func<OverlayFrame> Paint)> Requests { get; } = [];
     internal int Hides;
     internal int Disposals;
+    internal bool DelayPresentation;
     public event Action<OverlayPointer>? Pointer;
     public void Request(PixelRect bounds, Func<OverlayFrame> paint) => Requests.Add((bounds, paint));
+    public void Request(PixelRect bounds, Func<OverlayFrame> paint, Action presented)
+    {
+        OverlayFrame PaintAndPresent()
+        {
+            var frame = paint();
+            presented();
+            return frame;
+        }
+
+        Requests.Add((bounds, PaintAndPresent));
+        if (!DelayPresentation) { presented(); }
+    }
     public void Hide() => Hides++;
     public void Dispose() => Disposals++;
     internal void Raise(OverlayPointer pointer) => Pointer?.Invoke(pointer);
