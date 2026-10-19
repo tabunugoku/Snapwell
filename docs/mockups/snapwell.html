@@ -411,7 +411,10 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
 .lwin-row .ttl { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lwin-row .role { flex: none; font-size: 10.5px; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); }
 .lwin-row .role.main { background: var(--blue-bg); color: var(--blue-tx); border-color: var(--blue-line); font-weight: 600; }
-.lwin-row .setmain { flex: none; border: 0; background: transparent; color: var(--muted); font-size: 11px; cursor: pointer; padding: 1px 4px; border-radius: 4px; }
+.lwin-row .role { display: inline-flex; align-items: center; gap: 5px; width: 76px; box-sizing: border-box; padding: 1px 0 1px 9px; font: inherit; font-size: 10.5px; }
+.lwin-row .role .rd { flex: none; box-sizing: border-box; width: 10px; height: 10px; border-radius: 50%; border: 1px solid currentColor; display: grid; place-items: center; }
+.lwin-row .role .rd.on::after { content: ""; width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
+.lwin-row .setmain { cursor: pointer; background: transparent; }
 .lwin-row .setmain:hover { background: var(--surface); color: var(--blue-tx); }
 .lwin-pager { display: flex; align-items: center; justify-content: space-between; font-size: 11.5px; color: var(--muted); }
 .lwin-pager button { border: 0; background: transparent; color: var(--blue-tx); font-size: 11.5px; cursor: pointer; padding: 2px 6px; border-radius: 4px; }
@@ -746,7 +749,7 @@ table.list tr:last-child td { border-bottom: 0; }
                   <div class="lwin-note">
                     <span><kbd>1</kbd>–<kbd>9</kbd> ウィンドウを選択（最大 9 件）</span>
                     <span><kbd>Alt</kbd> + <kbd>1</kbd>–<kbd>4</kbd> 方式を選んで整列</span>
-                    <span>☆ をクリックでメインを変更</span>
+                    <span>スタックの輪をクリックでメインを変更</span>
                   </div>
                 </div>
               </div>
@@ -1794,7 +1797,7 @@ function renderWin() {
     row.innerHTML = `<span class="key"><kbd>${k + 1}</kbd></span>`
       + `<span class="box">${on ? '✓' : ''}</span>`
       + `<span class="ttl"></span>`
-      + (on ? (isMain ? '<span class="role main">★ メイン</span>' : '<button class="setmain" type="button" title="メインにする" aria-label="メインにする">☆</button><span class="role">スタック</span>') : '');
+      + (on ? (isMain ? '<span class="role main"><i class="rd on" aria-hidden="true"></i>メイン</span>' : '<button class="role setmain" type="button" title="メインにする" aria-label="メインにする"><i class="rd" aria-hidden="true"></i>スタック</button>') : '');
     row.querySelector('.ttl').textContent = title;
     list.appendChild(row);
   });
