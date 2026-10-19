@@ -10,7 +10,7 @@ namespace Snapwell.App.Overlay;
 
 /// <summary>一覧と整列で同じ対象判定を使い、ネイティブ調査を差し替える境界。</summary>
 internal sealed class LauncherArrangement(IWindowInspector inspector, IMonitorSource monitors, uint ownProcessId,
-    Action<nint, PixelRect, PixelRect> place)
+    Action<nint, PixelRect, PixelRect> place, Action? monitorChanged = null)
 {
     internal IReadOnlyList<LauncherWindow> Snapshot() => inspector.GetTopLevelWindows().Distinct()
         .Select(Inspect).OfType<WindowSnapshot>()
@@ -19,11 +19,13 @@ internal sealed class LauncherArrangement(IWindowInspector inspector, IMonitorSo
     internal SelectedArrangementPlan Execute(ArrangeLayout layout, IReadOnlyList<nint> selected,
         MonitorArea destination, Spacing spacing, nint target)
     {
-        var areas = monitors.GetMonitors().Select(monitor => monitor.ToMonitorArea()).ToArray();
+        var monitorSnapshot = monitors.GetMonitors();
+        var areas = monitorSnapshot.Select(monitor => monitor.ToMonitorArea()).ToArray();
+        var originalMonitor = monitorSnapshot.FirstOrDefault(monitor => monitor.ToMonitorArea() == destination);
         // 古い座標や DPI で動かさず、構成が変わった場合は再度開いてもらう。
-        if (!areas.Contains(destination))
+        if (originalMonitor is null)
         {
-            return new([], selected.Count);
+            return AbortForMonitorChange(selected.Count);
         }
 
         var handles = selected;
@@ -38,7 +40,7 @@ internal sealed class LauncherArrangement(IWindowInspector inspector, IMonitorSo
         var plan = SelectedWindowArrangement.Plan(layout, handles, destination, spacing,
             handle => Inspect(handle)?.VisualBounds);
         var excluded = plan.ExcludedCount;
-        var executed = new List<ArrangementTarget>();
+        var available = new List<ArrangementTarget>();
         foreach (var item in plan.Targets)
         {
             // 計画後に閉じた・最小化された対象は、配置経路へ渡す直前にも外す。
@@ -48,11 +50,28 @@ internal sealed class LauncherArrangement(IWindowInspector inspector, IMonitorSo
                 continue;
             }
 
-            place(item.Handle, item.Bounds, destination.WorkArea);
-            executed.Add(item);
+            available.Add(item);
         }
 
-        return new(executed, excluded);
+        // 全対象の最終調査後に比較し、調査中の構成変更なら一件目から渡さない。
+        if (!monitors.GetMonitors().Contains(originalMonitor))
+        {
+            return AbortForMonitorChange(plan.ExcludedCount + plan.Targets.Count);
+        }
+
+        foreach (var item in available)
+        {
+            place(item.Handle, item.Bounds, destination.WorkArea);
+        }
+
+        return new(available, excluded);
+    }
+
+    private SelectedArrangementPlan AbortForMonitorChange(int excluded)
+    {
+        if (monitorChanged is not null) { monitorChanged(); }
+        else { LauncherLog.Write(0, "arrangement-monitor-changed", null); }
+        return new([], excluded);
     }
 
     private WindowSnapshot? Inspect(nint handle) => handle != 0 &&

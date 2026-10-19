@@ -34,6 +34,7 @@ internal sealed unsafe class LayeredOverlayWindow : IOverlaySurface, IOverlayLoo
     private OverlayFrame? _lastFrame;
     private long _lastRevision;
     private bool _captured;
+    private uint _messageTimeMs;
 
     internal LayeredOverlayWindow(bool interactive, long generation,
         Action<long, string, Exception?>? diagnostic)
@@ -137,7 +138,7 @@ internal sealed unsafe class LayeredOverlayWindow : IOverlaySurface, IOverlayLoo
 
             var destinationPixels = new Span<byte>(_bits, frame.Pixels.Length);
             // 途中の版が表示されなかったときは全面をコピーし、差分の取りこぼしを防ぐ。
-            if (ReferenceEquals(_lastFrame, frame) && _lastRevision == frame.BaseRevision &&
+            if (ReferenceEquals(_lastFrame?.Pixels, frame.Pixels) && _lastRevision == frame.BaseRevision &&
                 frame.DirtyRegions is { } regions)
             {
                 foreach (var region in regions)
@@ -227,6 +228,7 @@ internal sealed unsafe class LayeredOverlayWindow : IOverlaySurface, IOverlayLoo
                 return;
             }
 
+            _messageTimeMs = message.time;
             PInvoke.TranslateMessage(in message);
             PInvoke.DispatchMessage(in message);
             if (_callbackFailure is { } failure)
@@ -342,7 +344,7 @@ internal sealed unsafe class LayeredOverlayWindow : IOverlaySurface, IOverlayLoo
                 _ => OverlayPointerKind.Move,
             };
             Pointer?.Invoke(new(kind, OverlayCoordinates.ToScreen(new(client.X, client.Y),
-                new(origin.X, origin.Y)), ((nuint)wParam.Value & 0x0008) != 0));
+                new(origin.X, origin.Y)), ((nuint)wParam.Value & 0x0008) != 0, _messageTimeMs));
             return default;
         }
 

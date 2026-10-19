@@ -1,3 +1,4 @@
+using Snapwell.Core.Commands;
 using Snapwell.Platform.Hooks;
 
 namespace Snapwell.App.Overlay;
@@ -11,6 +12,14 @@ internal enum LauncherWindowInput
 /// <summary>一覧を開いている間だけ有効なキーの定義。</summary>
 internal static class LauncherWindowBindings
 {
+    /// <summary>既存のキーを隠さず、競合した一時キーだけを外す。</summary>
+    internal static IReadOnlyList<HotkeyBinding> WithoutConflicts(IEnumerable<HotkeyBinding> existing)
+    {
+        static KeyChordSpec Chord(HotkeyBinding binding) => new((ChordModifiers)binding.Modifiers, binding.VirtualKey);
+        var available = HotkeyCatalog.AvailableTemporaryChords(All.Select(Chord), existing.Select(Chord)).ToHashSet();
+        return All.Where(binding => available.Contains(Chord(binding))).ToArray();
+    }
+
     internal static bool Contains(int id) => id is >= (int)LauncherWindowInput.Next and
         <= (int)LauncherWindowInput.MainAndStack;
 
