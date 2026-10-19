@@ -13,6 +13,8 @@ namespace Snapwell.App.Dragging;
 /// <summary>リサイズの制約を取得する境界。寸法は見た目の物理ピクセル。</summary>
 internal interface IResizeConstraints
 {
+    uint GetDpi(nint handle);
+
     bool TryGetMinimum(WindowSnapshot window, out int width, out int height);
 }
 
@@ -21,6 +23,7 @@ internal sealed class ResizeSnapController(IWindowInspector inspector, IMonitorS
     IMotionEngine motion, Func<PortableSettings> settings, IResizeConstraints constraints, uint ownProcessId)
 {
     private WindowSnapshot? _start;
+    private uint _startDpi;
 
     internal void Handle(HookEvent value, bool enabled)
     {
@@ -33,6 +36,7 @@ internal sealed class ResizeSnapController(IWindowInspector inspector, IMonitorS
         if (value is MoveSizeStarted start)
         {
             _start = inspector.TryInspect(start.Handle, out var window) && Eligible(window) ? window : null;
+            _startDpi = _start is null ? 0 : constraints.GetDpi(start.Handle);
         }
         else if (value is WindowDestroyed closed && _start?.Handle == closed.Handle)
         {
@@ -41,8 +45,10 @@ internal sealed class ResizeSnapController(IWindowInspector inspector, IMonitorS
         else if (value is MoveSizeEnded end && _start is { } original && original.Handle == end.Handle)
         {
             _start = null;
+            var currentDpi = constraints.GetDpi(end.Handle);
             if (motion.IsMoving(end.Handle) || !inspector.TryInspect(end.Handle, out var window) ||
                 window.ProcessId != original.ProcessId || !Eligible(window) ||
+                _startDpi == 0 || currentDpi == 0 || _startDpi != currentDpi ||
                 (original.VisualBounds.Width == window.VisualBounds.Width &&
                     original.VisualBounds.Height == window.VisualBounds.Height) ||
                 !constraints.TryGetMinimum(window, out var width, out var height))
@@ -53,7 +59,7 @@ internal sealed class ResizeSnapController(IWindowInspector inspector, IMonitorS
             var options = settings();
             var areas = monitors.GetMonitors().Select(monitor => monitor.ToMonitorArea()).ToArray();
             var plan = ResizeSnapPlanner.Plan(options, enabled, true, original.VisualBounds,
-                window.VisualBounds, areas, width, height);
+                window.VisualBounds, areas, _startDpi, currentDpi, width, height);
             if (plan is not null)
             {
                 motion.Request(new(end.Handle, window.VisualBounds, plan.Target, plan.Walls,
@@ -71,6 +77,9 @@ internal sealed class ResizeSnapController(IWindowInspector inspector, IMonitorS
 /// <summary>公開メッセージで最小寸法を問い合わせ、応答しないアプリは揃えない。</summary>
 internal sealed class Win32ResizeConstraints : IResizeConstraints
 {
+    public uint GetDpi(nint handle) => OperatingSystem.IsWindowsVersionAtLeast(10, 0, 14393)
+        ? PInvoke.GetDpiForWindow(new HWND(handle)) : 0;
+
     // アニメーションの長さではなく、他プロセスの応答待ちの上限。
     private const uint TimeoutMilliseconds = 100;
 

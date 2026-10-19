@@ -13,10 +13,11 @@ public static class ResizeSnapPlanner
 {
     /// <summary>移動だけ・無効・変更不可・最小サイズを満たせない場合は計画しない。</summary>
     public static ResizeSnapPlan? Plan(PortableSettings settings, bool enabled, bool canResize,
-        PixelRect start, PixelRect current, IReadOnlyList<MonitorArea> monitors,
+        PixelRect start, PixelRect current, IReadOnlyList<MonitorArea> monitors, uint startDpi, uint currentDpi,
         int minimumWidth = 1, int minimumHeight = 1)
     {
         if (!enabled || !settings.SnapAfterResize || !canResize || monitors.Count == 0 ||
+            startDpi == 0 || currentDpi == 0 || startDpi != currentDpi ||
             (start.Width == current.Width && start.Height == current.Height))
         {
             return null;
