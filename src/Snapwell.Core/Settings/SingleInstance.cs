@@ -13,9 +13,24 @@ public sealed class SingleInstance : IDisposable
 
     /// <summary>同名のオブジェクトがなければ、解放まで Mutex を保持するインスタンスを返す。</summary>
     public static SingleInstance? TryAcquire(string userSid, bool setup = false)
+        => TryAcquireNamed(GetMutexName(userSid, setup));
+
+    /// <summary>権限の違う既存 Mutex でアクセスを拒否された場合も、起動済みとして扱う。</summary>
+    public static SingleInstance? TryAcquireNamed(string name,
+        Func<string, (Mutex Mutex, bool CreatedNew)>? create = null)
     {
         // 所有権を取らないため、同じスレッドでの再取得やスレッドの終了で二重起動を許さない。
-        var mutex = new Mutex(false, GetMutexName(userSid, setup), out var createdNew);
+        Mutex mutex;
+        bool createdNew;
+        try
+        {
+            (mutex, createdNew) = (create ?? Create)(name);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return null;
+        }
+
         if (!createdNew)
         {
             mutex.Dispose();
@@ -23,6 +38,12 @@ public sealed class SingleInstance : IDisposable
         }
 
         return new(mutex);
+    }
+
+    private static (Mutex, bool) Create(string name)
+    {
+        var mutex = new Mutex(false, name, out var createdNew);
+        return (mutex, createdNew);
     }
 
     /// <summary>保持している Mutex を解放し、次の設定画面の起動を許可する。</summary>
