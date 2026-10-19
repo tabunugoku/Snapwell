@@ -32,22 +32,27 @@ public static class AdminTaskXml
     }
 
     /// <summary>パスを引数に分割せず、現在のユーザーの対話セッションで起動する。</summary>
-    public static string Create(string executablePath, string userSid)
+    public static string Create(string executablePath, string userSid, Func<string, string>? normalizePath = null) =>
+        Create(TaskExecutablePath.Create(executablePath, normalizePath), userSid);
+
+    /// <summary>保持した正規化結果を検査し、再び正規化せず XML に使う。</summary>
+    public static string Create(TaskExecutablePath executablePath, string userSid)
     {
         _ = GetTaskName(userSid);
-        if (!ProtectedLocation.IsLiteralTaskPath(executablePath))
+        if (!executablePath.IsLiteral)
         {
             throw new ArgumentException("管理者起動のパスに % は使えない。", nameof(executablePath));
         }
 
-        var path = Path.GetFullPath(executablePath);
+        var path = executablePath.Value;
         XNamespace ns = Namespace;
         XElement Element(string name, object content) => new(ns + name, content);
-        return new XElement(ns + "Task", new XAttribute("version", "1.2"),
+        return new XElement(ns + "Task", new XAttribute("version", "1.3"),
             Element("Triggers", Element("LogonTrigger", Element("UserId", userSid))),
             Element("Principals", new XElement(ns + "Principal", new XAttribute("id", "Author"),
                 Element("UserId", userSid), Element("LogonType", "InteractiveToken"),
-                Element("RunLevel", "HighestAvailable"))),
+                Element("RunLevel", "HighestAvailable"),
+                Element("RequiredPrivileges", Element("Privilege", "SeImpersonatePrivilege")))),
             Element("Settings", new object[]
             {
                 Element("MultipleInstancesPolicy", "IgnoreNew"),

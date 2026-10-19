@@ -26,7 +26,8 @@ public sealed unsafe class TaskSchedulerService : IAdminTaskService
     public string? ReadCommand() => _registration.ReadCommand();
 
     /// <summary>安全な DACL の新規タスクに置き換える。</summary>
-    public void Register(string executablePath, string userSid) => _registration.Register(executablePath, userSid);
+    public void Register(TaskExecutablePath executablePath, string userSid) =>
+        _registration.Register(executablePath, userSid);
 
     /// <summary>自分のタスクを削除する。</summary>
     public void Delete() => _registration.Delete();

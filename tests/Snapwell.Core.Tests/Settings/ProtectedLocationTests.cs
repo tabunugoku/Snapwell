@@ -6,6 +6,38 @@ public sealed class ProtectedLocationTests
 {
     private const string Administrators = "S-1-5-32-544";
 
+    [Fact]
+    public void SettingsLocationPolicyRejectsPercentIntroducedByNormalizationBeforeReadingDisk()
+    {
+        var source = new FakeLocation();
+        var calls = 0;
+        Assert.False(ProtectedLocation.IsProtected(@"C:\PROGRA~1\SNAPWE~1\Snapwell.exe", source, path =>
+        {
+            Assert.DoesNotContain('%', path);
+            Assert.Equal(1, ++calls);
+            return @"C:\Program Files\Snapwell-%SW%\Snapwell.exe";
+        }));
+        Assert.Equal(1, calls);
+        Assert.Null(source.DrivePath);
+        Assert.False(source.Read);
+    }
+
+    [Fact]
+    public void DriveAndHierarchyUseTheSameNormalizedPath()
+    {
+        const string Expanded = @"C:\Program Files\Snapwell\Snapwell.exe";
+        var source = new FakeLocation();
+        var calls = 0;
+        Assert.True(ProtectedLocation.IsProtected(@"C:\PROGRA~1\SNAPWE~1\Snapwell.exe", source, _ =>
+        {
+            Assert.Equal(1, ++calls);
+            return Expanded;
+        }));
+        Assert.Equal(1, calls);
+        Assert.Equal(Expanded, source.DrivePath);
+        Assert.Equal(Expanded, source.HierarchyPath);
+    }
+
     [Theory]
     [InlineData(@"\\server\share\Snapwell.exe", DriveType.Fixed)]
     [InlineData(@"\\?\UNC\server\share\Snapwell.exe", DriveType.Fixed)]
@@ -46,12 +78,19 @@ public sealed class ProtectedLocationTests
     {
         internal DriveType Drive = DriveType.Fixed;
         internal bool Read;
+        internal string? DrivePath;
+        internal string? HierarchyPath;
         internal LocationEntry[] Entries = Enumerable.Range(0, 3)
             .Select(_ => new LocationEntry(false, new(Administrators, true, false, []))).ToArray();
-        public DriveType GetDriveType(string path) => Drive;
+        public DriveType GetDriveType(string path)
+        {
+            DrivePath = path;
+            return Drive;
+        }
         public IEnumerable<LocationEntry> ReadHierarchy(string path)
         {
             Read = true;
+            HierarchyPath = path;
             return Entries;
         }
     }

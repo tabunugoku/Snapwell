@@ -13,7 +13,7 @@ public interface IAdminTaskService
     string? ReadCommand();
 
     /// <summary>現在のユーザーの管理者起動を登録する。</summary>
-    void Register(string executablePath, string userSid);
+    void Register(TaskExecutablePath executablePath, string userSid);
 
     /// <summary>自分のタスクを削除する。</summary>
     void Delete();

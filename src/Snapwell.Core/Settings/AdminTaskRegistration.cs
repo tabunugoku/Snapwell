@@ -26,7 +26,11 @@ public sealed class AdminTaskRegistration(IAdminTaskStore store, string currentS
     }
 
     /// <summary>既存のセキュリティ記述子を捨て、競合時は更新せず失敗する。</summary>
-    public void Register(string executablePath, string userSid)
+    public void Register(string executablePath, string userSid) =>
+        Register(TaskExecutablePath.Create(executablePath), userSid);
+
+    /// <summary>ヘルパーが検査した正規化結果だけを使い、タスクを新規作成する。</summary>
+    public void Register(TaskExecutablePath executablePath, string userSid)
     {
         if (userSid != currentSid)
         {

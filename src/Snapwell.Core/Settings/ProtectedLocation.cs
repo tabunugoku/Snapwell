@@ -24,21 +24,40 @@ public interface IExecutableLocation
 public static class ProtectedLocation
 {
     /// <summary>Task Scheduler が実行時に環境変数を展開するパスを拒否する。</summary>
-    public static bool IsLiteralTaskPath(string executablePath) => !executablePath.Contains('%');
+    public static bool IsLiteralTaskPath(string executablePath, Func<string, string>? normalizePath = null)
+    {
+        try
+        {
+            return TaskExecutablePath.Create(executablePath, normalizePath).IsLiteral;
+        }
+        catch (Exception exception) when (exception is IOException or ArgumentException or
+            UnauthorizedAccessException or System.Security.SecurityException)
+        {
+            return false;
+        }
+    }
 
     /// <summary>ローカル固定ディスクだけを許し、各階層の再解析ポイントと ACL を確認する。</summary>
-    public static bool IsProtected(string executablePath, IExecutableLocation source)
+    public static bool IsProtected(string executablePath, IExecutableLocation source,
+        Func<string, string>? normalizePath = null)
     {
+        // 相対パスを正規化でローカルパスに見せかけない。
+        return IsLocalPath(executablePath) &&
+            IsProtected(TaskExecutablePath.Create(executablePath, normalizePath), source);
+    }
+
+    /// <summary>ヘルパーと共有する正規化結果で、ドライブと全階層の ACL を確認する。</summary>
+    public static bool IsProtected(TaskExecutablePath executablePath, IExecutableLocation source)
+    {
+        var path = executablePath.Value;
         // UNC・デバイス名前空間・相対パスは ACL を読む前に拒否する。
-        if (!IsLiteralTaskPath(executablePath) || executablePath.Length < 3 ||
-            !char.IsAsciiLetter(executablePath[0]) || executablePath[1] != ':' || executablePath[2] != '\\' ||
-            source.GetDriveType(executablePath) != DriveType.Fixed)
+        if (!executablePath.IsLiteral || !IsLocalPath(path) || source.GetDriveType(path) != DriveType.Fixed)
         {
             return false;
         }
 
         var count = 0;
-        foreach (var entry in source.ReadHierarchy(executablePath))
+        foreach (var entry in source.ReadHierarchy(path))
         {
             if (entry.IsReparsePoint || !IsProtected(entry.Acl, ancestor: count > 1))
             {
@@ -50,6 +69,9 @@ public static class ProtectedLocation
 
         return count >= 2;
     }
+
+    private static bool IsLocalPath(string path) => path.Length >= 3 && char.IsAsciiLetter(path[0]) &&
+        path[1] == ':' && path[2] == '\\';
 
     // SYSTEM、Administrators、TrustedInstaller 以外の書き込み許可は拒否する。
     private static bool IsTrusted(string sid) => sid is "S-1-5-18" or "S-1-5-32-544" or
