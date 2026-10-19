@@ -1,5 +1,6 @@
 using System.Security.AccessControl;
 using Snapwell.Core.Settings;
+using Windows.Win32;
 
 namespace Snapwell.Platform.Startup;
 
@@ -11,33 +12,45 @@ public static class ExecutableLocation
     {
         try
         {
-            var file = new FileInfo(Path.GetFullPath(executablePath));
-            if (!file.Exists || (file.Attributes & FileAttributes.ReparsePoint) != 0 ||
-                !ProtectedLocation.IsProtected(Read(file.GetAccessControl())))
-            {
-                return false;
-            }
-
-            var parent = file.Directory;
-            var ancestor = false;
-            while (parent is not null)
-            {
-                if ((parent.Attributes & FileAttributes.ReparsePoint) != 0 ||
-                    !ProtectedLocation.IsProtected(Read(parent.GetAccessControl()), ancestor))
-                {
-                    return false;
-                }
-
-                ancestor = true;
-                parent = parent.Parent;
-            }
-
-            return true;
+            return ProtectedLocation.IsProtected(executablePath, new LocationSource());
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or
             System.Security.SecurityException or ArgumentException)
         {
             return false;
+        }
+    }
+
+    private sealed class LocationSource : IExecutableLocation
+    {
+        public DriveType GetDriveType(string path) => (DriveType)PInvoke.GetDriveType(Path.GetPathRoot(path)!);
+
+        public IEnumerable<LocationEntry> ReadHierarchy(string path)
+        {
+            var file = new FileInfo(Path.GetFullPath(path));
+            if (!file.Exists)
+            {
+                throw new FileNotFoundException();
+            }
+
+            // 再解析ポイントの先の ACL は信頼せず、Core に拒否させる。
+            if ((file.Attributes & FileAttributes.ReparsePoint) != 0)
+            {
+                yield return new(true, new("", false, false, []));
+                yield break;
+            }
+
+            yield return new(false, Read(file.GetAccessControl()));
+            for (var parent = file.Directory; parent is not null; parent = parent.Parent)
+            {
+                if ((parent.Attributes & FileAttributes.ReparsePoint) != 0)
+                {
+                    yield return new(true, new("", false, false, []));
+                    yield break;
+                }
+
+                yield return new(false, Read(parent.GetAccessControl()));
+            }
         }
     }
 

@@ -142,19 +142,141 @@ public sealed class AdminStartupTests
         Assert.Equal((StartupMode.Admin, AutoStartState.On), fixture.Controller.Read());
     }
 
+    [Fact]
+    public async Task FailedRunRestoreSurvivesReenableAndSuccessfulRetryClearsBackup()
+    {
+        var fixture = new Fixture { Run = "original" };
+        await fixture.Controller.SetAdminAsync(true);
+        fixture.ThrowRunWrite = true;
+        await Assert.ThrowsAsync<IOException>(() => fixture.Controller.SetAdminAsync(false));
+        Assert.Null(fixture.Command);
+        Assert.Equal("original", fixture.Saved);
+        Assert.True(fixture.Controller.HasPendingRunRestore);
+        await fixture.Controller.SetAdminAsync(true);
+        Assert.Equal("original", fixture.Saved);
+        Assert.False(fixture.Controller.HasPendingRunRestore);
+        fixture.ThrowRunWrite = false;
+        await fixture.Controller.SetAdminAsync(false);
+        Assert.Equal("original", fixture.Run);
+        Assert.Null(fixture.Backup);
+        Assert.False(fixture.Controller.HasPendingRunRestore);
+    }
+
+    [Fact]
+    public async Task BackupWriteFailureNeverRemovesRunOrStartsHelper()
+    {
+        var fixture = new Fixture { Run = "original", ThrowMemoryWrite = true };
+        Assert.Equal(StartupChangeResult.Failed, await fixture.Controller.SetAdminAsync(true));
+        Assert.Equal("original", fixture.Run);
+        Assert.Null(fixture.Command);
+        Assert.Equal(0, fixture.Elevations);
+    }
+
+    [Fact]
+    public async Task OriginallyAbsentRunIsSavedAsPendingUntilSuccessfulRestore()
+    {
+        var fixture = new Fixture();
+        await fixture.Controller.SetAdminAsync(true);
+        Assert.NotNull(fixture.Backup);
+        Assert.Null(fixture.Backup.Command);
+        fixture.Run = "later value";
+        await fixture.Controller.SetAdminAsync(true);
+        Assert.Null(fixture.Backup.Command);
+        await fixture.Controller.SetAdminAsync(false);
+        Assert.Null(fixture.Run);
+        Assert.Null(fixture.Backup);
+    }
+
+    [Theory]
+    [InlineData("broken")]
+    [InlineData("{}")]
+    [InlineData("{\"version\":1,\"command\":42}")]
+    public async Task CorruptBackupNeverChangesRunOrStartsHelper(string content)
+    {
+        var fixture = new Fixture { Run = "original" };
+        var file = new FakeBackupFile { Content = content };
+        var controller = new StartupController(fixture, fixture, fixture, new StartupBackupStore(file), Executable);
+        await Assert.ThrowsAsync<IOException>(() => controller.SetAdminAsync(true));
+        Assert.Equal("original", fixture.Run);
+        Assert.Equal(0, fixture.Elevations);
+        Assert.Equal(content, file.Content);
+    }
+
+    [Fact]
+    public void BackupFileRoundTripDistinguishesMissingFromOriginallyAbsentRun()
+    {
+        var file = new FakeBackupFile();
+        var store = new StartupBackupStore(file);
+        Assert.Null(store.Read());
+        store.Write(new(null));
+        Assert.Equal(new StartupRunBackup(null), store.Read());
+        store.Write(new("original"));
+        Assert.Equal(new StartupRunBackup("original"), store.Read());
+        store.Write(null);
+        Assert.Null(file.Content);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task BackupFileWriteOrVerificationFailurePreservesRunAndNeverStartsHelper(bool dropWrite)
+    {
+        var fixture = new Fixture { Run = "original" };
+        var file = new FakeBackupFile { FailWrite = !dropWrite, DropWrite = dropWrite };
+        var controller = new StartupController(fixture, fixture, fixture, new StartupBackupStore(file), Executable);
+        Assert.Equal(StartupChangeResult.Failed, await controller.SetAdminAsync(true));
+        Assert.Equal("original", fixture.Run);
+        Assert.Equal(0, fixture.Elevations);
+    }
+
+    private sealed class FakeBackupFile : IStartupBackupFile
+    {
+        internal string? Content;
+        internal bool FailWrite;
+        internal bool DropWrite;
+        public string? Read() => Content;
+        public void Write(string? content)
+        {
+            if (FailWrite)
+            {
+                throw new IOException();
+            }
+
+            if (!DropWrite)
+            {
+                Content = content;
+            }
+        }
+    }
+
     private sealed class Fixture : IRunKey, IAdminTaskService, IElevatedRunner, IStartupMemory
     {
         internal string? Run;
         internal string? Command;
-        internal string? Saved;
+        internal StartupRunBackup? Backup;
+        internal string? Saved
+        {
+            get => Backup?.Command;
+            set => Backup = value is null ? null : new(value);
+        }
         internal int Elevations;
         internal StartupChangeResult Result = StartupChangeResult.Success;
         internal bool ThrowRunner;
         internal bool ThrowRunDelete;
+        internal bool ThrowRunWrite;
+        internal bool ThrowMemoryWrite;
         internal TaskCompletionSource<StartupChangeResult>? Completion;
         internal StartupController Controller => new(this, this, this, this, Executable);
         public string? Read(string name) => Run;
-        public void Write(string name, string value) => Run = value;
+        public void Write(string name, string value)
+        {
+            if (ThrowRunWrite)
+            {
+                throw new IOException();
+            }
+
+            Run = value;
+        }
         public void Delete(string name)
         {
             if (ThrowRunDelete)
@@ -167,8 +289,16 @@ public sealed class AdminStartupTests
         public string? ReadCommand() => Command;
         public void Register(string executablePath, string userSid) => Command = executablePath;
         public void Delete() => Command = null;
-        public string? Read() => Saved;
-        public void Write(string? value) => Saved = value;
+        public StartupRunBackup? Read() => Backup;
+        public void Write(StartupRunBackup? value)
+        {
+            if (ThrowMemoryWrite)
+            {
+                throw new IOException();
+            }
+
+            Backup = value;
+        }
         public async Task<StartupChangeResult> RunAsync(bool enabled)
         {
             Elevations++;

@@ -8,6 +8,20 @@ public sealed class AdminTaskHelperTests
     private const string Executable = @"C:\Program Files\Snapwell\Snapwell.exe";
 
     [Theory]
+    [InlineData(@"C:\Program Files\%SW%\Snapwell.exe")]
+    [InlineData(@"C:\Program Files\Snapwell\Snap%well.exe")]
+    public void ExpandablePathIsRejectedByXmlHelperAndSettingsPolicy(string path)
+    {
+        var service = new FakeTasks();
+        Assert.Throws<ArgumentException>(() => AdminTaskXml.Create(path, Sid));
+        Assert.Equal(4, AdminTaskHelper.Execute(["--set-admin-task", "on", "--for-sid", Sid], Sid,
+            path, _ => true, service));
+        Assert.False(ProtectedLocation.IsLiteralTaskPath(path));
+        Assert.Equal(0, service.Calls);
+        Assert.True(ProtectedLocation.IsLiteralTaskPath(Executable));
+    }
+
+    [Theory]
     [InlineData("on", true)]
     [InlineData("off", false)]
     public void ParsesOnlyDedicatedArguments(string action, bool enabled)

@@ -5,12 +5,41 @@ namespace Snapwell.Core.Settings;
 /// <summary>タスク スケジューラのサインイン時起動の XML を生成する。</summary>
 public static class AdminTaskXml
 {
-    public const string TaskName = @"\Snapwell";
     public const string Namespace = "http://schemas.microsoft.com/windows/2004/02/mit/task";
+
+    /// <summary>検証した SID を含む、利用者ごとのタスク名を返す。</summary>
+    public static string GetTaskName(string userSid)
+    {
+        if (!AdminTaskHelper.IsSid(userSid))
+        {
+            throw new ArgumentException("SID が不正。", nameof(userSid));
+        }
+
+        return @"\Snapwell-" + userSid;
+    }
+
+    /// <summary>Principal とログオントリガーの両方が自分の SID の場合だけ認める。</summary>
+    public static bool IsForUser(string xml, string userSid)
+    {
+        XNamespace ns = Namespace;
+        var task = XElement.Parse(xml);
+        var principals = task.Element(ns + "Principals")?.Elements().ToArray();
+        var triggers = task.Element(ns + "Triggers")?.Elements().ToArray();
+        return principals is { Length: 1 } && principals[0].Name == ns + "Principal" &&
+            triggers is { Length: 1 } && triggers[0].Name == ns + "LogonTrigger" &&
+            (string?)principals[0].Element(ns + "UserId") == userSid &&
+            (string?)triggers[0].Element(ns + "UserId") == userSid;
+    }
 
     /// <summary>パスを引数に分割せず、現在のユーザーの対話セッションで起動する。</summary>
     public static string Create(string executablePath, string userSid)
     {
+        _ = GetTaskName(userSid);
+        if (!ProtectedLocation.IsLiteralTaskPath(executablePath))
+        {
+            throw new ArgumentException("管理者起動のパスに % は使えない。", nameof(executablePath));
+        }
+
         var path = Path.GetFullPath(executablePath);
         XNamespace ns = Namespace;
         XElement Element(string name, object content) => new(ns + name, content);
