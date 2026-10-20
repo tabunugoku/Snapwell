@@ -77,7 +77,7 @@
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
                             <TextBlock Text="区画のプレビュー" Style="{StaticResource SnapwellRowTitleStyle}" />
-                            <TextBlock Text="ウィンドウを離した瞬間に、吸着先の区画を青く塗り、着地するまで見せます。オフにすると何も表示しません"
+                            <TextBlock Text="投げたウィンドウは、離した瞬間から着地するまで、吸着先の区画を青く塗ります。手動でリサイズするときは、ドラッグしている間ずっと、離したときに揃う区画を塗ります（「分割と間隔」で区画に揃えるをオンにしたとき）。オフにすると、どちらも何も表示しません"
                                        Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
                         <ToggleSwitch x:Name="ZonePreviewToggle" Grid.Column="1" OnContent="" OffContent="" MinWidth="0"
