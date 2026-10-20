@@ -1045,7 +1045,7 @@ table.list tr:last-child td { border-bottom: 0; }
             <p class="lead">ウィンドウの角の形と、Snapwell のオーバーレイの見た目です。</p>
             <div class="rows">
               <div class="row"><div><div class="t">ウィンドウの角</div><div class="d">DWM の角の設定を使います。半径は Windows が決めます（約 8 px）</div></div><div class="ctl"><select class="input" style="width: 200px" id="cornerSel"><option value="8">角丸を強制する</option><option value="4">小さい角丸</option><option value="0">角丸なし</option><option value="win" selected>Windows の既定</option></select></div></div>
-              <div class="row"><div><div class="t">区画のプレビュー</div><div class="d">ウィンドウを離した瞬間に、吸着先の区画を青く塗り、着地するまで見せます。オフにすると何も表示しません</div></div><div class="ctl"><label class="switch"><input type="checkbox" checked id="tgPrev" aria-label="区画のプレビュー"><span></span></label></div></div>
+              <div class="row"><div><div class="t">区画のプレビュー</div><div class="d">投げたウィンドウは、離した瞬間から着地するまで、吸着先の区画を青く塗ります。手動でリサイズするときは、ドラッグしている間ずっと、離したときに揃う区画を塗ります（「分割と間隔」で区画に揃えるをオンにしたとき）。オフにすると、どちらも何も表示しません</div></div><div class="ctl"><label class="switch"><input type="checkbox" checked id="tgPrev" aria-label="区画のプレビュー"><span></span></label></div></div>
             </div>
             <div class="group-title">ウィンドウの角の見え方</div>
             <div class="corner-cards" id="cornerCards">
