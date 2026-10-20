@@ -4,6 +4,15 @@ using Snapwell.Platform.Hooks;
 
 namespace Snapwell.App.Lifecycle;
 
+/// <summary>常駐本体の同期の選択とローカル変更を受け取る境界。</summary>
+internal interface ISettingsSyncService : IDisposable
+{
+    /// <summary>端末固有の同期の選択を反映する。</summary>
+    void Configure(DeviceState state);
+    /// <summary>ローカル設定の変更を同期へ渡す。</summary>
+    void Request();
+}
+
 /// <summary>設定の変更を間引いて通知する監視の境界。</summary>
 internal interface ISettingsWatcher : IDisposable
 {
