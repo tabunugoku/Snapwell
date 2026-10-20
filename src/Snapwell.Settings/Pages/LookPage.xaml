@@ -85,42 +85,11 @@
                                       VerticalAlignment="Center" AutomationProperties.Name="区画のプレビュー"
                                       Toggled="ZonePreview_Toggled" />
                     </Grid>
-                    <Border Style="{StaticResource SnapwellRowDividerStyle}" />
-                    <Grid Style="{StaticResource SnapwellRowGridStyle}">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <StackPanel VerticalAlignment="Center">
-                            <Grid ColumnSpacing="6" HorizontalAlignment="Left">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="大きな角丸（macOS 風）" Style="{StaticResource SnapwellRowTitleStyle}" />
-                                <Border Grid.Column="1" Style="{StaticResource SnapwellTagPendingStyle}">
-                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellTagPendingTextStyle}" />
-                                </Border>
-                            </Grid>
-                            <TextBlock Text="半径を自由に決める方法を検証しています" Style="{StaticResource SnapwellRowDescriptionStyle}" />
-                        </StackPanel>
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <Border Style="{StaticResource SnapwellTagYellowStyle}">
-                                <TextBlock Text="要検証" Style="{StaticResource SnapwellTagYellowTextStyle}" />
-                            </Border>
-                            <ToggleSwitch
-                                Style="{StaticResource DemoSwitchStyle}"
-                                IsOn="False"
-                                AutomationProperties.Name="大きな角丸"
-                                IsEnabled="False" />
-                        </StackPanel>
-                    </Grid>
                 </StackPanel>
             </Border>
             <TextBlock Text="ウィンドウの角の見え方" Style="{StaticResource SnapwellGroupTitleStyle}" />
             <Grid ColumnSpacing="10">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
@@ -206,29 +175,6 @@
                     <Border x:Name="CardNoneMark" CornerRadius="10" BorderThickness="1.5" IsHitTestVisible="False"
                             BorderBrush="{ThemeResource SnapwellInkBrush}" Visibility="Collapsed" />
                 </Grid>
-                <Border Grid.Column="4" Opacity="0.55" Padding="10" CornerRadius="10" BorderThickness="1"
-                        VerticalAlignment="Top"
-                        BorderBrush="{ThemeResource SnapwellBorderBrush}"
-                        Background="{ThemeResource SnapwellSurfaceBrush}">
-                    <StackPanel Spacing="6">
-                        <Border Height="62" CornerRadius="16" BorderThickness="1.5"
-                                BorderBrush="{ThemeResource SnapwellBorderStrongBrush}"
-                                Background="{ThemeResource SnapwellSurface2Brush}">
-                            <Border Height="14" VerticalAlignment="Top" BorderThickness="0,0,0,1"
-                                    BorderBrush="{ThemeResource SnapwellBorderBrush}"
-                                    Background="{ThemeResource SnapwellSurfaceBrush}" />
-                        </Border>
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <TextBlock Text="大きな角丸" FontWeight="SemiBold" FontSize="13"
-                                       Foreground="{ThemeResource SnapwellTextBrush}" />
-                            <Border Style="{StaticResource SnapwellTagPendingStyle}">
-                                <TextBlock Text="準備中" Style="{StaticResource SnapwellTagPendingTextStyle}" />
-                            </Border>
-                        </StackPanel>
-                        <TextBlock Text="macOS 風の大きな丸み。実現方法を検証中です" FontSize="11.5" TextWrapping="Wrap"
-                                   Foreground="{ThemeResource SnapwellMutedBrush}" />
-                    </StackPanel>
-                </Border>
             </Grid>
             <TextBlock Text="オーバーレイ" Style="{StaticResource SnapwellGroupTitleStyle}" />
             <Border Style="{StaticResource SnapwellRowsBorderStyle}">
