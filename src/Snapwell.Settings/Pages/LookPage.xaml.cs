@@ -38,7 +38,6 @@ public sealed partial class LookPage : Page
             _ => 3,
         };
         ZonePreviewToggle.IsOn = _session.Current.ShowZonePreview;
-        DragPreviewBox.SelectedIndex = _session.Current.DragPreviewStyle == DragPreviewStyle.OnRelease ? 1 : 0;
         ZoneLinesToggle.IsOn = _session.Current.ShowZoneLines;
         PredictionLineToggle.IsOn = _session.Current.ShowPredictionLine;
         _refreshing = false;
@@ -68,18 +67,6 @@ public sealed partial class LookPage : Page
         {
             _session.Update(_session.Current with { ShowZonePreview = ZonePreviewToggle.IsOn });
             UpdateOverlayFigure();
-        }
-    }
-
-    private void DragPreview_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (!_refreshing)
-        {
-            _session.Update(_session.Current with
-            {
-                DragPreviewStyle = DragPreviewBox.SelectedIndex == 1 ? DragPreviewStyle.OnRelease
-                    : DragPreviewStyle.LiveUntilStop,
-            });
         }
     }
 

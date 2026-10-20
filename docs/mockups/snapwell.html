@@ -566,8 +566,6 @@ table.list tr:last-child td { border-bottom: 0; }
   linear-gradient(to bottom, transparent calc(50% - 0.5px), var(--border) calc(50% - 0.5px) calc(50% + 0.5px), transparent calc(50% + 0.5px)); }
 .dm-zone { position: absolute; border-radius: 8px; box-sizing: border-box; display: none; transition: opacity 0.2s; }
 .dm-zone.fill { background: var(--blue-bg); border: 1.5px dashed var(--blue-line); }
-.dm-zone.ghost { border: 2px solid var(--blue-tx); background: transparent; }
-.dm-zone.ghost::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 14px; border-bottom: 1.5px solid var(--blue-tx); opacity: 0.6; }
 .dm-line { position: absolute; inset: 0; pointer-events: none; display: none; }
 .dm-win { position: absolute; width: 110px; height: 70px; border: 1.5px solid var(--border-strong); border-radius: 8px; background: var(--surface-2); overflow: hidden; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25); cursor: grab; }
 .corner-demo { display: flex; gap: 16px; flex-wrap: wrap; }
@@ -1045,7 +1043,7 @@ table.list tr:last-child td { border-bottom: 0; }
             <p class="lead">ウィンドウの角の形と、Snapwell のオーバーレイの見た目です。</p>
             <div class="rows">
               <div class="row"><div><div class="t">ウィンドウの角</div><div class="d">DWM の角の設定を使います。半径は Windows が決めます（約 8 px）</div></div><div class="ctl"><select class="input" style="width: 200px" id="cornerSel"><option value="8">角丸を強制する</option><option value="4">小さい角丸</option><option value="0">角丸なし</option><option value="win" selected>Windows の既定</option></select></div></div>
-              <div class="row"><div><div class="t">区画のプレビュー</div><div class="d">ドラッグ中に、吸着先の区画を青く塗って見せます。オフにすると、離すまで何も表示しません</div></div><div class="ctl"><label class="switch"><input type="checkbox" checked id="tgPrev" aria-label="区画のプレビュー"><span></span></label></div></div>
+              <div class="row"><div><div class="t">区画のプレビュー</div><div class="d">ウィンドウを離した瞬間に、吸着先の区画を青く塗り、着地するまで見せます。オフにすると何も表示しません</div></div><div class="ctl"><label class="switch"><input type="checkbox" checked id="tgPrev" aria-label="区画のプレビュー"><span></span></label></div></div>
             </div>
             <div class="group-title">ウィンドウの角の見え方</div>
             <div class="corner-cards" id="cornerCards">
@@ -1069,15 +1067,8 @@ table.list tr:last-child td { border-bottom: 0; }
               <div class="ov-win"><div class="ov-bar"></div></div>
               <div class="ov-legend" id="ovLegend"></div>
             </div>
-            <div class="group-title">ドラッグ中の見せ方（案）</div>
-            <p class="hint" style="margin: 0 0 8px">いまは、ドラッグ中の速度から吸着先を予測して出しています。マウスを止めても残り続け、投げると離した瞬間に消えます。見せ方を四つ並べました。ウィンドウをつかんで動かし、離してみてください（「投げてみる」「止めてみる」で自動でも試せます）。</p>
-            <div class="seg" id="dmSeg" style="max-width: 560px; margin-bottom: 8px">
-              <button type="button" aria-pressed="true" data-m="a">A 現状</button>
-              <button type="button" aria-pressed="false" data-m="b">B 止めたら消す・離したら残す</button>
-              <button type="button" aria-pressed="false" data-m="c">C 離した瞬間だけ</button>
-              <button type="button" aria-pressed="false" data-m="d">D 輪郭で見せる</button>
-            </div>
-            <p class="hint" id="dmDesc" style="margin: 0 0 8px"></p>
+            <div class="group-title">ドラッグ中の見せ方</div>
+            <p class="hint" style="margin: 0 0 8px">ドラッグ中は何も出しません。離した瞬間に、吸着先の区画と軌跡を、ウィンドウが着地するまで出します。ウィンドウをつかんで動かし、離してみてください（「投げてみる」でも試せます）。吸着しない離し方（止めてから離す）では何も出ません。</p>
             <div class="dm-stage" id="dmStage" aria-label="ドラッグ中の見せ方の試し場">
               <div class="dm-cells"></div>
               <div class="dm-zone" id="dmZone"></div>
@@ -1087,7 +1078,6 @@ table.list tr:last-child td { border-bottom: 0; }
             </div>
             <div style="display: flex; gap: 8px; margin: 8px 0 4px">
               <button type="button" class="chip" id="dmThrow">投げてみる</button>
-              <button type="button" class="chip" id="dmStop">止めてみる</button>
               <button type="button" class="chip" id="dmReset">元の位置に戻す</button>
             </div>
           </div>
@@ -2930,15 +2920,9 @@ $$('.switch').forEach(makeSwitch);
   const stage = document.getElementById('dmStage'), win = document.getElementById('dmWin');
   if (!stage) return;
   const zone = document.getElementById('dmZone'), svg = document.getElementById('dmLine'), L = document.getElementById('dmL'), dot = document.getElementById('dmDot');
-  const legend = document.getElementById('dmLegend'), desc = document.getElementById('dmDesc');
+  const legend = document.getElementById('dmLegend');
   const W = 110, H = 70, MIN_SPEED = 150, COAST = 0.25;
-  const DESC = {
-    a: 'ドラッグ中、動くたびに速度から吸着先を予測して出します。止めると最後の予測が残り続け、離すと同時に消えるので、投げた先が一瞬しか見えません。',
-    b: 'ドラッグ中の予測は A と同じですが、マウスが止まる（約 0.06 秒動かない）と消えます。離したら、その瞬間の吸着先を、ウィンドウが着地するまで出し続けます。',
-    c: 'ドラッグ中は何も出しません。離した瞬間に、吸着先と軌跡を、ウィンドウが着地するまで出します。チラつきはなく、画面もうるさくなりませんが、離す前には先が分かりません。',
-    d: 'B と同じタイミングで、青い塗りの代わりに、着地後のウィンドウの輪郭（タイトルバー付き）を出します。「ここにウィンドウが来る」と一目で分かります。'
-  };
-  let mode = 'a', pos = { x: 20, y: 150 }, drag = null, samples = [], idle = null, landTimer = null, anim = null;
+  let pos = { x: 20, y: 150 }, drag = null, samples = [], landTimer = null, anim = null;
   const sw = () => stage.clientWidth, sh = () => stage.clientHeight;
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
   const place = () => { win.style.left = pos.x + 'px'; win.style.top = pos.y + 'px'; };
@@ -2956,17 +2940,14 @@ $$('.switch').forEach(makeSwitch);
     return { x: col * cw + 4, y: row * ch + 4, w: cw - 8, h: ch - 8 };
   }
   function hide() { zone.style.display = 'none'; svg.style.display = 'none'; legend.textContent = ''; }
-  function show(t, withLine, kind) {
-    zone.className = 'dm-zone ' + kind;
+  function show(t) {
+    zone.className = 'dm-zone fill';
     Object.assign(zone.style, { display: 'block', left: t.x + 'px', top: t.y + 'px', width: t.w + 'px', height: t.h + 'px', opacity: 1 });
-    if (withLine) {
-      const x1 = pos.x + W / 2, y1 = pos.y + 15, x2 = t.x + t.w / 2, y2 = t.y + 15;
-      L.setAttribute('x1', x1); L.setAttribute('y1', y1); L.setAttribute('x2', x2); L.setAttribute('y2', y2);
-      dot.setAttribute('cx', x2); dot.setAttribute('cy', y2);
-      svg.style.display = 'block';
-    } else svg.style.display = 'none';
+    const x1 = pos.x + W / 2, y1 = pos.y + 15, x2 = t.x + t.w / 2, y2 = t.y + 15;
+    L.setAttribute('x1', x1); L.setAttribute('y1', y1); L.setAttribute('x2', x2); L.setAttribute('y2', y2);
+    dot.setAttribute('cx', x2); dot.setAttribute('cy', y2);
+    svg.style.display = 'block';
   }
-  const kind = () => (mode === 'd' ? 'ghost' : 'fill');
   function land(t) {
     clearInterval(anim);
     if (!t) return;
@@ -2991,18 +2972,12 @@ $$('.switch').forEach(makeSwitch);
     if (!drag) return;
     pos = { x: clamp(x - drag.dx, 0, sw() - W), y: clamp(y - drag.dy, 0, sh() - H) }; place();
     samples.push({ x, y, t }); samples = samples.filter((q) => t - q.t <= 100);
-    clearTimeout(idle);
-    if (mode === 'c') return;
-    const tg = target(velocity(t));
-    if (tg) show(tg, true, kind()); else hide();
-    if (mode === 'b' || mode === 'd') idle = setTimeout(hide, 60);
   }
   function up(t) {
     if (!drag) return;
-    clearTimeout(idle); drag = null;
+    drag = null;
     const tg = target(velocity(t));
-    if (mode === 'a') { hide(); land(tg); return; }
-    if (tg) { show(tg, true, kind()); legend.textContent = '離した先: ここに吸着します'; land(tg); } else hide();
+    if (tg) { show(tg); legend.textContent = '離した先: ここに吸着します'; land(tg); } else hide();
   }
   win.addEventListener('pointerdown', (e) => { win.setPointerCapture(e.pointerId); const r = stage.getBoundingClientRect(); down(e.clientX - r.left, e.clientY - r.top, performance.now()); });
   win.addEventListener('pointermove', (e) => { const r = stage.getBoundingClientRect(); move(e.clientX - r.left, e.clientY - r.top, performance.now()); });
@@ -3015,18 +2990,12 @@ $$('.switch').forEach(makeSwitch);
     const tick = setInterval(() => {
       const p = path(i++);
       if (!p) { clearInterval(tick); setTimeout(() => up(performance.now()), hold); return; }
-      if (p.skip) return;
       move(x0 + p.x, y0 + p.y, performance.now());
     }, 8);
   }
   document.getElementById('dmThrow').addEventListener('click', () => script((i) => (i > 22 ? null : { x: i * 12, y: -i * 4.5 }), 0));
-  document.getElementById('dmStop').addEventListener('click', () => script((i) => (i > 200 ? null : i > 14 ? { skip: true } : { x: i * 12, y: -i * 4.5 }), 0));
   document.getElementById('dmReset').addEventListener('click', () => { clearInterval(anim); clearTimeout(landTimer); drag = null; hide(); pos = { x: 20, y: 150 }; place(); });
-  document.querySelectorAll('#dmSeg button').forEach((b) => b.addEventListener('click', () => {
-    mode = b.dataset.m; document.querySelectorAll('#dmSeg button').forEach((x) => x.setAttribute('aria-pressed', x === b));
-    desc.textContent = DESC[mode]; hide();
-  }));
-  desc.textContent = DESC.a; place();
+  place();
 })();
 
 (function initLookDemos() {

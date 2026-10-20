@@ -34,73 +34,51 @@ public sealed class ZonePreviewTests
             prediction: new(200, 100)).Pixels, frame.Pixels);
     }
 
-    /// <summary>速い投げは開始矩形と移動量を使って予測し、離したあとも着地まで残す。</summary>
+    /// <summary>速い投げはドラッグ中は何も出さず、離した瞬間に吸着先を出して着地まで残す。</summary>
     [Fact]
-    public void FastMovementShowsPredictedBoundsAndHoldsAfterEnd()
+    public void FastThrowShowsTargetOnReleaseAndHolds()
     {
         var fixture = new Fixture();
         fixture.Start();
         fixture.Drag.Handle(new MouseMoved(0, 0, 0));
         fixture.Drag.Handle(new MouseMoved(1200, 0, 40));
+        Assert.Empty(fixture.Preview.Shown);
+        var hides = fixture.Preview.Hides;
+        fixture.Drag.Handle(new MoveSizeEnded(1, 40));
         var options = new PortableSettings();
         var expected = SnapResolver.Resolve(new(1300, 100, 400, 300), new(30000, 0), options.ToFeelPreset(),
             options.SnapMode, options.ToSpacing(), [new("main", new(0, 0, 1920, 1040), 1)]);
         Assert.Equal(expected!.Value.Target, Assert.Single(fixture.Preview.Shown));
-        var hides = fixture.Preview.Hides;
-        fixture.Drag.Handle(new MoveSizeEnded(1, 40));
-        // 離しても吸着先は着地が終わるまで残し、ここでは隠さない。
+        // 吸着先は着地が終わるまで残し、ここでは隠さない。
         Assert.Equal(hides, fixture.Preview.Hides);
-        Assert.Equal(2, fixture.Preview.Shown.Count);
     }
 
-    /// <summary>遅い移動は吸着先を表示せず、無効設定でも予測しない。</summary>
+    /// <summary>遅い移動と、プレビューを無効にした設定では、離しても吸着先を出さない。</summary>
     [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public void SlowOrDisabledPreviewStaysHidden(bool showPreview)
+    [InlineData(true, 1)]
+    [InlineData(false, 1200)]
+    public void SlowOrDisabledPreviewStaysHidden(bool showPreview, int distance)
     {
         var fixture = new Fixture { Options = new() { ShowZonePreview = showPreview } };
         fixture.Start();
         fixture.Drag.Handle(new MouseMoved(0, 0, 0));
-        fixture.Drag.Handle(new MouseMoved(showPreview ? 1 : 500, 0, 40));
+        fixture.Drag.Handle(new MouseMoved(distance, 0, 40));
+        fixture.Drag.Handle(new MoveSizeEnded(1, 40));
         Assert.Empty(fixture.Preview.Shown);
         Assert.True(fixture.Preview.Hides > 0);
-        Assert.Equal(showPreview ? 2 : 0, fixture.Monitors.Calls);
     }
 
-    /// <summary>小さく短い連続入力は再計算せず、距離か経過時間で更新する。</summary>
+    /// <summary>吸着先を残している間に無効化したら、残像を消す。</summary>
     [Fact]
-    public void PredictionIsThrottledByDistanceOrElapsedTime()
+    public void DisableHidesHeldPreview()
     {
         var fixture = new Fixture();
         fixture.Start();
         fixture.Drag.Handle(new MouseMoved(0, 0, 0));
-        for (uint index = 1; index <= 10; index++)
-        {
-            fixture.Drag.Handle(new MouseMoved((int)index, 0, index));
-        }
-
-        Assert.Equal(1, fixture.Monitors.Calls);
-        fixture.Drag.Handle(new MouseMoved(16, 0, 11));
-        Assert.Equal(2, fixture.Monitors.Calls);
-        fixture.Drag.Handle(new MouseMoved(17, 0, 44));
-        Assert.Equal(3, fixture.Monitors.Calls);
-    }
-
-    /// <summary>実行中の無効化と設定の切り替えで残像を消す。</summary>
-    [Fact]
-    public void DisableAndSettingChangeHideExistingPreview()
-    {
-        var fixture = new Fixture();
-        fixture.Start();
-        fixture.Drag.Handle(new MouseMoved(0, 0, 0));
-        fixture.Drag.Handle(new MouseMoved(500, 0, 40));
+        fixture.Drag.Handle(new MouseMoved(1200, 0, 40));
+        fixture.Drag.Handle(new MoveSizeEnded(1, 40));
         Assert.Single(fixture.Preview.Shown);
         var hides = fixture.Preview.Hides;
-        fixture.Options = new() { ShowZonePreview = false };
-        fixture.Drag.Handle(new MouseMoved(501, 0, 41));
-        Assert.True(fixture.Preview.Hides > hides);
-        hides = fixture.Preview.Hides;
         fixture.Drag.Enabled = false;
         Assert.True(fixture.Preview.Hides > hides);
     }

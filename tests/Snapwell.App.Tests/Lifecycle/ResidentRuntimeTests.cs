@@ -358,6 +358,7 @@ public sealed class ResidentRuntimeTests
         Assert.True(fixture.Drag.Enabled);
         fixture.Runtime.Handle(new MouseMoved(0, 0, 0));
         fixture.Runtime.Handle(new MouseMoved(500, 0, 40));
+        fixture.Runtime.Handle(new MoveSizeEnded(1, 40));
         Assert.Single(fixture.PreviewPresenter.Requests);
     }
 
