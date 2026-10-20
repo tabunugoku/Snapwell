@@ -2,575 +2,90 @@
 <Page
     x:Class="Snapwell.Settings.Pages.HotkeysPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:controls="using:Snapwell.Settings.Controls"
-    xmlns:local="using:Snapwell.Settings.Pages">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <Page.Resources>
         <Style x:Key="DemoSwitchStyle" TargetType="ToggleSwitch"
                BasedOn="{StaticResource SnapwellDemoSwitchStyle}" />
+        <Style x:Key="HotkeyRowStyle" TargetType="Grid" BasedOn="{StaticResource SnapwellRowGridStyle}">
+            <Setter Property="Padding" Value="12,10" />
+            <Setter Property="BorderBrush" Value="{ThemeResource SnapwellBorderBrush}" />
+            <Setter Property="BorderThickness" Value="0,0,0,1" />
+        </Style>
+        <Style x:Key="HotkeyHeaderStyle" TargetType="Grid" BasedOn="{StaticResource HotkeyRowStyle}">
+            <Setter Property="Padding" Value="12,8" />
+            <Setter Property="Background" Value="{ThemeResource SnapwellSurface2Brush}" />
+        </Style>
+        <Style x:Key="HotkeyButtonStyle" TargetType="Button" BasedOn="{StaticResource SnapwellButtonStyle}">
+            <Setter Property="Padding" Value="8,5" />
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+        </Style>
+        <Style x:Key="HotkeyCaptureStyle" TargetType="Button" BasedOn="{StaticResource HotkeyButtonStyle}">
+            <Setter Property="BorderBrush" Value="{ThemeResource SnapwellBlueTextBrush}" />
+            <Setter Property="Background" Value="{ThemeResource SnapwellBlueBackgroundBrush}" />
+        </Style>
+        <Style x:Key="HotkeyErrorStyle" TargetType="Button" BasedOn="{StaticResource HotkeyCaptureStyle}">
+            <Setter Property="BorderBrush" Value="{ThemeResource SnapwellRedTextBrush}" />
+            <Setter Property="Background" Value="{ThemeResource SnapwellRedBackgroundBrush}" />
+            <Setter Property="Foreground" Value="{ThemeResource SnapwellRedTextBrush}" />
+        </Style>
+        <Style x:Key="HotkeyMessageStyle" TargetType="StackPanel">
+            <Setter Property="Padding" Value="24,8,12,10" />
+            <Setter Property="Spacing" Value="8" />
+            <Setter Property="Background" Value="{ThemeResource SnapwellSurface2Brush}" />
+        </Style>
     </Page.Resources>
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
         <StackPanel Padding="32,28,32,40" HorizontalAlignment="Stretch">
             <TextBlock Text="ホットキー" Style="{StaticResource SnapwellPageTitleStyle}" />
-            <TextBlock Text="割り当ての一覧です。同じキーを複数の操作に割り当てている行には「重複」と表示します。"
-                       Style="{StaticResource SnapwellLeadTextStyle}" />
-            <InfoBar x:Name="ConflictNotice" Severity="Warning" IsClosable="False"
-                     Message="キーが重複しています。「既定に戻す」か、重複しない設定ファイルを取り込んでください。" />
-
+            <TextBlock
+                Text="キーの欄をクリックして、新しいキーを押すと割り当てを変えられます。同じキーを複数の操作に割り当てている行には「重複」と表示します。"
+                Style="{StaticResource SnapwellLeadTextStyle}" />
+            <Grid ColumnSpacing="12" Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBox x:Name="FilterBox" PlaceholderText="操作を絞り込む"
+                         AutomationProperties.Name="操作を絞り込む" TextChanged="Filter_Changed" />
+                <Button x:Name="ResetButton" Grid.Column="1" Content="すべて既定に戻す"
+                        Style="{StaticResource SnapwellButtonStyle}" Click="Reset_Click" />
+            </Grid>
+            <StackPanel x:Name="Summary" Orientation="Horizontal" Spacing="6" Margin="0,0,0,8"
+                        AutomationProperties.LiveSetting="Polite" />
             <Border Style="{StaticResource SnapwellRowsBorderStyle}">
                 <StackPanel>
-                    <Grid Padding="12,8" ColumnSpacing="16"
-                          BorderBrush="{ThemeResource SnapwellBorderBrush}" BorderThickness="0,0,0,1">
+                    <Grid Padding="12,8" ColumnSpacing="16">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="2*" />
+                            <ColumnDefinition Width="2.1*" />
                             <ColumnDefinition Width="3*" />
-                            <ColumnDefinition Width="64" />
+                            <ColumnDefinition Width="148" />
+                            <ColumnDefinition Width="72" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="操作" FontSize="12" FontWeight="Medium"
-                                   Foreground="{ThemeResource SnapwellMutedBrush}" />
-                        <TextBlock Grid.Column="1" Text="キー" FontSize="12" FontWeight="Medium"
-                                   Foreground="{ThemeResource SnapwellMutedBrush}" />
+                        <TextBlock Text="操作" Style="{StaticResource SnapwellHintTextStyle}" />
+                        <TextBlock Grid.Column="1" Text="キー" Style="{StaticResource SnapwellHintTextStyle}" />
+                        <TextBlock Grid.Column="2" Text="状態" Style="{StaticResource SnapwellHintTextStyle}" />
                     </Grid>
-                    <ListView x:Name="HotkeyList" SelectionMode="None" IsItemClickEnabled="False"
-                              HorizontalContentAlignment="Stretch">
-                        <ListView.ItemContainerStyle>
-                            <Style TargetType="ListViewItem">
-                                <Setter Property="Padding" Value="0" />
-                                <Setter Property="Margin" Value="0" />
-                                <Setter Property="MinHeight" Value="0" />
-                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                            </Style>
-                        </ListView.ItemContainerStyle>
-                        <ListView.ItemTemplate>
-                            <DataTemplate x:DataType="local:HotkeyRow">
-                                <Grid Padding="12,10" ColumnSpacing="16" HorizontalAlignment="Stretch"
-                                      BorderBrush="{ThemeResource SnapwellBorderBrush}" BorderThickness="0,0,0,1">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="2*" />
-                                        <ColumnDefinition Width="3*" />
-                                        <ColumnDefinition Width="64" />
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="{x:Bind Name}" FontSize="13" LineHeight="20.8"
-                                               Foreground="{ThemeResource SnapwellTextBrush}"
-                                               TextWrapping="Wrap" VerticalAlignment="Center" />
-                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4"
-                                                VerticalAlignment="Center">
-                                        <Border Style="{StaticResource SnapwellKbdBorderStyle}">
-                                            <TextBlock Text="{x:Bind Key1}" Style="{StaticResource SnapwellKbdTextStyle}" />
-                                        </Border>
-                                        <Border Style="{StaticResource SnapwellKbdBorderStyle}"
-                                                Visibility="{x:Bind Key2Visibility}">
-                                            <TextBlock Text="{x:Bind Key2}" Style="{StaticResource SnapwellKbdTextStyle}" />
-                                        </Border>
-                                        <Border Style="{StaticResource SnapwellKbdBorderStyle}"
-                                                Visibility="{x:Bind Key3Visibility}">
-                                            <TextBlock Text="{x:Bind Key3}" Style="{StaticResource SnapwellKbdTextStyle}" />
-                                        </Border>
-                                        <Border Style="{StaticResource SnapwellKbdBorderStyle}"
-                                                Visibility="{x:Bind Key4Visibility}">
-                                            <TextBlock Text="{x:Bind Key4}" Style="{StaticResource SnapwellKbdTextStyle}" />
-                                        </Border>
-                                        <Border Style="{StaticResource SnapwellKbdBorderStyle}"
-                                                Visibility="{x:Bind Key5Visibility}">
-                                            <TextBlock Text="{x:Bind Key5}" Style="{StaticResource SnapwellKbdTextStyle}" />
-                                        </Border>
-                                    </StackPanel>
-                                    <Border Grid.Column="2" Visibility="{x:Bind ConflictVisibility}"
-                                            Style="{StaticResource SnapwellTagRedStyle}" HorizontalAlignment="Right">
-                                        <TextBlock Text="重複" Style="{StaticResource SnapwellTagConflictTextStyle}" />
-                                    </Border>
-                                </Grid>
-                            </DataTemplate>
-                        </ListView.ItemTemplate>
-                    </ListView>
+                    <StackPanel x:Name="HotkeyRows" />
                 </StackPanel>
             </Border>
-            <TextBlock Text="ほかのアプリとの競合は、この画面では確認できません。" Style="{StaticResource SnapwellHintTextStyle}" Margin="0,10,0,12"/>
-            <Button x:Name="ResetButton" Content="既定に戻す" Style="{StaticResource SnapwellButtonStyle}"
-                Click="Reset_Click" />
-
-            <!-- デモ状態 (未実装) -->
-            <Grid Margin="0,22,0,8" ColumnSpacing="6" HorizontalAlignment="Left">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <TextBlock Text="デモ (準備中)" Style="{StaticResource SnapwellGroupTitleStyle}" Margin="0" />
-                <Border Grid.Column="1" Style="{StaticResource SnapwellTagPendingStyle}">
-                    <TextBlock Text="準備中" Style="{StaticResource SnapwellTagPendingTextStyle}" />
-                </Border>
-            </Grid>
-            <Border Style="{StaticResource SnapwellRowsBorderStyle}">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="2.1*" />
-                        <ColumnDefinition Width="3*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
-                    <Border
-                        Grid.Row="0"
-                        Grid.Column="0"
-                        Padding="12,8"
-                        BorderThickness="0,0,0,1"
-                        BorderBrush="{ThemeResource SnapwellBorderBrush}">
-                        <TextBlock
-                            Text="操作"
-                            Style="{StaticResource SnapwellRowTitleStyle}"
-                            FontSize="12"
-                            LineHeight="19.2"
-                            VerticalAlignment="Center"
-                            FontWeight="Medium"
-                            Foreground="{ThemeResource SnapwellMutedBrush}" />
-                    </Border>
-                    <Border
-                        Grid.Row="0"
-                        Grid.Column="1"
-                        Padding="12,8"
-                        BorderThickness="0,0,0,1"
-                        BorderBrush="{ThemeResource SnapwellBorderBrush}">
-                        <TextBlock
-                            Text="キー"
-                            Style="{StaticResource SnapwellRowTitleStyle}"
-                            FontSize="12"
-                            LineHeight="19.2"
-                            VerticalAlignment="Center"
-                            FontWeight="Medium"
-                            Foreground="{ThemeResource SnapwellMutedBrush}" />
-                    </Border>
-                    <Border
-                        Grid.Row="0"
-                        Grid.Column="2"
-                        Padding="12,8"
-                        BorderThickness="0,0,0,1"
-                        BorderBrush="{ThemeResource SnapwellBorderBrush}">
-                        <TextBlock
-                            Text=""
-                            Style="{StaticResource SnapwellRowTitleStyle}"
-                            FontSize="12"
-                            LineHeight="19.2"
-                            VerticalAlignment="Center"
-                            FontWeight="Medium"
-                            Foreground="{ThemeResource SnapwellMutedBrush}" />
-                    </Border>
-                    <Border
-                        Grid.Row="1"
-                        Grid.Column="0"
-                        Padding="12,10"
-                        BorderThickness="0,0,0,1"
-                        BorderBrush="{ThemeResource SnapwellBorderBrush}">
-                        <TextBlock
-                            Text="ランチャーを開く"
-                            Style="{StaticResource SnapwellRowTitleStyle}"
-                            FontSize="13"
-                            LineHeight="20.8"
-                            VerticalAlignment="Center"
-                            Foreground="{ThemeResource SnapwellTextBrush}" />
-                    </Border>
-                    <Border
-                        Grid.Row="1"
-                        Grid.Column="1"
-                        Padding="12,10"
-                        BorderThickness="0,0,0,1"
-                        BorderBrush="{ThemeResource SnapwellBorderBrush}">
-                        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                            <Border Style="{StaticResource SnapwellKbdBorderStyle}">
-                                <TextBlock Text="Ctrl" Style="{StaticResource SnapwellKbdTextStyle}" />
-                            </Border>
-                            <Border Style="{StaticResource SnapwellKbdBorderStyle}">
-                                <TextBlock Text="Alt" Style="{StaticResource SnapwellKbdTextStyle}" />
-                            </Border>
-                            <Border Style="{StaticResource SnapwellKbdBorderStyle}">
-                                <TextBlock Text="Space" Style="{StaticResource SnapwellKbdTextStyle}" />
-                            </Border>
-                        </StackPanel>
-                    </Border>
-                    <Border
-                        Grid.Row="1"
-                        Grid.Column="2"
-                        Padding="12,10"
-                        BorderThickness="0,0,0,1"
-                        BorderBrush="{ThemeResource SnapwellBorderBrush}">
-                        <TextBlock
-                            Text=""
-                            Style="{StaticResource SnapwellRowTitleStyle}"
-                            FontSize="13"
-                            LineHeight="20.8"
-                            VerticalAlignment="Center"
-                            Foreground="{ThemeResource SnapwellTextBrush}" />
-                    </Border>
-                    <Border
-                        Grid.Row="2"
-                        Grid.Column="0"
-                        Padding="12,10"
-                        BorderThickness="0,0,0,1"
-                        BorderBrush="{ThemeResource SnapwellBorderBrush}">
-                        <TextBlock
-                            Text="左・右・上・下の半分"
-                            Style="{StaticResource SnapwellRowTitleStyle}"
-                            FontSize="13"
-                            LineHeight="20.8"
-                            VerticalAlignment="Center"
-                            Foreground="{ThemeResource SnapwellTextBrush}" />
-                    </Border>
-                    <Border
-                        Grid.Row="2"
-                        Grid.Column="1"
-                        Padding="12,10"
-                        BorderThickness="0,0,0,1"
-                        BorderBrush="{ThemeResource SnapwellBorderBrush}">
-                        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                            <Border Style="{StaticResource SnapwellKbdBorderStyle}">
-                                <TextBlock Text="Ctrl" Style="{StaticResource SnapwellKbdTextStyle}" />
-                            </Border>
-                            <Border Style="{StaticResource SnapwellKbdBorderStyle}">
-                                <TextBlock Text="Alt" Style="{StaticResource SnapwellKbdTextStyle}" />
-                            </Border>
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <Border Style="{StaticResource SnapwellKbdBorderStyle}">
-                                    <TextBlock Text="←" Style="{StaticResource SnapwellKbdTextStyle}" />
-                                </Border>
-                                <Border Style="{StaticResource SnapwellKbdBorderStyle}">
-                                    <TextBlock Text="→" Style="{StaticResource SnapwellKbdTextStyle}" />
-                                </Border>
-                                <Border Style="{StaticResource SnapwellKbdBorderStyle}">
-                                    <TextBlock Text="↑" Style="{StaticResource SnapwellKbdTextStyle}" />
-                                </Border>
-                                <Border Style="{StaticResource SnapwellKbdBorderStyle}">
-                                    <TextBlock Text="↓" Style="{StaticResource SnapwellKbdTextStyle}" />
-                                </Border>
-                            </StackPanel>
-                        </StackPanel>
-                    </Border>
-                    <Border
-                        Grid.Row="2"
-                        Grid.Column="2"
-                        Padding="12,10"
-                        BorderThickness="0,0,0,1"
-                        BorderBrush="{ThemeResource SnapwellBorderBrush}">
-                        <TextBlock
-                            Text=""
-                            Style="{StaticResource SnapwellRowTitleStyle}"
-                            FontSize="13"
-                            LineHeight="20.8"
-                            VerticalAlignment="Center"
-                            Foreground="{ThemeResource SnapwellTextBrush}" />
-                    </Border>
-                    <Border
-                        Grid.Row="3"
-                        Grid.Column="0"
-                        Padding="12,10"
-                        BorderThickness="0,0,0,1"
-                        BorderBrush="{ThemeResource SnapwellBorderBrush}">
-                        <TextBlock
-                            Text="四分割"
-                            Style="{StaticResource SnapwellRowTitleStyle}"
-                            FontSize="13"
-                            LineHeight="20.8"
-                            VerticalAlignment="Center"
-                            Foreground="{ThemeResource SnapwellTextBrush}" />
-                    </Border>
-                    <Border
-                        Grid.Row="3"
-                        Grid.Column="1"
-                        Padding="12,10"
-                        BorderThickness="0,0,0,1"
-                        BorderBrush="{ThemeResource SnapwellBorderBrush}">
-                        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                            <Border Style="{StaticResource SnapwellKbdBorderStyle}">
-                                <TextBlock Text="Ctrl" Style="{StaticResource SnapwellKbdTextStyle}" />
-                            </Border>
-                            <Border Style="{StaticResource SnapwellKbdBorderStyle}">
-                                <TextBlock Text="Alt" Style="{StaticResource SnapwellKbdTextStyle}" />
-                            </Border>
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <Border Style="{StaticResource SnapwellKbdBorderStyle}">
-                                    <TextBlock Text="U" Style="{StaticResource SnapwellKbdTextStyle}" />
-                                </Border>
-                                <Border Style="{StaticResource SnapwellKbdBorderStyle}">
-                                    <TextBlock Text="I" Style="{StaticResource SnapwellKbdTextStyle}" />
-                                </Border>
-                                <Border Style="{StaticResource SnapwellKbdBorderStyle}">
-                                    <TextBlock Text="J" Style="{StaticResource SnapwellKbdTextStyle}" />
-                                </Border>
-                                <Border Style="{StaticResource SnapwellKbdBorderStyle}">
-                                    <TextBlock Text="K" Style="{StaticResource SnapwellKbdTextStyle}" />
-                                </Border>
-                            </StackPanel>
-                        </StackPanel>
-                    </Border>
-                    <Border
-                        Grid.Row="3"
-                        Grid.Column="2"
-                        Padding="12,10"
-                        BorderThickness="0,0,0,1"
-                        BorderBrush="{ThemeResource SnapwellBorderBrush}">
-                        <TextBlock
-                            Text=""
-                            Style="{StaticResource SnapwellRowTitleStyle}"
-                            FontSize="13"
-                            LineHeight="20.8"
-                            VerticalAlignment="Center"
-                            Foreground="{ThemeResource SnapwellTextBrush}" />
-                    </Border>
-                    <Border
-                        Grid.Row="4"
-                        Grid.Column="0"
-                        Padding="12,10"
-                        BorderThickness="0,0,0,1"
-                        BorderBrush="{ThemeResource SnapwellBorderBrush}">
-                        <TextBlock
-                            Text="1 区画ずつ拡大・縮小"
-                            Style="{StaticResource SnapwellRowTitleStyle}"
-                            FontSize="13"
-                            LineHeight="20.8"
-                            VerticalAlignment="Center"
-                            Foreground="{ThemeResource SnapwellTextBrush}" />
-                    </Border>
-                    <Border
-                        Grid.Row="4"
-                        Grid.Column="1"
-                        Padding="12,10"
-                        BorderThickness="0,0,0,1"
-                        BorderBrush="{ThemeResource SnapwellBorderBrush}">
-                        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                            <Border Style="{StaticResource SnapwellKbdBorderStyle}">
-                                <TextBlock Text="Ctrl" Style="{StaticResource SnapwellKbdTextStyle}" />
-                            </Border>
-                            <Border Style="{StaticResource SnapwellKbdBorderStyle}">
-                                <TextBlock Text="Alt" Style="{StaticResource SnapwellKbdTextStyle}" />
-                            </Border>
-                            <Border Style="{StaticResource SnapwellKbdBorderStyle}">
-                                <TextBlock Text="Shift" Style="{StaticResource SnapwellKbdTextStyle}" />
-                            </Border>
-                            <TextBlock Text="+ 矢印" Style="{StaticResource SnapwellKbdCompanionTextStyle}" />
-                        </StackPanel>
-                    </Border>
-                    <Border
-                        Grid.Row="4"
-                        Grid.Column="2"
-                        Padding="12,10"
-                        BorderThickness="0,0,0,1"
-                        BorderBrush="{ThemeResource SnapwellBorderBrush}">
-                        <TextBlock
-                            Text=""
-                            Style="{StaticResource SnapwellRowTitleStyle}"
-                            FontSize="13"
-                            LineHeight="20.8"
-                            VerticalAlignment="Center"
-                            Foreground="{ThemeResource SnapwellTextBrush}" />
-                    </Border>
-                    <Border
-                        Grid.Row="5"
-                        Grid.Column="0"
-                        Padding="12,10"
-                        BorderThickness="0,0,0,1"
-                        BorderBrush="{ThemeResource SnapwellBorderBrush}">
-                        <TextBlock
-                            Text="区画単位で移動"
-                            Style="{StaticResource SnapwellRowTitleStyle}"
-                            FontSize="13"
-                            LineHeight="20.8"
-                            VerticalAlignment="Center"
-                            Foreground="{ThemeResource SnapwellTextBrush}" />
-                    </Border>
-                    <Border
-                        Grid.Row="5"
-                        Grid.Column="1"
-                        Padding="12,10"
-                        BorderThickness="0,0,0,1"
-                        BorderBrush="{ThemeResource SnapwellBorderBrush}">
-                        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                            <Border Style="{StaticResource SnapwellKbdBorderStyle}">
-                                <TextBlock Text="Ctrl" Style="{StaticResource SnapwellKbdTextStyle}" />
-                            </Border>
-                            <Border Style="{StaticResource SnapwellKbdBorderStyle}">
-                                <TextBlock Text="Alt" Style="{StaticResource SnapwellKbdTextStyle}" />
-                            </Border>
-                            <Border Style="{StaticResource SnapwellKbdBorderStyle}">
-                                <TextBlock Text="Win" Style="{StaticResource SnapwellKbdTextStyle}" />
-                            </Border>
-                            <TextBlock Text="+ 矢印" Style="{StaticResource SnapwellKbdCompanionTextStyle}" />
-                        </StackPanel>
-                    </Border>
-                    <Border
-                        Grid.Row="5"
-                        Grid.Column="2"
-                        Padding="12,10"
-                        BorderThickness="0,0,0,1"
-                        BorderBrush="{ThemeResource SnapwellBorderBrush}">
-                        <Border Style="{StaticResource SnapwellTagRedStyle}">
-                            <TextBlock Text="重複" Style="{StaticResource SnapwellTagRedTextStyle}" />
-                        </Border>
-                    </Border>
-                    <Border
-                        Grid.Row="6"
-                        Grid.Column="0"
-                        Padding="12,10"
-                        BorderThickness="0,0,0,1"
-                        BorderBrush="{ThemeResource SnapwellBorderBrush}">
-                        <TextBlock
-                            Text="現在のモニターを整列"
-                            Style="{StaticResource SnapwellRowTitleStyle}"
-                            FontSize="13"
-                            LineHeight="20.8"
-                            VerticalAlignment="Center"
-                            Foreground="{ThemeResource SnapwellTextBrush}" />
-                    </Border>
-                    <Border
-                        Grid.Row="6"
-                        Grid.Column="1"
-                        Padding="12,10"
-                        BorderThickness="0,0,0,1"
-                        BorderBrush="{ThemeResource SnapwellBorderBrush}">
-                        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                            <Border Style="{StaticResource SnapwellKbdBorderStyle}">
-                                <TextBlock Text="Ctrl" Style="{StaticResource SnapwellKbdTextStyle}" />
-                            </Border>
-                            <Border Style="{StaticResource SnapwellKbdBorderStyle}">
-                                <TextBlock Text="Alt" Style="{StaticResource SnapwellKbdTextStyle}" />
-                            </Border>
-                            <Border Style="{StaticResource SnapwellKbdBorderStyle}">
-                                <TextBlock Text="A" Style="{StaticResource SnapwellKbdTextStyle}" />
-                            </Border>
-                        </StackPanel>
-                    </Border>
-                    <Border
-                        Grid.Row="6"
-                        Grid.Column="2"
-                        Padding="12,10"
-                        BorderThickness="0,0,0,1"
-                        BorderBrush="{ThemeResource SnapwellBorderBrush}">
-                        <TextBlock
-                            Text=""
-                            Style="{StaticResource SnapwellRowTitleStyle}"
-                            FontSize="13"
-                            LineHeight="20.8"
-                            VerticalAlignment="Center"
-                            Foreground="{ThemeResource SnapwellTextBrush}" />
-                    </Border>
-                    <Border
-                        Grid.Row="7"
-                        Grid.Column="0"
-                        Padding="12,10"
-                        BorderThickness="0,0,0,1"
-                        BorderBrush="{ThemeResource SnapwellBorderBrush}">
-                        <TextBlock
-                            Text="隣のモニターへ投げる"
-                            Style="{StaticResource SnapwellRowTitleStyle}"
-                            FontSize="13"
-                            LineHeight="20.8"
-                            VerticalAlignment="Center"
-                            Foreground="{ThemeResource SnapwellTextBrush}" />
-                    </Border>
-                    <Border
-                        Grid.Row="7"
-                        Grid.Column="1"
-                        Padding="12,10"
-                        BorderThickness="0,0,0,1"
-                        BorderBrush="{ThemeResource SnapwellBorderBrush}">
-                        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                            <Border Style="{StaticResource SnapwellKbdBorderStyle}">
-                                <TextBlock Text="Ctrl" Style="{StaticResource SnapwellKbdTextStyle}" />
-                            </Border>
-                            <Border Style="{StaticResource SnapwellKbdBorderStyle}">
-                                <TextBlock Text="Alt" Style="{StaticResource SnapwellKbdTextStyle}" />
-                            </Border>
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <Border Style="{StaticResource SnapwellKbdBorderStyle}">
-                                    <TextBlock Text="PgUp" Style="{StaticResource SnapwellKbdTextStyle}" />
-                                </Border>
-                                <Border Style="{StaticResource SnapwellKbdBorderStyle}">
-                                    <TextBlock Text="PgDn" Style="{StaticResource SnapwellKbdTextStyle}" />
-                                </Border>
-                            </StackPanel>
-                        </StackPanel>
-                    </Border>
-                    <Border
-                        Grid.Row="7"
-                        Grid.Column="2"
-                        Padding="12,10"
-                        BorderThickness="0,0,0,1"
-                        BorderBrush="{ThemeResource SnapwellBorderBrush}">
-                        <TextBlock
-                            Text=""
-                            Style="{StaticResource SnapwellRowTitleStyle}"
-                            FontSize="13"
-                            LineHeight="20.8"
-                            VerticalAlignment="Center"
-                            Foreground="{ThemeResource SnapwellTextBrush}" />
-                    </Border>
-                    <Border
-                        Grid.Row="8"
-                        Grid.Column="0"
-                        Padding="12,10"
-                        BorderThickness="0,0,0,0"
-                        BorderBrush="{ThemeResource SnapwellBorderBrush}">
-                        <TextBlock
-                            Text="一時的に無効化"
-                            Style="{StaticResource SnapwellRowTitleStyle}"
-                            FontSize="13"
-                            LineHeight="20.8"
-                            VerticalAlignment="Center"
-                            Foreground="{ThemeResource SnapwellTextBrush}" />
-                    </Border>
-                    <Border
-                        Grid.Row="8"
-                        Grid.Column="1"
-                        Padding="12,10"
-                        BorderThickness="0,0,0,0"
-                        BorderBrush="{ThemeResource SnapwellBorderBrush}">
-                        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                            <Border Style="{StaticResource SnapwellKbdBorderStyle}">
-                                <TextBlock Text="Ctrl" Style="{StaticResource SnapwellKbdTextStyle}" />
-                            </Border>
-                            <Border Style="{StaticResource SnapwellKbdBorderStyle}">
-                                <TextBlock Text="Alt" Style="{StaticResource SnapwellKbdTextStyle}" />
-                            </Border>
-                            <Border Style="{StaticResource SnapwellKbdBorderStyle}">
-                                <TextBlock Text="Pause" Style="{StaticResource SnapwellKbdTextStyle}" />
-                            </Border>
-                        </StackPanel>
-                    </Border>
-                    <Border
-                        Grid.Row="8"
-                        Grid.Column="2"
-                        Padding="12,10"
-                        BorderThickness="0,0,0,0"
-                        BorderBrush="{ThemeResource SnapwellBorderBrush}">
-                        <TextBlock
-                            Text=""
-                            Style="{StaticResource SnapwellRowTitleStyle}"
-                            FontSize="13"
-                            LineHeight="20.8"
-                            VerticalAlignment="Center"
-                            Foreground="{ThemeResource SnapwellTextBrush}" />
-                    </Border>
-                </Grid>
-            </Border>
-            <Grid ColumnSpacing="6" Margin="0,10,0,0">
+            <TextBlock Margin="0,10,0,0" Style="{StaticResource SnapwellHintTextStyle}"
+                Text="キーの欄を選んで、割り当てたいキーを押します。Esc でやめる、Backspace か Delete で割り当てを外します。Ctrl・Alt・Shift・Win のどれかを含めてください。" />
+            <TextBlock Margin="0,8,0,0" Style="{StaticResource SnapwellHintTextStyle}"
+                Text="ほかのアプリとの競合は、キーを押したときと、このページを開いたときに調べます。ほかのアプリが使っているキーには「他のアプリが使用中」と表示します（調べられるのは、ほかのアプリがホットキーとして登録しているキーだけです）。" />
+            <Grid x:Name="WinNotice" ColumnSpacing="6" Margin="0,8,0,0" Visibility="Collapsed">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
-                <Border Style="{StaticResource SnapwellTagRedStyle}">
-                    <TextBlock Text="重複" Style="{StaticResource SnapwellTagRedTextStyle}" />
+                <Border Style="{StaticResource SnapwellTagYellowStyle}">
+                    <TextBlock Text="注意" Style="{StaticResource SnapwellTagYellowTextStyle}" />
                 </Border>
-                <TextBlock
-                    Text="重複表示のデモです。ほかのアプリとの競合は、この画面では確認できません。"
-                    Style="{StaticResource SnapwellHintTextStyle}"
-                    Grid.Column="1"
-                    VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" Style="{StaticResource SnapwellHintTextStyle}"
+                    Text="Win キーを含む割り当ては、押したあとにスタートメニューが開くことがあります（実機未確認）。" />
             </Grid>
             <TextBlock Text="Windows のキー" Style="{StaticResource SnapwellGroupTitleStyle}" />
             <Border Style="{StaticResource SnapwellRowsBorderStyle}">
@@ -588,6 +103,9 @@
                                 <TextBlock Text=" + 矢印 を Snapwell で使う"
                                            Style="{StaticResource SnapwellRowTitleStyle}"
                                            VerticalAlignment="Center" />
+                                <Border Style="{StaticResource SnapwellTagPendingStyle}">
+                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellTagPendingTextStyle}" />
+                                </Border>
                             </StackPanel>
                             <TextBlock
                                 Text="標準のスナップを止めているときだけ使えます（「標準機能」のページ）"
@@ -602,8 +120,6 @@
                     </Grid>
                 </StackPanel>
             </Border>
-            <!-- デモ状態 (未実装) ここまで -->
-
         </StackPanel>
     </ScrollViewer>
 </Page>
