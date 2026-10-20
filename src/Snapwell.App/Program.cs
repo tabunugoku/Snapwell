@@ -6,6 +6,7 @@ using Snapwell.App.Lifecycle;
 using Snapwell.App.Motion;
 using Snapwell.App.Overlay;
 using Snapwell.App.Tray;
+using Snapwell.Core.Commands;
 using Snapwell.Core.Geometry;
 using Snapwell.Core.Overlay;
 using Snapwell.Core.Settings;
@@ -45,7 +46,11 @@ internal static class Program
         }
 
         var log = new FileAppLog();
-        var matcher = new HotkeyMatcher();
+        using var captureIdentity = WindowsIdentity.GetCurrent();
+        // フック停止の待機には上限があるため、ハンドルは判定関数とともに入力スレッドの寿命まで保つ。
+        var capture = new HotkeyCaptureMutex(HotkeyCaptureSession.MutexName(
+            captureIdentity.User?.Value ?? throw new InvalidOperationException("ユーザーの SID を取得できない。")));
+        var matcher = new HotkeyMatcher(() => capture.IsCapturing);
         var hooks = new HookService(new HookThread(matcher), log);
         var tray = new TrayIcon(log);
         var inspector = new Win32WindowInspector();

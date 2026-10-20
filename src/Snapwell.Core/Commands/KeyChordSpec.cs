@@ -51,6 +51,8 @@ public static class DefaultHotkeys
             [WindowCommand.SnapAdjacentRight] = new(shifted, 0x4C),
             [WindowCommand.SnapAdjacentUp] = new(shifted, 0x49),
             [WindowCommand.SnapAdjacentDown] = new(shifted, 0x4B),
+            [WindowCommand.CenterWindow] = new(plain, 0x43),
+            [WindowCommand.CenterWindowKeepSize] = new(shifted, 0x43),
         };
     }
 }

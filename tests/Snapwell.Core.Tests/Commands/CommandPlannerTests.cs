@@ -73,7 +73,7 @@ public sealed class CommandPlannerTests
     public void ArrangeCommandsPreserveEnumerationValuesAndHaveDefaultBindings()
     {
         var hotkeys = DefaultHotkeys.Create();
-        Assert.Equal(26, hotkeys.Count);
+        Assert.Equal(28, hotkeys.Count);
         Assert.Equal(new KeyChordSpec(ChordModifiers.Control | ChordModifiers.Alt, 0x41),
             hotkeys[WindowCommand.ArrangeGrid]);
         Assert.True(hotkeys.ContainsKey(WindowCommand.ArrangeColumns));
