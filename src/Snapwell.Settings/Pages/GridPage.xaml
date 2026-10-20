@@ -150,15 +150,13 @@
                                   Foreground="{ThemeResource SnapwellTextBrush}" MinWidth="0"
                                   Checked="LinkEdge_Changed" Unchecked="LinkEdge_Changed" />
                     </StackPanel>
-                    <Border Background="{ThemeResource SnapwellSurface2Brush}"
-                            BorderBrush="{ThemeResource SnapwellBorderBrush}" BorderThickness="1"
-                            CornerRadius="8" Padding="14,12">
-                        <TextBlock x:Name="FormulaText" Style="{StaticResource SnapwellMonoTextStyle}"
-                                   LineHeight="20.4" TextWrapping="Wrap" />
-                    </Border>
                 </StackPanel>
             </Grid>
-            <TextBlock Text="区画単位のサイズ変更" Style="{StaticResource SnapwellGroupTitleStyle}" />
+            <TextBlock Text="ホットキーでの拡大・縮小" Style="{StaticResource SnapwellGroupTitleStyle}" />
+            <TextBlock
+                Text="Ctrl+Alt+Shift+矢印キーで、前面のウィンドウを区画単位で広げたり狭めたりします（キーはホットキーのページで変えられます）。"
+                Style="{StaticResource SnapwellHintTextStyle}"
+                Margin="0,0,0,8" />
             <Border Style="{StaticResource SnapwellRowsBorderStyle}">
                 <StackPanel>
                     <Grid Style="{StaticResource SnapwellRowGridStyle}">
@@ -216,7 +214,11 @@
                             </ComboBox>
                         </StackPanel>
                     </Grid>
-                    <Border Style="{StaticResource SnapwellRowDividerStyle}" />
+                </StackPanel>
+            </Border>
+            <TextBlock Text="マウスでのリサイズ" Style="{StaticResource SnapwellGroupTitleStyle}" />
+            <Border Style="{StaticResource SnapwellRowsBorderStyle}">
+                <StackPanel>
                     <Grid Style="{StaticResource SnapwellRowGridStyle}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
@@ -230,6 +232,8 @@
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="手動でリサイズしたら区画に揃える" Style="{StaticResource SnapwellRowTitleStyle}" />
                             </Grid>
+                            <TextBlock Text="ウィンドウの縁をドラッグして離すと、いちばん近い区画の境界にぴたりと揃えます"
+                                       Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                             <ToggleSwitch x:Name="SnapAfterResizeToggle" Toggled="SnapAfterResize_Toggled"
@@ -241,7 +245,7 @@
                 </StackPanel>
             </Border>
             <TextBlock
-                Text="見た目の枠（DWMWA_EXTENDED_FRAME_BOUNDS）で計算するため、間隔 0 でも隙間はできません。"
+                Text="区画はウィンドウの見た目の輪郭を基準に決めるため、間隔を 0 にすると、並べたウィンドウどうしがぴったり接します。"
                 Style="{StaticResource SnapwellHintTextStyle}"
                 Margin="0,10,0,0" />
             <TextBlock Text="数値での指定" Style="{StaticResource SnapwellGroupTitleStyle}" />
