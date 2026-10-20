@@ -1,3 +1,4 @@
+using System.Security.Principal;
 using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation.Peers;
@@ -6,6 +7,7 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Snapwell.Core.Commands;
+using Snapwell.Platform.Hooks;
 using Snapwell.Settings.Setup;
 using Windows.System;
 using Windows.UI.Core;
@@ -15,7 +17,7 @@ namespace Snapwell.Settings.Pages;
 
 public sealed partial class HotkeysPage
 {
-    private WindowCommand? _capturing;
+    private readonly HotkeyCaptureSession _capture = new(AcquireCaptureSignal);
     private WindowCommand? _pendingCommand;
     private KeyChordSpec? _pendingChord;
     private readonly HashSet<VirtualKey> _consumedKeys = [];
@@ -31,6 +33,13 @@ public sealed partial class HotkeysPage
     private Storyboard? _rowFlash;
     private WindowCommand? _flashingCommand;
     private long _flashStarted;
+
+    private static IDisposable? AcquireCaptureSignal()
+    {
+        using var identity = WindowsIdentity.GetCurrent();
+        var sid = identity.User?.Value ?? throw new InvalidOperationException("ユーザーの SID を取得できない。");
+        return HotkeyCaptureMutex.TryAcquire(HotkeyCaptureSession.MutexName(sid));
+    }
 
     private void Page_Loaded(object sender, RoutedEventArgs e)
     {
@@ -78,7 +87,7 @@ public sealed partial class HotkeysPage
 
     private void Root_PointerPressed(object sender, PointerRoutedEventArgs e)
     {
-        if (_capturing is not { } command) { return; }
+        if (_capture.Command is not { } command) { return; }
         for (var source = e.OriginalSource as DependencyObject; source is not null;
             source = VisualTreeHelper.GetParent(source))
         {
@@ -91,17 +100,22 @@ public sealed partial class HotkeysPage
     {
         if (_session.IsReadOnly) { return; }
         StopEditing();
-        _capturing = command;
+        if (!_capture.Begin(command))
+        {
+            Announce(command, "ほかの設定画面でキーを取り込み中です");
+            return;
+        }
         _keyButtons[command].Focus(FocusState.Programmatic);
         UpdateKeyButton(command, "キーを押してください");
         Announce(command, "キーを押してください");
     }
 
-    private void StopEditing()
+    private void StopEditing(WindowCommand? completedCommand = null)
     {
+        var previous = _capture.Command ?? completedCommand;
+        // 表示の更新で例外が起きても、合図の解放を妨げない。
+        _capture.End();
         StopCapturePulse();
-        var previous = _capturing;
-        _capturing = null;
         _pendingCommand = null;
         _pendingChord = null;
         if (previous is { } command && _keyButtons.ContainsKey(command)) { UpdateKeyButton(command); }
@@ -121,24 +135,30 @@ public sealed partial class HotkeysPage
             e.Handled = true;
             return;
         }
-        if (_capturing is not { } command) { return; }
+        if (_capture.Command is not { } command) { return; }
         e.Handled = true;
         _consumedKeys.Add(e.Key);
-        if (_session.IsReadOnly || e.Key == VirtualKey.Escape)
+        if (_session.IsReadOnly)
         {
             StopEditing();
             return;
         }
         var key = (uint)e.Key;
-        if (key is 0x10 or 0x11 or 0x12 or 0x5B or 0x5C or (>= 0xA0 and <= 0xA5)) { return; }
         var modifiers = ReadModifiers();
-        if (modifiers == ChordModifiers.None && e.Key is VirtualKey.Back or VirtualKey.Delete)
+        var input = _capture.ReadKey(key, modifiers);
+        if (input is HotkeyCaptureInput.Ignored or HotkeyCaptureInput.Modifier) { return; }
+        if (input is HotkeyCaptureInput.Cancelled or HotkeyCaptureInput.Cleared or HotkeyCaptureInput.Accepted)
+        {
+            StopEditing(command);
+        }
+        if (input == HotkeyCaptureInput.Cancelled) { return; }
+        if (input == HotkeyCaptureInput.Cleared)
         {
             SetHotkeys(HotkeyEditing.Clear(_session.Current.Hotkeys, command), command);
             return;
         }
         var chord = new KeyChordSpec(modifiers, key);
-        if (!HotkeyEditing.IsAssignable(chord))
+        if (input == HotkeyCaptureInput.Invalid)
         {
             const string error = "Ctrl・Alt・Shift・Win のどれかと組み合わせてください";
             UpdateKeyButton(command, error, error: true);
@@ -229,7 +249,7 @@ public sealed partial class HotkeysPage
                 StopRowFlash();
                 _flashingCommand = null;
             }
-            else if (_capturing is { } command &&
+            else if (_capture.Command is { } command &&
                 _keyButtons[command].Style == (Style)Resources["HotkeyCaptureStyle"])
             {
                 StartCapturePulse(command);

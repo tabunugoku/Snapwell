@@ -152,7 +152,7 @@ public sealed partial class HotkeysPage : Page
         key.Click += (_, _) => BeginCapture(command);
         key.LostFocus += (_, _) =>
         {
-            if (_capturing == command) { StopEditing(); }
+            if (_capture.Command == command) { StopEditing(); }
         };
         _keyButtons.Add(command, key);
         UpdateKeyButton(command);
