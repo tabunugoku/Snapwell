@@ -7,6 +7,7 @@ namespace Snapwell.Settings;
 /// <summary>保存済みの値と編集中の値を分けて保持する。</summary>
 public sealed class SettingsSession
 {
+    private static readonly TimeSpan _saveLockTimeout = TimeSpan.FromMilliseconds(200);
     private readonly SettingsStore<PortableSettings> _store = SettingsStores.Portable();
     private PortableSettings _saved = new();
     private bool _isTransferInProgress;
@@ -15,6 +16,7 @@ public sealed class SettingsSession
     private Timer? _reloadTimer;
     private bool _reloading;
     private bool _reloadAgain;
+    private bool _refreshing;
 
     /// <summary>起動時に一度だけ設定を読み込み、読み取れない場合は保存を止める。</summary>
     public SettingsSession()
@@ -59,10 +61,13 @@ public sealed class SettingsSession
     public string? SyncMessage { get; private set; }
     public event EventHandler? Changed;
 
+    /// <summary>再読み込みで値または読み取り専用状態を差し替えたとき、ページの再生成を求める。</summary>
+    public event EventHandler? Reloaded;
+
     /// <summary>検証は Core に任せ、保存せずに画面の値だけを更新する。</summary>
     public void Update(PortableSettings value)
     {
-        if (IsReadOnly)
+        if (IsReadOnly || _refreshing)
         {
             return;
         }
@@ -83,8 +88,11 @@ public sealed class SettingsSession
 
         try
         {
-            // 本体は読み込みだけを行う。保存はストアの原子的な置換と未来の版の保護に任せる。
-            _store.Save(Current);
+            if (!SettingsSync.WithLock(SettingsStores.PortablePath(), () => _store.Save(Current), _saveLockTimeout))
+            {
+                message = "同期の実行中のため、少し待ってからもう一度保存してください";
+                return false;
+            }
             _saved = SettingsTransfer.Normalize(Current);
             HasChanges = false;
             SyncMessage = null;
@@ -118,13 +126,16 @@ public sealed class SettingsSession
         {
             var loaded = await Task.Run(_store.TryReload);
             if (loaded is null) { return; }
-            if (loaded.IsReadOnly)
+            var wasReadOnly = IsReadOnly;
+            var replaced = false;
+            var decision = SettingsSync.DecideReload(_saved, loaded, HasChanges, IsReadOnly);
+            if (decision == SettingsSyncReloadKind.Unchanged) { return; }
+            if (decision == SettingsSyncReloadKind.ReadOnly)
             {
                 IsReadOnly = true;
                 SyncMessage = "新しい版の設定のため同期できません。Snapwell を更新してください。";
             }
-            else if (!SettingsTransfer.HasChanges(_saved, loaded.Value) && !IsReadOnly) { return; }
-            else if (HasChanges)
+            else if (decision == SettingsSyncReloadKind.KeepEdits)
             {
                 IsReadOnly = false;
                 SyncMessage = "同期先の設定を取り込みました。未保存の変更は、保存すると取り込んだ内容を上書きします";
@@ -134,9 +145,17 @@ public sealed class SettingsSession
                 _saved = SettingsTransfer.Normalize(loaded.Value);
                 Current = SettingsTransfer.Normalize(_saved);
                 IsReadOnly = false;
-                SyncMessage = null;
+                SyncMessage = "同期先の設定を取り込みました。";
+                replaced = true;
             }
             Changed?.Invoke(this, EventArgs.Empty);
+            if (replaced || wasReadOnly != IsReadOnly)
+            {
+                // 古いページのフォーカス解除と新しいコントロールの初期化で編集値を戻さない。
+                _refreshing = true;
+                try { Reloaded?.Invoke(this, EventArgs.Empty); }
+                finally { _refreshing = false; }
+            }
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException)
         {
