@@ -73,12 +73,13 @@ internal static class Program
                 var previewSurface = new OverlaySession(interactive: false, diagnostic: LauncherLog.Write);
                 var launcherSurface = new OverlaySession(interactive: true, diagnostic: LauncherLog.Write);
                 var preview = new ZonePreview(previewSurface, monitors, settings: () => settings);
+                var previewChannels = new ZonePreviewChannels(preview);
                 var tracking = new MouseTrackingVotes(value => hooks.MouseTrackingEnabled = value);
                 var neighbors = new NeighborWindowSource(inspector, monitors, (uint)Environment.ProcessId,
                     () => settings);
                 var drag = new DragSnapController(inspector, monitors, motion, () => settings,
                     tracking.SetDrag, (uint)Environment.ProcessId,
-                    preview: preview, cursorPosition: CursorPosition, neighbors: neighbors.Snapshot);
+                    preview: previewChannels.Drag, cursorPosition: CursorPosition, neighbors: neighbors.Snapshot);
                 LauncherController? launcher = null;
                 var hotkeys = new HotkeyCommandExecutor(inspector, monitors, motion, position, () => settings,
                     enabled, toggle, (uint)Environment.ProcessId, () => launcher?.Open(), neighbors: neighbors.Snapshot);
@@ -93,7 +94,7 @@ internal static class Program
                     new ForegroundTargetTracker(inspector, (uint)Environment.ProcessId, () => settings),
                     new CornerWindowController(corners, inspector, () => settings, (uint)Environment.ProcessId, log),
                     new ResizeSnapController(inspector, monitors, motion, () => settings,
-                        new Win32ResizeConstraints(), (uint)Environment.ProcessId));
+                        new Win32ResizeConstraints(), (uint)Environment.ProcessId, previewChannels.Resize));
             }, new SettingsWatcher(SettingsStores.PortablePath()),
             () => new SettingsLauncher(log).Open("--setup"), new SettingsWatcher(SettingsStores.DevicePath()),
             sync: new SettingsSyncService(SettingsStores.PortablePath(),

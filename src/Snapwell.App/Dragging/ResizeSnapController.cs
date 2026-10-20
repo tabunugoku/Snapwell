@@ -1,4 +1,6 @@
 using Snapwell.App.Motion;
+using Snapwell.App.Overlay;
+using Snapwell.Core.Geometry;
 using Snapwell.Core.Layout;
 using Snapwell.Core.Settings;
 using Snapwell.Platform.Hooks;
@@ -18,67 +20,230 @@ internal interface IResizeConstraints
     bool TryGetMinimum(WindowSnapshot window, out int width, out int height);
 }
 
-/// <summary>フックから配送済みの開始・終了通知だけで、手動リサイズを区画へ揃える。</summary>
+/// <summary>配送済みの操作通知から手動リサイズの吸着先を表示し、終了時に区画へ揃える。</summary>
 internal sealed class ResizeSnapController(IWindowInspector inspector, IMonitorSource monitors,
-    IMotionEngine motion, Func<PortableSettings> settings, IResizeConstraints constraints, uint ownProcessId)
+    IMotionEngine motion, Func<PortableSettings> settings, IResizeConstraints constraints, uint ownProcessId,
+    IZonePreview? preview = null, TimeProvider? timeProvider = null)
 {
+    // 動きを時間で決めず、ドラッグ側と同じ間隔・猶予・上限で着地の完了を監視する。
+    private const int HoldPollMs = 50;
+    private const int HoldMinMs = 150;
+    private const int HoldMaxMs = 2000;
+    private readonly object _gate = new();
+    private readonly IZonePreview _preview = preview ?? NullZonePreview.Instance;
+    private readonly TimeProvider _time = timeProvider ?? TimeProvider.System;
     private WindowSnapshot? _start;
     private uint _startDpi;
     private uint _startMonitorDpi;
+    private PixelRect? _shownTarget;
+    private ITimer? _holdTimer;
+    private WindowSnapshot? _holdWindow;
+    private long _holdStart;
+    private IReadOnlyList<MonitorInfo> _holdMonitors = [];
 
     internal void Handle(HookEvent value, bool enabled)
     {
-        if (!enabled || !settings().SnapAfterResize)
+        lock (_gate)
         {
-            _start = null;
-            return;
-        }
-
-        if (value is MoveSizeStarted start)
-        {
-            _start = inspector.TryInspect(start.Handle, out var window) && Eligible(window) ? window : null;
-            _startDpi = _start is null ? 0 : constraints.GetDpi(start.Handle);
-            _startMonitorDpi = _start is null ? 0 : GetMonitorDpi(_start, GetMonitorsOrEmpty());
-        }
-        else if (value is WindowDestroyed closed && _start?.Handle == closed.Handle)
-        {
-            _start = null;
-        }
-        else if (value is MoveSizeEnded end && _start is { } original && original.Handle == end.Handle)
-        {
-            _start = null;
-            var currentDpi = constraints.GetDpi(end.Handle);
-            if (motion.IsMoving(end.Handle) || !inspector.TryInspect(end.Handle, out var window) ||
-                window.ProcessId != original.ProcessId || !Eligible(window) ||
-                _startDpi == 0 || currentDpi == 0 || _startDpi != currentDpi ||
-                (original.VisualBounds.Width == window.VisualBounds.Width &&
-                    original.VisualBounds.Height == window.VisualBounds.Height))
+            try
             {
-                return;
+                HandleCore(value, enabled);
             }
-
-            var currentMonitors = GetMonitorsOrEmpty();
-            var currentMonitorDpi = GetMonitorDpi(window, currentMonitors);
-            // DPI 非対応・システム DPI 対応の対象は、ウィンドウの DPI だけでは倍率の変化を検出できない。
-            if (_startMonitorDpi == 0 || currentMonitorDpi == 0 || _startMonitorDpi != currentMonitorDpi ||
-                !constraints.TryGetMinimum(window, out var width, out var height))
+            catch (Exception)
             {
-                return;
-            }
-
-            var options = settings();
-            var areas = currentMonitors.Select(monitor => monitor.ToMonitorArea()).ToArray();
-            var plan = ResizeSnapPlanner.Plan(options, enabled, true, original.VisualBounds,
-                window.VisualBounds, areas, _startDpi, currentDpi, width, height);
-            if (plan is not null)
-            {
-                motion.Request(new(end.Handle, window.VisualBounds, plan.Target, plan.Walls,
-                    options.ToFeelPreset(), Resize: true));
+                // 配送側で記録する例外でも、直前の区画だけが画面に残らないようにする。
+                CancelCore();
+                throw;
             }
         }
     }
 
-    internal void Cancel() => _start = null;
+    private void HandleCore(HookEvent value, bool enabled)
+    {
+        var options = settings();
+        if (!enabled || !options.SnapAfterResize)
+        {
+            CancelCore();
+            return;
+        }
+
+        if (!options.ShowZonePreview)
+        {
+            StopHold();
+            HidePreview();
+        }
+
+        if (value is MoveSizeStarted start)
+        {
+            CancelCore();
+            _start = inspector.TryInspect(start.Handle, out var window) && Eligible(window) ? window : null;
+            _startDpi = _start is null ? 0 : constraints.GetDpi(start.Handle);
+            _startMonitorDpi = _start is null ? 0 : GetMonitorDpi(_start, GetMonitorsOrEmpty());
+        }
+        else if (value is WindowDestroyed closed &&
+            (_start?.Handle == closed.Handle || _holdWindow?.Handle == closed.Handle))
+        {
+            CancelCore();
+        }
+        else if (value is MouseMoved && _start is { } resizing && options.ShowZonePreview)
+        {
+            var plan = Plan(resizing, options, out _, out _);
+            if (plan is null)
+            {
+                HidePreview();
+            }
+            else
+            {
+                ShowPreview(plan.Target);
+            }
+        }
+        else if (value is MoveSizeEnded end && _start is { } original && original.Handle == end.Handle)
+        {
+            _start = null;
+            var plan = Plan(original, options, out var window, out var currentMonitors);
+            if (plan is null || window is null)
+            {
+                HidePreview();
+                return;
+            }
+
+            motion.Request(new(end.Handle, window.VisualBounds, plan.Target, plan.Walls,
+                options.ToFeelPreset(), Resize: true));
+            if (options.ShowZonePreview && ShowPreview(plan.Target))
+            {
+                _holdWindow = window;
+                _holdMonitors = currentMonitors.ToArray();
+                _holdStart = _time.GetTimestamp();
+                _holdTimer = _time.CreateTimer(OnHold, null,
+                    TimeSpan.FromMilliseconds(HoldPollMs), TimeSpan.FromMilliseconds(HoldPollMs));
+            }
+        }
+    }
+
+    internal void Cancel()
+    {
+        lock (_gate)
+        {
+            CancelCore();
+        }
+    }
+
+    private ResizeSnapPlan? Plan(WindowSnapshot original, PortableSettings options,
+        out WindowSnapshot? window, out IReadOnlyList<MonitorInfo> currentMonitors)
+    {
+        window = null;
+        currentMonitors = [];
+        var currentDpi = constraints.GetDpi(original.Handle);
+        if (motion.IsMoving(original.Handle) || !inspector.TryInspect(original.Handle, out window) ||
+            window.ProcessId != original.ProcessId || !Eligible(window) ||
+            _startDpi == 0 || currentDpi == 0 || _startDpi != currentDpi ||
+            (original.VisualBounds.Width == window.VisualBounds.Width &&
+                original.VisualBounds.Height == window.VisualBounds.Height))
+        {
+            return null;
+        }
+
+        currentMonitors = GetMonitorsOrEmpty();
+        var currentMonitorDpi = GetMonitorDpi(window, currentMonitors);
+        // DPI 非対応・システム DPI 対応の対象は、ウィンドウの DPI だけでは倍率の変化を検出できない。
+        if (_startMonitorDpi == 0 || currentMonitorDpi == 0 || _startMonitorDpi != currentMonitorDpi ||
+            !constraints.TryGetMinimum(window, out var width, out var height))
+        {
+            return null;
+        }
+
+        var areas = currentMonitors.Select(monitor => monitor.ToMonitorArea()).ToArray();
+        return ResizeSnapPlanner.Plan(options, true, true, original.VisualBounds,
+            window.VisualBounds, areas, _startDpi, currentDpi, width, height);
+    }
+
+    private void OnHold(object? state)
+    {
+        lock (_gate)
+        {
+            if (_holdWindow is not { } held)
+            {
+                return;
+            }
+
+            try
+            {
+                var elapsed = _time.GetElapsedTime(_holdStart).TotalMilliseconds;
+                var options = settings();
+                if (!options.SnapAfterResize || !options.ShowZonePreview ||
+                    !inspector.TryInspect(held.Handle, out var current) ||
+                    current.ProcessId != held.ProcessId || !Eligible(current) ||
+                    constraints.GetDpi(held.Handle) != _startDpi ||
+                    GetMonitorDpi(current, _holdMonitors) != _startMonitorDpi ||
+                    !_holdMonitors.SequenceEqual(GetMonitorsOrEmpty()) ||
+                    elapsed >= HoldMaxMs || (elapsed >= HoldMinMs && !motion.IsMoving(held.Handle)))
+                {
+                    StopHold();
+                    HidePreview();
+                }
+            }
+            catch (Exception)
+            {
+                // 描画や対象の取得に失敗しても、タイマーの例外で常駐プロセスを終了させない。
+                StopHold();
+                HidePreview();
+            }
+        }
+    }
+
+    private bool ShowPreview(PixelRect target)
+    {
+        if (_shownTarget == target)
+        {
+            return true;
+        }
+
+        try
+        {
+            _shownTarget = target;
+            _preview.Show(target);
+            return true;
+        }
+        catch (Exception)
+        {
+            // 表示の失敗で、終了時の揃えや後続の入力配送を失敗させない。
+            HidePreview();
+            return false;
+        }
+    }
+
+    private void HidePreview()
+    {
+        if (_shownTarget is null)
+        {
+            return;
+        }
+
+        _shownTarget = null;
+        try
+        {
+            _preview.Hide();
+        }
+        catch (Exception)
+        {
+            // 描画スレッドが終了済みでも、操作状態の破棄を完了する。
+        }
+    }
+
+    private void StopHold()
+    {
+        _holdWindow = null;
+        _holdMonitors = [];
+        _holdTimer?.Dispose();
+        _holdTimer = null;
+    }
+
+    private void CancelCore()
+    {
+        _start = null;
+        StopHold();
+        HidePreview();
+    }
 
     private IReadOnlyList<MonitorInfo> GetMonitorsOrEmpty()
     {
