@@ -172,11 +172,6 @@ public sealed partial class GridPage : Page
         var workHeight = area?.Height ?? 1400;
         var dpi = _choices.FirstOrDefault(choice => choice.Id == _monitorId)?.Monitor?.DpiX / 96.0 ?? 1;
         var physical = value.ToSpacing().ToPhysical(dpi);
-        var realCw = Math.Max(0, (workWidth - 2 * physical.Edge - (cols - 1) * physical.Gap) / (double)cols);
-        var realCh = Math.Max(0, (workHeight - 2 * physical.Edge - (rows - 1) * physical.Gap) / (double)rows);
-        FormulaText.Text =
-            $"作業領域 {workWidth} × {workHeight}\n区画 = (W − 2e − (N−1)g) / N\n" +
-            $"  = {realCw:F1} × {realCh:F1} px\na 区画の幅 = a·区画 + (a−1)·g";
 
         var width = PreviewHost.ActualWidth - 2;
         if (width <= 32)

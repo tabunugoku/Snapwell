@@ -3,6 +3,117 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       x:Class="Snapwell.Settings.Pages.LauncherPage">
     <Page.Resources>
+        <Style x:Key="PresetOptionCheckBoxStyle" TargetType="CheckBox">
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="FontFamily" Value="{StaticResource SnapwellUiFontFamily}" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Foreground" Value="{ThemeResource SnapwellTextBrush}" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="UseSystemFocusVisuals" Value="True" />
+            <Setter Property="FocusVisualMargin" Value="-3" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CheckBox">
+                        <Grid x:Name="Root" Background="Transparent" ColumnSpacing="8"
+                              Control.IsTemplateFocusTarget="True" Padding="{TemplateBinding Padding}">
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroup x:Name="CombinedStates">
+                                    <VisualState x:Name="UncheckedNormal" />
+                                    <VisualState x:Name="UncheckedPointerOver">
+                                        <VisualState.Setters>
+                                            <Setter Target="Root.Opacity" Value="0.8" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="UncheckedPressed">
+                                        <VisualState.Setters>
+                                            <Setter Target="Root.Opacity" Value="0.65" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="UncheckedDisabled">
+                                        <VisualState.Setters>
+                                            <Setter Target="Root.Opacity" Value="0.4" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="CheckedNormal">
+                                        <VisualState.Setters>
+                                            <Setter Target="CheckedMark.Visibility" Value="Visible" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="CheckedPointerOver">
+                                        <VisualState.Setters>
+                                            <Setter Target="CheckedMark.Visibility" Value="Visible" />
+                                            <Setter Target="Root.Opacity" Value="0.8" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="CheckedPressed">
+                                        <VisualState.Setters>
+                                            <Setter Target="CheckedMark.Visibility" Value="Visible" />
+                                            <Setter Target="Root.Opacity" Value="0.65" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="CheckedDisabled">
+                                        <VisualState.Setters>
+                                            <Setter Target="CheckedMark.Visibility" Value="Visible" />
+                                            <Setter Target="Root.Opacity" Value="0.4" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="IndeterminateNormal">
+                                        <VisualState.Setters>
+                                            <Setter Target="IndeterminateMark.Visibility" Value="Visible" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="IndeterminatePointerOver">
+                                        <VisualState.Setters>
+                                            <Setter Target="IndeterminateMark.Visibility" Value="Visible" />
+                                            <Setter Target="Root.Opacity" Value="0.8" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="IndeterminatePressed">
+                                        <VisualState.Setters>
+                                            <Setter Target="IndeterminateMark.Visibility" Value="Visible" />
+                                            <Setter Target="Root.Opacity" Value="0.65" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="IndeterminateDisabled">
+                                        <VisualState.Setters>
+                                            <Setter Target="IndeterminateMark.Visibility" Value="Visible" />
+                                            <Setter Target="Root.Opacity" Value="0.4" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                </VisualStateGroup>
+                            </VisualStateManager.VisualStateGroups>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid Width="14" Height="14" VerticalAlignment="Center"
+                                  AutomationProperties.AccessibilityView="Raw">
+                                <Border Background="{ThemeResource SnapwellSurfaceBrush}"
+                                        BorderBrush="{ThemeResource SnapwellInkBrush}"
+                                        BorderThickness="1" CornerRadius="2" />
+                                <Border x:Name="CheckedMark" Visibility="Collapsed" CornerRadius="2"
+                                        Background="{ThemeResource SnapwellInkBrush}">
+                                    <Path Data="M 3,7 L 6,10 L 11,4" StrokeThickness="1.5"
+                                          Stroke="{ThemeResource SnapwellSurfaceBrush}" />
+                                </Border>
+                                <Border x:Name="IndeterminateMark" Visibility="Collapsed" CornerRadius="2"
+                                        Background="{ThemeResource SnapwellInkBrush}">
+                                    <Rectangle Width="8" Height="2" Fill="{ThemeResource SnapwellSurfaceBrush}" />
+                                </Border>
+                            </Grid>
+                            <ContentPresenter Grid.Column="1" Content="{TemplateBinding Content}"
+                                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                                              Foreground="{TemplateBinding Foreground}"
+                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                              AutomationProperties.AccessibilityView="Raw" />
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <Style x:Key="PresetOptionBorder" TargetType="Border">
             <Setter Property="Background" Value="{ThemeResource SnapwellSurfaceBrush}" />
             <Setter Property="BorderBrush" Value="{ThemeResource SnapwellBorderBrush}" />
