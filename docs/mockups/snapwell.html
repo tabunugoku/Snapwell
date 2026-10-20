@@ -519,6 +519,34 @@ table.list { width: 100%; border-collapse: collapse; font-size: 13px; }
 table.list th { text-align: left; font-weight: 500; color: var(--muted); font-size: 12px; padding: 8px 12px; border-bottom: 1px solid var(--border); }
 table.list td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
 table.list tr:last-child td { border-bottom: 0; }
+
+/* ホットキーの割り当て */
+.hk-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 0 0 10px; }
+.hk-search { flex: 1 1 200px; min-width: 160px; max-width: 280px; padding: 6px 10px; border: 1px solid var(--border-strong); border-radius: 6px; background: var(--surface); font-size: 13px; }
+.hk-sum { flex: 1 1 auto; font-size: 12.5px; color: var(--muted); }
+.hk-table td, .hk-table th { white-space: nowrap; }
+.hk-table td:first-child { white-space: normal; }
+.hk-table .hk-grp td { background: var(--surface-2); color: var(--muted); font-size: 12px; font-weight: 600; padding: 6px 12px; }
+.hk-act-col { width: 76px; }
+.hk-key { display: inline-flex; gap: 4px; align-items: center; min-height: 32px; min-width: 150px; padding: 3px 8px; border: 1px solid transparent; border-radius: 6px; background: transparent; cursor: pointer; text-align: left; }
+.hk-key:hover { background: var(--surface-2); border-color: var(--border); }
+.hk-key:focus-visible { outline: 2px solid var(--blue-line); outline-offset: 1px; }
+.hk-key.cap { border-color: var(--blue-line); background: var(--blue-bg); color: var(--blue-tx); animation: hkPulse 1.2s ease-in-out infinite; }
+.hk-key.err { border-color: var(--red-tx); background: var(--red-bg); color: var(--red-tx); animation: none; }
+.hk-key .hk-none { color: var(--muted); font-size: 12.5px; }
+.hk-key.cap kbd { background: var(--surface); }
+@keyframes hkPulse { 50% { box-shadow: 0 0 0 3px var(--blue-bg); } }
+@media (prefers-reduced-motion: reduce) { .hk-key.cap { animation: none; } }
+.hk-ic { width: 28px; height: 28px; border: 1px solid transparent; border-radius: 6px; background: transparent; cursor: pointer; color: var(--muted); font-size: 14px; line-height: 1; }
+.hk-ic:hover:not(:disabled) { background: var(--surface-2); border-color: var(--border); color: var(--ink); }
+.hk-ic:disabled { opacity: 0.3; cursor: default; }
+.hk-msg td { padding: 8px 12px 10px 24px; background: var(--surface-2); font-size: 12.5px; white-space: normal; }
+.hk-msg.bad td { color: var(--red-tx); }
+.hk-msg .btn { padding: 3px 10px; font-size: 12.5px; margin: 6px 6px 0 0; }
+.hk-flash td { animation: hkFlash 1.1s ease-out; }
+@keyframes hkFlash { from { background: var(--blue-bg); } }
+.hk-demo { margin-left: 10px; cursor: pointer; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .feel-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
 .feel-card { border: 1px solid var(--border); border-radius: 8px; padding: 12px; background: var(--surface); cursor: pointer; text-align: left; }
 .feel-card[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
@@ -909,46 +937,21 @@ table.list tr:last-child td { border-bottom: 0; }
           <!-- ホットキー -->
           <div class="spage" data-page="keys">
             <h3>ホットキー</h3>
-            <p class="lead">割り当ての一覧です。同じキーを複数の操作に割り当てている行には「重複」と表示します。</p>
+            <p class="lead">キーの欄をクリックして、新しいキーを押すと割り当てを変えられます。同じキーを複数の操作に割り当てている行には「重複」と表示します。</p>
+            <div class="hk-bar">
+              <input class="hk-search" id="hkSearch" type="search" placeholder="操作を絞り込む" aria-label="操作を絞り込む">
+              <span class="hk-sum" id="hkSum" aria-live="polite"></span>
+              <button class="btn" type="button" id="hkReset">すべて既定に戻す</button>
+            </div>
             <div class="rows" style="padding: 0">
-              <table class="list">
-                <thead><tr><th>操作</th><th>キー</th><th></th></tr></thead>
-                <tbody>
-                  <tr><td>左半分</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>←</kbd></td><td></td></tr>
-                  <tr><td>右半分</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>→</kbd></td><td></td></tr>
-                  <tr><td>上半分</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>↑</kbd></td><td></td></tr>
-                  <tr><td>下半分</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>↓</kbd></td><td></td></tr>
-                  <tr><td>左上の四分割</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>U</kbd></td><td></td></tr>
-                  <tr><td>右上の四分割</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>I</kbd></td><td></td></tr>
-                  <tr><td>左下の四分割</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>J</kbd></td><td></td></tr>
-                  <tr><td>右下の四分割</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>K</kbd></td><td></td></tr>
-                  <tr><td>最大化</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Enter</kbd></td><td></td></tr>
-                  <tr><td>右へ 1 区画広げる</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Shift</kbd> <kbd>→</kbd></td><td></td></tr>
-                  <tr><td>下へ 1 区画広げる</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Shift</kbd> <kbd>↓</kbd></td><td></td></tr>
-                  <tr><td>左へ 1 区画縮める</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Shift</kbd> <kbd>←</kbd></td><td></td></tr>
-                  <tr><td>上へ 1 区画縮める</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Shift</kbd> <kbd>↑</kbd></td><td></td></tr>
-                  <tr><td>左へ 1 区画移動</td><td></td><td><span class="tag pending">未割り当て</span></td></tr>
-                  <tr><td>右へ 1 区画移動</td><td></td><td><span class="tag pending">未割り当て</span></td></tr>
-                  <tr><td>上へ 1 区画移動</td><td></td><td><span class="tag pending">未割り当て</span></td></tr>
-                  <tr><td>下へ 1 区画移動</td><td></td><td><span class="tag pending">未割り当て</span></td></tr>
-                  <tr><td>次のモニターへ</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>PageDown</kbd></td><td></td></tr>
-                  <tr><td>前のモニターへ</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>PageUp</kbd></td><td></td></tr>
-                  <tr><td>一時停止・再開</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Pause</kbd></td><td></td></tr>
-                  <tr><td>ランチャーを開く</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Space</kbd></td><td></td></tr>
-                  <tr><td>現在のモニターを整列 (グリッド)</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>A</kbd></td><td></td></tr>
-                  <tr><td>現在のモニターを横一列に整列</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Shift</kbd> <kbd>H</kbd></td><td></td></tr>
-                  <tr><td>現在のモニターを縦一列に整列</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Shift</kbd> <kbd>V</kbd></td><td></td></tr>
-                  <tr><td>現在のモニターをメインとスタックで整列</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Shift</kbd> <kbd>M</kbd></td><td></td></tr>
-                  <tr><td>全モニターを整列 (グリッド)</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Shift</kbd> <kbd>A</kbd></td><td></td></tr>
-                  <tr><td>左の隣へ寄せる</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Shift</kbd> <kbd>J</kbd></td><td></td></tr>
-                  <tr><td>右の隣へ寄せる</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Shift</kbd> <kbd>L</kbd></td><td></td></tr>
-                  <tr><td>上の隣へ寄せる</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Shift</kbd> <kbd>I</kbd></td><td></td></tr>
-                  <tr><td>下の隣へ寄せる</td><td><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Shift</kbd> <kbd>K</kbd></td><td></td></tr>
-                </tbody>
+              <table class="list hk-table">
+                <thead><tr><th>操作</th><th>キー</th><th>状態</th><th class="hk-act-col"><span class="sr-only">操作</span></th></tr></thead>
+                <tbody id="hkBody"></tbody>
               </table>
             </div>
-            <p class="hint" style="margin-top: 10px">ほかのアプリとの競合は、この画面では確認できません。<span class="tag red">重複</span> は同じキーを Snapwell の複数の操作に割り当てたときに出て、上に警告も表示します。</p>
-            <div style="margin-top: 12px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap"><button class="btn" type="button" id="hkReset">既定に戻す</button><span class="hint">クリックして新しいキーを押す変更 <span class="tag pending">準備中</span></span></div>
+            <p class="hint" style="margin-top: 10px" id="hkHelp">キーの欄を選んで、割り当てたいキーを押します。<kbd>Esc</kbd> でやめる、<kbd>Backspace</kbd> か <kbd>Delete</kbd> で割り当てを外します。Ctrl・Alt・Shift・Win のどれかを含めてください。</p>
+            <p class="hint" style="margin-top: 6px">ほかのアプリとの競合は、保存して Snapwell が登録するときに分かります。登録できなかったキーには <span class="tag yellow">他のアプリが使用中</span> と表示します。
+              <label class="hk-demo"><input type="checkbox" id="hkBusyDemo"> 表示の見本を出す</label></p>
             <div class="group-title">Windows のキー</div>
             <div class="rows">
               <div class="row"><div><div class="t"><kbd>Win</kbd> + 矢印 を Snapwell で使う <span class="tag pending">準備中</span></div><div class="d">標準のスナップを止めているときだけ使えます（「標準機能」のページ）</div></div><div class="ctl"><label class="switch"><input type="checkbox" checked disabled aria-label="Win 矢印"><span></span></label></div></div>
@@ -2055,8 +2058,131 @@ function initSettings() {
   initGridPage();
   initFeelPage();
   initPresetPage();
+  initKeysPage();
   initSaveBar();
 }
+// ホットキーの割り当て（案）。クリックしてキーを押す。重複・予約済み・Win キーの注意を、その場で出す
+function initKeysPage() {
+  const body = $('#hkBody'), sum = $('#hkSum'), help = $('#hkHelp'), search = $('#hkSearch');
+  const M = 'Ctrl+Alt+', S = 'Ctrl+Alt+Shift+';
+  const DEFS = [
+    ['配置', '左半分', M + '←'], ['配置', '右半分', M + '→'], ['配置', '上半分', M + '↑'], ['配置', '下半分', M + '↓'],
+    ['配置', '左上の四分割', M + 'U'], ['配置', '右上の四分割', M + 'I'], ['配置', '左下の四分割', M + 'J'],
+    ['配置', '右下の四分割', M + 'K'], ['配置', '最大化', M + 'Enter'],
+    ['広げる・縮める', '右へ 1 区画広げる', S + '→'], ['広げる・縮める', '下へ 1 区画広げる', S + '↓'],
+    ['広げる・縮める', '左へ 1 区画縮める', S + '←'], ['広げる・縮める', '上へ 1 区画縮める', S + '↑'],
+    ['区画の移動', '左へ 1 区画移動', ''], ['区画の移動', '右へ 1 区画移動', ''],
+    ['区画の移動', '上へ 1 区画移動', ''], ['区画の移動', '下へ 1 区画移動', ''],
+    ['モニター', '次のモニターへ', M + 'PageDown'], ['モニター', '前のモニターへ', M + 'PageUp'],
+    ['整列', '現在のモニターを整列 (グリッド)', M + 'A'], ['整列', '現在のモニターを横一列に整列', S + 'H'],
+    ['整列', '現在のモニターを縦一列に整列', S + 'V'], ['整列', '現在のモニターをメインとスタックで整列', S + 'M'],
+    ['整列', '全モニターを整列 (グリッド)', S + 'A'],
+    ['隣へ寄せる', '左の隣へ寄せる', S + 'J'], ['隣へ寄せる', '右の隣へ寄せる', S + 'L'],
+    ['隣へ寄せる', '上の隣へ寄せる', S + 'I'], ['隣へ寄せる', '下の隣へ寄せる', S + 'K'],
+    ['そのほか', 'ランチャーを開く', M + 'Space'], ['そのほか', '一時停止・再開', M + 'Pause'],
+  ].map(([group, name, def], id) => ({ id, group, name, def, chord: def }));
+  // Windows が自分で使うキーの一例。実装では登録を試して決める（実機未確認）
+  const RESERVED = ['Ctrl+Alt+Delete', 'Win+L', 'Win+D', 'Win+Tab', 'Alt+Tab', 'Alt+F4', 'Ctrl+Shift+Escape'];
+  const ORDER = ['Ctrl', 'Alt', 'Shift', 'Win'];
+  let capId = null, pending = null, flashId = null, error = null;
+
+  const kbds = (chord) => chord.split('+').map((k) => `<kbd>${k}</kbd>`).join(' ');
+  const dupes = () => {
+    const count = new Map();
+    DEFS.forEach((d) => { if (d.chord) count.set(d.chord, (count.get(d.chord) || 0) + 1); });
+    return count;
+  };
+  const nameOf = (id) => DEFS[id].name;
+
+  function render() {
+    const count = dupes();
+    const q = search.value.trim();
+    let html = '', last = '', shown = 0;
+    DEFS.filter((d) => !q || d.name.includes(q)).forEach((d) => {
+      if (d.group !== last) { html += `<tr class="hk-grp"><td colspan="4">${d.group}</td></tr>`; last = d.group; }
+      shown++;
+      const isCap = capId === d.id;
+      const dup = d.chord && count.get(d.chord) > 1;
+      let keyCell;
+      if (isCap) {
+        const live = error ? error.text : 'キーを押してください';
+        keyCell = `<span class="hk-none">${live}</span>`;
+      } else keyCell = d.chord ? kbds(d.chord) : '<span class="hk-none">未割り当て</span>';
+      const tags = [];
+      if (dup) tags.push('<span class="tag red">重複</span>');
+      if (!d.chord) tags.push('<span class="tag pending">未割り当て</span>');
+      if (d.chord !== d.def) tags.push('<span class="tag blue">変更済み</span>');
+      if ($('#hkBusyDemo').checked && d.name === 'ランチャーを開く') tags.push('<span class="tag yellow">他のアプリが使用中</span>');
+      html += `<tr class="${flashId === d.id ? 'hk-flash' : ''}"><td>${d.name}</td>`
+        + `<td><button type="button" class="hk-key${isCap ? ' cap' : ''}${isCap && error ? ' err' : ''}" data-id="${d.id}" aria-label="${d.name}のキーを変更: ${d.chord || '未割り当て'}">${keyCell}</button></td>`
+        + `<td>${tags.join(' ')}</td>`
+        + `<td class="hk-act-col"><button type="button" class="hk-ic" data-reset="${d.id}" title="既定に戻す" aria-label="${d.name}を既定に戻す"${d.chord === d.def ? ' disabled' : ''}>↺</button>`
+        + `<button type="button" class="hk-ic" data-clear="${d.id}" title="割り当てを外す" aria-label="${d.name}の割り当てを外す"${d.chord ? '' : ' disabled'}>✕</button></td></tr>`;
+      if (pending && pending.id === d.id) {
+        html += `<tr class="hk-msg"><td colspan="4">「${pending.names.join('」「')}」と同じキー ${kbds(pending.chord)} です。<br>`
+          + '<button type="button" class="btn" data-swap>入れ替える</button>'
+          + '<button type="button" class="btn" data-keep>重複のまま割り当てる</button>'
+          + '<button type="button" class="btn" data-cancel>やめる</button></td></tr>';
+      }
+    });
+    body.innerHTML = html || '<tr><td colspan="4" class="hint">該当する操作がありません</td></tr>';
+    const dups = [...count.values()].filter((n) => n > 1).length;
+    sum.innerHTML = dups ? `<span class="tag red">重複 ${dups} 件</span> 同じキーを複数の操作に割り当てています` : (q ? `${shown} 件を表示` : '');
+    flashId = null;
+    if (capId !== null) { const b = body.querySelector(`.hk-key[data-id="${capId}"]`); if (b) b.focus(); }
+  }
+  const dirty = () => body.dispatchEvent(new Event('change', { bubbles: true }));
+  const defaultHelp = help.innerHTML;
+  const stop = () => { capId = null; error = null; pending = null; help.innerHTML = defaultHelp; };
+
+  function apply(id, chord) { DEFS[id].chord = chord; flashId = id; stop(); render(); dirty(); }
+  function finish(id, chord) {
+    if (RESERVED.includes(chord)) { error = { text: 'Windows が使うキーなので、割り当てられません' }; render(); return; }
+    const others = DEFS.filter((d) => d.id !== id && d.chord === chord);
+    if (others.length) { pending = { id, chord, names: others.map((d) => d.name), others: others.map((d) => d.id) }; capId = null; render(); return; }
+    apply(id, chord);
+    if (chord.includes('Win')) {
+      help.innerHTML = '<span class="tag yellow">注意</span> Win キーを含む割り当ては、押したあとにスタートメニューが開くことがあります（実機未確認）。';
+    }
+  }
+
+  body.addEventListener('click', (ev) => {
+    const t = ev.target.closest('button');
+    if (!t) return;
+    if (t.dataset.id !== undefined) { stop(); capId = +t.dataset.id; render(); return; }
+    if (t.dataset.reset !== undefined) { const d = DEFS[+t.dataset.reset]; stop(); apply(d.id, d.def); return; }
+    if (t.dataset.clear !== undefined) { stop(); apply(+t.dataset.clear, ''); return; }
+    if (t.hasAttribute('data-swap')) {
+      const old = DEFS[pending.id].chord;
+      pending.others.forEach((o) => { DEFS[o].chord = old; });
+      apply(pending.id, pending.chord); return;
+    }
+    if (t.hasAttribute('data-keep')) { apply(pending.id, pending.chord); return; }
+    if (t.hasAttribute('data-cancel')) { stop(); render(); }
+  });
+  document.addEventListener('keydown', (ev) => {
+    if (capId === null) return;
+    ev.preventDefault();
+    if (ev.key === 'Escape') { stop(); render(); return; }
+    if (['Control', 'Alt', 'Shift', 'Meta'].includes(ev.key)) return;
+    if ((ev.key === 'Backspace' || ev.key === 'Delete') && !ev.ctrlKey && !ev.altKey && !ev.shiftKey && !ev.metaKey) {
+      apply(capId, ''); return;
+    }
+    const mods = [ev.ctrlKey && 'Ctrl', ev.altKey && 'Alt', ev.shiftKey && 'Shift', ev.metaKey && 'Win'].filter(Boolean);
+    if (!mods.length) { error = { text: 'Ctrl・Alt・Shift・Win のどれかと組み合わせてください' }; render(); return; }
+    const named = { ArrowLeft: '←', ArrowRight: '→', ArrowUp: '↑', ArrowDown: '↓', ' ': 'Space' };
+    const key = named[ev.key] || (ev.key.length === 1 ? ev.key.toUpperCase() : ev.key);
+    finish(capId, ORDER.filter((m) => mods.includes(m)).concat(key).join('+'));
+  }, true);
+  document.addEventListener('click', (ev) => {
+    if (capId !== null && !ev.target.closest('.hk-key')) { stop(); render(); }
+  });
+  search.addEventListener('input', () => { stop(); render(); });
+  $('#hkBusyDemo').addEventListener('change', render);
+  $('#hkReset').addEventListener('click', () => { DEFS.forEach((d) => { d.chord = d.def; }); stop(); render(); });
+  render();
+}
+
 // 保存バーと取り込み。保存を待たず反映する項目（data-instant）以外を変えると、保存していない変更になる
 function initSaveBar() {
   const state = $('#saveState');
