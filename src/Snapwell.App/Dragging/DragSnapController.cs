@@ -14,11 +14,16 @@ namespace Snapwell.App.Dragging;
 internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSource monitors,
     IMotionEngine motion, Func<PortableSettings> settings, Action<bool> trackMouse, uint ownProcessId,
     Func<uint>? tickCount = null, IZonePreview? preview = null, Func<Vec2?>? cursorPosition = null,
-    Func<nint, IReadOnlyList<PixelRect>>? neighbors = null)
+    Func<nint, IReadOnlyList<PixelRect>>? neighbors = null, TimeSpan? idleDelay = null)
 {
     // 120 Hz の全イベントで予測せず、16 px または約二フレームごとに更新する。
     private const double PredictionDistance = 16;
     private const double PredictionInterval = 0.032;
+    // 離したあとは、着地の動きが終わるまでプレビューを残す。動きの開始直後と、止まらない場合の上限を決めておく。
+    private const int HoldPollMs = 50;
+    private const int HoldMinMs = 150;
+    private const int HoldMaxMs = 2000;
+    private readonly TimeSpan _idleDelay = idleDelay ?? TimeSpan.FromMilliseconds(60);
     private readonly object _gate = new();
     private readonly IZonePreview _preview = preview ?? NullZonePreview.Instance;
     private readonly Func<uint> _tickCount = tickCount ?? (() => unchecked((uint)Environment.TickCount64));
@@ -34,6 +39,11 @@ internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSou
     private double _lastPredictionTime;
     private bool _canResize;
     private IReadOnlyList<PixelRect> _neighbors = [];
+    private Timer? _idleTimer;
+    private Timer? _holdTimer;
+    private long _lastMoveTick;
+    private nint _holdHandle;
+    private long _holdStartTick;
 
     internal bool Enabled
     {
@@ -102,16 +112,19 @@ internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSou
                     var pointer = _pointer ?? cursorPosition?.Invoke();
                     var dragNeighbors = _neighbors;
                     var startSize = (_startBounds.Width, _startBounds.Height);
-                    StopTracking();
+                    // 吸着が決まれば、着地するまで同じプレビューを出し続けるので、ここでは消さない。
+                    StopTracking(keepPreview: true);
                     if (!inspector.TryInspect(end.Handle, out var current) || current.IsMaximized ||
                         !IsTarget(WindowClassifier.Classify(current, ownProcessId)))
                     {
+                        _preview.Hide();
                         return;
                     }
 
                     // リサイズの移動ループも同じイベントで届く。利用者が決めたサイズを吸着で上書きしない。
                     if ((current.VisualBounds.Width, current.VisualBounds.Height) != startSize)
                     {
+                        _preview.Hide();
                         return;
                     }
 
@@ -124,6 +137,11 @@ internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSou
                         var walls = areas.First(area => area.Id == snap.MonitorId).WorkArea;
                         motion.Request(new(end.Handle, current.VisualBounds, snap.Target, walls,
                             options.ToFeelPreset(), velocity, snap.Resized, snap.Stops, snap.ClickRadius));
+                        HoldPreview(end.Handle, snap, current.VisualBounds, areas, options.ShowZonePreview);
+                    }
+                    else
+                    {
+                        _preview.Hide();
                     }
 
                     break;
@@ -152,6 +170,15 @@ internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSou
             return;
         }
 
+        // 離した瞬間だけ見せる設定では、ドラッグ中は何も出さない。
+        if (options.DragPreviewStyle == DragPreviewStyle.OnRelease)
+        {
+            return;
+        }
+
+        // マウスが止まるとイベントが来ないので、タイマーで消す。細かい動きでスロットルに弾かれた分も動きとみなす。
+        _lastMoveTick = Environment.TickCount64;
+        (_idleTimer ??= new(OnIdle)).Change(_idleDelay, Timeout.InfiniteTimeSpan);
         if (_lastPredictionPosition is { } last && (point - last).Length < PredictionDistance &&
             seconds - _lastPredictionTime < PredictionInterval)
         {
@@ -168,15 +195,68 @@ internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSou
             areas, _canResize, point, _neighbors);
         if (result is { } snap)
         {
-            var scale = areas.First(area => area.Id == snap.MonitorId).Scale;
-            // 線の終点は慣性だけで進む位置（SnapResult.PredictedPosition）ではなく、着地する区画のタイトルバー。
-            // 慣性の距離は速度 × m/c で、既定の感触では 1000 px/s でも 20〜80 px しかなく、線が極端に短くなる。
-            _preview.Show(snap.Target, new Vec2(current.X + current.Width / 2.0, current.Y + 15 * scale),
-                new Vec2(snap.Target.X + snap.Target.Width / 2.0, snap.Target.Y + 15 * scale));
+            ShowSnap(snap, current, areas);
         }
         else
         {
             _preview.Hide();
+        }
+    }
+
+    // 線の終点は慣性だけで進む位置（SnapResult.PredictedPosition）ではなく、着地する区画のタイトルバー。
+    // 慣性の距離は速度 × m/c で、既定の感触では 1000 px/s でも 20〜80 px しかなく、線が極端に短くなる。
+    private void ShowSnap(SnapResult snap, PixelRect current, IReadOnlyList<MonitorArea> areas)
+    {
+        var scale = areas.First(area => area.Id == snap.MonitorId).Scale;
+        _preview.Show(snap.Target, new Vec2(current.X + current.Width / 2.0, current.Y + 15 * scale),
+            new Vec2(snap.Target.X + snap.Target.Width / 2.0, snap.Target.Y + 15 * scale));
+    }
+
+    private void OnIdle(object? state)
+    {
+        lock (_gate)
+        {
+            // 動いたあとに予約し直された場合と、すでに離した場合は消さない。
+            if (_velocity is not null && Environment.TickCount64 - _lastMoveTick >= _idleDelay.TotalMilliseconds - 5)
+            {
+                _preview.Hide();
+                _lastPredictionPosition = null;
+            }
+        }
+    }
+
+    // 離した瞬間の吸着先を、着地の動きが終わるまで出し続ける。投げた先が一瞬しか見えないのを避ける。
+    private void HoldPreview(nint handle, SnapResult snap, PixelRect current, IReadOnlyList<MonitorArea> areas,
+        bool enabled)
+    {
+        if (!enabled)
+        {
+            _preview.Hide();
+            return;
+        }
+
+        ShowSnap(snap, current, areas);
+        _holdHandle = handle;
+        _holdStartTick = Environment.TickCount64;
+        (_holdTimer ??= new(OnHold)).Change(HoldPollMs, HoldPollMs);
+    }
+
+    private void OnHold(object? state)
+    {
+        lock (_gate)
+        {
+            if (_holdHandle == 0)
+            {
+                return;
+            }
+
+            var elapsed = Environment.TickCount64 - _holdStartTick;
+            if (elapsed >= HoldMaxMs || (elapsed >= HoldMinMs && !motion.IsMoving(_holdHandle)))
+            {
+                _holdHandle = 0;
+                _holdTimer?.Change(Timeout.Infinite, Timeout.Infinite);
+                _preview.Hide();
+            }
         }
     }
 
@@ -193,9 +273,16 @@ internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSou
         return _seconds;
     }
 
-    private void StopTracking()
+    private void StopTracking(bool keepPreview = false)
     {
-        _preview.Hide();
+        _idleTimer?.Change(Timeout.Infinite, Timeout.Infinite);
+        if (!keepPreview)
+        {
+            _holdHandle = 0;
+            _holdTimer?.Change(Timeout.Infinite, Timeout.Infinite);
+            _preview.Hide();
+        }
+
         if (_velocity is not null)
         {
             trackMouse(false);

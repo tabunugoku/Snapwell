@@ -205,6 +205,69 @@ public sealed class DragSnapControllerTests
         Assert.False(request.Resize);
     }
 
+    /// <summary>離した瞬間だけの設定では、ドラッグ中は何も出さず、離すと吸着先を着地が終わるまで出し続ける。</summary>
+    [Fact]
+    public void OnReleaseStyleShowsOnlyAfterReleaseAndHoldsUntilLanding()
+    {
+        var fixture = new Fixture(idleDelay: TimeSpan.FromMilliseconds(30));
+        fixture.Settings.DragPreviewStyle = DragPreviewStyle.OnRelease;
+        fixture.Inspector.Window = fixture.Inspector.Window with { VisualBounds = new(600, 0, 400, 800) };
+        fixture.Controller.Handle(new MoveSizeStarted(1));
+        var hides = fixture.Preview.HideCount;
+        fixture.Controller.Handle(new MouseMoved(650, 5, 0));
+        fixture.Controller.Handle(new MouseMoved(1, 5, 40));
+        Assert.Empty(fixture.Preview.Shown);
+
+        fixture.Controller.Handle(new MoveSizeEnded(1, 40));
+        Assert.Single(fixture.Motion.Requests);
+        Assert.Single(fixture.Preview.Shown);
+        Thread.Sleep(300);
+        Assert.Equal(hides, fixture.Preview.HideCount);
+
+        fixture.Motion.FinishMoving(1);
+        Assert.True(SpinWait.SpinUntil(() => fixture.Preview.HideCount > hides, 2000));
+    }
+
+    /// <summary>止めたら消す設定では、マウスが止まると予測が消え、離すと吸着先が残る。</summary>
+    [Fact]
+    public void LiveStyleHidesWhenPointerStopsAndHoldsAfterRelease()
+    {
+        var fixture = new Fixture(idleDelay: TimeSpan.FromMilliseconds(30));
+        fixture.Inspector.Window = fixture.Inspector.Window with { VisualBounds = new(600, 0, 400, 800) };
+        fixture.Controller.Handle(new MoveSizeStarted(1));
+        var hides = fixture.Preview.HideCount;
+        fixture.Controller.Handle(new MouseMoved(650, 5, 0));
+        fixture.Controller.Handle(new MouseMoved(1, 5, 40));
+        Assert.Single(fixture.Preview.Shown);
+        Assert.True(SpinWait.SpinUntil(() => fixture.Preview.HideCount == hides + 1, 2000));
+
+        fixture.Controller.Handle(new MoveSizeEnded(1, 40));
+        Assert.Equal(2, fixture.Preview.Shown.Count);
+        Thread.Sleep(300);
+        Assert.Equal(hides + 1, fixture.Preview.HideCount);
+        fixture.Motion.FinishMoving(1);
+        Assert.True(SpinWait.SpinUntil(() => fixture.Preview.HideCount == hides + 2, 2000));
+    }
+
+    /// <summary>吸着しない離し方では、予測が出ていてもすぐに消す。</summary>
+    [Fact]
+    public void ReleaseWithoutSnapHidesPreviewImmediately()
+    {
+        var fixture = new Fixture(idleDelay: TimeSpan.FromSeconds(10));
+        fixture.Inspector.Window = fixture.Inspector.Window with { VisualBounds = new(600, 0, 400, 800) };
+        fixture.Controller.Handle(new MoveSizeStarted(1));
+        fixture.Controller.Handle(new MouseMoved(650, 5, 0));
+        fixture.Controller.Handle(new MouseMoved(1, 5, 40));
+        Assert.Single(fixture.Preview.Shown);
+
+        // 止まったあとの離しは速度が零になり、吸着しない。
+        fixture.Controller.Handle(new MouseMoved(1, 5, 400));
+        var hides = fixture.Preview.HideCount;
+        fixture.Controller.Handle(new MoveSizeEnded(1, 400));
+        Assert.Empty(fixture.Motion.Requests);
+        Assert.Equal(hides + 1, fixture.Preview.HideCount);
+    }
+
     /// <summary>次のドラッグでは前の隣接一覧を捨て、新しい対象の一覧を使う。</summary>
     [Fact]
     public void NewDragReplacesPreviousNeighbors()
@@ -274,9 +337,10 @@ public sealed class DragSnapControllerTests
         internal List<bool> Tracking { get; } = [];
         internal PortableSettings Settings { get; } = new();
         internal DragSnapController Controller { get; }
-        internal Fixture(Func<Vec2?>? cursorPosition = null, Func<nint, IReadOnlyList<PixelRect>>? neighbors = null) =>
+        internal Fixture(Func<Vec2?>? cursorPosition = null, Func<nint, IReadOnlyList<PixelRect>>? neighbors = null,
+            TimeSpan? idleDelay = null) =>
             Controller = new(Inspector, new FakeMonitors(), Motion,
-                () => Settings, Tracking.Add, 999, () => Now, Preview, cursorPosition, neighbors);
+                () => Settings, Tracking.Add, 999, () => Now, Preview, cursorPosition, neighbors, idleDelay);
 
         internal void Throw(int distance)
         {
@@ -298,6 +362,8 @@ public sealed class DragSnapControllerTests
             Shown.Add(target);
             Ends.Add(prediction);
         }
-        public void Hide() { }
+        internal int HideCount => Volatile.Read(ref _hides);
+        private int _hides;
+        public void Hide() => Interlocked.Increment(ref _hides);
     }
 }

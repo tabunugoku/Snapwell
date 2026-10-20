@@ -30,7 +30,7 @@ public sealed class SettingsStoreTests : IDisposable
         Assert.Equal(new GridSettings(6, 4), result.Value.Grid);
         Assert.Equal(21, result.Value.Gap);
         Assert.Equal("Heavy", result.Value.Feel);
-        Assert.Equal(9, PortableSettings.CurrentSchemaVersion);
+        Assert.Equal(10, PortableSettings.CurrentSchemaVersion);
 
         store.Save(result.Value);
         Assert.DoesNotContain("LongPress", File.ReadAllText(path));
@@ -220,6 +220,18 @@ public sealed class SettingsStoreTests : IDisposable
         store.Save(new() { MovePopupWindows = false });
         Assert.False(store.Load().Value.MovePopupWindows);
         Assert.False(SettingsTransfer.Normalize(new() { MovePopupWindows = false }).MovePopupWindows);
+    }
+
+    /// <summary>ドラッグ中の見せ方は既定が「止めたら消す」で、「離した瞬間だけ」の保存は読み戻しても保たれる。</summary>
+    [Fact]
+    public void DragPreviewStyleDefaultsToLiveAndRoundTripsOnRelease()
+    {
+        Assert.Equal(DragPreviewStyle.LiveUntilStop, new PortableSettings().DragPreviewStyle);
+        var store = SettingsStores.Portable(Path.Combine(_directory, "drag-preview.json"));
+        store.Save(new() { DragPreviewStyle = DragPreviewStyle.OnRelease });
+        Assert.Equal(DragPreviewStyle.OnRelease, store.Load().Value.DragPreviewStyle);
+        Assert.Equal(DragPreviewStyle.LiveUntilStop,
+            SettingsTransfer.Normalize(new() { DragPreviewStyle = (DragPreviewStyle)99 }).DragPreviewStyle);
     }
 
     /// <summary>版 8 以下のファイルはオンとして読み、版 9 の明示したオフは保つ。</summary>
