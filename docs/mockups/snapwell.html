@@ -239,11 +239,17 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
 .readout dt { color: var(--muted); }
 .readout dd { margin: 0; font-family: var(--font-mono); text-align: right; color: var(--ink); }
 .resnap-demo { display: flex; align-items: center; gap: 14px; margin-top: 10px; }
-.rs-grid { position: relative; width: 160px; height: 90px; border: 1px solid var(--border); border-radius: 6px; background:
-  linear-gradient(to right, transparent 24.5%, var(--border) 24.5% 25.5%, transparent 25.5% 49.5%, var(--border) 49.5% 50.5%, transparent 50.5% 74.5%, var(--border) 74.5% 75.5%, transparent 75.5%),
-  linear-gradient(to bottom, transparent 49.5%, var(--border) 49.5% 50.5%, transparent 50.5%), var(--surface); }
-.rs-win { position: absolute; left: 6px; top: 6px; width: 58%; height: calc(50% - 8px); border: 1.5px solid var(--ink); border-radius: 4px; background: var(--surface-2); transition: width 0.5s, height 0.5s; }
-.rs-win.snapped { width: calc(50% - 7px); height: calc(50% - 7px); }
+.rs-grid { position: relative; width: 320px; height: 160px; flex: none; border: 1px solid var(--border); border-radius: 8px; background-color: var(--surface); background-image:
+  repeating-linear-gradient(to right, transparent 0 39px, var(--border) 39px 40px),
+  repeating-linear-gradient(to bottom, transparent 0 39px, var(--border) 39px 40px); overflow: hidden; touch-action: none; }
+.rs-fill, .rs-box { position: absolute; border-radius: 6px; }
+.rs-fill { background: var(--blue-bg); }
+.rs-box { border: 1.5px dashed var(--blue-line); box-sizing: border-box; }
+.rs-win { position: absolute; left: 0; top: 0; width: 120px; height: 80px; border: 1.5px solid var(--border-strong); border-radius: 6px; background: var(--surface-2); box-sizing: border-box; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25); }
+.rs-win.settle { transition: width 0.25s, height 0.25s; }
+.rs-bar { height: 14px; background: var(--surface); border-bottom: 1px solid var(--border); border-radius: 5px 5px 0 0; }
+.rs-grip { position: absolute; right: -6px; bottom: -6px; width: 16px; height: 16px; cursor: nwse-resize; }
+.rs-grip::after { content: ''; position: absolute; right: 6px; bottom: 6px; width: 8px; height: 8px; border-radius: 50%; background: var(--ink); }
 .rs-cap { font-size: 12.5px; color: var(--muted); }
 .hint { font-size: 12.5px; color: var(--muted); margin: 0; }
 .hint + .hint { margin-top: 6px; }
@@ -911,9 +917,9 @@ table.list tr:last-child td { border-bottom: 0; }
               </div>
             <div class="group-title">マウスでのリサイズ</div>
             <div class="rows">
-              <div class="row"><div><div class="t">手動でリサイズしたら区画に揃える</div><div class="d">ウィンドウの縁をドラッグして離すと、いちばん近い区画の境界にぴたりと揃えます</div></div><div class="ctl"><label class="switch"><input type="checkbox" aria-label="区画に揃える"><span></span></label></div></div>
+              <div class="row"><div><div class="t">手動でリサイズしたら区画に揃える</div><div class="d">ウィンドウの縁をドラッグして離すと、いちばん近い区画の境界にぴたりと揃えます。ドラッグ中は、揃う先を青く表示します</div></div><div class="ctl"><label class="switch"><input type="checkbox" checked id="rsOn" aria-label="区画に揃える"><span></span></label></div></div>
             </div>
-            <div class="resnap-demo" id="resnapDemo" aria-label="リサイズ後に区画へ揃う例"><div class="rs-grid"><div class="rs-win" id="rsWin"></div></div><div class="rs-cap" id="rsCap">縁をドラッグして離すと…</div></div><p class="hint" style="margin-top: 10px">区画はウィンドウの見た目の輪郭を基準に決めるため、間隔を 0 にすると、並べたウィンドウどうしがぴったり接します。</p>
+            <p class="hint" style="margin: 10px 0 8px">右下のつまみをドラッグして、リサイズの場面を試せます。ドラッグ中に、離したときに揃う先を表示します（「外観」の「区画のプレビュー」がオンのとき。区画の線は「区画の線を表示する」に従います）。</p><div class="resnap-demo" id="resnapDemo"><div class="rs-grid" id="rsGrid" aria-label="リサイズで揃う先の例"><div class="rs-fill" id="rsFill"></div><div class="rs-box" id="rsBox"></div><div class="rs-win" id="rsWin"><div class="rs-bar"></div><div class="rs-grip" id="rsGrip" aria-hidden="true"></div></div></div><div class="rs-cap" id="rsCap"></div></div><p class="hint" style="margin-top: 10px">区画はウィンドウの見た目の輪郭を基準に決めるため、間隔を 0 にすると、並べたウィンドウどうしがぴったり接します。</p>
             <div class="group-title">数値での指定</div>
             <div class="rows">
               <div class="row"><div><div class="t">列数</div><div class="d">横方向の区画数 (1〜64)</div></div><div class="ctl"><input class="numbox" type="number" id="nCols" min="1" max="64" step="1" aria-label="列数"></div></div>
@@ -1048,7 +1054,7 @@ table.list tr:last-child td { border-bottom: 0; }
             <p class="lead">ウィンドウの角の形と、Snapwell のオーバーレイの見た目です。</p>
             <div class="rows">
               <div class="row"><div><div class="t">ウィンドウの角</div><div class="d">DWM の角の設定を使います。半径は Windows が決めます（約 8 px）</div></div><div class="ctl"><select class="input" style="width: 200px" id="cornerSel"><option value="8">角丸を強制する</option><option value="4">小さい角丸</option><option value="0">角丸なし</option><option value="win" selected>Windows の既定</option></select></div></div>
-              <div class="row"><div><div class="t">区画のプレビュー</div><div class="d">ウィンドウを離した瞬間に、吸着先の区画を青く塗り、着地するまで見せます。オフにすると何も表示しません</div></div><div class="ctl"><label class="switch"><input type="checkbox" checked id="tgPrev" aria-label="区画のプレビュー"><span></span></label></div></div>
+              <div class="row"><div><div class="t">区画のプレビュー</div><div class="d">投げたウィンドウは、離した瞬間から着地するまで、吸着先の区画を青く塗ります。手動でリサイズするときは、ドラッグしている間ずっと、離したときに揃う区画を塗ります（「分割と間隔」で区画に揃えるをオンにしたとき）。オフにすると、どちらも何も表示しません</div></div><div class="ctl"><label class="switch"><input type="checkbox" checked id="tgPrev" aria-label="区画のプレビュー"><span></span></label></div></div>
             </div>
             <div class="group-title">ウィンドウの角の見え方</div>
             <div class="corner-cards" id="cornerCards">
@@ -3038,14 +3044,52 @@ function makeSwitch(label) {
 $$('.switch').forEach(makeSwitch);
 
 (function initResnapDemo() {
-  const win = document.getElementById('rsWin'), cap = document.getElementById('rsCap');
-  if (!win) return;
-  let on = false;
-  setInterval(() => {
-    on = !on;
-    win.classList.toggle('snapped', on);
-    cap.textContent = on ? '最も近い区画の境界に揃いました' : '縁をドラッグして離すと…';
-  }, 2200);
+  // 8 × 4 の区画で、右下のつまみを動かす。左と上の辺は動かさず、右辺と下辺をいちばん近い区画の境界へ寄せる
+  const grid = document.getElementById('rsGrid'), win = document.getElementById('rsWin'), grip = document.getElementById('rsGrip');
+  const fill = document.getElementById('rsFill'), box = document.getElementById('rsBox'), cap = document.getElementById('rsCap');
+  const on = document.getElementById('rsOn'), prev = document.getElementById('tgPrev'), lines = document.getElementById('tgLines');
+  if (!grid) return;
+  const CELL = 40, COLS = 8, ROWS = 4;
+  let w = 120, h = 80, drag = null;
+  const target = () => ({ c: Math.min(COLS, Math.max(1, Math.round(w / CELL))), r: Math.min(ROWS, Math.max(1, Math.round(h / CELL))) });
+  const paint = () => {
+    const t = target();
+    win.style.width = w + 'px';
+    win.style.height = h + 'px';
+    for (const el of [fill, box]) { el.style.width = t.c * CELL + 'px'; el.style.height = t.r * CELL + 'px'; }
+    const show = drag && on.checked && prev.checked;
+    fill.style.display = show ? '' : 'none';
+    box.style.display = show && lines.checked ? '' : 'none';
+    const size = `${t.c} × ${t.r} 区画`;
+    if (!on.checked) cap.textContent = '「区画に揃える」がオフ: 離した位置のままです';
+    else if (!drag) cap.textContent = prev.checked ? '右下のつまみをドラッグしてください' : `「区画のプレビュー」がオフ: 離すと ${size} に揃います（表示はしません）`;
+    else cap.textContent = prev.checked ? `いま離すと ${size} に揃います` : `「区画のプレビュー」がオフ: 離すと ${size} に揃います（表示はしません）`;
+  };
+  const move = (e) => {
+    const g = grid.getBoundingClientRect();
+    w = Math.min(COLS * CELL, Math.max(CELL, e.clientX - g.left + drag.dx));
+    h = Math.min(ROWS * CELL, Math.max(CELL, e.clientY - g.top + drag.dy));
+    paint();
+  };
+  grip.addEventListener('pointerdown', (e) => {
+    const g = grid.getBoundingClientRect();
+    drag = { dx: g.left + w - e.clientX, dy: g.top + h - e.clientY };
+    win.classList.remove('settle');
+    grip.setPointerCapture(e.pointerId);
+    paint();
+  });
+  grip.addEventListener('pointermove', (e) => { if (drag) move(e); });
+  const end = () => {
+    if (!drag) return;
+    drag = null;
+    if (on.checked) { const t = target(); w = t.c * CELL; h = t.r * CELL; }
+    win.classList.add('settle');
+    paint();
+  };
+  grip.addEventListener('pointerup', end);
+  grip.addEventListener('pointercancel', end);
+  [on, prev, lines].forEach((e) => e.addEventListener('change', paint));
+  paint();
 })();
 
 (function initLookDemos() {

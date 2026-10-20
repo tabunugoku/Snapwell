@@ -135,6 +135,7 @@ internal sealed class ResidentRuntime : IAppRuntime
             _drag.Enabled = _enabled && _launcher?.IsOpen != true;
             if (_launcher?.IsOpen == true)
             {
+                _resize?.Cancel();
                 _preview?.Hide();
             }
         }
@@ -170,6 +171,7 @@ internal sealed class ResidentRuntime : IAppRuntime
             _launcher.Open(_foregroundTargets!.Resolve(target), ignorePointerUpToMs);
             if (_launcher.IsOpen)
             {
+                _resize?.Cancel();
                 _drag.Enabled = false;
             }
         }
