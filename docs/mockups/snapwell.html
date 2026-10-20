@@ -238,6 +238,13 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
 .readout { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 12.5px; }
 .readout dt { color: var(--muted); }
 .readout dd { margin: 0; font-family: var(--font-mono); text-align: right; color: var(--ink); }
+.resnap-demo { display: flex; align-items: center; gap: 14px; margin-top: 10px; }
+.rs-grid { position: relative; width: 160px; height: 90px; border: 1px solid var(--border); border-radius: 6px; background:
+  linear-gradient(to right, transparent 24.5%, var(--border) 24.5% 25.5%, transparent 25.5% 49.5%, var(--border) 49.5% 50.5%, transparent 50.5% 74.5%, var(--border) 74.5% 75.5%, transparent 75.5%),
+  linear-gradient(to bottom, transparent 49.5%, var(--border) 49.5% 50.5%, transparent 50.5%), var(--surface); }
+.rs-win { position: absolute; left: 6px; top: 6px; width: 58%; height: calc(50% - 8px); border: 1.5px solid var(--ink); border-radius: 4px; background: var(--surface-2); transition: width 0.5s, height 0.5s; }
+.rs-win.snapped { width: calc(50% - 7px); height: calc(50% - 7px); }
+.rs-cap { font-size: 12.5px; color: var(--muted); }
 .hint { font-size: 12.5px; color: var(--muted); margin: 0; }
 .hint + .hint { margin-top: 6px; }
 
@@ -508,7 +515,6 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
 .grid-preview { position: relative; aspect-ratio: 16 / 9; border: 1px solid var(--border); border-radius: 8px; background: var(--wall); overflow: hidden; }
 .grid-preview .gcell { position: absolute; border: 1px dashed var(--cell-border); border-radius: 2px; }
 .grid-preview .gwin { position: absolute; background: var(--surface); border: 1px solid var(--border-strong); border-radius: 4px; display: grid; place-items: center; font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
-.formula { font-family: var(--font-mono); font-size: 12px; line-height: 1.7; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; color: var(--text); }
 table.list { width: 100%; border-collapse: collapse; font-size: 13px; }
 table.list th { text-align: left; font-weight: 500; color: var(--muted); font-size: 12px; padding: 8px 12px; border-bottom: 1px solid var(--border); }
 table.list td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
@@ -849,16 +855,15 @@ table.list tr:last-child td { border-bottom: 0; }
                   <div class="range-row"><input type="range" id="gEdge" min="0" max="32" value="8" disabled><output id="gEdgeOut">8 px</output></div>
                   <label style="display: flex; gap: 8px; align-items: center; margin-top: 6px; color: var(--text)"><input type="checkbox" id="gLink" checked style="accent-color: var(--ink)"> 間隔と同じにする</label>
                 </div>
-                <div class="formula" id="gFormula"></div>
               </div>
             </div>
             <div class="group-title">区画単位のサイズ変更</div>
             <div class="rows">
               <div class="row"><div><div class="t">1 回の拡大・縮小の幅</div></div><div class="ctl"><select class="input" style="width: 160px"><option>1 区画</option><option>2 区画</option><option>3 区画</option><option>4 区画</option></select></div></div>
               <div class="row"><div><div class="t">固定する位置</div><div class="d">拡大・縮小するときに動かさない辺</div></div><div class="ctl"><select class="input" style="width: 160px"><option>左上</option><option>中心</option><option>近い辺</option></select></div></div>
-              <div class="row"><div><div class="t">手動でリサイズしたら区画に揃える</div></div><div class="ctl"><label class="switch"><input type="checkbox" aria-label="区画に揃える"><span></span></label></div></div>
+              <div class="row"><div><div class="t">手動でリサイズしたら区画に揃える</div><div class="d">ウィンドウの縁をドラッグして離すと、いちばん近い区画の境界にぴたりと揃えます</div></div><div class="ctl"><label class="switch"><input type="checkbox" aria-label="区画に揃える"><span></span></label></div></div>
             </div>
-            <p class="hint" style="margin-top: 10px">見た目の枠（DWMWA_EXTENDED_FRAME_BOUNDS）で計算するため、間隔 0 でも隙間はできません。</p>
+            <div class="resnap-demo" id="resnapDemo" aria-label="リサイズ後に区画へ揃う例"><div class="rs-grid"><div class="rs-win" id="rsWin"></div></div><div class="rs-cap" id="rsCap">縁をドラッグして離すと…</div></div><p class="hint" style="margin-top: 10px">区画はウィンドウの見た目の輪郭を基準に決めるため、間隔を 0 にすると、並べたウィンドウどうしがぴったり接します。</p>
             <div class="group-title">数値での指定</div>
             <div class="rows">
               <div class="row"><div><div class="t">列数</div><div class="d">横方向の区画数 (1〜64)</div></div><div class="ctl"><input class="numbox" type="number" id="nCols" min="1" max="64" step="1" aria-label="列数"></div></div>
@@ -2146,10 +2151,6 @@ function renderGrid(force) {
     html += `<div class="gwin" style="left:${r.x}px;top:${r.y}px;width:${r.w}px;height:${r.h}px">${labels[i]}</div>`;
   });
   box.innerHTML = html;
-  const realCw = (2560 - 2 * G.edge - (G.cols - 1) * G.gap) / G.cols;
-  const realCh = (1440 - 40 - 2 * G.edge - (G.rows - 1) * G.gap) / G.rows;
-  $('#gFormula').innerHTML = `作業領域 2560 × 1400<br>区画 = (W − 2e − (N−1)g) / N<br>`
-    + `&nbsp;&nbsp;= ${realCw.toFixed(1)} × ${realCh.toFixed(1)} px<br>a 区画の幅 = a·区画 + (a−1)·g`;
 }
 
 function curvePath(p, w, h) {
@@ -2855,6 +2856,17 @@ function makeSwitch(label) {
   paint();
 }
 $$('.switch').forEach(makeSwitch);
+
+(function initResnapDemo() {
+  const win = document.getElementById('rsWin'), cap = document.getElementById('rsCap');
+  if (!win) return;
+  let on = false;
+  setInterval(() => {
+    on = !on;
+    win.classList.toggle('snapped', on);
+    cap.textContent = on ? '最も近い区画の境界に揃いました' : '縁をドラッグして離すと…';
+  }, 2200);
+})();
 </script>
 </body>
 </html>
