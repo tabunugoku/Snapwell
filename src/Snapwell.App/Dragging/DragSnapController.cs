@@ -168,9 +168,11 @@ internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSou
             areas, _canResize, point, _neighbors);
         if (result is { } snap)
         {
-            var titleOffset = new Vec2(current.Width / 2.0, 15 * areas.First(area => area.Id == snap.MonitorId).Scale);
-            _preview.Show(snap.Target, new Vec2(current.X, current.Y) + titleOffset,
-                snap.PredictedPosition + titleOffset);
+            var scale = areas.First(area => area.Id == snap.MonitorId).Scale;
+            // 線の終点は慣性だけで進む位置（SnapResult.PredictedPosition）ではなく、着地する区画のタイトルバー。
+            // 慣性の距離は速度 × m/c で、既定の感触では 1000 px/s でも 20〜80 px しかなく、線が極端に短くなる。
+            _preview.Show(snap.Target, new Vec2(current.X + current.Width / 2.0, current.Y + 15 * scale),
+                new Vec2(snap.Target.X + snap.Target.Width / 2.0, snap.Target.Y + 15 * scale));
         }
         else
         {

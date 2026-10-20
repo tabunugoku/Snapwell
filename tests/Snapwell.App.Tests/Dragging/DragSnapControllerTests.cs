@@ -54,6 +54,8 @@ public sealed class DragSnapControllerTests
 
         var expected = new PixelRect(targetX, 8, 948, 508);
         Assert.Equal(expected, Assert.Single(fixture.Preview.Shown));
+        // 予測の線は慣性の位置ではなく、着地する区画のタイトルバーまで届く。
+        Assert.Equal(new Vec2(targetX + 474, 23), Assert.Single(fixture.Preview.Ends));
         fixture.Inspector.Window = fixture.Inspector.Window with { VisualBounds = new(windowX, 0, 400, 800) };
         // 処理の遅延中に現在位置が変わっても、フックが最後に記録した位置を優先する。
         cursor = new(960, 520);
@@ -289,7 +291,13 @@ public sealed class DragSnapControllerTests
     private sealed class RecordingPreview : IZonePreview
     {
         internal List<PixelRect> Shown { get; } = [];
+        internal List<Vec2> Ends { get; } = [];
         public void Show(PixelRect target) => Shown.Add(target);
+        public void Show(PixelRect target, Vec2 origin, Vec2 prediction)
+        {
+            Shown.Add(target);
+            Ends.Add(prediction);
+        }
         public void Hide() { }
     }
 }
