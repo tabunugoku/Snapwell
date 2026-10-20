@@ -5,6 +5,17 @@
     xmlns:controls="using:Snapwell.Settings.Controls"
     x:Class="Snapwell.Settings.Pages.LookPage">
     <Page.Resources>
+        <Style x:Key="CornerCardStyle" TargetType="Button">
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="VerticalAlignment" Value="Top" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="VerticalContentAlignment" Value="Top" />
+            <Setter Property="Padding" Value="10" />
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Background" Value="{ThemeResource SnapwellSurfaceBrush}" />
+            <Setter Property="BorderBrush" Value="{ThemeResource SnapwellBorderBrush}" />
+        </Style>
         <Style x:Key="DemoSwitchStyle" TargetType="ToggleSwitch"
                BasedOn="{StaticResource SnapwellDemoSwitchStyle}" />
         <Style x:Key="DemoSelectStyle" TargetType="ComboBox"
@@ -92,70 +103,97 @@
                             <ComboBoxItem Content="離した瞬間だけ" />
                         </ComboBox>
                     </Grid>
-                    <Border Style="{StaticResource SnapwellRowDividerStyle}" />
-                    <Grid Style="{StaticResource SnapwellRowGridStyle}">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <StackPanel VerticalAlignment="Center">
-                            <Grid ColumnSpacing="6" HorizontalAlignment="Left">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="大きな角丸（macOS 風）" Style="{StaticResource SnapwellRowTitleStyle}" />
-                                <Border Grid.Column="1" Style="{StaticResource SnapwellTagPendingStyle}">
-                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellTagPendingTextStyle}" />
-                                </Border>
-                            </Grid>
-                            <TextBlock Text="半径を自由に決める方法を検証しています" Style="{StaticResource SnapwellRowDescriptionStyle}" />
-                        </StackPanel>
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <Border Style="{StaticResource SnapwellTagYellowStyle}">
-                                <TextBlock Text="要検証" Style="{StaticResource SnapwellTagYellowTextStyle}" />
-                            </Border>
-                            <ToggleSwitch
-                                Style="{StaticResource DemoSwitchStyle}"
-                                IsOn="False"
-                                AutomationProperties.Name="大きな角丸"
-                                IsEnabled="False" />
-                        </StackPanel>
-                    </Grid>
                 </StackPanel>
             </Border>
-            <TextBlock Text="プレビュー" Style="{StaticResource SnapwellGroupTitleStyle}" />
-            <StackPanel Orientation="Horizontal" Spacing="16">
-                <Border
-                    Width="150"
-                    Height="96"
-                    CornerRadius="8"
-                    BorderThickness="1"
-                    BorderBrush="{ThemeResource SnapwellBorderStrongBrush}"
-                    Background="{ThemeResource SnapwellSurfaceBrush}">
-                    <TextBlock
-                        Text="角丸を強制する"
-                        Style="{StaticResource SnapwellHintTextStyle}"
-                        FontSize="12"
-                        HorizontalAlignment="Center"
-                        VerticalAlignment="Center" />
-                </Border>
-                <Border
-                    Width="150"
-                    Height="96"
-                    CornerRadius="12"
-                    Opacity="0.55"
-                    BorderThickness="1"
-                    BorderBrush="{ThemeResource SnapwellBorderStrongBrush}"
-                    Background="{ThemeResource SnapwellSurfaceBrush}">
-                    <TextBlock
-                        Text="大きな角丸（参考）"
-                        Style="{StaticResource SnapwellHintTextStyle}"
-                        FontSize="12"
-                        HorizontalAlignment="Center"
-                        VerticalAlignment="Center" />
-                </Border>
-            </StackPanel>
+            <TextBlock Text="ウィンドウの角の見え方" Style="{StaticResource SnapwellGroupTitleStyle}" />
+            <Grid ColumnSpacing="10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid Grid.Column="0" VerticalAlignment="Top">
+                    <Button x:Name="CardDefault" Tag="0" Click="CornerCard_Click"
+                            Style="{StaticResource CornerCardStyle}" AutomationProperties.Name="Windows の既定">
+                        <StackPanel Spacing="6">
+                            <Border Height="62" CornerRadius="8" BorderThickness="1.5"
+                                    BorderBrush="{ThemeResource SnapwellBorderStrongBrush}"
+                                    Background="{ThemeResource SnapwellSurface2Brush}">
+                                <Border Height="14" VerticalAlignment="Top" BorderThickness="0,0,0,1"
+                                        BorderBrush="{ThemeResource SnapwellBorderBrush}"
+                                        Background="{ThemeResource SnapwellSurfaceBrush}" />
+                            </Border>
+                            <TextBlock Text="Windows の既定" FontWeight="SemiBold" FontSize="13" TextWrapping="Wrap"
+                                       Foreground="{ThemeResource SnapwellTextBrush}" />
+                            <TextBlock Text="何も変えません。角の形は Windows とアプリ任せで、アプリによって丸だったり直角だったりします" FontSize="11.5" TextWrapping="Wrap"
+                                       Foreground="{ThemeResource SnapwellMutedBrush}" />
+                        </StackPanel>
+                    </Button>
+                    <Border x:Name="CardDefaultMark" CornerRadius="10" BorderThickness="1.5" IsHitTestVisible="False"
+                            BorderBrush="{ThemeResource SnapwellInkBrush}" Visibility="Collapsed" />
+                </Grid>
+                <Grid Grid.Column="1" VerticalAlignment="Top">
+                    <Button x:Name="CardRound" Tag="1" Click="CornerCard_Click"
+                            Style="{StaticResource CornerCardStyle}" AutomationProperties.Name="角丸を強制する">
+                        <StackPanel Spacing="6">
+                            <Border Height="62" CornerRadius="8" BorderThickness="1.5"
+                                    BorderBrush="{ThemeResource SnapwellBorderStrongBrush}"
+                                    Background="{ThemeResource SnapwellSurface2Brush}">
+                                <Border Height="14" VerticalAlignment="Top" BorderThickness="0,0,0,1"
+                                        BorderBrush="{ThemeResource SnapwellBorderBrush}"
+                                        Background="{ThemeResource SnapwellSurfaceBrush}" />
+                            </Border>
+                            <TextBlock Text="角丸を強制する" FontWeight="SemiBold" FontSize="13" TextWrapping="Wrap"
+                                       Foreground="{ThemeResource SnapwellTextBrush}" />
+                            <TextBlock Text="すべてのウィンドウを標準の丸（約 8 px）にそろえます" FontSize="11.5" TextWrapping="Wrap"
+                                       Foreground="{ThemeResource SnapwellMutedBrush}" />
+                        </StackPanel>
+                    </Button>
+                    <Border x:Name="CardRoundMark" CornerRadius="10" BorderThickness="1.5" IsHitTestVisible="False"
+                            BorderBrush="{ThemeResource SnapwellInkBrush}" Visibility="Collapsed" />
+                </Grid>
+                <Grid Grid.Column="2" VerticalAlignment="Top">
+                    <Button x:Name="CardSmall" Tag="2" Click="CornerCard_Click"
+                            Style="{StaticResource CornerCardStyle}" AutomationProperties.Name="小さい角丸">
+                        <StackPanel Spacing="6">
+                            <Border Height="62" CornerRadius="4" BorderThickness="1.5"
+                                    BorderBrush="{ThemeResource SnapwellBorderStrongBrush}"
+                                    Background="{ThemeResource SnapwellSurface2Brush}">
+                                <Border Height="14" VerticalAlignment="Top" BorderThickness="0,0,0,1"
+                                        BorderBrush="{ThemeResource SnapwellBorderBrush}"
+                                        Background="{ThemeResource SnapwellSurfaceBrush}" />
+                            </Border>
+                            <TextBlock Text="小さい角丸" FontWeight="SemiBold" FontSize="13" TextWrapping="Wrap"
+                                       Foreground="{ThemeResource SnapwellTextBrush}" />
+                            <TextBlock Text="丸みを控えめにします（約 4 px）" FontSize="11.5" TextWrapping="Wrap"
+                                       Foreground="{ThemeResource SnapwellMutedBrush}" />
+                        </StackPanel>
+                    </Button>
+                    <Border x:Name="CardSmallMark" CornerRadius="10" BorderThickness="1.5" IsHitTestVisible="False"
+                            BorderBrush="{ThemeResource SnapwellInkBrush}" Visibility="Collapsed" />
+                </Grid>
+                <Grid Grid.Column="3" VerticalAlignment="Top">
+                    <Button x:Name="CardNone" Tag="3" Click="CornerCard_Click"
+                            Style="{StaticResource CornerCardStyle}" AutomationProperties.Name="角丸なし">
+                        <StackPanel Spacing="6">
+                            <Border Height="62" CornerRadius="0" BorderThickness="1.5"
+                                    BorderBrush="{ThemeResource SnapwellBorderStrongBrush}"
+                                    Background="{ThemeResource SnapwellSurface2Brush}">
+                                <Border Height="14" VerticalAlignment="Top" BorderThickness="0,0,0,1"
+                                        BorderBrush="{ThemeResource SnapwellBorderBrush}"
+                                        Background="{ThemeResource SnapwellSurfaceBrush}" />
+                            </Border>
+                            <TextBlock Text="角丸なし" FontWeight="SemiBold" FontSize="13" TextWrapping="Wrap"
+                                       Foreground="{ThemeResource SnapwellTextBrush}" />
+                            <TextBlock Text="すべてのウィンドウを直角にします" FontSize="11.5" TextWrapping="Wrap"
+                                       Foreground="{ThemeResource SnapwellMutedBrush}" />
+                        </StackPanel>
+                    </Button>
+                    <Border x:Name="CardNoneMark" CornerRadius="10" BorderThickness="1.5" IsHitTestVisible="False"
+                            BorderBrush="{ThemeResource SnapwellInkBrush}" Visibility="Collapsed" />
+                </Grid>
+            </Grid>
             <TextBlock Text="オーバーレイ" Style="{StaticResource SnapwellGroupTitleStyle}" />
             <Border Style="{StaticResource SnapwellRowsBorderStyle}">
                 <StackPanel>
@@ -206,6 +244,44 @@
                         </StackPanel>
                     </Grid>
                 </StackPanel>
+            </Border>
+            <TextBlock Text="オーバーレイの見え方" Style="{StaticResource SnapwellGroupTitleStyle}" />
+            <TextBlock Text="ウィンドウをドラッグして、右上へ投げた場面の例です。上の「区画のプレビュー」と、下の二つの切り替えを変えると、表示がどう変わるかをここで確かめられます。"
+                       Style="{StaticResource SnapwellHintTextStyle}" TextWrapping="Wrap" Margin="0,0,0,8" />
+            <Border Width="400" Height="190" HorizontalAlignment="Left" CornerRadius="10" BorderThickness="1"
+                    BorderBrush="{ThemeResource SnapwellBorderBrush}"
+                    Background="{ThemeResource SnapwellSurfaceBrush}"
+                    AutomationProperties.Name="オーバーレイの見え方の例">
+                <Grid>
+                    <Canvas Width="398" Height="188" Opacity="0.6">
+                        <Rectangle Canvas.Left="99.5" Width="1" Height="188" Fill="{ThemeResource SnapwellBorderBrush}" />
+                        <Rectangle Canvas.Left="199.5" Width="1" Height="188" Fill="{ThemeResource SnapwellBorderBrush}" />
+                        <Rectangle Canvas.Left="298.5" Width="1" Height="188" Fill="{ThemeResource SnapwellBorderBrush}" />
+                        <Rectangle Canvas.Top="93.5" Width="398" Height="1" Fill="{ThemeResource SnapwellBorderBrush}" />
+                    </Canvas>
+                    <Canvas Width="398" Height="188">
+                        <Rectangle x:Name="OverlayFill" Canvas.Left="199" Width="199" Height="94" RadiusX="8" RadiusY="8"
+                                   Fill="{ThemeResource SnapwellBlueBackgroundBrush}" />
+                        <Rectangle x:Name="OverlayBox" Canvas.Left="199" Width="199" Height="94" RadiusX="8" RadiusY="8"
+                                   Stroke="{ThemeResource SnapwellBlueLineBrush}" StrokeThickness="1.5"
+                                   StrokeDashArray="3,3" />
+                        <Line x:Name="OverlayPredLine" X1="91" Y1="139" X2="297" Y2="51"
+                              Stroke="{ThemeResource SnapwellBlueTextBrush}" StrokeThickness="2"
+                              StrokeDashArray="2.5,2.5" />
+                        <Ellipse x:Name="OverlayPredDot" Canvas.Left="292" Canvas.Top="46" Width="10" Height="10"
+                                 Fill="{ThemeResource SnapwellBlueTextBrush}" />
+                        <Border Canvas.Left="11" Canvas.Top="111" Width="96" Height="62" CornerRadius="8"
+                                BorderThickness="1.5" BorderBrush="{ThemeResource SnapwellBorderStrongBrush}"
+                                Background="{ThemeResource SnapwellSurface2Brush}">
+                            <Border Height="14" VerticalAlignment="Top" BorderThickness="0,0,0,1"
+                                    BorderBrush="{ThemeResource SnapwellBorderBrush}"
+                                    Background="{ThemeResource SnapwellSurfaceBrush}" />
+                        </Border>
+                    </Canvas>
+                    <TextBlock x:Name="OverlayLegend" FontSize="11.5" HorizontalAlignment="Right"
+                               VerticalAlignment="Bottom" Margin="0,0,8,6" TextAlignment="Right"
+                               Foreground="{ThemeResource SnapwellMutedBrush}" />
+                </Grid>
             </Border>
 
         </StackPanel>

@@ -42,6 +42,8 @@ public sealed partial class LookPage : Page
         ZoneLinesToggle.IsOn = _session.Current.ShowZoneLines;
         PredictionLineToggle.IsOn = _session.Current.ShowPredictionLine;
         _refreshing = false;
+        UpdateCornerCards();
+        UpdateOverlayFigure();
     }
 
     private void Corner_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -56,6 +58,7 @@ public sealed partial class LookPage : Page
                 _ => WindowCornerPreference.Default,
             };
             _session.Update(_session.Current with { CornerPreference = preference });
+            UpdateCornerCards();
         }
     }
 
@@ -64,6 +67,7 @@ public sealed partial class LookPage : Page
         if (!_refreshing)
         {
             _session.Update(_session.Current with { ShowZonePreview = ZonePreviewToggle.IsOn });
+            UpdateOverlayFigure();
         }
     }
 
@@ -88,6 +92,39 @@ public sealed partial class LookPage : Page
                 ShowZoneLines = ZoneLinesToggle.IsOn,
                 ShowPredictionLine = PredictionLineToggle.IsOn,
             });
+            UpdateOverlayFigure();
         }
+    }
+
+    private void CornerCard_Click(object sender, RoutedEventArgs e)
+    {
+        // カードの並び（既定・強制・小さい・なし）をコンボボックスの並びに直す
+        CornerBox.SelectedIndex = int.Parse((string)((FrameworkElement)sender).Tag) switch
+        {
+            0 => 3,
+            1 => 0,
+            2 => 1,
+            _ => 2,
+        };
+    }
+
+    private void UpdateCornerCards()
+    {
+        var index = CornerBox.SelectedIndex;
+        CardRoundMark.Visibility = index == 0 ? Visibility.Visible : Visibility.Collapsed;
+        CardSmallMark.Visibility = index == 1 ? Visibility.Visible : Visibility.Collapsed;
+        CardNoneMark.Visibility = index == 2 ? Visibility.Visible : Visibility.Collapsed;
+        CardDefaultMark.Visibility = index is < 0 or > 2 ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void UpdateOverlayFigure()
+    {
+        var preview = ZonePreviewToggle.IsOn;
+        OverlayFill.Visibility = preview ? Visibility.Visible : Visibility.Collapsed;
+        OverlayBox.Visibility = preview && ZoneLinesToggle.IsOn ? Visibility.Visible : Visibility.Collapsed;
+        var prediction = preview && PredictionLineToggle.IsOn ? Visibility.Visible : Visibility.Collapsed;
+        OverlayPredLine.Visibility = prediction;
+        OverlayPredDot.Visibility = prediction;
+        OverlayLegend.Text = preview ? string.Empty : "区画のプレビューがオフ: ドラッグ中は何も表示しません";
     }
 }
