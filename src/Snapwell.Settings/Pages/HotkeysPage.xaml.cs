@@ -2,6 +2,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Documents;
+using Microsoft.UI.Xaml.Media;
 using Snapwell.Core.Commands;
 using Snapwell.Core.Layout;
 using Snapwell.Settings.Setup;
@@ -35,6 +36,7 @@ public sealed partial class HotkeysPage : Page
     private void Refresh(WindowCommand? focusCommand = null)
     {
         StopEditing();
+        StopRowFlash();
         var hotkeys = _session.Current.Hotkeys;
         var conflicts = HotkeyCatalog.FindConflicts(hotkeys);
         var duplicated = conflicts.SelectMany(conflict => conflict.Commands).ToHashSet();
@@ -42,6 +44,8 @@ public sealed partial class HotkeysPage : Page
         ResetButton.IsEnabled = !_session.IsReadOnly;
         _keyButtons.Clear();
         _messages.Clear();
+        _pulseBorders.Clear();
+        _flashBorders.Clear();
         // ItemsSource に .NET のコレクションを渡すと E_INVALIDARG になるため、要素を直接追加する。
         HotkeyRows.Children.Clear();
         var query = FilterBox.Text.Trim();
@@ -107,6 +111,7 @@ public sealed partial class HotkeysPage : Page
         {
             button.Focus(FocusState.Programmatic);
         }
+        ResumeRowFlash();
     }
 
     private string AnchorNote()
@@ -127,6 +132,10 @@ public sealed partial class HotkeysPage : Page
         var assigned = hotkeys.ContainsKey(command);
         var isDefault = HotkeyEditing.IsDefault(hotkeys, command);
         var container = new StackPanel();
+        var rowHost = new Grid { Style = (Style)Resources["HotkeyRowHostStyle"] };
+        var flash = new Border { Style = (Style)Resources["HotkeyFlashStyle"] };
+        _flashBorders.Add(command, flash);
+        rowHost.Children.Add(flash);
         var row = new Grid { Style = (Style)Resources["HotkeyRowStyle"] };
         row.ColumnDefinitions.Add(new() { Width = new(2.1, GridUnitType.Star) });
         row.ColumnDefinitions.Add(new() { Width = new(3, GridUnitType.Star) });
@@ -147,8 +156,17 @@ public sealed partial class HotkeysPage : Page
         };
         _keyButtons.Add(command, key);
         UpdateKeyButton(command);
-        Grid.SetColumn(key, 1);
-        row.Children.Add(key);
+        var keyHost = new Grid { VerticalAlignment = VerticalAlignment.Center };
+        var pulse = new Border
+        {
+            Style = (Style)Resources["HotkeyPulseStyle"],
+            RenderTransform = new ScaleTransform(),
+        };
+        _pulseBorders.Add(command, pulse);
+        keyHost.Children.Add(pulse);
+        keyHost.Children.Add(key);
+        Grid.SetColumn(keyHost, 1);
+        row.Children.Add(keyHost);
         var tags = new PresetWrapPanel { VerticalAlignment = VerticalAlignment.Center };
         if (duplicated) { tags.Children.Add(CreateTag("重複", "Red")); }
         if (!assigned) { tags.Children.Add(CreateTag("未割り当て", "Pending")); }
@@ -163,7 +181,8 @@ public sealed partial class HotkeysPage : Page
             () => SetHotkeys(HotkeyEditing.Clear(_session.Current.Hotkeys, command), command)));
         Grid.SetColumn(actions, 3);
         row.Children.Add(actions);
-        container.Children.Add(row);
+        rowHost.Children.Add(row);
+        container.Children.Add(rowHost);
         var message = new StackPanel
         {
             Style = (Style)Resources["HotkeyMessageStyle"],
@@ -201,6 +220,7 @@ public sealed partial class HotkeysPage : Page
 
     private void UpdateKeyButton(WindowCommand command, string? captureText = null, bool error = false)
     {
+        StopCapturePulse();
         var button = _keyButtons[command];
         var assigned = _session.Current.Hotkeys.TryGetValue(command, out var chord);
         var chordText = assigned ? HotkeyCatalog.FormatChord(chord!) : "未割り当て";
@@ -211,6 +231,7 @@ public sealed partial class HotkeysPage : Page
         if (captureText is not null || !assigned)
         {
             button.Content = new TextBlock { Text = captureText ?? chordText, TextWrapping = TextWrapping.Wrap };
+            if (captureText is not null && !error) { StartCapturePulse(command); }
             return;
         }
         var keys = new PresetWrapPanel();
@@ -226,10 +247,16 @@ public sealed partial class HotkeysPage : Page
         button.Content = keys;
     }
 
-    private void SetHotkeys(Dictionary<WindowCommand, KeyChordSpec> hotkeys, WindowCommand? focusCommand = null)
+    private void SetHotkeys(Dictionary<WindowCommand, KeyChordSpec> hotkeys, WindowCommand? focusCommand = null,
+        bool flash = false)
     {
         if (_session.IsReadOnly) { return; }
         _session.Update(_session.Current with { Hotkeys = hotkeys });
+        if (flash && _animationSettings.AnimationsEnabled)
+        {
+            _flashingCommand = focusCommand;
+            _flashStarted = System.Diagnostics.Stopwatch.GetTimestamp();
+        }
         Refresh(focusCommand);
     }
 

@@ -7,9 +7,13 @@
         <Style x:Key="DemoSwitchStyle" TargetType="ToggleSwitch"
                BasedOn="{StaticResource SnapwellDemoSwitchStyle}" />
         <Style x:Key="HotkeyRowStyle" TargetType="Grid" BasedOn="{StaticResource SnapwellRowGridStyle}">
+            <Setter Property="Background" Value="Transparent" />
             <Setter Property="Padding" Value="12,10" />
             <Setter Property="BorderBrush" Value="{ThemeResource SnapwellBorderBrush}" />
             <Setter Property="BorderThickness" Value="0,0,0,1" />
+        </Style>
+        <Style x:Key="HotkeyRowHostStyle" TargetType="Grid">
+            <Setter Property="Background" Value="{ThemeResource SnapwellSurfaceBrush}" />
         </Style>
         <Style x:Key="HotkeyHeaderStyle" TargetType="Grid" BasedOn="{StaticResource HotkeyRowStyle}">
             <Setter Property="Padding" Value="12,8" />
@@ -31,6 +35,20 @@
             <Setter Property="BorderBrush" Value="{ThemeResource SnapwellRedTextBrush}" />
             <Setter Property="Background" Value="{ThemeResource SnapwellRedBackgroundBrush}" />
             <Setter Property="Foreground" Value="{ThemeResource SnapwellRedTextBrush}" />
+        </Style>
+        <Style x:Key="HotkeyPulseStyle" TargetType="Border">
+            <Setter Property="BorderBrush" Value="{ThemeResource SnapwellBlueBackgroundBrush}" />
+            <Setter Property="BorderThickness" Value="3" />
+            <Setter Property="CornerRadius" Value="7" />
+            <Setter Property="Margin" Value="-3" />
+            <Setter Property="Opacity" Value="0" />
+            <Setter Property="IsHitTestVisible" Value="False" />
+            <Setter Property="RenderTransformOrigin" Value="0.5,0.5" />
+        </Style>
+        <Style x:Key="HotkeyFlashStyle" TargetType="Border">
+            <Setter Property="Background" Value="{ThemeResource SnapwellBlueBackgroundBrush}" />
+            <Setter Property="Opacity" Value="0" />
+            <Setter Property="IsHitTestVisible" Value="False" />
         </Style>
         <Style x:Key="HotkeyMessageStyle" TargetType="StackPanel">
             <Setter Property="Padding" Value="24,8,12,10" />

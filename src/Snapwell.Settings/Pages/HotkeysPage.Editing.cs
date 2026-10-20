@@ -4,10 +4,12 @@ using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Animation;
 using Snapwell.Core.Commands;
 using Snapwell.Settings.Setup;
 using Windows.System;
 using Windows.UI.Core;
+using Windows.UI.ViewManagement;
 
 namespace Snapwell.Settings.Pages;
 
@@ -19,6 +21,16 @@ public sealed partial class HotkeysPage
     private readonly HashSet<VirtualKey> _consumedKeys = [];
     private UIElement? _root;
     private InputActivationListener? _activation;
+    // ウィンドウ移動ではなく、モックアップの取り込み・確定表示の周期に合わせる。
+    private const double CapturePulseSeconds = 1.2;
+    private const double AssignmentFlashSeconds = 1.1;
+    private readonly UISettings _animationSettings = new();
+    private readonly Dictionary<WindowCommand, Border> _pulseBorders = [];
+    private readonly Dictionary<WindowCommand, Border> _flashBorders = [];
+    private Storyboard? _capturePulse;
+    private Storyboard? _rowFlash;
+    private WindowCommand? _flashingCommand;
+    private long _flashStarted;
 
     private void Page_Loaded(object sender, RoutedEventArgs e)
     {
@@ -27,12 +39,16 @@ public sealed partial class HotkeysPage
         _activation = InputActivationListener.GetForWindowId(XamlRoot.ContentIslandEnvironment.AppWindowId);
         _activation.InputActivationChanged += Activation_Changed;
         _session.Changed += Session_Changed;
+        _animationSettings.AnimationsEnabledChanged += AnimationsEnabled_Changed;
         Refresh();
     }
 
     private void Page_Unloaded(object sender, RoutedEventArgs e)
     {
         StopEditing();
+        StopRowFlash();
+        _flashingCommand = null;
+        _animationSettings.AnimationsEnabledChanged -= AnimationsEnabled_Changed;
         _session.Changed -= Session_Changed;
         _consumedKeys.Clear();
         _root?.RemoveHandler(PointerPressedEvent, new PointerEventHandler(Root_PointerPressed));
@@ -83,6 +99,7 @@ public sealed partial class HotkeysPage
 
     private void StopEditing()
     {
+        StopCapturePulse();
         var previous = _capturing;
         _capturing = null;
         _pendingCommand = null;
@@ -144,7 +161,8 @@ public sealed partial class HotkeysPage
                 busy: true);
             return;
         }
-        SetHotkeys(HotkeyEditing.Assign(_session.Current.Hotkeys, command, chord, AssignMode.Keep), command);
+        SetHotkeys(HotkeyEditing.Assign(_session.Current.Hotkeys, command, chord, AssignMode.Keep), command,
+            flash: true);
     }
 
     private void Capture_KeyUp(object sender, KeyRoutedEventArgs e)
@@ -195,8 +213,95 @@ public sealed partial class HotkeysPage
     {
         if (_pendingCommand is { } command && _pendingChord is { } chord)
         {
-            SetHotkeys(HotkeyEditing.Assign(_session.Current.Hotkeys, command, chord, mode), command);
+            SetHotkeys(HotkeyEditing.Assign(_session.Current.Hotkeys, command, chord, mode), command, flash: true);
         }
+    }
+
+    private void AnimationsEnabled_Changed(UISettings sender, object args)
+    {
+        // OS の通知は UI スレッド以外から届くため、離脱済みのページには適用しない。
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            if (_root is null) { return; }
+            StopCapturePulse();
+            if (!_animationSettings.AnimationsEnabled)
+            {
+                StopRowFlash();
+                _flashingCommand = null;
+            }
+            else if (_capturing is { } command &&
+                _keyButtons[command].Style == (Style)Resources["HotkeyCaptureStyle"])
+            {
+                StartCapturePulse(command);
+            }
+        });
+    }
+
+    private void StartCapturePulse(WindowCommand command)
+    {
+        if (!_animationSettings.AnimationsEnabled || _root is null) { return; }
+        var button = _keyButtons[command];
+        var border = _pulseBorders[command];
+        var storyboard = new Storyboard { RepeatBehavior = RepeatBehavior.Forever, AutoReverse = true };
+        // ボタン自体の大きさと当たり判定を保ち、外側の装飾だけを最大 3 px 広げる。
+        AddAnimation(storyboard, border.RenderTransform, "ScaleX",
+            button.ActualWidth / (button.ActualWidth + 6), 1, CapturePulseSeconds / 2, pulse: true);
+        AddAnimation(storyboard, border.RenderTransform, "ScaleY",
+            button.ActualHeight / (button.ActualHeight + 6), 1, CapturePulseSeconds / 2, pulse: true);
+        AddAnimation(storyboard, border, "Opacity", 0, 1, CapturePulseSeconds / 2, pulse: true);
+        _capturePulse = storyboard;
+        storyboard.Begin();
+    }
+
+    private void StopCapturePulse()
+    {
+        _capturePulse?.Stop();
+        _capturePulse = null;
+    }
+
+    private void ResumeRowFlash()
+    {
+        if (_flashingCommand is not { } command) { return; }
+        var elapsed = System.Diagnostics.Stopwatch.GetElapsedTime(_flashStarted).TotalSeconds;
+        if (!_animationSettings.AnimationsEnabled || elapsed >= AssignmentFlashSeconds || _root is null)
+        {
+            _flashingCommand = null;
+            return;
+        }
+        // 絞り込みで行が消えても操作 ID と開始時刻を保ち、再生成で点滅を最初から繰り返さない。
+        if (!_flashBorders.TryGetValue(command, out var border)) { return; }
+        var storyboard = new Storyboard();
+        AddAnimation(storyboard, border, "Opacity", 1 - elapsed / AssignmentFlashSeconds, 0,
+            AssignmentFlashSeconds - elapsed);
+        storyboard.Completed += (_, _) =>
+        {
+            if (_rowFlash != storyboard) { return; }
+            StopRowFlash();
+            _flashingCommand = null;
+        };
+        _rowFlash = storyboard;
+        storyboard.Begin();
+    }
+
+    private void StopRowFlash()
+    {
+        _rowFlash?.Stop();
+        _rowFlash = null;
+    }
+
+    private static void AddAnimation(Storyboard storyboard, DependencyObject target, string property,
+        double from, double to, double seconds, bool pulse = false)
+    {
+        var animation = new DoubleAnimation
+        {
+            From = from,
+            To = to,
+            Duration = new Duration(TimeSpan.FromSeconds(seconds)),
+            EasingFunction = pulse ? new SineEase { EasingMode = EasingMode.EaseInOut } : null,
+        };
+        Storyboard.SetTarget(animation, target);
+        Storyboard.SetTargetProperty(animation, property);
+        storyboard.Children.Add(animation);
     }
 
     private void Announce(WindowCommand command, string text)
