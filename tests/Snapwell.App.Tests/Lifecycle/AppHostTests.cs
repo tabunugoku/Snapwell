@@ -18,6 +18,35 @@ namespace Snapwell.App.Tests.Lifecycle;
 
 public sealed class AppHostTests
 {
+    [Fact]
+    public void SyncReceivesStartupDeviceChangesAndLocalNotificationsAndStopsOnShutdown()
+    {
+        var sync = new FakeSync();
+        using var fixture = new Fixture(new() { SyncEnabled = true, SyncFolder = "chosen" },
+            watchDevice: true, sync: sync);
+        Assert.True(fixture.Host.Start());
+        Assert.True(sync.State!.SyncEnabled);
+        fixture.Watcher.Notify();
+        Assert.Equal(1, sync.Requests);
+        fixture.Device.ReloadResult = new(new() { SyncEnabled = true, SyncFolder = "changed" });
+        fixture.DeviceWatcher.Notify();
+        Assert.Equal("changed", sync.State.SyncFolder);
+        fixture.Host.Shutdown();
+        fixture.Watcher.Notify();
+        Assert.True(sync.Disposed);
+        Assert.Equal(1, sync.Requests);
+    }
+
+    private sealed class FakeSync : ISettingsSyncService
+    {
+        internal DeviceState? State;
+        internal int Requests;
+        internal bool Disposed;
+        public void Configure(DeviceState state) => State = state;
+        public void Request() => Requests++;
+        public void Dispose() => Disposed = true;
+    }
+
     /// <summary>フックの開始可否と有効状態を、メニューの可否へ反映する。</summary>
     [Theory]
     [InlineData(true, true)]
@@ -1155,7 +1184,8 @@ public sealed class AppHostTests
         internal List<PortableSettings> SettingsSeen { get; } = [];
 
         internal Fixture(DeviceState? state = null, bool watchDevice = false,
-            ISettingsStore<DeviceState>? deviceStore = null, Func<TimeSpan, CancellationToken, Task>? retryDelay = null)
+            ISettingsStore<DeviceState>? deviceStore = null, Func<TimeSpan, CancellationToken, Task>? retryDelay = null,
+            ISettingsSyncService? sync = null)
         {
             Instance = new(Calls);
             Guard = new(Calls);
@@ -1171,7 +1201,7 @@ public sealed class AppHostTests
                     Created.Add(runtime);
                     SettingsSeen.Add(settings);
                     return runtime;
-                }, Watcher, () => SetupOpens++, watchDevice ? DeviceWatcher : null, retryDelay);
+                }, Watcher, () => SetupOpens++, watchDevice ? DeviceWatcher : null, retryDelay, sync);
         }
 
         public void Dispose() => Host.Shutdown();
