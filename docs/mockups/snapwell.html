@@ -1021,10 +1021,19 @@ table.list tr:last-child td { border-bottom: 0; }
           <div class="spage" data-page="sync">
             <h3>同期とバックアップ</h3>
             <p class="lead">ホットキー・分割案・間隔・操作感・ルールを、ほかの PC と共有できます。モニター構成ごとの配置は、この PC にだけ保存します。</p>
+            <p class="hint" style="margin: 0 0 12px">Snapwell 自体には、設定をクラウドへ送る機能はありません。OneDrive や Dropbox など、お使いのファイル同期サービスが、同期フォルダーの中のファイルをほかの PC へ運びます。そのサービスの同期が終わるまで、ほかの PC には反映されません。</p>
             <div class="rows">
-              <div class="row"><div><div class="t">同期フォルダ <span class="tag pending">準備中</span></div><div class="d mono">C:\Users\&lt;ユーザー&gt;\OneDrive\Snapwell</div></div><div class="ctl"><button class="btn" type="button">変更</button><label class="switch"><input type="checkbox" checked aria-label="同期"><span></span></label></div></div>
-              <div class="row"><div><div class="t">最後に同期した時刻 <span class="tag pending">準備中</span></div><div class="d">2026/10/17 10:12 · 変更なし</div></div><div class="ctl"><button class="btn" type="button">今すぐ同期</button></div></div>
+              <div class="row"><div><div class="t">同期フォルダー</div><div class="d mono">C:\Users\&lt;ユーザー&gt;\OneDrive\Snapwell</div></div><div class="ctl"><button class="btn" type="button">変更</button><label class="switch"><input type="checkbox" checked aria-label="同期"><span></span></label></div></div>
+              <div class="row"><div><div class="t">最後に同期した時刻</div><div class="d">2026/10/17 10:12 · 変更なし</div></div><div class="ctl"><button class="btn" type="button">今すぐ同期</button></div></div>
             </div>
+            <p class="hint" style="margin-top: 10px">選択とオン・オフは、この PC にすぐ保存します。</p>
+            <details style="margin-top: 10px">
+              <summary class="hint">未設定・失敗の表示例</summary>
+              <div class="rows" style="margin-top: 8px">
+                <div class="row"><div><div class="t">同期フォルダー</div><div class="d mono">未設定</div></div><div class="ctl"><button class="btn" type="button">変更</button><label class="switch"><input type="checkbox" disabled aria-label="未設定の同期"><span></span></label></div></div>
+                <div class="row"><div><div class="t">最後に同期した時刻</div><div class="d">失敗: 同期フォルダーが見つかりません。</div></div><div class="ctl"><button class="btn" type="button">今すぐ同期</button></div></div>
+              </div>
+            </details>
             <div class="group-title">ファイル</div>
             <div class="rows">
               <div class="row"><div><div class="t">書き出す</div><div class="d">設定を 1 つの JSON ファイルに保存します</div></div><div class="ctl"><button class="btn" type="button">書き出す</button></div></div>

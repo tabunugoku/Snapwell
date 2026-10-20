@@ -10,7 +10,9 @@ public sealed partial class BackupPage : Page
     {
         InitializeComponent();
         ConfigureTransfers(session, owner);
+        ConfigureSync(session, owner);
     }
 
     partial void ConfigureTransfers(SettingsSession session, nint owner);
+    partial void ConfigureSync(SettingsSession session, nint owner);
 }

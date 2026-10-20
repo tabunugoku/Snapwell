@@ -95,7 +95,10 @@ internal static class Program
                     new ResizeSnapController(inspector, monitors, motion, () => settings,
                         new Win32ResizeConstraints(), (uint)Environment.ProcessId));
             }, new SettingsWatcher(SettingsStores.PortablePath()),
-            () => new SettingsLauncher(log).Open("--setup"), new SettingsWatcher(SettingsStores.DevicePath()));
+            () => new SettingsLauncher(log).Open("--setup"), new SettingsWatcher(SettingsStores.DevicePath()),
+            sync: new SettingsSyncService(SettingsStores.PortablePath(),
+                Path.Combine(Path.GetDirectoryName(SettingsStores.DevicePath())!, "sync-backups"),
+                SettingsStores.Device(), log));
         UnhandledExceptionEventHandler unhandled = (_, args) => host.HandleUnhandledException(
             args.ExceptionObject as Exception ?? new InvalidOperationException("未処理の例外。"));
         EventHandler<UnobservedTaskExceptionEventArgs> unobserved = (_, args) =>

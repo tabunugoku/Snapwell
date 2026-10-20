@@ -81,7 +81,7 @@ public sealed class SettingsCompatibilityTests : IDisposable
     [Theory]
     [InlineData(1, false, false)]
     [InlineData(2, false, false)]
-    [InlineData(3, false, true)]
+    [InlineData(3, false, false)]
     [InlineData(4, false, true)]
     [InlineData(5, false, true)]
     [InlineData(6, false, true)]
