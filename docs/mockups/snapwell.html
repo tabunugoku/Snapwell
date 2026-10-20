@@ -560,14 +560,6 @@ table.list tr:last-child td { border-bottom: 0; }
 .ov-win { position: absolute; left: 12px; top: 112px; width: 96px; height: 62px; border: 1.5px solid var(--border-strong); border-radius: 8px; background: var(--surface-2); overflow: hidden; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25); }
 .ov-bar { height: 14px; background: var(--surface); border-bottom: 1px solid var(--border); }
 .ov-legend { position: absolute; right: 8px; bottom: 6px; font-size: 11.5px; color: var(--muted); text-align: right; }
-.dm-stage { position: relative; height: 260px; max-width: 560px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); overflow: hidden; color: var(--blue-tx); touch-action: none; user-select: none; }
-.dm-cells { position: absolute; inset: 0; opacity: 0.6; background:
-  linear-gradient(to right, transparent calc(25% - 0.5px), var(--border) calc(25% - 0.5px) calc(25% + 0.5px), transparent calc(25% + 0.5px) calc(50% - 0.5px), var(--border) calc(50% - 0.5px) calc(50% + 0.5px), transparent calc(50% + 0.5px) calc(75% - 0.5px), var(--border) calc(75% - 0.5px) calc(75% + 0.5px), transparent calc(75% + 0.5px)),
-  linear-gradient(to bottom, transparent calc(50% - 0.5px), var(--border) calc(50% - 0.5px) calc(50% + 0.5px), transparent calc(50% + 0.5px)); }
-.dm-zone { position: absolute; border-radius: 8px; box-sizing: border-box; display: none; transition: opacity 0.2s; }
-.dm-zone.fill { background: var(--blue-bg); border: 1.5px dashed var(--blue-line); }
-.dm-line { position: absolute; inset: 0; pointer-events: none; display: none; }
-.dm-win { position: absolute; width: 110px; height: 70px; border: 1.5px solid var(--border-strong); border-radius: 8px; background: var(--surface-2); overflow: hidden; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25); cursor: grab; }
 .corner-demo { display: flex; gap: 16px; flex-wrap: wrap; }
 .corner-demo .cd { width: 150px; height: 96px; border: 1px solid var(--border-strong); background: var(--surface); display: grid; place-items: center; font-size: 12px; color: var(--muted); }
 
@@ -1066,19 +1058,6 @@ table.list tr:last-child td { border-bottom: 0; }
               <svg class="ov-pred" id="ovPred" viewBox="0 0 400 190" preserveAspectRatio="none"><line x1="92" y1="140" x2="298" y2="52" stroke="currentColor" stroke-width="2" stroke-dasharray="5 5"/><circle cx="298" cy="52" r="5" fill="currentColor"/></svg>
               <div class="ov-win"><div class="ov-bar"></div></div>
               <div class="ov-legend" id="ovLegend"></div>
-            </div>
-            <div class="group-title">ドラッグ中の見せ方</div>
-            <p class="hint" style="margin: 0 0 8px">ドラッグ中は何も出しません。離した瞬間に、吸着先の区画と軌跡を、ウィンドウが着地するまで出します。ウィンドウをつかんで動かし、離してみてください（「投げてみる」でも試せます）。吸着しない離し方（止めてから離す）では何も出ません。</p>
-            <div class="dm-stage" id="dmStage" aria-label="ドラッグ中の見せ方の試し場">
-              <div class="dm-cells"></div>
-              <div class="dm-zone" id="dmZone"></div>
-              <svg class="dm-line" id="dmLine" width="100%" height="100%"><line id="dmL" stroke="currentColor" stroke-width="2" stroke-dasharray="5 5"/><circle id="dmDot" r="5" fill="currentColor"/></svg>
-              <div class="dm-win" id="dmWin"><div class="ov-bar"></div></div>
-              <div class="ov-legend" id="dmLegend"></div>
-            </div>
-            <div style="display: flex; gap: 8px; margin: 8px 0 4px">
-              <button type="button" class="chip" id="dmThrow">投げてみる</button>
-              <button type="button" class="chip" id="dmReset">元の位置に戻す</button>
             </div>
           </div>
         </div>
@@ -2914,88 +2893,6 @@ $$('.switch').forEach(makeSwitch);
     win.classList.toggle('snapped', on);
     cap.textContent = on ? '最も近い区画の境界に揃いました' : '縁をドラッグして離すと…';
   }, 2200);
-})();
-
-(function initDragModes() {
-  const stage = document.getElementById('dmStage'), win = document.getElementById('dmWin');
-  if (!stage) return;
-  const zone = document.getElementById('dmZone'), svg = document.getElementById('dmLine'), L = document.getElementById('dmL'), dot = document.getElementById('dmDot');
-  const legend = document.getElementById('dmLegend');
-  const W = 110, H = 70, MIN_SPEED = 150, COAST = 0.25;
-  let pos = { x: 20, y: 150 }, drag = null, samples = [], landTimer = null, anim = null;
-  const sw = () => stage.clientWidth, sh = () => stage.clientHeight;
-  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-  const place = () => { win.style.left = pos.x + 'px'; win.style.top = pos.y + 'px'; };
-  function velocity(now) {
-    const recent = samples.filter((q) => now - q.t <= 80);
-    if (recent.length < 2 || now - samples[samples.length - 1].t >= 60) return { x: 0, y: 0 };
-    const a = recent[0], b = recent[recent.length - 1], dt = (b.t - a.t) / 1000;
-    return dt < 0.008 ? { x: 0, y: 0 } : { x: (b.x - a.x) / dt, y: (b.y - a.y) / dt };
-  }
-  function target(v) {
-    if (Math.hypot(v.x, v.y) < MIN_SPEED) return null;
-    const cx = pos.x + W / 2 + v.x * COAST, cy = pos.y + H / 2 + v.y * COAST;
-    const cw = sw() / 4, ch = sh() / 2;
-    const col = clamp(Math.floor(cx / cw), 0, 3), row = clamp(Math.floor(cy / ch), 0, 1);
-    return { x: col * cw + 4, y: row * ch + 4, w: cw - 8, h: ch - 8 };
-  }
-  function hide() { zone.style.display = 'none'; svg.style.display = 'none'; legend.textContent = ''; }
-  function show(t) {
-    zone.className = 'dm-zone fill';
-    Object.assign(zone.style, { display: 'block', left: t.x + 'px', top: t.y + 'px', width: t.w + 'px', height: t.h + 'px', opacity: 1 });
-    const x1 = pos.x + W / 2, y1 = pos.y + 15, x2 = t.x + t.w / 2, y2 = t.y + 15;
-    L.setAttribute('x1', x1); L.setAttribute('y1', y1); L.setAttribute('x2', x2); L.setAttribute('y2', y2);
-    dot.setAttribute('cx', x2); dot.setAttribute('cy', y2);
-    svg.style.display = 'block';
-  }
-  function land(t) {
-    clearInterval(anim);
-    if (!t) return;
-    const from = { x: pos.x, y: pos.y }, to = { x: t.x + (t.w - W) / 2, y: t.y + (t.h - H) / 2 };
-    let x = 0, v = 0, last = performance.now();
-    anim = setInterval(() => {
-      const now = performance.now(), dt = Math.min(0.03, (now - last) / 1000); last = now;
-      v += (-170 * (x - 1) - 21 * v) * dt; x += v * dt;
-      pos = { x: from.x + (to.x - from.x) * x, y: from.y + (to.y - from.y) * x };
-      place();
-      if (Math.abs(x - 1) < 0.003 && Math.abs(v) < 0.02) {
-        clearInterval(anim); pos = to; place();
-        landTimer = setTimeout(() => { zone.style.opacity = 0; setTimeout(hide, 200); }, 150);
-      }
-    }, 16);
-  }
-  function down(x, y, t) {
-    clearInterval(anim); clearTimeout(landTimer); hide();
-    drag = { dx: x - pos.x, dy: y - pos.y }; samples = [{ x, y, t }];
-  }
-  function move(x, y, t) {
-    if (!drag) return;
-    pos = { x: clamp(x - drag.dx, 0, sw() - W), y: clamp(y - drag.dy, 0, sh() - H) }; place();
-    samples.push({ x, y, t }); samples = samples.filter((q) => t - q.t <= 100);
-  }
-  function up(t) {
-    if (!drag) return;
-    drag = null;
-    const tg = target(velocity(t));
-    if (tg) { show(tg); legend.textContent = '離した先: ここに吸着します'; land(tg); } else hide();
-  }
-  win.addEventListener('pointerdown', (e) => { win.setPointerCapture(e.pointerId); const r = stage.getBoundingClientRect(); down(e.clientX - r.left, e.clientY - r.top, performance.now()); });
-  win.addEventListener('pointermove', (e) => { const r = stage.getBoundingClientRect(); move(e.clientX - r.left, e.clientY - r.top, performance.now()); });
-  win.addEventListener('pointerup', () => up(performance.now()));
-  function script(path, hold) {
-    clearInterval(anim); clearTimeout(landTimer); hide();
-    pos = { x: 20, y: 150 }; place();
-    const x0 = pos.x + 55, y0 = pos.y + 15; let i = 0;
-    down(x0, y0, performance.now());
-    const tick = setInterval(() => {
-      const p = path(i++);
-      if (!p) { clearInterval(tick); setTimeout(() => up(performance.now()), hold); return; }
-      move(x0 + p.x, y0 + p.y, performance.now());
-    }, 8);
-  }
-  document.getElementById('dmThrow').addEventListener('click', () => script((i) => (i > 22 ? null : { x: i * 12, y: -i * 4.5 }), 0));
-  document.getElementById('dmReset').addEventListener('click', () => { clearInterval(anim); clearTimeout(landTimer); drag = null; hide(); pos = { x: 20, y: 150 }; place(); });
-  place();
 })();
 
 (function initLookDemos() {
