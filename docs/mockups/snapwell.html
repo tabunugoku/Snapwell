@@ -951,7 +951,7 @@ table.list tr:last-child td { border-bottom: 0; }
               </table>
             </div>
             <p class="hint" style="margin-top: 10px" id="hkHelp">キーの欄を選んで、割り当てたいキーを押します。<kbd>Esc</kbd> でやめる、<kbd>Backspace</kbd> か <kbd>Delete</kbd> で割り当てを外します。Ctrl・Alt・Shift・Win のどれかを含めてください。</p>
-            <p class="hint" style="margin-top: 6px">ほかのアプリとの競合は、保存して Snapwell が登録するときに分かります。登録できなかったキーには <span class="tag yellow">他のアプリが使用中</span> と表示します。
+            <p class="hint" style="margin-top: 6px">ほかのアプリとの競合は、キーを押したときと、このページを開いたときに調べます。ほかのアプリが使っているキーには <span class="tag yellow">他のアプリが使用中</span> と表示します（調べられるのは、ほかのアプリがホットキーとして登録しているキーだけです）。
               <label class="hk-demo"><input type="checkbox" id="hkBusyDemo"> 表示の見本を出す</label></p>
             <div class="group-title">Windows のキー</div>
             <div class="rows">
@@ -2092,7 +2092,7 @@ function initKeysPage() {
     ['隣へ寄せる', '上の隣へ寄せる', S + 'I'], ['隣へ寄せる', '下の隣へ寄せる', S + 'K'],
     ['そのほか', 'ランチャーを開く', M + 'Space'], ['そのほか', '一時停止・再開', M + 'Pause'],
   ].map(([group, name, def], id) => ({ id, group, name, def, chord: def }));
-  // 広げる・縮めるの 4 操作は、動かさない辺（操作感ページの「固定する位置」）で動きが変わるので、名前も合わせる
+  // 広げる・縮めるの 4 操作は、動かさない辺（「分割と間隔」ページの「固定する位置」）で動きが変わるので、名前も合わせる
   const RESIZE_NAMES = {
     '右へ 1 区画広げる': { 中心: '幅を左右へ 1 区画広げる', 近い辺: '幅を 1 区画広げる' },
     '下へ 1 区画広げる': { 中心: '高さを上下へ 1 区画広げる', 近い辺: '高さを 1 区画広げる' },
@@ -2120,7 +2120,7 @@ function initKeysPage() {
     let html = '', last = '', shown = 0;
     DEFS.filter((d) => !q || label(d).includes(q)).forEach((d) => {
       if (d.group !== last) {
-        const note = d.group === '広げる・縮める' ? ` <span class="hk-anchor">動かさない辺: ${anchorSel.value}（${ANCHOR_NOTE[anchorSel.value]}）。「操作感」の「固定する位置」で変えられます</span>` : '';
+        const note = d.group === '広げる・縮める' ? ` <span class="hk-anchor">動かさない辺: ${anchorSel.value}（${ANCHOR_NOTE[anchorSel.value]}）。「分割と間隔」の「固定する位置」で変えられます</span>` : '';
         html += `<tr class="hk-grp"><td colspan="4">${d.group}${note}</td></tr>`; last = d.group;
       }
       shown++;
@@ -2142,10 +2142,13 @@ function initKeysPage() {
         + `<td class="hk-act-col"><button type="button" class="hk-ic" data-reset="${d.id}" title="既定に戻す" aria-label="${label(d)}を既定に戻す"${d.chord === d.def ? ' disabled' : ''}>↺</button>`
         + `<button type="button" class="hk-ic" data-clear="${d.id}" title="割り当てを外す" aria-label="${label(d)}の割り当てを外す"${d.chord ? '' : ' disabled'}>✕</button></td></tr>`;
       if (pending && pending.id === d.id) {
-        html += `<tr class="hk-msg"><td colspan="4">「${pending.names.join('」「')}」と同じキー ${kbds(pending.chord)} です。<br>`
-          + '<button type="button" class="btn" data-swap>入れ替える</button>'
-          + '<button type="button" class="btn" data-keep>重複のまま割り当てる</button>'
-          + '<button type="button" class="btn" data-cancel>やめる</button></td></tr>';
+        html += pending.busy
+          ? `<tr class="hk-msg"><td colspan="4">${kbds(pending.chord)} は、ほかのアプリか Windows が使っているキーです。割り当てると、そのアプリでは使えなくなります（Windows が予約しているキーは、割り当てても Snapwell に届かないことがあります）。<br>`
+            + '<button type="button" class="btn" data-keep>このキーにする</button><button type="button" class="btn" data-cancel>やめる</button></td></tr>'
+          : `<tr class="hk-msg"><td colspan="4">「${pending.names.join('」「')}」と同じキー ${kbds(pending.chord)} です。<br>`
+            + '<button type="button" class="btn" data-swap>入れ替える</button>'
+            + '<button type="button" class="btn" data-keep>重複のまま割り当てる</button>'
+            + '<button type="button" class="btn" data-cancel>やめる</button></td></tr>';
       }
     });
     body.innerHTML = html || '<tr><td colspan="4" class="hint">該当する操作がありません</td></tr>';
@@ -2160,9 +2163,9 @@ function initKeysPage() {
 
   function apply(id, chord) { DEFS[id].chord = chord; flashId = id; stop(); render(); dirty(); }
   function finish(id, chord) {
-    if (RESERVED.includes(chord)) { error = { text: 'Windows が使うキーなので、割り当てられません' }; render(); return; }
     const others = DEFS.filter((d) => d.id !== id && d.chord === chord);
     if (others.length) { pending = { id, chord, names: others.map(label), others: others.map((d) => d.id) }; capId = null; render(); return; }
+    if (RESERVED.includes(chord)) { pending = { id, chord, busy: true }; capId = null; render(); return; }
     apply(id, chord);
     if (chord.includes('Win')) {
       help.innerHTML = '<span class="tag yellow">注意</span> Win キーを含む割り当ては、押したあとにスタートメニューが開くことがあります（実機未確認）。';
