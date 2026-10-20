@@ -81,6 +81,24 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="ドラッグ中の見せ方" Style="{StaticResource SnapwellRowTitleStyle}" />
+                            <TextBlock Text="止めたら消す: 動かしている間は予測を出し、止まると消します。離したら、着地するまで吸着先を残します。離した瞬間だけ: 動かしている間は何も出さず、離した瞬間から着地まで出します（区画のプレビューがオンのとき）"
+                                       Style="{StaticResource SnapwellRowDescriptionStyle}" />
+                        </StackPanel>
+                        <ComboBox x:Name="DragPreviewBox" Grid.Column="1" SelectionChanged="DragPreview_SelectionChanged"
+                                  Width="200" Style="{StaticResource DemoSelectStyle}" SelectedIndex="0"
+                                  AutomationProperties.Name="ドラッグ中の見せ方">
+                            <ComboBoxItem Content="止めたら消す・離したら残す" />
+                            <ComboBoxItem Content="離した瞬間だけ" />
+                        </ComboBox>
+                    </Grid>
+                    <Border Style="{StaticResource SnapwellRowDividerStyle}" />
+                    <Grid Style="{StaticResource SnapwellRowGridStyle}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
                             <Grid ColumnSpacing="6" HorizontalAlignment="Left">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />

@@ -34,9 +34,9 @@ public sealed class ZonePreviewTests
             prediction: new(200, 100)).Pixels, frame.Pixels);
     }
 
-    /// <summary>速い投げは開始矩形と移動量を使って予測し、終了時に隠す。</summary>
+    /// <summary>速い投げは開始矩形と移動量を使って予測し、離したあとも着地まで残す。</summary>
     [Fact]
-    public void FastMovementShowsPredictedBoundsAndEndHides()
+    public void FastMovementShowsPredictedBoundsAndHoldsAfterEnd()
     {
         var fixture = new Fixture();
         fixture.Start();
@@ -48,7 +48,9 @@ public sealed class ZonePreviewTests
         Assert.Equal(expected!.Value.Target, Assert.Single(fixture.Preview.Shown));
         var hides = fixture.Preview.Hides;
         fixture.Drag.Handle(new MoveSizeEnded(1, 40));
-        Assert.True(fixture.Preview.Hides > hides);
+        // 離しても吸着先は着地が終わるまで残し、ここでは隠さない。
+        Assert.Equal(hides, fixture.Preview.Hides);
+        Assert.Equal(2, fixture.Preview.Shown.Count);
     }
 
     /// <summary>遅い移動は吸着先を表示せず、無効設定でも予測しない。</summary>

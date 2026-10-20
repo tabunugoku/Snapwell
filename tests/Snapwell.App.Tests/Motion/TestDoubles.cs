@@ -17,10 +17,29 @@ internal sealed class FakeMotion : IMotionEngine
     public void Request(MotionRequest request)
     {
         Requests.Add(request);
-        Moving.Add(request.Handle);
+        lock (Moving)
+        {
+            Moving.Add(request.Handle);
+        }
     }
 
-    public bool IsMoving(nint handle) => Moving.Contains(handle);
+    public bool IsMoving(nint handle)
+    {
+        lock (Moving)
+        {
+            return Moving.Contains(handle);
+        }
+    }
+
+    /// <summary>着地が終わったとみなす。ドラッグのタイマーが別スレッドから読むので、ロックして外す。</summary>
+    internal void FinishMoving(nint handle)
+    {
+        lock (Moving)
+        {
+            Moving.Remove(handle);
+        }
+    }
+
     public void Cancel(nint handle)
     {
         Canceled.Add(handle);

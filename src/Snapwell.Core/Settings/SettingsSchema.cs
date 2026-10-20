@@ -82,6 +82,7 @@ internal static class SettingsSchema
             normalized.MovePopupWindows = true;
         }
 
+        // 版 10 のドラッグ中の見せ方も、版 6 の追加分と同じく初期化子で補う。
         // 版 6 の追加分は初期化子で補う。版 5 以前の既存値には触れない。
         return normalized;
     }
