@@ -2056,14 +2056,6 @@ function initSettings() {
   initFeelPage();
   initPresetPage();
   initSaveBar();
-  const cornerSel = $('#cornerSel');
-  cornerSel.addEventListener('change', () => {
-    const v = cornerSel.value;
-    const demo = $('#cornerDemo');
-    demo.style.borderRadius = v === 'win' ? '8px' : `${v}px`;
-    demo.textContent = cornerSel.options[cornerSel.selectedIndex].text;
-  });
-  $('#cornerDemo').style.borderRadius = '8px';
 }
 // 保存バーと取り込み。保存を待たず反映する項目（data-instant）以外を変えると、保存していない変更になる
 function initSaveBar() {
