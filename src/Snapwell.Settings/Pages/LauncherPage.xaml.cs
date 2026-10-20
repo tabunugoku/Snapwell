@@ -1,4 +1,5 @@
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Snapwell.Core.Layout;
 using Snapwell.Core.Overlay;
@@ -40,11 +41,9 @@ public sealed partial class LauncherPage : Page
                 {
                     Content = ContentFor(preset),
                     Tag = preset.Id,
-                    MinWidth = 0,
-                    MinHeight = 0,
-                    Padding = new(0),
-                    FontSize = 13,
+                    Style = (Style)Resources["PresetOptionCheckBoxStyle"],
                 };
+                AutomationProperties.SetName(choice, preset.Name);
                 choice.Checked += Choice_Changed;
                 choice.Unchecked += Choice_Changed;
                 _choices.Add(preset.Id, choice);
@@ -82,13 +81,16 @@ public sealed partial class LauncherPage : Page
         return content;
     }
 
-    private void Refresh()
+    private void Refresh(bool updateChoices = true)
     {
         _refreshing = true;
         var ids = _session.Current.LauncherPresets;
         foreach (var (id, choice) in _choices)
         {
-            choice.IsChecked = ids.Contains(id);
+            if (updateChoices)
+            {
+                choice.IsChecked = ids.Contains(id);
+            }
             _borders[id].Style = (Style)Resources[
                 choice.IsChecked == true ? "PresetOptionSelectedBorder" : "PresetOptionBorder"];
         }
@@ -111,15 +113,19 @@ public sealed partial class LauncherPage : Page
         _refreshing = false;
     }
 
-    private void SetPresets(IEnumerable<string> ids)
+    private void SetPresets(IEnumerable<string> ids, bool updateChoices = true)
     {
         _session.Update(_session.Current with { LauncherPresets = LauncherPreset.NormalizeIds(ids) });
-        Refresh();
+        Refresh(updateChoices);
     }
 
     private void Choice_Changed(object sender, RoutedEventArgs e)
     {
-        if (!_refreshing) { SetPresets(_choices.Where(pair => pair.Value.IsChecked == true).Select(pair => pair.Key)); }
+        if (!_refreshing)
+        {
+            // Checked / Unchecked の処理中に、コントロール自身の状態を書き戻さない。
+            SetPresets(_choices.Where(pair => pair.Value.IsChecked == true).Select(pair => pair.Key), false);
+        }
     }
 
     private void All_Click(object sender, RoutedEventArgs e) => SetPresets(LauncherPreset.All.Select(preset => preset.Id));
