@@ -103,7 +103,8 @@ public sealed partial class BackupPage
         RenderSync();
         if (_syncSession.SyncMessage is { } message)
         {
-            ShowNotice(message, InfoBarSeverity.Warning);
+            ShowNotice(message, _syncSession.HasChanges || _syncSession.IsReadOnly
+                ? InfoBarSeverity.Warning : InfoBarSeverity.Informational);
         }
         else if (_syncSession.IsReadOnly)
         {
@@ -181,26 +182,18 @@ public sealed partial class BackupPage
         {
             var outcome = await Task.Run(() =>
             {
-                var loaded = _syncStore.Load();
-                var state = loaded.Value;
-                if (loaded.IsReadOnly || string.IsNullOrWhiteSpace(state.SyncFolder))
-                {
-                    return (state, new SettingsSyncResult(SettingsSyncKind.Skipped,
-                        "同期フォルダーが未設定か、端末状態が読み取り専用です。"));
-                }
                 var local = SettingsStores.PortablePath();
-                var sync = new SettingsSync(local, Path.Combine(state.SyncFolder, SettingsSync.FileName),
+                var sync = new SettingsSync(local,
                     Path.Combine(Path.GetDirectoryName(SettingsStores.DevicePath())!, "sync-backups"),
                     TimeProvider.System, SettingsSync.MutexName(local));
-                var result = sync.Run(state);
-                if (result.LastSyncedHash is not null) { state = SettingsSync.RecordResult(_syncStore, state, result); }
-                return (state, result);
+                return sync.Run(_syncStore);
             });
             // ページを離れても取り込んだ内容と編集中の値の関係はセッションで保つ。
-            if (outcome.Item2.Pulled) { await _syncSession.ReloadAfterSyncAsync(); }
+            if (outcome.Pulled) { await _syncSession.ReloadAfterSyncAsync(); }
             if (!Active(generation)) { return; }
-            _syncDevice = outcome.Item1;
-            _syncResult = outcome.Item2;
+            await RefreshSyncAsync(generation);
+            if (!Active(generation)) { return; }
+            _syncResult = outcome;
             if (_syncSession.SyncMessage is null)
             {
                 ShowNotice(_syncResult.ToDisplayText(), _syncResult.Retryable ||
