@@ -14,4 +14,5 @@ public enum WindowCommand
     ArrangeGrid, ArrangeColumns, ArrangeRows, ArrangeMainAndStack,
     ArrangeAllMonitors,
     SnapAdjacentLeft, SnapAdjacentRight, SnapAdjacentUp, SnapAdjacentDown,
+    CenterWindow, CenterWindowKeepSize,
 }

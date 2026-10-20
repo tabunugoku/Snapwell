@@ -35,10 +35,25 @@ public static class CommandPlanner
         }
 
         var physical = spacing.ToPhysical(monitor.Scale);
+        if (command == WindowCommand.CenterWindowKeepSize)
+        {
+            // 区画に揃えず、作業領域そのものの中央へ置く。サイズは変えないので canResize に依存しない。
+            var area = monitor.WorkArea;
+            return Contain(new(area.X + (area.Width - currentVisual.Width) / 2,
+                area.Y + (area.Height - currentVisual.Height) / 2, currentVisual.Width, currentVisual.Height), area);
+        }
+
         PixelRect target;
         try
         {
             var grid = new GridLayout(monitor.WorkArea, plan, physical);
+            var centered = command == WindowCommand.CenterWindow ? grid.FromFractions(.25, .75, .125, .875) : null;
+            if (command == WindowCommand.CenterWindow && centered is null)
+            {
+                // ランチャーの「中央」と同じ範囲。区画で表せないグリッドでは、ほかのグリッドへ切り替えず何もしない。
+                return null;
+            }
+
             var fractions = command switch
             {
                 WindowCommand.LeftHalf => (0d, 0.5, 0d, 1d),
@@ -51,7 +66,7 @@ public static class CommandPlanner
                 WindowCommand.BottomRightQuarter => (0.5, 1d, 0.5, 1d),
                 _ => (0d, 1d, 0d, 1d),
             };
-            target = command switch
+            target = centered ?? command switch
             {
                 WindowCommand.GrowRight => grid.Resize(currentVisual, resize.Step, 0, resize.Anchor),
                 WindowCommand.GrowDown => grid.Resize(currentVisual, 0, resize.Step, resize.Anchor),
