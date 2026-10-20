@@ -528,6 +528,7 @@ table.list tr:last-child td { border-bottom: 0; }
 .hk-table td:first-child { white-space: normal; }
 .hk-table .hk-grp td { background: var(--surface-2); color: var(--muted); font-size: 12px; font-weight: 600; padding: 6px 12px; }
 .hk-act-col { width: 76px; }
+.hk-anchor { margin-left: 10px; font-weight: 400; }
 .hk-key { display: inline-flex; gap: 4px; align-items: center; min-height: 32px; min-width: 150px; padding: 3px 8px; border: 1px solid transparent; border-radius: 6px; background: transparent; cursor: pointer; text-align: left; }
 .hk-key:hover { background: var(--surface-2); border-color: var(--border); }
 .hk-key:focus-visible { outline: 2px solid var(--blue-line); outline-offset: 1px; }
@@ -906,7 +907,7 @@ table.list tr:last-child td { border-bottom: 0; }
             <p class="hint" style="margin: 0 0 8px">Ctrl+Alt+Shift+矢印キーで、前面のウィンドウを区画単位で広げたり狭めたりします（キーはホットキーのページで変えられます）。</p>
             <div class="rows">
               <div class="row"><div><div class="t">1 回の拡大・縮小の幅</div></div><div class="ctl"><select class="input" style="width: 160px"><option>1 区画</option><option>2 区画</option><option>3 区画</option><option>4 区画</option></select></div></div>
-              <div class="row"><div><div class="t">固定する位置</div><div class="d">拡大・縮小するときに動かさない辺</div></div><div class="ctl"><select class="input" style="width: 160px"><option>左上</option><option>中心</option><option>近い辺</option></select></div></div>
+              <div class="row"><div><div class="t">固定する位置</div><div class="d">拡大・縮小するときに動かさない辺</div></div><div class="ctl"><select class="input" id="hkAnchorSel" style="width: 160px"><option>左上</option><option>中心</option><option>近い辺</option></select></div></div>
               </div>
             <div class="group-title">マウスでのリサイズ</div>
             <div class="rows">
@@ -2069,6 +2070,7 @@ function initKeysPage() {
     ['配置', '左半分', M + '←'], ['配置', '右半分', M + '→'], ['配置', '上半分', M + '↑'], ['配置', '下半分', M + '↓'],
     ['配置', '左上の四分割', M + 'U'], ['配置', '右上の四分割', M + 'I'], ['配置', '左下の四分割', M + 'J'],
     ['配置', '右下の四分割', M + 'K'], ['配置', '最大化', M + 'Enter'],
+    ['配置', '中央に配置', M + 'C'], ['配置', '中央に配置（サイズ維持）', S + 'C'],
     ['広げる・縮める', '右へ 1 区画広げる', S + '→'], ['広げる・縮める', '下へ 1 区画広げる', S + '↓'],
     ['広げる・縮める', '左へ 1 区画縮める', S + '←'], ['広げる・縮める', '上へ 1 区画縮める', S + '↑'],
     ['区画の移動', '左へ 1 区画移動', ''], ['区画の移動', '右へ 1 区画移動', ''],
@@ -2081,6 +2083,16 @@ function initKeysPage() {
     ['隣へ寄せる', '上の隣へ寄せる', S + 'I'], ['隣へ寄せる', '下の隣へ寄せる', S + 'K'],
     ['そのほか', 'ランチャーを開く', M + 'Space'], ['そのほか', '一時停止・再開', M + 'Pause'],
   ].map(([group, name, def], id) => ({ id, group, name, def, chord: def }));
+  // 広げる・縮めるの 4 操作は、動かさない辺（操作感ページの「固定する位置」）で動きが変わるので、名前も合わせる
+  const RESIZE_NAMES = {
+    '右へ 1 区画広げる': { 中心: '幅を左右へ 1 区画広げる', 近い辺: '幅を 1 区画広げる' },
+    '下へ 1 区画広げる': { 中心: '高さを上下へ 1 区画広げる', 近い辺: '高さを 1 区画広げる' },
+    '左へ 1 区画縮める': { 中心: '幅を左右から 1 区画縮める', 近い辺: '幅を 1 区画縮める' },
+    '上へ 1 区画縮める': { 中心: '高さを上下から 1 区画縮める', 近い辺: '高さを 1 区画縮める' },
+  };
+  const anchorSel = $('#hkAnchorSel');
+  const label = (d) => (RESIZE_NAMES[d.name] && RESIZE_NAMES[d.name][anchorSel.value]) || d.name;
+  const ANCHOR_NOTE = { 左上: '左上を固定。右辺と下辺が動きます', 中心: '中心を固定。左右・上下の両側が動きます', 近い辺: '作業領域の端に近い辺を固定。遠い側の辺が動きます' };
   // Windows が自分で使うキーの一例。実装では登録を試して決める（実機未確認）
   const RESERVED = ['Ctrl+Alt+Delete', 'Win+L', 'Win+D', 'Win+Tab', 'Alt+Tab', 'Alt+F4', 'Ctrl+Shift+Escape'];
   const ORDER = ['Ctrl', 'Alt', 'Shift', 'Win'];
@@ -2092,14 +2104,16 @@ function initKeysPage() {
     DEFS.forEach((d) => { if (d.chord) count.set(d.chord, (count.get(d.chord) || 0) + 1); });
     return count;
   };
-  const nameOf = (id) => DEFS[id].name;
 
   function render() {
     const count = dupes();
     const q = search.value.trim();
     let html = '', last = '', shown = 0;
-    DEFS.filter((d) => !q || d.name.includes(q)).forEach((d) => {
-      if (d.group !== last) { html += `<tr class="hk-grp"><td colspan="4">${d.group}</td></tr>`; last = d.group; }
+    DEFS.filter((d) => !q || label(d).includes(q)).forEach((d) => {
+      if (d.group !== last) {
+        const note = d.group === '広げる・縮める' ? ` <span class="hk-anchor">動かさない辺: ${anchorSel.value}（${ANCHOR_NOTE[anchorSel.value]}）。「操作感」の「固定する位置」で変えられます</span>` : '';
+        html += `<tr class="hk-grp"><td colspan="4">${d.group}${note}</td></tr>`; last = d.group;
+      }
       shown++;
       const isCap = capId === d.id;
       const dup = d.chord && count.get(d.chord) > 1;
@@ -2113,11 +2127,11 @@ function initKeysPage() {
       if (!d.chord) tags.push('<span class="tag pending">未割り当て</span>');
       if (d.chord !== d.def) tags.push('<span class="tag blue">変更済み</span>');
       if ($('#hkBusyDemo').checked && d.name === 'ランチャーを開く') tags.push('<span class="tag yellow">他のアプリが使用中</span>');
-      html += `<tr class="${flashId === d.id ? 'hk-flash' : ''}"><td>${d.name}</td>`
-        + `<td><button type="button" class="hk-key${isCap ? ' cap' : ''}${isCap && error ? ' err' : ''}" data-id="${d.id}" aria-label="${d.name}のキーを変更: ${d.chord || '未割り当て'}">${keyCell}</button></td>`
+      html += `<tr class="${flashId === d.id ? 'hk-flash' : ''}"><td>${label(d)}</td>`
+        + `<td><button type="button" class="hk-key${isCap ? ' cap' : ''}${isCap && error ? ' err' : ''}" data-id="${d.id}" aria-label="${label(d)}のキーを変更: ${d.chord || '未割り当て'}">${keyCell}</button></td>`
         + `<td>${tags.join(' ')}</td>`
-        + `<td class="hk-act-col"><button type="button" class="hk-ic" data-reset="${d.id}" title="既定に戻す" aria-label="${d.name}を既定に戻す"${d.chord === d.def ? ' disabled' : ''}>↺</button>`
-        + `<button type="button" class="hk-ic" data-clear="${d.id}" title="割り当てを外す" aria-label="${d.name}の割り当てを外す"${d.chord ? '' : ' disabled'}>✕</button></td></tr>`;
+        + `<td class="hk-act-col"><button type="button" class="hk-ic" data-reset="${d.id}" title="既定に戻す" aria-label="${label(d)}を既定に戻す"${d.chord === d.def ? ' disabled' : ''}>↺</button>`
+        + `<button type="button" class="hk-ic" data-clear="${d.id}" title="割り当てを外す" aria-label="${label(d)}の割り当てを外す"${d.chord ? '' : ' disabled'}>✕</button></td></tr>`;
       if (pending && pending.id === d.id) {
         html += `<tr class="hk-msg"><td colspan="4">「${pending.names.join('」「')}」と同じキー ${kbds(pending.chord)} です。<br>`
           + '<button type="button" class="btn" data-swap>入れ替える</button>'
@@ -2139,7 +2153,7 @@ function initKeysPage() {
   function finish(id, chord) {
     if (RESERVED.includes(chord)) { error = { text: 'Windows が使うキーなので、割り当てられません' }; render(); return; }
     const others = DEFS.filter((d) => d.id !== id && d.chord === chord);
-    if (others.length) { pending = { id, chord, names: others.map((d) => d.name), others: others.map((d) => d.id) }; capId = null; render(); return; }
+    if (others.length) { pending = { id, chord, names: others.map(label), others: others.map((d) => d.id) }; capId = null; render(); return; }
     apply(id, chord);
     if (chord.includes('Win')) {
       help.innerHTML = '<span class="tag yellow">注意</span> Win キーを含む割り当ては、押したあとにスタートメニューが開くことがあります（実機未確認）。';
@@ -2179,6 +2193,7 @@ function initKeysPage() {
   });
   search.addEventListener('input', () => { stop(); render(); });
   $('#hkBusyDemo').addEventListener('change', render);
+  anchorSel.addEventListener('change', () => { stop(); render(); });
   $('#hkReset').addEventListener('click', () => { DEFS.forEach((d) => { d.chord = d.def; }); stop(); render(); });
   render();
 }
