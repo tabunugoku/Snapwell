@@ -14,16 +14,12 @@ namespace Snapwell.App.Dragging;
 internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSource monitors,
     IMotionEngine motion, Func<PortableSettings> settings, Action<bool> trackMouse, uint ownProcessId,
     Func<uint>? tickCount = null, IZonePreview? preview = null, Func<Vec2?>? cursorPosition = null,
-    Func<nint, IReadOnlyList<PixelRect>>? neighbors = null, TimeSpan? idleDelay = null)
+    Func<nint, IReadOnlyList<PixelRect>>? neighbors = null)
 {
-    // 120 Hz の全イベントで予測せず、16 px または約二フレームごとに更新する。
-    private const double PredictionDistance = 16;
-    private const double PredictionInterval = 0.032;
     // 離したあとは、着地の動きが終わるまでプレビューを残す。動きの開始直後と、止まらない場合の上限を決めておく。
     private const int HoldPollMs = 50;
     private const int HoldMinMs = 150;
     private const int HoldMaxMs = 2000;
-    private readonly TimeSpan _idleDelay = idleDelay ?? TimeSpan.FromMilliseconds(60);
     private readonly object _gate = new();
     private readonly IZonePreview _preview = preview ?? NullZonePreview.Instance;
     private readonly Func<uint> _tickCount = tickCount ?? (() => unchecked((uint)Environment.TickCount64));
@@ -34,14 +30,8 @@ internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSou
     private double _seconds;
     private PixelRect _startBounds;
     private Vec2? _pointer;
-    private Vec2? _dragOrigin;
-    private Vec2? _lastPredictionPosition;
-    private double _lastPredictionTime;
-    private bool _canResize;
     private IReadOnlyList<PixelRect> _neighbors = [];
-    private Timer? _idleTimer;
     private Timer? _holdTimer;
-    private long _lastMoveTick;
     private nint _holdHandle;
     private long _holdStartTick;
 
@@ -90,9 +80,6 @@ internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSou
                     _tracked = start.Handle;
                     _neighbors = neighbors?.Invoke(start.Handle).ToArray() ?? [];
                     _startBounds = window.VisualBounds;
-                    _canResize = WindowClassifier.CanResize(window, ownProcessId);
-                    _dragOrigin = cursorPosition?.Invoke() ?? _pointer;
-                    _lastPredictionPosition = null;
                     _velocity = new();
                     _lastTime = _tickCount();
                     _seconds = 0;
@@ -101,10 +88,8 @@ internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSou
                 case MouseMoved move when _velocity is not null:
                     var point = new Vec2(move.X, move.Y);
                     var seconds = Time(move.TimeMs);
-                    _dragOrigin ??= point;
                     _pointer = point;
                     _velocity.AddSample(point, seconds);
-                    UpdatePreview(point, seconds);
                     break;
                 case MoveSizeEnded end when _velocity is not null && end.Handle == _tracked:
                     // dwmsEventTime と MSLLHOOKSTRUCT.time は同じ GetTickCount の時計とみなす。実機未確認。
@@ -161,48 +146,6 @@ internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSou
     // 設定は呼び出しごとに読み、変更を次のドラッグから反映する。サイズ固定・ポップアップを外すと吸着も予測線も出ない。
     private bool IsTarget(WindowKind kind) => WindowTargetPolicy.IsTarget(kind, settings);
 
-    private void UpdatePreview(Vec2 point, double seconds)
-    {
-        var options = settings();
-        if (!options.ShowZonePreview)
-        {
-            _preview.Hide();
-            return;
-        }
-
-        // 離した瞬間だけ見せる設定では、ドラッグ中は何も出さない。
-        if (options.DragPreviewStyle == DragPreviewStyle.OnRelease)
-        {
-            return;
-        }
-
-        // マウスが止まるとイベントが来ないので、タイマーで消す。細かい動きでスロットルに弾かれた分も動きとみなす。
-        _lastMoveTick = Environment.TickCount64;
-        (_idleTimer ??= new(OnIdle)).Change(_idleDelay, Timeout.InfiniteTimeSpan);
-        if (_lastPredictionPosition is { } last && (point - last).Length < PredictionDistance &&
-            seconds - _lastPredictionTime < PredictionInterval)
-        {
-            return;
-        }
-
-        _lastPredictionPosition = point;
-        _lastPredictionTime = seconds;
-        var offset = point - _dragOrigin!.Value;
-        var current = new PixelRect(checked(_startBounds.X + (int)offset.X),
-            checked(_startBounds.Y + (int)offset.Y), _startBounds.Width, _startBounds.Height);
-        var areas = monitors.GetMonitors().Select(monitor => monitor.ToMonitorArea()).ToArray();
-        var result = MonitorGridResolver.ResolveSnap(options, current, _velocity!.Release(seconds),
-            areas, _canResize, point, _neighbors);
-        if (result is { } snap)
-        {
-            ShowSnap(snap, current, areas);
-        }
-        else
-        {
-            _preview.Hide();
-        }
-    }
-
     // 線の終点は慣性だけで進む位置（SnapResult.PredictedPosition）ではなく、着地する区画のタイトルバー。
     // 慣性の距離は速度 × m/c で、既定の感触では 1000 px/s でも 20〜80 px しかなく、線が極端に短くなる。
     private void ShowSnap(SnapResult snap, PixelRect current, IReadOnlyList<MonitorArea> areas)
@@ -212,20 +155,8 @@ internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSou
             new Vec2(snap.Target.X + snap.Target.Width / 2.0, snap.Target.Y + 15 * scale));
     }
 
-    private void OnIdle(object? state)
-    {
-        lock (_gate)
-        {
-            // 動いたあとに予約し直された場合と、すでに離した場合は消さない。
-            if (_velocity is not null && Environment.TickCount64 - _lastMoveTick >= _idleDelay.TotalMilliseconds - 5)
-            {
-                _preview.Hide();
-                _lastPredictionPosition = null;
-            }
-        }
-    }
-
-    // 離した瞬間の吸着先を、着地の動きが終わるまで出し続ける。投げた先が一瞬しか見えないのを避ける。
+    // ドラッグ中は何も出さず、離した瞬間の吸着先を着地の動きが終わるまで出し続ける。
+    // 動かしている間の予測は、止めても消えない・投げると一瞬しか出ない、が実機で判断しづらかったため採らない。
     private void HoldPreview(nint handle, SnapResult snap, PixelRect current, IReadOnlyList<MonitorArea> areas,
         bool enabled)
     {
@@ -275,7 +206,6 @@ internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSou
 
     private void StopTracking(bool keepPreview = false)
     {
-        _idleTimer?.Change(Timeout.Infinite, Timeout.Infinite);
         if (!keepPreview)
         {
             _holdHandle = 0;
@@ -290,8 +220,6 @@ internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSou
 
         _tracked = 0;
         _velocity = null;
-        _dragOrigin = null;
-        _lastPredictionPosition = null;
         _neighbors = [];
     }
 }

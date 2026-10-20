@@ -20,16 +20,6 @@ public enum WindowCornerPreference
     RoundSmall = 3,
 }
 
-/// <summary>ドラッグ中に吸着先をどう見せるか。</summary>
-public enum DragPreviewStyle
-{
-    /// <summary>動かしている間は予測を出し、止まると消す。離したら着地まで残す。</summary>
-    LiveUntilStop = 0,
-
-    /// <summary>動かしている間は出さず、離した瞬間から着地まで出す。</summary>
-    OnRelease = 1,
-}
-
 /// <summary>他の端末にも持ち運べる設定。</summary>
 public sealed record PortableSettings
 {
@@ -55,8 +45,6 @@ public sealed record PortableSettings
     public double Edge { get; set; } = 8;
     public bool ReduceMotion { get; set; }
     public bool ShowZonePreview { get; set; } = true;
-    /// <summary>ドラッグ中の吸着先の見せ方。区画のプレビューがオンのときだけ効く。</summary>
-    public DragPreviewStyle DragPreviewStyle { get; set; } = DragPreviewStyle.LiveUntilStop;
     /// <summary>他のアプリに適用する角の設定。</summary>
     [JsonConverter(typeof(WindowCornerPreferenceJsonConverter))]
     public WindowCornerPreference CornerPreference { get; set; }
@@ -169,7 +157,6 @@ public sealed record PortableSettings
             Gap = double.IsFinite(Gap) && Gap is >= 0 and <= 200 ? Gap : defaults.Gap,
             Edge = double.IsFinite(Edge) && Edge is >= 0 and <= 200 ? Edge : defaults.Edge,
             ShowZonePreview = ShowZonePreview,
-            DragPreviewStyle = Enum.IsDefined(DragPreviewStyle) ? DragPreviewStyle : DragPreviewStyle.LiveUntilStop,
             MoveFixedSizeWindows = MoveFixedSizeWindows,
             MovePopupWindows = MovePopupWindows,
             CornerPreference = Enum.IsDefined(CornerPreference) ? CornerPreference : WindowCornerPreference.Default,

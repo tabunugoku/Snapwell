@@ -12,7 +12,7 @@ public enum SettingsField
     Grid, Gap, Edge, Feel, SnapMode, ReduceMotion, ShowZonePreview,
     MagnetStrength, SnapRadius, Hotkey, ResizeStep, ResizeAnchor,
     CornerPreference, ShowZoneLines, ShowPredictionLine, SnapAfterResize, MonitorGrids, LauncherPresets,
-    MoveFixedSizeWindows, MovePopupWindows, DragPreviewStyle,
+    MoveFixedSizeWindows, MovePopupWindows,
 }
 
 /// <summary>ホットキーはコマンドごと、それ以外は項目ごとに識別する。</summary>
@@ -190,7 +190,6 @@ public static class SettingsTransfer
                 SettingsField.SnapMode => value with { SnapMode = imported.SnapMode },
                 SettingsField.ReduceMotion => value with { ReduceMotion = imported.ReduceMotion },
                 SettingsField.ShowZonePreview => value with { ShowZonePreview = imported.ShowZonePreview },
-                SettingsField.DragPreviewStyle => value with { DragPreviewStyle = imported.DragPreviewStyle },
                 SettingsField.MagnetStrength => value with { MagnetStrength = imported.MagnetStrength },
                 SettingsField.SnapRadius => value with { SnapRadius = imported.SnapRadius },
                 SettingsField.ResizeStep => value with { ResizeStep = imported.ResizeStep },
@@ -243,8 +242,6 @@ public static class SettingsTransfer
         Add(SettingsField.SnapMode, "吸着の方式", current.SnapMode, imported.SnapMode, ModeName);
         Add(SettingsField.ReduceMotion, "動きを減らす", current.ReduceMotion, imported.ReduceMotion, OnOff);
         Add(SettingsField.ShowZonePreview, "区画のプレビュー", current.ShowZonePreview, imported.ShowZonePreview, OnOff);
-        Add(SettingsField.DragPreviewStyle, "ドラッグ中の見せ方", current.DragPreviewStyle,
-            imported.DragPreviewStyle, DragPreviewName);
         Add(SettingsField.MagnetStrength, "磁石の強さ", current.MagnetStrength, imported.MagnetStrength, Strength);
         Add(SettingsField.SnapRadius, "吸着半径", current.SnapRadius, imported.SnapRadius, Pixels);
         Add(SettingsField.ResizeStep, "1 回の拡大・縮小の幅", current.ResizeStep, imported.ResizeStep,
@@ -276,12 +273,6 @@ public static class SettingsTransfer
     }
 
     private static string OnOff(bool value) => value ? "オン" : "オフ";
-
-    private static string DragPreviewName(DragPreviewStyle value) => value switch
-    {
-        DragPreviewStyle.OnRelease => "離した瞬間だけ",
-        _ => "止めたら消す・離したら残す",
-    };
 
     private static string CornerName(WindowCornerPreference value) => value switch
     {

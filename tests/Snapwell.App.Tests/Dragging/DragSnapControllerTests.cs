@@ -51,16 +51,17 @@ public sealed class DragSnapControllerTests
         fixture.Controller.Handle(new MoveSizeStarted(1));
         fixture.Controller.Handle(new MouseMoved(650, 5, 0));
         fixture.Controller.Handle(new MouseMoved(pointerX, 5, 40));
+        Assert.Empty(fixture.Preview.Shown);
 
         var expected = new PixelRect(targetX, 8, 948, 508);
-        Assert.Equal(expected, Assert.Single(fixture.Preview.Shown));
-        // 予測の線は慣性の位置ではなく、着地する区画のタイトルバーまで届く。
-        Assert.Equal(new Vec2(targetX + 474, 23), Assert.Single(fixture.Preview.Ends));
         fixture.Inspector.Window = fixture.Inspector.Window with { VisualBounds = new(windowX, 0, 400, 800) };
         // 処理の遅延中に現在位置が変わっても、フックが最後に記録した位置を優先する。
         cursor = new(960, 520);
         fixture.Controller.Handle(new MoveSizeEnded(1, 40));
 
+        Assert.Equal(expected, Assert.Single(fixture.Preview.Shown));
+        // 予測の線は慣性の位置ではなく、着地する区画のタイトルバーまで届く。
+        Assert.Equal(new Vec2(targetX + 474, 23), Assert.Single(fixture.Preview.Ends));
         var request = Assert.Single(fixture.Motion.Requests);
         Assert.Equal(expected, request.Target);
         Assert.Equal(0, request.Velocity.Y);
@@ -80,7 +81,7 @@ public sealed class DragSnapControllerTests
         });
         fixture.Controller.Handle(new MoveSizeStarted(1));
         fixture.Controller.Handle(new MoveSizeEnded(1, 0));
-        Assert.Equal(2, reads);
+        Assert.Equal(1, reads);
         Assert.Empty(fixture.Motion.Requests);
     }
 
@@ -187,30 +188,30 @@ public sealed class DragSnapControllerTests
         }
 
         var expected = new PixelRect(608, 450, 100, 100);
+        Assert.Empty(fixture.Preview.Shown);
+
+        fixture.Inspector.Window = fixture.Inspector.Window with { VisualBounds = new(546, 450, 100, 100) };
+        fixture.Controller.Handle(new MoveSizeEnded(1, 80));
         if (showPreview)
         {
-            Assert.NotEmpty(fixture.Preview.Shown);
-            Assert.Equal(expected, fixture.Preview.Shown.Last());
+            Assert.Equal(expected, Assert.Single(fixture.Preview.Shown));
         }
         else
         {
             Assert.Empty(fixture.Preview.Shown);
         }
 
-        fixture.Inspector.Window = fixture.Inspector.Window with { VisualBounds = new(546, 450, 100, 100) };
-        fixture.Controller.Handle(new MoveSizeEnded(1, 80));
         Assert.Equal(new nint[] { 1 }, calls);
         var request = Assert.Single(fixture.Motion.Requests);
         Assert.Equal(expected, request.Target);
         Assert.False(request.Resize);
     }
 
-    /// <summary>離した瞬間だけの設定では、ドラッグ中は何も出さず、離すと吸着先を着地が終わるまで出し続ける。</summary>
+    /// <summary>ドラッグ中は何も出さず、離すと吸着先を着地が終わるまで出し続ける。</summary>
     [Fact]
-    public void OnReleaseStyleShowsOnlyAfterReleaseAndHoldsUntilLanding()
+    public void PreviewAppearsOnlyAfterReleaseAndHoldsUntilLanding()
     {
-        var fixture = new Fixture(idleDelay: TimeSpan.FromMilliseconds(30));
-        fixture.Settings.DragPreviewStyle = DragPreviewStyle.OnRelease;
+        var fixture = new Fixture();
         fixture.Inspector.Window = fixture.Inspector.Window with { VisualBounds = new(600, 0, 400, 800) };
         fixture.Controller.Handle(new MoveSizeStarted(1));
         var hides = fixture.Preview.HideCount;
@@ -228,44 +229,21 @@ public sealed class DragSnapControllerTests
         Assert.True(SpinWait.SpinUntil(() => fixture.Preview.HideCount > hides, 2000));
     }
 
-    /// <summary>止めたら消す設定では、マウスが止まると予測が消え、離すと吸着先が残る。</summary>
+    /// <summary>吸着しない離し方では、何も出さない。</summary>
     [Fact]
-    public void LiveStyleHidesWhenPointerStopsAndHoldsAfterRelease()
+    public void ReleaseWithoutSnapShowsNothing()
     {
-        var fixture = new Fixture(idleDelay: TimeSpan.FromMilliseconds(30));
-        fixture.Inspector.Window = fixture.Inspector.Window with { VisualBounds = new(600, 0, 400, 800) };
-        fixture.Controller.Handle(new MoveSizeStarted(1));
-        var hides = fixture.Preview.HideCount;
-        fixture.Controller.Handle(new MouseMoved(650, 5, 0));
-        fixture.Controller.Handle(new MouseMoved(1, 5, 40));
-        Assert.Single(fixture.Preview.Shown);
-        Assert.True(SpinWait.SpinUntil(() => fixture.Preview.HideCount == hides + 1, 2000));
-
-        fixture.Controller.Handle(new MoveSizeEnded(1, 40));
-        Assert.Equal(2, fixture.Preview.Shown.Count);
-        Thread.Sleep(300);
-        Assert.Equal(hides + 1, fixture.Preview.HideCount);
-        fixture.Motion.FinishMoving(1);
-        Assert.True(SpinWait.SpinUntil(() => fixture.Preview.HideCount == hides + 2, 2000));
-    }
-
-    /// <summary>吸着しない離し方では、予測が出ていてもすぐに消す。</summary>
-    [Fact]
-    public void ReleaseWithoutSnapHidesPreviewImmediately()
-    {
-        var fixture = new Fixture(idleDelay: TimeSpan.FromSeconds(10));
+        var fixture = new Fixture();
         fixture.Inspector.Window = fixture.Inspector.Window with { VisualBounds = new(600, 0, 400, 800) };
         fixture.Controller.Handle(new MoveSizeStarted(1));
         fixture.Controller.Handle(new MouseMoved(650, 5, 0));
         fixture.Controller.Handle(new MouseMoved(1, 5, 40));
-        Assert.Single(fixture.Preview.Shown);
 
         // 止まったあとの離しは速度が零になり、吸着しない。
         fixture.Controller.Handle(new MouseMoved(1, 5, 400));
-        var hides = fixture.Preview.HideCount;
         fixture.Controller.Handle(new MoveSizeEnded(1, 400));
         Assert.Empty(fixture.Motion.Requests);
-        Assert.Equal(hides + 1, fixture.Preview.HideCount);
+        Assert.Empty(fixture.Preview.Shown);
     }
 
     /// <summary>次のドラッグでは前の隣接一覧を捨て、新しい対象の一覧を使う。</summary>
@@ -337,10 +315,9 @@ public sealed class DragSnapControllerTests
         internal List<bool> Tracking { get; } = [];
         internal PortableSettings Settings { get; } = new();
         internal DragSnapController Controller { get; }
-        internal Fixture(Func<Vec2?>? cursorPosition = null, Func<nint, IReadOnlyList<PixelRect>>? neighbors = null,
-            TimeSpan? idleDelay = null) =>
+        internal Fixture(Func<Vec2?>? cursorPosition = null, Func<nint, IReadOnlyList<PixelRect>>? neighbors = null) =>
             Controller = new(Inspector, new FakeMonitors(), Motion,
-                () => Settings, Tracking.Add, 999, () => Now, Preview, cursorPosition, neighbors, idleDelay);
+                () => Settings, Tracking.Add, 999, () => Now, Preview, cursorPosition, neighbors);
 
         internal void Throw(int distance)
         {

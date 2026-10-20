@@ -222,18 +222,6 @@ public sealed class SettingsStoreTests : IDisposable
         Assert.False(SettingsTransfer.Normalize(new() { MovePopupWindows = false }).MovePopupWindows);
     }
 
-    /// <summary>ドラッグ中の見せ方は既定が「止めたら消す」で、「離した瞬間だけ」の保存は読み戻しても保たれる。</summary>
-    [Fact]
-    public void DragPreviewStyleDefaultsToLiveAndRoundTripsOnRelease()
-    {
-        Assert.Equal(DragPreviewStyle.LiveUntilStop, new PortableSettings().DragPreviewStyle);
-        var store = SettingsStores.Portable(Path.Combine(_directory, "drag-preview.json"));
-        store.Save(new() { DragPreviewStyle = DragPreviewStyle.OnRelease });
-        Assert.Equal(DragPreviewStyle.OnRelease, store.Load().Value.DragPreviewStyle);
-        Assert.Equal(DragPreviewStyle.LiveUntilStop,
-            SettingsTransfer.Normalize(new() { DragPreviewStyle = (DragPreviewStyle)99 }).DragPreviewStyle);
-    }
-
     /// <summary>版 8 以下のファイルはオンとして読み、版 9 の明示したオフは保つ。</summary>
     [Theory]
     [InlineData(1, "", true)]
