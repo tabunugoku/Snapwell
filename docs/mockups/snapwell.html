@@ -543,11 +543,10 @@ table.list tr:last-child td { border-bottom: 0; }
 .row .ctl.tune { gap: 10px; }
 .row .ctl.tune input[type="range"] { width: 200px; accent-color: var(--ink); }
 .row .ctl.tune .unit { width: 22px; font-size: 12px; color: var(--muted); }
-.corner-cards { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin-bottom: 4px; }
+.corner-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 4px; }
 .ccard { text-align: left; font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px; display: grid; gap: 6px; cursor: pointer; align-content: start; }
 .ccard > span:last-child { font-size: 11.5px; color: var(--muted); line-height: 1.5; }
 .ccard.sel { border-color: var(--ink); }
-.ccard.muted { opacity: 0.55; cursor: default; }
 .cwin { display: block; height: 62px; border: 1.5px solid var(--border-strong); background: var(--surface-2); overflow: hidden; }
 .cwin i { display: block; height: 14px; border-bottom: 1px solid var(--border); background: var(--surface); }
 .ov-stage { position: relative; height: 190px; max-width: 400px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); overflow: hidden; color: var(--blue-tx); }
@@ -1037,7 +1036,6 @@ table.list tr:last-child td { border-bottom: 0; }
             <div class="rows">
               <div class="row"><div><div class="t">ウィンドウの角</div><div class="d">DWM の角の設定を使います。半径は Windows が決めます（約 8 px）</div></div><div class="ctl"><select class="input" style="width: 200px" id="cornerSel"><option value="8">角丸を強制する</option><option value="4">小さい角丸</option><option value="0">角丸なし</option><option value="win" selected>Windows の既定</option></select></div></div>
               <div class="row"><div><div class="t">区画のプレビュー</div><div class="d">ドラッグ中に、吸着先の区画を青く塗って見せます。オフにすると、離すまで何も表示しません</div></div><div class="ctl"><label class="switch"><input type="checkbox" checked id="tgPrev" aria-label="区画のプレビュー"><span></span></label></div></div>
-              <div class="row"><div><div class="t">大きな角丸（macOS 風） <span class="tag pending">準備中</span></div><div class="d">半径を自由に決める方法を検証しています</div></div><div class="ctl"><span class="tag yellow">要検証</span><label class="switch"><input type="checkbox" disabled aria-label="大きな角丸"><span></span></label></div></div>
             </div>
             <div class="group-title">ウィンドウの角の見え方</div>
             <div class="corner-cards" id="cornerCards">
@@ -1045,7 +1043,6 @@ table.list tr:last-child td { border-bottom: 0; }
               <button type="button" class="ccard" data-v="8"><span class="cwin" style="border-radius: 8px"><i></i></span><b>角丸を強制する</b><span>すべてのウィンドウを標準の丸（約 8 px）にそろえます</span></button>
               <button type="button" class="ccard" data-v="4"><span class="cwin" style="border-radius: 4px"><i></i></span><b>小さい角丸</b><span>丸みを控えめにします（約 4 px）</span></button>
               <button type="button" class="ccard" data-v="0"><span class="cwin" style="border-radius: 0"><i></i></span><b>角丸なし</b><span>すべてのウィンドウを直角にします</span></button>
-              <div class="ccard muted"><span class="cwin" style="border-radius: 16px"><i></i></span><b>大きな角丸 <span class="tag pending">準備中</span></b><span>macOS 風の大きな丸み。実現方法を検証中です</span></div>
             </div>
             <div class="group-title">オーバーレイ</div>
             <div class="rows">
