@@ -265,6 +265,16 @@ public sealed class HookThread : IDisposable
         }
     }
 
+    internal bool ProcessKey(uint virtualKey, bool isDown)
+    {
+        var match = _matcher.ProcessKey(virtualKey, isDown);
+        if (match.Matched)
+        {
+            Enqueue(new RawHookEvent(RawHookKind.Key, Detail: match.Id));
+        }
+        return match.Suppress;
+    }
+
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
     private static unsafe void OnWinEvent(HWINEVENTHOOK hook, uint eventId, HWND window,
         int objectId, int childId, uint eventThreadId, uint time)
@@ -336,14 +346,7 @@ public sealed class HookThread : IDisposable
             var messageId = (uint)message.Value;
             if (messageId is PInvoke.WM_KEYDOWN or PInvoke.WM_SYSKEYDOWN or PInvoke.WM_KEYUP or PInvoke.WM_SYSKEYUP)
             {
-                var match = owner._matcher.ProcessKey(key->vkCode,
-                    messageId is PInvoke.WM_KEYDOWN or PInvoke.WM_SYSKEYDOWN);
-                if (match.Matched)
-                {
-                    owner.Enqueue(new RawHookEvent(RawHookKind.Key, Detail: match.Id));
-                }
-
-                if (match.Suppress)
+                if (owner.ProcessKey(key->vkCode, messageId is PInvoke.WM_KEYDOWN or PInvoke.WM_SYSKEYDOWN))
                 {
                     return new LRESULT(1);
                 }
