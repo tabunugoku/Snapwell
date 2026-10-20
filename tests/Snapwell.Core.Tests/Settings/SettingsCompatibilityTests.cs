@@ -30,12 +30,12 @@ public sealed class SettingsCompatibilityTests : IDisposable
     }
 
     [Theory]
-    [InlineData("{\"Hotkeys\":{}}", true, 10)]
-    [InlineData("{\"SchemaVersion\":1,\"Hotkeys\":{}}", true, 10)]
-    [InlineData("{\"SchemaVersion\":2,\"Hotkeys\":{}}", false, 9)]
-    [InlineData("{\"SchemaVersion\":1,\"Hotkeys\":{\"LeftHalf\":{\"Modifiers\":\"Control, Alt\",\"VirtualKey\":32}}}", false, 10)]
-    [InlineData("{\"SchemaVersion\":1,\"Hotkeys\":null}", true, 26)]
-    [InlineData("{\"SchemaVersion\":2,\"Hotkeys\":null}", true, 26)]
+    [InlineData("{\"Hotkeys\":{}}", true, 12)]
+    [InlineData("{\"SchemaVersion\":1,\"Hotkeys\":{}}", true, 12)]
+    [InlineData("{\"SchemaVersion\":2,\"Hotkeys\":{}}", false, 11)]
+    [InlineData("{\"SchemaVersion\":1,\"Hotkeys\":{\"LeftHalf\":{\"Modifiers\":\"Control, Alt\",\"VirtualKey\":32}}}", false, 12)]
+    [InlineData("{\"SchemaVersion\":1,\"Hotkeys\":null}", true, 28)]
+    [InlineData("{\"SchemaVersion\":2,\"Hotkeys\":null}", true, 28)]
     public void StoreAndImportMigrateOnlyOlderFilesWithoutCreatingConflicts(string json, bool launcher, int count)
     {
         File.WriteAllText(SettingsPath, json);
@@ -87,8 +87,8 @@ public sealed class SettingsCompatibilityTests : IDisposable
     [InlineData(6, false, true)]
     [InlineData(7, false, true)]
     [InlineData(8, false, true)]
-    [InlineData(10, false, true)]
-    [InlineData(11, true, true)]
+    [InlineData(11, false, true)]
+    [InlineData(12, true, true)]
     [InlineData(999999999999, true, true)]
     public void FutureVersionsUseEachStoresCurrentVersion(long version, bool portableFuture, bool deviceFuture)
     {
