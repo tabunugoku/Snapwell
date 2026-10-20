@@ -70,7 +70,7 @@ public sealed class AdjacentHotkeyMigrationTests : IDisposable
             Assert.Equal(stored.Hotkeys, imported.Hotkeys);
             Assert.Equal(chord, stored.Hotkeys[assigned]);
             Assert.Equal(customAssignment, stored.Hotkeys.ContainsKey(command));
-            Assert.Equal(4, stored.Hotkeys.Count);
+            Assert.Equal(6, stored.Hotkeys.Count);
             Assert.Empty(HotkeyCatalog.FindConflicts(stored.Hotkeys));
         }
     }

@@ -35,7 +35,8 @@ internal static class HotkeyBindingsBuilder
             // 一度だけ実行したい操作は、押しっぱなしの繰り返しで再実行しない。
             var repeatable = command is not (WindowCommand.ToggleEnabled or WindowCommand.OpenLauncher or
                 WindowCommand.ArrangeGrid or WindowCommand.ArrangeColumns or WindowCommand.ArrangeRows or
-                WindowCommand.ArrangeMainAndStack or WindowCommand.ArrangeAllMonitors);
+                WindowCommand.ArrangeMainAndStack or WindowCommand.ArrangeAllMonitors or
+                WindowCommand.CenterWindow or WindowCommand.CenterWindowKeepSize);
             bindings.Add(new((int)command, (KeyModifiers)chord.Modifiers, chord.VirtualKey, Suppress: true,
                 AllowRepeat: repeatable));
         }
