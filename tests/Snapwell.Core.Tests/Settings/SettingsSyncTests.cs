@@ -20,6 +20,23 @@ public sealed class SettingsSyncTests : IDisposable
     }
 
     [Theory]
+    [InlineData(10, false, false, false, SettingsSyncReloadKind.Unchanged)]
+    [InlineData(10, true, false, false, SettingsSyncReloadKind.Unchanged)]
+    [InlineData(20, false, false, false, SettingsSyncReloadKind.Replace)]
+    [InlineData(20, true, false, false, SettingsSyncReloadKind.KeepEdits)]
+    [InlineData(10, false, true, false, SettingsSyncReloadKind.Replace)]
+    [InlineData(10, true, true, false, SettingsSyncReloadKind.KeepEdits)]
+    [InlineData(20, false, false, true, SettingsSyncReloadKind.ReadOnly)]
+    [InlineData(20, true, false, true, SettingsSyncReloadKind.ReadOnly)]
+    public void ReloadDecisionPreservesEditsAndRestoresReadOnlyPages(double gap, bool hasChanges,
+        bool isReadOnly, bool loadedReadOnly, SettingsSyncReloadKind expected)
+    {
+        var saved = new PortableSettings { Gap = 10 };
+        var loaded = new SettingsLoadResult<PortableSettings>(new() { Gap = gap }, IsReadOnly: loadedReadOnly);
+        Assert.Equal(expected, SettingsSync.DecideReload(saved, loaded, hasChanges, isReadOnly));
+    }
+
+    [Theory]
     [InlineData("equal", SettingsSyncKind.NoChange, 10)]
     [InlineData("remoteMissing", SettingsSyncKind.Pushed, 10)]
     [InlineData("localMissing", SettingsSyncKind.Pulled, 20)]
@@ -34,7 +51,7 @@ public sealed class SettingsSyncTests : IDisposable
     {
         Save(Local, 30);
         Save(Remote, 30);
-        var baseline = Create().Run(new()).LastSyncedHash;
+        var baseline = Create().Run(Store()).LastSyncedHash;
         var state = new DeviceState { LastSyncedHash = baseline };
         Save(Local, 10);
         Save(Remote, scenario == "equal" ? 10 : 20);
@@ -51,7 +68,7 @@ public sealed class SettingsSyncTests : IDisposable
             case "firstSync": state.LastSyncedHash = null; break;
             case "neitherExists": File.Delete(Local); File.Delete(Remote); break;
         }
-        var result = Create().Run(state);
+        var result = Create().Run(Store(state));
         Assert.Equal(expected, result.Kind);
         if (gap >= 0)
         {
@@ -59,7 +76,7 @@ public sealed class SettingsSyncTests : IDisposable
             Assert.Equal(gap, SettingsStores.Portable(Remote).Load().Value.Gap);
             Assert.NotNull(result.LastSyncedHash);
             Assert.Equal(_time.GetUtcNow(), result.LastSyncUtc);
-            Assert.Equal(SettingsSyncKind.NoChange, Create().Run(state).Kind);
+            Assert.Equal(SettingsSyncKind.NoChange, Create().Run(Store(state)).Kind);
         }
         else { Assert.Null(result.LastSyncedHash); }
     }
@@ -80,7 +97,7 @@ public sealed class SettingsSyncTests : IDisposable
             property => property.Name, property => property.Name == "Hotkeys" ? (object)hotkeys : property.Value);
         File.WriteAllText(Remote, JsonSerializer.Serialize(mixed), new UTF8Encoding(true));
         var bytes = File.ReadAllBytes(Remote);
-        Assert.Equal(SettingsSyncKind.NoChange, Create().Run(new()).Kind);
+        Assert.Equal(SettingsSyncKind.NoChange, Create().Run(Store()).Kind);
         Assert.Equal(bytes, File.ReadAllBytes(Remote));
         Assert.False(Directory.Exists(Backups));
     }
@@ -89,9 +106,9 @@ public sealed class SettingsSyncTests : IDisposable
     public void MissingLocalPullsEvenWhenPreviousHashMatchesRemote()
     {
         Save(Local, 10);
-        var baseline = Create().Run(new()).LastSyncedHash;
+        var baseline = Create().Run(Store()).LastSyncedHash;
         File.Delete(Local);
-        Assert.Equal(SettingsSyncKind.Pulled, Create().Run(new() { LastSyncedHash = baseline }).Kind);
+        Assert.Equal(SettingsSyncKind.Pulled, Create().Run(Store(new() { LastSyncedHash = baseline })).Kind);
         Assert.Equal(10, SettingsStores.Portable(Local).Load().Value.Gap);
     }
 
@@ -100,26 +117,31 @@ public sealed class SettingsSyncTests : IDisposable
     {
         SettingsStores.Portable(Local).Save(new());
         File.WriteAllText(Remote, $$"""{"SchemaVersion":{{PortableSettings.CurrentSchemaVersion}},"Gap":-10}""");
-        Assert.Equal(SettingsSyncKind.NoChange, Create().Run(new()).Kind);
+        Assert.Equal(SettingsSyncKind.NoChange, Create().Run(Store()).Kind);
         Assert.False(Directory.Exists(Backups));
     }
 
-    [Fact]
-    public void RecordingResultPreservesOtherDeviceChoicesAndIgnoresChangedSyncFolder()
+    [Theory]
+    [InlineData("unchanged")]
+    [InlineData("folder")]
+    [InlineData("disabled")]
+    public void RecordingInsideLockPreservesOtherChoicesAndIgnoresChangedSyncChoice(string change)
     {
-        var store = SettingsStores.Device(Path.Combine(_root, "device.json"), Local);
-        var started = new DeviceState { SyncEnabled = true, SyncFolder = Path.GetDirectoryName(Remote) };
-        store.Save(started with { Enabled = false, SetupCompleted = true });
-        var result = new SettingsSyncResult(SettingsSyncKind.Pushed, LastSyncedHash: "hash",
-            LastSyncUtc: _time.GetUtcNow());
-        var updated = SettingsSync.RecordResult(store, started, result);
-        Assert.False(updated.Enabled);
-        Assert.True(updated.SetupCompleted);
-        Assert.Equal("hash", updated.LastSyncedHash);
-        store.Save(updated with { SyncFolder = Path.Combine(_root, "changed"), LastSyncedHash = null });
-        updated = SettingsSync.RecordResult(store, started, result);
-        Assert.Null(updated.LastSyncedHash);
-        Assert.Equal(Path.Combine(_root, "changed"), updated.SyncFolder);
+        Save(Local, 10);
+        var store = Store();
+        var sync = Create(beforeRecord: () => store.Value = store.Value with
+        {
+            Enabled = false,
+            SetupCompleted = true,
+            SyncEnabled = change != "disabled",
+            SyncFolder = change == "folder" ? Path.Combine(_root, "changed") : Path.GetDirectoryName(Remote),
+        });
+        var result = sync.Run(store);
+        Assert.Equal(SettingsSyncKind.Pushed, result.Kind);
+        Assert.False(store.Value.Enabled);
+        Assert.True(store.Value.SetupCompleted);
+        Assert.Equal(change == "unchanged" ? result.LastSyncedHash : null, store.Value.LastSyncedHash);
+        Assert.Equal(change == "unchanged" ? _time.GetUtcNow() : (DateTimeOffset?)null, store.Value.LastSyncUtc);
     }
 
     [Theory]
@@ -129,7 +151,7 @@ public sealed class SettingsSyncTests : IDisposable
     {
         Save(Local, 10);
         Save(Remote, 20);
-        var baseline = Create().Run(new()).LastSyncedHash;
+        var baseline = Create().Run(Store()).LastSyncedHash;
         for (var index = 0; index < 12; index++)
         {
             var source = push ? Local : Remote;
@@ -137,14 +159,15 @@ public sealed class SettingsSyncTests : IDisposable
             Save(source, 30 + index);
             var old = File.ReadAllBytes(destination);
             var side = push ? "remote" : "local";
-            var sync = Create(() =>
+            var sync = Create(beforeReplace: () =>
             {
                 Assert.Equal(old, File.ReadAllBytes(destination));
-                Assert.Contains(Directory.GetFiles(Backups, "*-" + side + ".json"),
-                    path => File.ReadAllBytes(path).SequenceEqual(old));
+                Assert.Single(Directory.GetFiles(Path.GetDirectoryName(destination)!, "*.tmp"));
             });
-            var result = sync.Run(new() { LastSyncedHash = baseline });
+            var result = sync.Run(Store(new() { LastSyncedHash = baseline }));
             Assert.Equal(push ? SettingsSyncKind.Pushed : SettingsSyncKind.Pulled, result.Kind);
+            Assert.Contains(Directory.GetFiles(Backups, "*-" + side + ".json"),
+                path => File.ReadAllBytes(path).SequenceEqual(old));
             baseline = result.LastSyncedHash;
             _time.Advance();
         }
@@ -160,7 +183,7 @@ public sealed class SettingsSyncTests : IDisposable
         var original = File.ReadAllBytes(Remote);
         File.WriteAllText(Backups, "not a directory");
         File.SetLastWriteTimeUtc(Local, _time.GetUtcNow().AddYears(1).UtcDateTime);
-        Assert.Equal(SettingsSyncKind.Failed, Create().Run(new()).Kind);
+        Assert.Equal(SettingsSyncKind.Failed, Create().Run(Store()).Kind);
         Assert.Equal(original, File.ReadAllBytes(Remote));
     }
 
@@ -175,7 +198,7 @@ public sealed class SettingsSyncTests : IDisposable
         File.WriteAllText(local ? Local : Remote, future ? "{\"SchemaVersion\":999,\"Future\":true}" : "broken");
         var localBytes = File.ReadAllBytes(Local);
         var remoteBytes = File.ReadAllBytes(Remote);
-        Assert.Equal(SettingsSyncKind.Skipped, Create().Run(new()).Kind);
+        Assert.Equal(SettingsSyncKind.Skipped, Create().Run(Store()).Kind);
         Assert.Equal(localBytes, File.ReadAllBytes(Local));
         Assert.Equal(remoteBytes, File.ReadAllBytes(Remote));
     }
@@ -188,7 +211,7 @@ public sealed class SettingsSyncTests : IDisposable
     {
         Save(Local, 10);
         File.WriteAllText(Remote, broken);
-        Assert.Equal(SettingsSyncKind.Pushed, Create().Run(new()).Kind);
+        Assert.Equal(SettingsSyncKind.Pushed, Create().Run(Store()).Kind);
         Assert.Equal(broken, File.ReadAllText(Assert.Single(Directory.GetFiles(Backups))));
         Assert.Equal(10, SettingsStores.Portable(Remote).Load().Value.Gap);
     }
@@ -197,7 +220,6 @@ public sealed class SettingsSyncTests : IDisposable
     [InlineData("same")]
     [InlineData("child")]
     [InlineData("parent")]
-    [InlineData("sameFile")]
     public void OverlappingFoldersAreRejectedWithoutWriting(string relation)
     {
         Save(Local, 10);
@@ -207,10 +229,9 @@ public sealed class SettingsSyncTests : IDisposable
             "parent" => _root,
             _ => Path.GetDirectoryName(Local)!,
         };
-        var remote = relation == "sameFile" ? Local : Path.Combine(folder, SettingsSync.FileName);
-        var sync = new SettingsSync(Local, remote, Backups, _time, MutexName);
+        var sync = Create();
         var bytes = File.ReadAllBytes(Local);
-        Assert.Equal(SettingsSyncKind.Rejected, sync.Run(new()).Kind);
+        Assert.Equal(SettingsSyncKind.Rejected, sync.Run(Store(new() { SyncFolder = folder })).Kind);
         Assert.Equal(bytes, File.ReadAllBytes(Local));
         Assert.False(Directory.Exists(Backups));
     }
@@ -220,10 +241,157 @@ public sealed class SettingsSyncTests : IDisposable
     {
         Save(Local, 10);
         Save(Remote, 20);
-        var result = Create(() => Save(Remote, 40)).Run(new());
+        var result = Create(() => Save(Remote, 40)).Run(Store());
         Assert.Equal(SettingsSyncKind.Failed, result.Kind);
         Assert.Equal(10, SettingsStores.Portable(Local).Load().Value.Gap);
         Assert.Equal(40, SettingsStores.Portable(Remote).Load().Value.Gap);
+    }
+
+    [Theory]
+    [InlineData(true, true)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(false, false)]
+    public void ChangesAfterTemporaryWritePreserveBothFilesAndDoNotBackupStaleBytes(bool push, bool changeLocal)
+    {
+        Save(Local, 10);
+        Save(Remote, 10);
+        var store = Store();
+        Create().Run(store);
+        Save(push ? Local : Remote, 20);
+        byte[]? changed = null;
+        var result = Create(beforeReplace: () =>
+        {
+            Save(changeLocal ? Local : Remote, 40);
+            changed = File.ReadAllBytes(changeLocal ? Local : Remote);
+        }).Run(store);
+        Assert.Equal(SettingsSyncKind.Failed, result.Kind);
+        Assert.Equal(changed, File.ReadAllBytes(changeLocal ? Local : Remote));
+        Assert.Equal(changeLocal ? (push ? 10 : 20) : (push ? 20 : 10),
+            SettingsStores.Portable(changeLocal ? Remote : Local).Load().Value.Gap);
+        Assert.False(Directory.Exists(Backups));
+        Assert.Empty(Directory.GetFiles(Path.GetDirectoryName(Local)!, "*.tmp"));
+        Assert.Empty(Directory.GetFiles(Path.GetDirectoryName(Remote)!, "*.tmp"));
+    }
+
+    [Fact]
+    public async Task RecordingCannotBeOvertakenByAnotherSync()
+    {
+        Save(Local, 10);
+        var store = Store();
+        using var entered = new ManualResetEventSlim();
+        using var release = new ManualResetEventSlim();
+        var first = Task.Run(() => Create(beforeRecord: () =>
+        {
+            entered.Set();
+            Assert.True(release.Wait(TimeSpan.FromSeconds(5)));
+        }).Run(store));
+        Task<SettingsSyncResult>? secondRun = null;
+        try
+        {
+            Assert.True(entered.Wait(TimeSpan.FromSeconds(5)));
+            Assert.Equal(SettingsSyncKind.Busy, Create().Run(store).Kind);
+            Assert.Null(store.Value.LastSyncedHash);
+            // B は同じ排他の解放を待ってから、A の成功記録を使って判断する。
+            secondRun = Task.Run(() =>
+            {
+                SettingsSyncResult? result = null;
+                Assert.True(SettingsSync.WithLock(Local, () =>
+                {
+                    Save(Remote, 20);
+                    result = Create().Run(store);
+                }, TimeSpan.FromSeconds(5)));
+                return result!;
+            });
+        }
+        finally { release.Set(); }
+        var initial = await first;
+        var second = await secondRun!;
+        Assert.Equal(SettingsSyncKind.Pulled, second.Kind);
+        Assert.NotEqual(initial.LastSyncedHash, second.LastSyncedHash);
+        Assert.Equal(second.LastSyncedHash, store.Value.LastSyncedHash);
+        Save(Local, 30);
+        Assert.Equal(SettingsSyncKind.Pushed, Create().Run(store).Kind);
+        Assert.Equal(30, SettingsStores.Portable(Remote).Load().Value.Gap);
+    }
+
+    [Fact]
+    public void DisabledOrFutureDeviceStateDoesNotTouchPortableFiles()
+    {
+        Save(Local, 10);
+        var store = Store();
+        store.Value = store.Value with { SyncEnabled = false };
+        Assert.Equal(SettingsSyncKind.Skipped, Create().Run(store, requireEnabled: true).Kind);
+        store.Value = store.Value with { SyncEnabled = true };
+        store.IsReadOnly = true;
+        Assert.Equal(SettingsSyncKind.Skipped, Create().Run(store).Kind);
+        Assert.False(File.Exists(Remote));
+        Assert.Equal(10, SettingsStores.Portable(Local).Load().Value.Gap);
+        Assert.Null(store.Value.LastSyncedHash);
+    }
+
+    [Fact]
+    public void ManualSyncCanRunWhileAutomaticSyncIsDisabled()
+    {
+        Save(Local, 10);
+        var store = Store();
+        store.Value = store.Value with { SyncEnabled = false };
+        var result = Create().Run(store);
+        Assert.Equal(SettingsSyncKind.Pushed, result.Kind);
+        Assert.Equal(result.LastSyncedHash, store.Value.LastSyncedHash);
+        Assert.False(store.Value.SyncEnabled);
+    }
+
+    [Fact]
+    public async Task NormalSaveTimesOutDuringSyncAndCanAcquireAfterCompletion()
+    {
+        Save(Local, 10);
+        using var entered = new ManualResetEventSlim();
+        using var release = new ManualResetEventSlim();
+        var running = Task.Run(() => Create(beforeWrite: () =>
+        {
+            entered.Set();
+            Assert.True(release.Wait(TimeSpan.FromSeconds(5)));
+        }).Run(Store()));
+        var wrote = false;
+        var timeout = TimeSpan.FromMilliseconds(50);
+        try
+        {
+            Assert.True(entered.Wait(TimeSpan.FromSeconds(5)));
+            var started = System.Diagnostics.Stopwatch.StartNew();
+            Assert.False(SettingsSync.WithLock(Local, () => wrote = true, timeout));
+            Assert.True(started.Elapsed >= timeout - TimeSpan.FromMilliseconds(10));
+            Assert.False(wrote);
+        }
+        finally { release.Set(); }
+        Assert.Equal(SettingsSyncKind.Pushed, (await running).Kind);
+        Assert.True(SettingsSync.WithLock(Local, () => wrote = true, timeout));
+        Assert.True(wrote);
+    }
+
+    [Fact]
+    public void AbandonedMutexCanBeAcquiredAndExceptionsReleaseIt()
+    {
+        using var mutex = new Mutex(false, MutexName);
+        var owner = new Thread(() => mutex.WaitOne());
+        owner.Start();
+        owner.Join();
+        Assert.Throws<IOException>(() => SettingsSync.WithLock(Local, () => throw new IOException(), TimeSpan.Zero));
+        Save(Local, 10);
+        Assert.Equal(SettingsSyncKind.Pushed, Create().Run(Store()).Kind);
+    }
+
+    [Fact]
+    public void DisappearingFolderBeforeReplaceFailsWithoutRecordingSuccess()
+    {
+        Save(Local, 10);
+        var store = Store();
+        var result = Create(beforeReplace: () => Directory.Delete(Path.GetDirectoryName(Remote)!, recursive: true))
+            .Run(store);
+        Assert.Equal(SettingsSyncKind.Failed, result.Kind);
+        Assert.Equal(10, SettingsStores.Portable(Local).Load().Value.Gap);
+        Assert.False(Directory.Exists(Path.GetDirectoryName(Remote)));
+        Assert.Null(store.Value.LastSyncedHash);
     }
 
     [Fact]
@@ -236,7 +404,7 @@ public sealed class SettingsSyncTests : IDisposable
         File.SetAttributes(Remote, FileAttributes.ReadOnly);
         try
         {
-            Assert.Equal(SettingsSyncKind.Failed, Create().Run(new()).Kind);
+            Assert.Equal(SettingsSyncKind.Failed, Create().Run(Store()).Kind);
             Assert.Equal(old, File.ReadAllBytes(Remote));
             Assert.Empty(Directory.GetFiles(Path.GetDirectoryName(Remote)!, "*.tmp"));
         }
@@ -248,13 +416,13 @@ public sealed class SettingsSyncTests : IDisposable
     {
         Save(Local, 10);
         Directory.Delete(Path.GetDirectoryName(Remote)!);
-        Assert.Equal(SettingsSyncKind.Failed, Create().Run(new()).Kind);
+        Assert.Equal(SettingsSyncKind.Failed, Create().Run(Store()).Kind);
         Directory.CreateDirectory(Path.GetDirectoryName(Remote)!);
         File.WriteAllBytes(Remote, new byte[4 * 1024 * 1024 + 1]);
-        Assert.Equal(SettingsSyncKind.Failed, Create().Run(new()).Kind);
+        Assert.Equal(SettingsSyncKind.Failed, Create().Run(Store()).Kind);
         Save(Remote, 20);
         using var held = new FileStream(Remote, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
-        Assert.Equal(SettingsSyncKind.Failed, Create().Run(new()).Kind);
+        Assert.Equal(SettingsSyncKind.Failed, Create().Run(Store()).Kind);
         Assert.False(Directory.Exists(Backups));
     }
 
@@ -275,7 +443,7 @@ public sealed class SettingsSyncTests : IDisposable
         held.Wait();
         try
         {
-            Assert.Equal(SettingsSyncKind.Busy, (await Task.Run(() => Create().Run(new()))).Kind);
+            Assert.Equal(SettingsSyncKind.Busy, (await Task.Run(() => Create().Run(Store()))).Kind);
         }
         finally { release.Set(); thread.Join(); }
     }
@@ -317,8 +485,23 @@ public sealed class SettingsSyncTests : IDisposable
         Assert.Equal(value, store.Load().Value);
     }
 
-    private SettingsSync Create(Action? beforeWrite = null) =>
-        new(Local, Remote, Backups, _time, MutexName, beforeWrite);
+    private SettingsSync Create(Action? beforeWrite = null, Action? beforeReplace = null, Action? beforeRecord = null) =>
+        new(Local, Backups, _time, MutexName, beforeWrite, beforeReplace, beforeRecord);
+
+    private FakeStore Store(DeviceState? state = null) => new()
+    {
+        Value = (state ?? new()) with { SyncEnabled = true, SyncFolder = state?.SyncFolder ?? Path.GetDirectoryName(Remote) },
+    };
+
+    private sealed class FakeStore : ISettingsStore<DeviceState>
+    {
+        internal DeviceState Value = new();
+        internal bool IsReadOnly;
+        public SettingsLoadResult<DeviceState> Load() => throw new InvalidOperationException("最新値を読み直す。");
+        public SettingsLoadResult<DeviceState> TryReload() => new(Value, IsReadOnly: IsReadOnly);
+        public void Save(DeviceState value) => Value = value;
+    }
+
     private static void Save(string path, double gap) => SettingsStores.Portable(path).Save(new() { Gap = gap });
     public void Dispose() => Directory.Delete(_root, recursive: true);
 
