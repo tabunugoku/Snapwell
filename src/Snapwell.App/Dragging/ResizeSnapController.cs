@@ -25,6 +25,8 @@ internal sealed class ResizeSnapController(IWindowInspector inspector, IMonitorS
     IMotionEngine motion, Func<PortableSettings> settings, IResizeConstraints constraints, uint ownProcessId,
     IZonePreview? preview = null, TimeProvider? timeProvider = null)
 {
+    // アニメーションとは無関係に、他プロセスへの問い合わせを入力頻度から切り離す。
+    internal const int PreviewPollMs = 50;
     // 動きを時間で決めず、ドラッグ側と同じ間隔・猶予・上限で着地の完了を監視する。
     private const int HoldPollMs = 50;
     private const int HoldMinMs = 150;
@@ -35,6 +37,11 @@ internal sealed class ResizeSnapController(IWindowInspector inspector, IMonitorS
     private WindowSnapshot? _start;
     private uint _startDpi;
     private uint _startMonitorDpi;
+    private ITimer? _previewTimer;
+    private long _previewGeneration;
+    private bool _previewPending;
+    private bool _previewBusy;
+    private long? _lastPreviewStart;
     private PixelRect? _shownTarget;
     private ITimer? _holdTimer;
     private WindowSnapshot? _holdWindow;
@@ -69,6 +76,7 @@ internal sealed class ResizeSnapController(IWindowInspector inspector, IMonitorS
 
         if (!options.ShowZonePreview)
         {
+            StopPreviewUpdates();
             StopHold();
             HidePreview();
         }
@@ -85,22 +93,19 @@ internal sealed class ResizeSnapController(IWindowInspector inspector, IMonitorS
         {
             CancelCore();
         }
-        else if (value is MouseMoved && _start is { } resizing && options.ShowZonePreview)
+        else if (value is MouseMoved && _start is not null && options.ShowZonePreview)
         {
-            var plan = Plan(resizing, options, out _, out _);
-            if (plan is null)
-            {
-                HidePreview();
-            }
-            else
-            {
-                ShowPreview(plan.Target);
-            }
+            // 座標は計画時に取得するため、未処理の入力は一件分の更新要求だけでよい。
+            _previewPending = true;
+            _previewTimer ??= _time.CreateTimer(OnPreview, _previewGeneration,
+                TimeSpan.FromMilliseconds(PreviewPollMs), TimeSpan.FromMilliseconds(PreviewPollMs));
         }
         else if (value is MoveSizeEnded end && _start is { } original && original.Handle == end.Handle)
         {
+            StopPreviewUpdates();
             _start = null;
-            var plan = Plan(original, options, out var window, out var currentMonitors);
+            var plan = Plan(original, options, _startDpi, _startMonitorDpi,
+                out var window, out var currentMonitors);
             if (plan is null || window is null)
             {
                 HidePreview();
@@ -128,7 +133,88 @@ internal sealed class ResizeSnapController(IWindowInspector inspector, IMonitorS
         }
     }
 
+    private void OnPreview(object? state)
+    {
+        var generation = (long)state!;
+        WindowSnapshot original;
+        uint startDpi;
+        uint startMonitorDpi;
+        lock (_gate)
+        {
+            if (generation != _previewGeneration || !_previewPending || _previewBusy || _start is null ||
+                (_lastPreviewStart is { } last && _time.GetElapsedTime(last).TotalMilliseconds < PreviewPollMs))
+            {
+                return;
+            }
+
+            _previewPending = false;
+            _previewBusy = true;
+            _lastPreviewStart = _time.GetTimestamp();
+            original = _start;
+            startDpi = _startDpi;
+            startMonitorDpi = _startMonitorDpi;
+        }
+
+        try
+        {
+            // 問い合わせ中は配送側のロックを持たず、開始時の DPI と設定だけで計画する。
+            var options = settings();
+            options = options with { MonitorGrids = new(options.MonitorGrids, StringComparer.OrdinalIgnoreCase) };
+            var plan = Plan(original, options, startDpi, startMonitorDpi, out _, out _);
+            lock (_gate)
+            {
+                if (generation != _previewGeneration)
+                {
+                    return;
+                }
+
+                var currentOptions = settings();
+                if (!currentOptions.SnapAfterResize || !currentOptions.ShowZonePreview)
+                {
+                    StopPreviewUpdates();
+                    HidePreview();
+                }
+                else if (plan is null)
+                {
+                    HidePreview();
+                }
+                else
+                {
+                    ShowPreview(plan.Target);
+                }
+            }
+        }
+        catch (Exception)
+        {
+            // 古い計算の失敗では、新しい操作や着地待ちの表示を消さない。
+            lock (_gate)
+            {
+                if (generation == _previewGeneration)
+                {
+                    HidePreview();
+                }
+            }
+        }
+        finally
+        {
+            lock (_gate)
+            {
+                // 世代が変わっても実行中の問い合わせは一つに保ち、ワーカーを積み上げない。
+                _previewBusy = false;
+            }
+        }
+    }
+
+    private void StopPreviewUpdates()
+    {
+        _previewGeneration++;
+        _previewPending = false;
+        _previewTimer?.Dispose();
+        _previewTimer = null;
+    }
+
     private ResizeSnapPlan? Plan(WindowSnapshot original, PortableSettings options,
+        uint startDpi, uint startMonitorDpi,
         out WindowSnapshot? window, out IReadOnlyList<MonitorInfo> currentMonitors)
     {
         window = null;
@@ -136,7 +222,7 @@ internal sealed class ResizeSnapController(IWindowInspector inspector, IMonitorS
         var currentDpi = constraints.GetDpi(original.Handle);
         if (motion.IsMoving(original.Handle) || !inspector.TryInspect(original.Handle, out window) ||
             window.ProcessId != original.ProcessId || !Eligible(window) ||
-            _startDpi == 0 || currentDpi == 0 || _startDpi != currentDpi ||
+            startDpi == 0 || currentDpi == 0 || startDpi != currentDpi ||
             (original.VisualBounds.Width == window.VisualBounds.Width &&
                 original.VisualBounds.Height == window.VisualBounds.Height))
         {
@@ -146,7 +232,7 @@ internal sealed class ResizeSnapController(IWindowInspector inspector, IMonitorS
         currentMonitors = GetMonitorsOrEmpty();
         var currentMonitorDpi = GetMonitorDpi(window, currentMonitors);
         // DPI 非対応・システム DPI 対応の対象は、ウィンドウの DPI だけでは倍率の変化を検出できない。
-        if (_startMonitorDpi == 0 || currentMonitorDpi == 0 || _startMonitorDpi != currentMonitorDpi ||
+        if (startMonitorDpi == 0 || currentMonitorDpi == 0 || startMonitorDpi != currentMonitorDpi ||
             !constraints.TryGetMinimum(window, out var width, out var height))
         {
             return null;
@@ -154,7 +240,7 @@ internal sealed class ResizeSnapController(IWindowInspector inspector, IMonitorS
 
         var areas = currentMonitors.Select(monitor => monitor.ToMonitorArea()).ToArray();
         return ResizeSnapPlanner.Plan(options, true, true, original.VisualBounds,
-            window.VisualBounds, areas, _startDpi, currentDpi, width, height);
+            window.VisualBounds, areas, startDpi, currentDpi, width, height);
     }
 
     private void OnHold(object? state)
@@ -240,6 +326,7 @@ internal sealed class ResizeSnapController(IWindowInspector inspector, IMonitorS
 
     private void CancelCore()
     {
+        StopPreviewUpdates();
         _start = null;
         StopHold();
         HidePreview();
