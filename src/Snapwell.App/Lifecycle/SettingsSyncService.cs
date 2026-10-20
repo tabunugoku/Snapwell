@@ -9,10 +9,9 @@ internal sealed class SettingsSyncService : ISettingsSyncService
     private static readonly TimeSpan _retryInterval = TimeSpan.FromSeconds(30);
     private readonly object _gate = new();
     private readonly string _localPath;
-    private readonly ISettingsStore<DeviceState> _store;
     private readonly IAppLog _log;
     private readonly Func<string, ISettingsWatcher> _createWatcher;
-    private readonly Func<DeviceState, SettingsSyncResult> _run;
+    private readonly Func<SettingsSyncResult> _run;
     private readonly TimeProvider _time;
     private readonly ITimer _retry;
     private DeviceState _state = new();
@@ -28,10 +27,9 @@ internal sealed class SettingsSyncService : ISettingsSyncService
 
     internal SettingsSyncService(string localPath, string backupFolder, ISettingsStore<DeviceState> store,
         IAppLog log, TimeProvider? timeProvider = null, Func<string, ISettingsWatcher>? createWatcher = null,
-        Func<DeviceState, SettingsSyncResult>? run = null)
+        Func<SettingsSyncResult>? run = null)
     {
         _localPath = localPath;
-        _store = store;
         _log = log;
         var time = timeProvider ?? TimeProvider.System;
         _time = time;
@@ -41,8 +39,8 @@ internal sealed class SettingsSyncService : ISettingsSyncService
             if (!Directory.Exists(Path.GetDirectoryName(path))) { throw new IOException("同期フォルダーがない。"); }
             return new SettingsWatcher(path, time);
         });
-        _run = run ?? (state => new SettingsSync(localPath, Path.Combine(state.SyncFolder!, SettingsSync.FileName),
-            backupFolder, time, SettingsSync.MutexName(localPath)).Run(state));
+        _run = run ?? (() => new SettingsSync(localPath, backupFolder, time,
+            SettingsSync.MutexName(localPath)).Run(store, requireEnabled: true));
         _retry = time.CreateTimer(_ => Retry(), null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
     }
 
@@ -129,21 +127,7 @@ internal sealed class SettingsSyncService : ISettingsSyncService
                 {
                     var rejection = SettingsSync.ValidateFolder(_localPath, state.SyncFolder!);
                     if (rejection is not null) { result = new(SettingsSyncKind.Rejected, rejection); }
-                    else if (EnsureWatcher(state, version)) { result = _run(state); }
-                }
-                if (result is null) { continue; }
-                lock (_gate)
-                {
-                    if (_disposed || version != _version) { continue; }
-                }
-                if (result.LastSyncedHash is not null)
-                {
-                    var updated = SettingsSync.RecordResult(_store, state, result);
-                    // 保存中に選択が変わった場合も、監視の版を進めて古い監視を確実に外す。
-                    lock (_gate)
-                    {
-                        if (!_disposed && version == _version) { Configure(updated); }
-                    }
+                    else if (EnsureWatcher(state, version)) { result = _run(); }
                 }
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or
@@ -221,7 +205,7 @@ internal sealed class SettingsSyncService : ISettingsSyncService
 
     private static bool Enabled(DeviceState state) => state.SyncEnabled && !string.IsNullOrWhiteSpace(state.SyncFolder);
 
-    /// <summary>実行中のファイル操作は待たず、完了後の保存と通知を止める。</summary>
+    /// <summary>実行中の同期は待たず、新しい実行と完了後の通知を止める。</summary>
     public void Dispose()
     {
         lock (_gate)

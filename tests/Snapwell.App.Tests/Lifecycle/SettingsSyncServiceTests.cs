@@ -27,7 +27,7 @@ public sealed class SettingsSyncServiceTests : IDisposable
     public async Task DisabledDoesNotCreateWatcherOrRunAndEnablingRunsOnce()
     {
         var runs = 0;
-        using var service = Create(_ => { Interlocked.Increment(ref runs); return new(SettingsSyncKind.NoChange); });
+        using var service = Create(() => { Interlocked.Increment(ref runs); return new(SettingsSyncKind.NoChange); });
         service.Configure(new());
         service.Request();
         Assert.Empty(_watchers);
@@ -78,7 +78,7 @@ public sealed class SettingsSyncServiceTests : IDisposable
         using var entered = new ManualResetEventSlim();
         using var release = new ManualResetEventSlim();
         var runs = 0;
-        using var service = Create(_ =>
+        using var service = Create(() =>
         {
             if (Interlocked.Increment(ref runs) == 1) { entered.Set(); release.Wait(); }
             return new(SettingsSyncKind.NoChange);
@@ -102,7 +102,7 @@ public sealed class SettingsSyncServiceTests : IDisposable
     public async Task FailureRetriesOnceAfterThirtySecondsThenWaitsForNewTrigger(SettingsSyncKind kind)
     {
         var runs = 0;
-        using var service = Create(_ => { Interlocked.Increment(ref runs); return new(kind); });
+        using var service = Create(() => { Interlocked.Increment(ref runs); return new(kind); });
         service.Configure(On);
         await _log.Next();
         Assert.Equal(TimeSpan.FromSeconds(30), await _time.Timer!.Scheduled.Reader.ReadAsync());
@@ -135,7 +135,7 @@ public sealed class SettingsSyncServiceTests : IDisposable
     public async Task DisposeCancelsScheduledRetryAndIgnoresLateTimerCallback()
     {
         var runs = 0;
-        var service = Create(_ => { Interlocked.Increment(ref runs); return new(SettingsSyncKind.Failed); });
+        var service = Create(() => { Interlocked.Increment(ref runs); return new(SettingsSyncKind.Failed); });
         service.Configure(On);
         await _log.Next();
         await _time.Timer!.Scheduled.Reader.ReadAsync();
@@ -150,7 +150,7 @@ public sealed class SettingsSyncServiceTests : IDisposable
     public async Task EarlyTimerCallbackWaitsForTheRemainingRetryInterval()
     {
         var runs = 0;
-        using var service = Create(_ => { Interlocked.Increment(ref runs); return new(SettingsSyncKind.Failed); });
+        using var service = Create(() => { Interlocked.Increment(ref runs); return new(SettingsSyncKind.Failed); });
         service.Configure(On);
         await _log.Next();
         await _time.Timer!.Scheduled.Reader.ReadAsync();
@@ -164,23 +164,30 @@ public sealed class SettingsSyncServiceTests : IDisposable
     }
 
     [Fact]
-    public void ChoiceChangedDuringResultSaveStillDisposesOldWatcher()
+    public async Task CoreOwnsRecordingAndChoiceNotificationsReconfigureTheWatcher()
     {
-        using var service = Create(_ =>
+        using var service = Create(() =>
         {
-            _store.Value = On with { SyncEnabled = false };
-            return new(SettingsSyncKind.Pushed, LastSyncedHash: "hash", LastSyncUtc: _time.GetUtcNow());
+            _store.Save(On with { LastSyncedHash = "core-hash", LastSyncUtc = _time.GetUtcNow() });
+            return new(SettingsSyncKind.Pushed, LastSyncedHash: "stale-result", LastSyncUtc: _time.GetUtcNow());
         });
         service.Configure(On);
-        Assert.True(SpinWait.SpinUntil(() => _watchers.TryPeek(out var watcher) && watcher.Disposed,
-            TimeSpan.FromSeconds(5)));
-        Assert.Null(_store.Value.LastSyncedHash);
+        await _log.Next();
+        Assert.Equal("core-hash", _store.Value.LastSyncedHash);
+        Assert.Equal(1, _store.Saves);
+        Assert.Equal(0, _store.Loads);
+        service.Configure(_store.Value);
+        Assert.Single(_watchers);
+        var first = _watchers.Single();
+        _store.Value = _store.Value with { SyncEnabled = false };
+        service.Configure(_store.Value);
+        Assert.True(SpinWait.SpinUntil(() => first.Disposed, TimeSpan.FromSeconds(5)));
     }
 
     [Fact]
     public async Task FolderChangesReplaceWatcherAndDisableDisposesIt()
     {
-        using var service = Create(_ => new(SettingsSyncKind.NoChange));
+        using var service = Create(() => new(SettingsSyncKind.NoChange));
         service.Configure(On);
         await _log.Next();
         var first = _watchers.Single();
@@ -202,7 +209,7 @@ public sealed class SettingsSyncServiceTests : IDisposable
         using var release = new ManualResetEventSlim();
         using var finished = new ManualResetEventSlim();
         var runs = 0;
-        var service = Create(_ =>
+        var service = Create(() =>
         {
             Interlocked.Increment(ref runs);
             entered.Set();
@@ -228,7 +235,7 @@ public sealed class SettingsSyncServiceTests : IDisposable
         await Task.CompletedTask;
     }
 
-    private SettingsSyncService Create(Func<DeviceState, SettingsSyncResult>? run = null) => new(
+    private SettingsSyncService Create(Func<SettingsSyncResult>? run = null) => new(
         Local, Path.Combine(_root, "backups"), _store, _log, _time,
         _ => { var watcher = new FakeWatcher(); _watchers.Enqueue(watcher); return watcher; }, run);
 
@@ -238,8 +245,9 @@ public sealed class SettingsSyncServiceTests : IDisposable
     {
         internal DeviceState Value = new();
         internal int Saves;
-        public SettingsLoadResult<DeviceState> Load() => new(Value);
-        public SettingsLoadResult<DeviceState> TryReload() => new(Value);
+        internal int Loads;
+        public SettingsLoadResult<DeviceState> Load() { Loads++; return new(Value); }
+        public SettingsLoadResult<DeviceState> TryReload() { Loads++; return new(Value); }
         public void Save(DeviceState value) { Value = value; Saves++; }
     }
 
