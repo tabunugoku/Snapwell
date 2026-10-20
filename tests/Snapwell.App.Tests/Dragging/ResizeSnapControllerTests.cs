@@ -1,8 +1,10 @@
+using System.Diagnostics.CodeAnalysis;
 using Snapwell.App.Dragging;
 using Snapwell.App.Hotkeys;
 using Snapwell.App.Lifecycle;
 using Snapwell.App.Overlay;
 using Snapwell.App.Tests.Motion;
+using Snapwell.Core.Commands;
 using Snapwell.Core.Geometry;
 using Snapwell.Core.Settings;
 using Snapwell.Platform.Hooks;
@@ -13,6 +15,228 @@ namespace Snapwell.App.Tests.Dragging;
 
 public sealed class ResizeSnapControllerTests
 {
+    /// <summary>入力が増えても、矩形と最小寸法の取得は問い合わせ間隔ごとの一回に抑える。</summary>
+    [Fact]
+    public void MouseBurstQueriesAtMostOncePerPollAndUsesLatestBounds()
+    {
+        var fixture = new Fixture();
+        fixture.Controller.Handle(new MoveSizeStarted(1), true);
+        const int elapsedMs = 200;
+        for (var millisecond = 0; millisecond < elapsedMs; millisecond++)
+        {
+            fixture.Resize(new(100, 100, 650 + millisecond, 400));
+            for (var input = 0; input < 10; input++)
+            {
+                fixture.Controller.Handle(new MouseMoved(input, millisecond, 50), true);
+            }
+
+            fixture.Time.Advance(1);
+        }
+
+        var maximumQueries = elapsedMs / ResizeSnapController.PreviewPollMs;
+        Assert.Equal(maximumQueries, fixture.Constraints.MinimumCalls);
+        Assert.Equal(1 + maximumQueries, fixture.Inspector.InspectCalls);
+        fixture.Time.Advance(ResizeSnapController.PreviewPollMs);
+        Assert.Equal(maximumQueries, fixture.Constraints.MinimumCalls);
+        var target = fixture.Preview.Current;
+        fixture.Controller.Handle(new MoveSizeEnded(1, 100), true);
+        Assert.Equal(target, Assert.Single(fixture.Motion.Requests).Target);
+        Assert.Equal(maximumQueries + 1, fixture.Constraints.MinimumCalls);
+        fixture.Controller.Cancel();
+    }
+
+    /// <summary>応答待ちの間も大量の入力を配送でき、重い問い合わせを追加しない。</summary>
+    [Fact]
+    public async Task SlowQueryDoesNotAccumulateMouseWork()
+    {
+        var fixture = new Fixture();
+        using var entered = new ManualResetEventSlim();
+        using var release = new ManualResetEventSlim();
+        fixture.Constraints.OnMinimum = _ =>
+        {
+            entered.Set();
+            Assert.True(release.Wait(TimeSpan.FromSeconds(10)));
+        };
+        fixture.Controller.Handle(new MoveSizeStarted(1), true);
+        fixture.Resize(new(100, 100, 650, 400));
+        fixture.Controller.Handle(new MouseMoved(0, 0, 50), true);
+        var worker = Task.Run(() => fixture.Time.Advance(ResizeSnapController.PreviewPollMs));
+        Task? delivery = null;
+        try
+        {
+            Assert.True(entered.Wait(TimeSpan.FromSeconds(5)));
+            delivery = Task.Run(() =>
+            {
+                for (var input = 0; input < 500; input++)
+                {
+                    fixture.Controller.Handle(new MouseMoved(input, input, 50), true);
+                    fixture.Time.Advance(1);
+                }
+            });
+            await delivery.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.False(worker.IsCompleted);
+            Assert.Equal(1, fixture.Constraints.MinimumCalls);
+            Assert.Equal(2, fixture.Inspector.InspectCalls);
+            fixture.Controller.Cancel();
+        }
+        finally
+        {
+            release.Set();
+            await worker.WaitAsync(TimeSpan.FromSeconds(5));
+            if (delivery is not null)
+            {
+                await delivery.WaitAsync(TimeSpan.FromSeconds(5));
+            }
+
+            fixture.Controller.Cancel();
+        }
+
+        Assert.Empty(fixture.Preview.Targets);
+    }
+
+    /// <summary>終了や中断を問い合わせより先に処理し、完了が遅れた旧世代の表示を捨てる。</summary>
+    [Theory]
+    [InlineData("end")]
+    [InlineData("endLanded")]
+    [InlineData("cancel")]
+    [InlineData("paused")]
+    [InlineData("hotkey")]
+    [InlineData("snap")]
+    [InlineData("preview")]
+    [InlineData("settingsWithoutInput")]
+    [InlineData("destroyed")]
+    [InlineData("next")]
+    [InlineData("regrab")]
+    [InlineData("oldFailure")]
+    public async Task InterruptDuringQueryDiscardsOldPreview(string reason)
+    {
+        var fixture = new Fixture();
+        var drag = new DragSnapController(fixture.Inspector, fixture.Monitors, fixture.Motion,
+            () => fixture.Options, _ => { }, 999);
+        ResidentRuntime? runtime = null;
+        var hotkeys = new HotkeyCommandExecutor(fixture.Inspector, fixture.Monitors, fixture.Motion,
+            new NoPosition(), () => fixture.Options, () => true, () => runtime!.SetEnabled(false), 999);
+        using var resident = runtime = new ResidentRuntime(drag, hotkeys, fixture.Motion, [], _ => { },
+            preview: fixture.Preview, resize: fixture.Controller);
+        using var entered = new ManualResetEventSlim();
+        using var release = new ManualResetEventSlim();
+        fixture.Constraints.OnMinimum = call =>
+        {
+            if (call == 1)
+            {
+                entered.Set();
+                Assert.True(release.Wait(TimeSpan.FromSeconds(10)));
+                if (reason == "oldFailure")
+                {
+                    throw new InvalidOperationException("Old window unavailable");
+                }
+            }
+        };
+        fixture.Controller.Handle(new MoveSizeStarted(1), true);
+        fixture.Resize(new(100, 100, 650, 400));
+        fixture.Controller.Handle(new MouseMoved(0, 0, 50), true);
+        var worker = Task.Run(() => fixture.Time.Advance(ResizeSnapController.PreviewPollMs));
+        Task? delivery = null;
+        try
+        {
+            Assert.True(entered.Wait(TimeSpan.FromSeconds(5)));
+            delivery = Task.Run(() =>
+            {
+                for (var input = 0; input < 500; input++)
+                {
+                    fixture.Controller.Handle(new MouseMoved(input, input, 50), true);
+                }
+
+                switch (reason)
+                {
+                    case "end":
+                    case "endLanded":
+                    case "oldFailure":
+                        fixture.Constraints.MinimumWidth = 1000;
+                        fixture.Controller.Handle(new MoveSizeEnded(1, 100), true);
+                        Assert.True(Assert.Single(fixture.Motion.Requests).Target.Width >= 1000);
+                        Assert.Equal(2, fixture.Constraints.MinimumCalls);
+                        if (reason == "endLanded")
+                        {
+                            fixture.Motion.FinishMoving(1);
+                            fixture.Time.Advance(150);
+                            Assert.Null(fixture.Preview.Current);
+                        }
+
+                        break;
+                    case "hotkey":
+                        resident.Handle(new KeyChord((int)WindowCommand.ToggleEnabled));
+                        break;
+                    case "cancel":
+                        fixture.Controller.Cancel();
+                        break;
+                    case "destroyed":
+                        fixture.Controller.Handle(new WindowDestroyed(1), true);
+                        break;
+                    case "next":
+                    case "regrab":
+                        fixture.Inspector.Window = fixture.Inspector.Window with
+                        {
+                            Handle = reason == "next" ? 2 : 1,
+                        };
+                        fixture.Controller.Handle(new MoveSizeStarted(fixture.Inspector.Window.Handle), true);
+                        fixture.Resize(new(100, 100, 1000, 750));
+                        fixture.Controller.Handle(new MouseMoved(0, 0, 50), true);
+                        fixture.Time.Advance(ResizeSnapController.PreviewPollMs);
+                        Assert.Equal(1, fixture.Constraints.MinimumCalls);
+                        break;
+                    default:
+                        fixture.Options.SnapAfterResize = reason != "snap";
+                        fixture.Options.ShowZonePreview = reason is not ("preview" or "settingsWithoutInput");
+                        if (reason != "settingsWithoutInput")
+                        {
+                            fixture.Controller.Handle(new MouseMoved(0, 0, 50), reason != "paused");
+                        }
+
+                        break;
+                }
+            });
+            await delivery.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.False(worker.IsCompleted);
+        }
+        finally
+        {
+            release.Set();
+            await worker.WaitAsync(TimeSpan.FromSeconds(5));
+            if (delivery is not null)
+            {
+                await delivery.WaitAsync(TimeSpan.FromSeconds(5));
+            }
+        }
+
+        if (reason is "end" or "oldFailure")
+        {
+            Assert.Single(fixture.Preview.Targets);
+            Assert.NotNull(fixture.Preview.Current);
+            fixture.Motion.FinishMoving(1);
+            fixture.Time.Advance(150);
+            Assert.Null(fixture.Preview.Current);
+        }
+        else if (reason == "endLanded")
+        {
+            Assert.Single(fixture.Preview.Targets);
+            Assert.Null(fixture.Preview.Current);
+        }
+        else
+        {
+            Assert.Empty(fixture.Preview.Targets);
+            Assert.Null(fixture.Preview.Current);
+            Assert.Empty(fixture.Motion.Requests);
+            if (reason is "next" or "regrab")
+            {
+                fixture.Move();
+                Assert.Single(fixture.Preview.Targets);
+            }
+        }
+
+        fixture.Controller.Cancel();
+    }
+
     [Theory]
     [InlineData(144u, false)]
     [InlineData(96u, true)]
@@ -459,6 +683,7 @@ public sealed class ResizeSnapControllerTests
         Deliver(new MoveSizeStarted(1));
         fixture.Resize(new(100, 100, 650, 400));
         Deliver(new MouseMoved(700, 500, 50));
+        fixture.Time.Advance(ResizeSnapController.PreviewPollMs);
         var target = fixture.Preview.Current;
         Assert.NotNull(target);
         Deliver(new MoveSizeEnded(1, 100));
@@ -473,7 +698,7 @@ public sealed class ResizeSnapControllerTests
     private sealed class Fixture
     {
         internal PortableSettings Options { get; } = new() { SnapAfterResize = true };
-        internal FakeInspector Inspector { get; } = new();
+        internal CountingInspector Inspector { get; } = new();
         internal FakeMotion Motion { get; } = new();
         internal Constraints Constraints { get; } = new();
         internal Monitors Monitors { get; } = new();
@@ -484,7 +709,11 @@ public sealed class ResizeSnapControllerTests
         internal Fixture() => Controller = new(Inspector, Monitors, Motion, () => Options, Constraints, 999,
             Preview, Time);
         internal void Resize(PixelRect bounds) => Inspector.Window = Inspector.Window with { VisualBounds = bounds };
-        internal void Move() => Controller.Handle(new MouseMoved(0, 0, 50), true);
+        internal void Move()
+        {
+            Controller.Handle(new MouseMoved(0, 0, 50), true);
+            Time.Advance(ResizeSnapController.PreviewPollMs);
+        }
         internal void BeginPreview()
         {
             Controller.Handle(new MoveSizeStarted(1), true);
@@ -564,27 +793,49 @@ public sealed class ResizeSnapControllerTests
     private sealed class ManualTime : TimeProvider
     {
         private long _milliseconds;
-        private ManualTimer? _timer;
+        private readonly object _gate = new();
+        private readonly List<ManualTimer> _timers = [];
 
         public override long TimestampFrequency => 1000;
-        public override long GetTimestamp() => _milliseconds;
+        public override long GetTimestamp() => Interlocked.Read(ref _milliseconds);
         public override ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
         {
-            Assert.Equal(TimeSpan.FromMilliseconds(50), dueTime);
+            Assert.Equal(TimeSpan.FromMilliseconds(ResizeSnapController.PreviewPollMs), dueTime);
             Assert.Equal(dueTime, period);
-            return _timer = new ManualTimer(() => callback(state));
+            lock (_gate)
+            {
+                var timer = new ManualTimer(() => callback(state), GetTimestamp() + (long)dueTime.TotalMilliseconds,
+                    (long)period.TotalMilliseconds);
+                _timers.Add(timer);
+                return timer;
+            }
         }
 
         internal void Advance(int milliseconds)
         {
-            _milliseconds += milliseconds;
-            _timer?.Fire();
+            ManualTimer[] due;
+            lock (_gate)
+            {
+                var now = Interlocked.Add(ref _milliseconds, milliseconds);
+                due = _timers.Where(timer => timer.Due <= now).ToArray();
+                foreach (var timer in due)
+                {
+                    timer.Due += ((now - timer.Due) / timer.Period + 1) * timer.Period;
+                }
+            }
+
+            foreach (var timer in due)
+            {
+                timer.Fire();
+            }
         }
     }
 
-    private sealed class ManualTimer(Action callback) : ITimer
+    private sealed class ManualTimer(Action callback, long due, long period) : ITimer
     {
-        private bool _disposed;
+        private volatile bool _disposed;
+        internal long Due = due;
+        internal long Period { get; } = period;
         internal void Fire()
         {
             if (!_disposed)
@@ -617,13 +868,32 @@ public sealed class ResizeSnapControllerTests
         internal uint Dpi = 96;
         internal int MinimumCalls;
         internal int MinimumWidth = 700;
+        internal Action<int>? OnMinimum;
         public uint GetDpi(nint handle) => Dpi;
         public bool TryGetMinimum(WindowSnapshot window, out int width, out int height)
         {
-            MinimumCalls++;
+            var call = Interlocked.Increment(ref MinimumCalls);
             width = MinimumWidth;
             height = 450;
+            OnMinimum?.Invoke(call);
             return Success;
         }
+    }
+
+    private sealed class CountingInspector : IWindowInspector
+    {
+        private readonly FakeInspector _inner = new();
+        internal int InspectCalls;
+        internal WindowSnapshot Window { get => _inner.Window; set => _inner.Window = value; }
+        internal bool Exists { get => _inner.Exists; set => _inner.Exists = value; }
+
+        public bool TryInspect(nint handle, [NotNullWhen(true)] out WindowSnapshot? snapshot)
+        {
+            Interlocked.Increment(ref InspectCalls);
+            return _inner.TryInspect(handle, out snapshot);
+        }
+
+        public nint GetForegroundWindow() => _inner.GetForegroundWindow();
+        public nint GetRootWindowAt(int x, int y) => _inner.GetRootWindowAt(x, y);
     }
 }
