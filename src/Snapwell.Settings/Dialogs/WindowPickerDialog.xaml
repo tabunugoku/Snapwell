@@ -3,7 +3,8 @@
     x:Class="Snapwell.Settings.Dialogs.WindowPickerDialog"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    Title="ウィンドウを選んで追加" CloseButtonText="取り消す" DefaultButton="Close">
+    Title="ウィンドウを選んで追加" CloseButtonText="取り消す" DefaultButton="Close"
+    CornerRadius="8">
     <ContentDialog.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>

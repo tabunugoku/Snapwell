@@ -191,6 +191,7 @@ public sealed partial class OsPage : Page
                         CloseButtonText = "やめる",
                         DefaultButton = ContentDialogButton.Close,
                     };
+                    Dialogs.DialogButtons.UseSnapwellColors(dialog);
                     if (await dialog.ShowAsync() != ContentDialogResult.Primary)
                     {
                         return;

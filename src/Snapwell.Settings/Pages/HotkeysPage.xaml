@@ -68,7 +68,7 @@
                 <TextBox x:Name="FilterBox" PlaceholderText="操作を絞り込む"
                          AutomationProperties.Name="操作を絞り込む" TextChanged="Filter_Changed" />
                 <Button x:Name="ResetButton" Grid.Column="1" Content="すべて既定に戻す"
-                        Style="{StaticResource SnapwellButtonStyle}" Click="Reset_Click" />
+                        Style="{StaticResource SnapwellActionButtonStyle}" Click="Reset_Click" />
             </Grid>
             <StackPanel x:Name="Summary" Orientation="Horizontal" Spacing="6" Margin="0,0,0,8"
                         AutomationProperties.LiveSetting="Polite" />

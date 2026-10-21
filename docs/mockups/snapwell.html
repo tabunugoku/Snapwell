@@ -223,18 +223,24 @@ select.input, input.input {
 input[type="range"] { width: 100%; accent-color: var(--ink); }
 .range-row { display: grid; grid-template-columns: 1fr 52px; gap: 10px; align-items: center; }
 .range-row output { font-family: var(--font-mono); font-size: 12px; text-align: right; }
+/* ボタンの形と大きさは、どこに置いても 1 種類。違いは「決定 (.primary)」とそれ以外の 2 段階で、色だけで出す。
+   アイコンだけの .hk-ic、.seg、.lwin-pager、.chip はボタンではなく部品として別に扱う。
+   見せ方は案 B（決定だけ塗り、ほかは枠なしの文字）に決定済み。 */
+:root { --btn-h: 28px; --btn-px: 14px; --btn-r: 6px; --btn-fs: 13px; --btn-minw: 72px; --step: #ECECEA; --step-hover: #E2E2DF; }
+:root[data-theme="dark"] { --step: #333332; --step-hover: #3C3C3A; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --step: #333332; --step-hover: #3C3C3A; } }
 .btn {
-  border: 1px solid var(--border);
-  background: var(--surface);
-  border-radius: 6px;
-  padding: 7px 14px;
-  cursor: pointer;
+  height: var(--btn-h); min-width: var(--btn-minw); padding: 0 var(--btn-px); border-radius: var(--btn-r);
+  font-size: var(--btn-fs); line-height: 1; white-space: nowrap; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid transparent; background: transparent; color: var(--muted);
 }
-.btn:hover { background: var(--surface-2); }
+.btn:hover { color: var(--ink); background: var(--step); }
 .btn:active { transform: scale(0.98); }
-.btn.primary { background: var(--ink); color: var(--ink-text); border-color: var(--ink); }
-.btn.primary:hover { background: var(--ink-hover); }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.btn.primary { background: var(--ink); color: var(--ink-text); }
+.btn.primary:hover { background: var(--ink-hover); }
 .readout { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 12.5px; }
 .readout dt { color: var(--muted); }
 .readout dd { margin: 0; font-family: var(--font-mono); text-align: right; color: var(--ink); }
@@ -451,7 +457,7 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
 .app-chrome { height: 36px; display: flex; align-items: center; padding-left: 14px; gap: 10px; font-size: 12px; border-bottom: 1px solid var(--border); }
 .app-chrome .name { flex: 1; }
 .app-chrome .caps span { width: 44px; }
-.dlg { width: min(520px, calc(100vw - 32px)); padding: 24px; border: 1px solid var(--border-strong); border-radius: 12px; background: var(--surface); color: var(--text); }
+.dlg { width: min(520px, calc(100vw - 32px)); padding: 24px; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--surface); color: var(--text); }
 .dlg::backdrop { background: var(--dim); }
 .dlg h4 { margin: 0 0 8px; font-size: 16px; color: var(--ink); }
 .dlg p { margin: 0; color: var(--muted); }
@@ -471,17 +477,13 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
 .rd-form label { display: grid; gap: 4px; font-size: 12.5px; color: var(--muted); }
 .rd-form input.input { width: 100%; box-sizing: border-box; }
 .rd-err { font-size: 12.5px; color: var(--red-tx); }
-.rd-act { border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; display: grid; gap: 6px; margin: 0; }
-.rd-act legend { font-size: 12px; color: var(--muted); padding: 0 4px; }
-.rd-act label { display: block; font-size: 13px; color: var(--ink); }
-.rd-act label span { display: block; margin-left: 22px; font-size: 12px; color: var(--muted); }
+.rd-hint { display: block; margin-top: 4px; font-size: 12px; color: var(--muted); }
 .rd-match { font-size: 12.5px; color: var(--muted); }
 #pickList .row.pick { width: 100%; text-align: left; background: transparent; border: 0; border-bottom: 1px solid var(--border); color: inherit; font: inherit; }
 #pickList .row.pick:hover { background: var(--surface-2); }
 .dlg-foot { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; margin-top: 16px; }
-.savebar { display: flex; align-items: center; gap: 16px; padding: 14px 32px; border-top: 1px solid var(--border); background: var(--surface); }
+.savebar { display: flex; align-items: center; gap: 16px; padding: 8px 32px; border-top: 1px solid var(--border); background: var(--surface); }
 .savebar .hint { flex: 1; }
-.savebar .btn { min-width: 100px; }
 .settings { display: grid; grid-template-columns: 232px minmax(0, 1fr); min-height: 640px; }
 .snav { background: var(--surface-2); border-right: 1px solid var(--border); padding: 14px 10px; }
 .snav button {
@@ -615,7 +617,7 @@ table.list tr:last-child td { border-bottom: 0; }
 .hk-ic:disabled { opacity: 0.3; cursor: default; }
 .hk-msg td { padding: 8px 12px 10px 24px; background: var(--surface-2); font-size: 12.5px; white-space: normal; }
 .hk-msg.bad td { color: var(--red-tx); }
-.hk-msg .btn { padding: 3px 10px; font-size: 12.5px; margin: 6px 6px 0 0; }
+.hk-msg .btn { margin: 6px 6px 0 0; }
 .hk-flash td { animation: hkFlash 1.1s ease-out; }
 @keyframes hkFlash { from { background: var(--blue-bg); } }
 .hk-demo { margin-left: 10px; cursor: pointer; }
@@ -1178,12 +1180,15 @@ table.list tr:last-child td { border-bottom: 0; }
         <label>ウィンドウ クラス<input class="input mono" id="rdClass" placeholder="Chrome_WidgetWin_1" spellcheck="false"></label>
         <label>タイトル（正規表現）<input class="input mono" id="rdTitle" placeholder="^ピクチャー イン ピクチャー$" spellcheck="false"></label>
         <div class="rd-err" id="rdErr" hidden></div>
-        <fieldset class="rd-act"><legend>配置の扱い</legend>
-          <label><input type="radio" name="rdAct" value="none" checked> 全体設定に従う<span>配置については、このルールでは何も決めません</span></label>
-          <label><input type="radio" name="rdAct" value="red"> 対象外<span>動かす・大きさを変える・吸着させる操作の対象にしません</span></label>
-          <label><input type="radio" name="rdAct" value="yellow"> 位置だけ<span>動かしますが、大きさは変えません</span></label>
-          <label><input type="radio" name="rdAct" value="blue"> 強制的に対象<span>ポップアップなどでも、通常のウィンドウとして扱います</span></label>
-        </fieldset>
+        <label>配置の扱い
+          <select class="input" id="rdAct">
+            <option value="none" selected>全体設定に従う</option>
+            <option value="red">対象外</option>
+            <option value="yellow">位置だけ</option>
+            <option value="blue">強制的に対象</option>
+          </select>
+          <span class="rd-hint" id="rdActHint"></span>
+        </label>
         <label>ウィンドウの角
           <select class="input" id="rdCorner">
             <option value="none" selected>全体設定に従う</option>
@@ -3263,7 +3268,9 @@ $$('.switch').forEach(makeSwitch);
   ].forEach(([d, on]) => addRow(d, on));
 
   let editing = null;
-  const act = () => dlg.querySelector('input[name=rdAct]:checked').value;
+  const ACT_HINT = { none: '配置については、このルールでは何も決めません', red: '動かす・大きさを変える・吸着させる操作の対象にしません',
+    yellow: '動かしますが、大きさは変えません', blue: 'ポップアップなどでも、通常のウィンドウとして扱います' };
+  const act = () => $('#rdAct').value;
   const test = () => {
     const proc = $('#rdProc').value.trim().toLowerCase(), cls = $('#rdClass').value.trim().toLowerCase(), title = $('#rdTitle').value;
     const err = $('#rdErr'); let re = null;
@@ -3280,16 +3287,18 @@ $$('.switch').forEach(makeSwitch);
     $('#ruleTitle').textContent = editing ? 'ルールを編集' : 'ルールを追加';
     $('#rdOk').textContent = editing ? '保存' : '追加';
     $('#rdProc').value = v.proc || ''; $('#rdClass').value = v.cls || ''; $('#rdTitle').value = v.title || '';
-    dlg.querySelector(`input[name=rdAct][value=${v.act || 'none'}]`).checked = true;
+    $('#rdAct').value = v.act || 'none';
     $('#rdCorner').value = v.corner || 'none';
+    $('#rdActHint').textContent = ACT_HINT[act()];
     test(); dlg.showModal();
   };
   ['#rdProc', '#rdClass', '#rdTitle'].forEach((q) => $(q).addEventListener('input', test));
-  dlg.querySelectorAll('input[name=rdAct]').forEach((r) => r.addEventListener('change', () => {
+  $('#rdAct').addEventListener('change', () => {
     // 対象外にするウィンドウは、角も触らないのが普通なので、まだ選んでいなければ「Windows の既定」にそろえる。
-    if (r.value === 'red' && $('#rdCorner').value === 'none') { $('#rdCorner').value = 'default'; }
+    if (act() === 'red' && $('#rdCorner').value === 'none') { $('#rdCorner').value = 'default'; }
+    $('#rdActHint').textContent = ACT_HINT[act()];
     test();
-  }));
+  });
   $('#rdCorner').addEventListener('change', test);
   $('#ruleAdd').addEventListener('click', () => open({}));
   $('#rulePick').addEventListener('click', () => pick.showModal());

@@ -100,7 +100,7 @@
                             CornerRadius="0,0,12,12" Padding="20,14">
                         <Grid>
                             <Button x:Name="BackButton" Content="戻る" Click="Back_Click"
-                                    HorizontalAlignment="Left" Style="{StaticResource SnapwellButtonStyle}" />
+                                    HorizontalAlignment="Left" Style="{StaticResource SnapwellActionButtonStyle}" />
                             <TextBlock x:Name="Count" HorizontalAlignment="Center" VerticalAlignment="Center"
                                        Style="{StaticResource SnapwellHintTextStyle}" />
                             <Button x:Name="NextButton" Content="次へ" Click="Next_Click"
