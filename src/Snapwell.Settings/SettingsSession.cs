@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.UI.Dispatching;
+using Snapwell.Core.Rules;
 using Snapwell.Core.Settings;
 
 namespace Snapwell.Settings;
@@ -46,6 +47,8 @@ public sealed class SettingsSession
     }
 
     public PortableSettings Current { get; private set; } = new();
+    /// <summary>ルールの入力支援に使う、開いているウィンドウの取得元。</summary>
+    public IOpenWindowSource OpenWindows { get; } = new EmptyOpenWindowSource();
     public bool HasChanges { get; private set; }
     public bool IsReadOnly { get; private set; }
     public bool IsTransferInProgress
@@ -203,4 +206,11 @@ public sealed class SettingsSession
         try { _reloadTimer?.Change(300, Timeout.Infinite); }
         catch (ObjectDisposedException) { }
     }
+}
+
+/// <summary>Platform の列挙を接続するまで、入力支援には空の一覧を返す。</summary>
+internal sealed class EmptyOpenWindowSource : IOpenWindowSource
+{
+    /// <summary>ウィンドウの列挙を行わず、空の一覧を返す。</summary>
+    public IReadOnlyList<OpenWindowInfo> List() => [];
 }
