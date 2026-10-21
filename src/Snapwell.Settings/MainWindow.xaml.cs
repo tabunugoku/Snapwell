@@ -33,6 +33,7 @@ public sealed partial class MainWindow : Window
         }
 
         _session.Changed += Session_Changed;
+        _session.Reloaded += Session_Reloaded;
         AppWindow.Closing += AppWindow_Closing;
         LoadNotice.Message = _session.LoadMessage ?? "";
         LoadNotice.IsOpen = _session.LoadMessage is not null;
@@ -98,6 +99,11 @@ public sealed partial class MainWindow : Window
             return;
         }
 
+        ShowPage(item);
+    }
+
+    private void ShowPage(NavigationViewItem item)
+    {
         PageHost.Content = (item.Tag as string) switch
         {
             "general" => new GeneralPage(_session),
@@ -114,8 +120,24 @@ public sealed partial class MainWindow : Window
 
     private void Session_Changed(object? sender, EventArgs e)
     {
-        SaveNotice.IsOpen = false;
+        ShowSessionNotice();
         UpdateStatus();
+    }
+
+    private void Session_Reloaded(object? sender, EventArgs e)
+    {
+        if (PageHost.Content is Control previous) { previous.IsEnabled = false; }
+        if (Navigation.SelectedItem is NavigationViewItem item) { ShowPage(item); }
+        ShowSessionNotice();
+        UpdateStatus();
+    }
+
+    private void ShowSessionNotice()
+    {
+        SaveNotice.Message = _session.SyncMessage ?? "";
+        SaveNotice.Severity = _session.HasChanges || _session.IsReadOnly
+            ? InfoBarSeverity.Warning : InfoBarSeverity.Informational;
+        SaveNotice.IsOpen = _session.SyncMessage is not null;
     }
 
     private void UpdateStatus()

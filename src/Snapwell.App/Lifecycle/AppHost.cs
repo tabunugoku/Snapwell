@@ -29,13 +29,14 @@ internal sealed class AppHost
     private readonly RuntimeFactory _createRuntime;
     private readonly ISettingsWatcher? _watcher;
     private readonly ISettingsWatcher? _deviceWatcher;
+    private readonly ISettingsSyncService? _sync;
     private readonly Action? _openSetup;
     private readonly Func<TimeSpan, CancellationToken, Task> _retryDelay;
     private readonly CancellationTokenSource _deviceReloadStop = new();
     private readonly CancellationTokenSource _deliveryStop = new();
     private readonly ManualResetEventSlim _shutdownDone = new(false);
     private IAppRuntime? _runtime;
-    // 本体は settings.json を読むだけで、書き込むのは設定画面だけ。
+    // 通常の編集は設定画面が行い、同期による取り込みだけは本体も保存する。
     private PortableSettings _portable = new();
     private DeviceState _device = new();
     private bool _ownsInstance;
@@ -58,7 +59,7 @@ internal sealed class AppHost
         ISettingsStore<DeviceState> deviceStore, IHookService hooks, ITrayService tray, IConsentPrompt consent,
         IAppLog log, Action restoreCorners, RuntimeFactory createRuntime, ISettingsWatcher? watcher = null,
         Action? openSetup = null, ISettingsWatcher? deviceWatcher = null,
-        Func<TimeSpan, CancellationToken, Task>? retryDelay = null)
+        Func<TimeSpan, CancellationToken, Task>? retryDelay = null, ISettingsSyncService? sync = null)
     {
         _instance = instance;
         _guard = guard;
@@ -73,6 +74,7 @@ internal sealed class AppHost
         _watcher = watcher;
         _openSetup = openSetup;
         _deviceWatcher = deviceWatcher;
+        _sync = sync;
         _retryDelay = retryDelay ?? Task.Delay;
         if (_deviceWatcher is not null)
         {
@@ -129,6 +131,7 @@ internal sealed class AppHost
             _device = device.Value;
             _deviceReadOnly = device.IsReadOnly;
             _enabled = _device.Enabled;
+            if (!device.IsReadOnly) { _sync?.Configure(_device); }
             if (!_startupRecoveryFailed && (portable.ResetToDefaults || device.ResetToDefaults))
             {
                 _status = "壊れた設定を退避し、既定値で起動しました";
@@ -242,6 +245,7 @@ internal sealed class AppHost
 
                 _deviceReloadStatus = null;
                 _deviceReadOnly = loaded.IsReadOnly;
+                if (_deviceReadOnly) { _sync?.Configure(new()); }
                 if (!loaded.IsReadOnly)
                 {
                     // 保存できなかった一時停止は、古いディスクの有効状態では解除しない。
@@ -297,6 +301,7 @@ internal sealed class AppHost
     {
         if (Volatile.Read(ref _shutdown) == 0)
         {
+            _sync?.Request();
             Cleanup(() => _tray.Post(ReloadSettings));
         }
     }
@@ -551,6 +556,7 @@ internal sealed class AppHost
         {
             RestoreOsSettings();
         }
+        Cleanup(() => _sync?.Dispose());
 
         var locked = false;
         try
@@ -715,6 +721,7 @@ internal sealed class AppHost
         {
             Cleanup(() => _runtime?.CancelAll());
         }
+        if (!_deviceReadOnly) { _sync?.Configure(device); }
     }
 
     private void SaveDevice(Func<DeviceState, DeviceState> update)

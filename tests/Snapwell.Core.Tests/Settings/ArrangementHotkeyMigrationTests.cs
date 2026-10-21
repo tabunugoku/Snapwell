@@ -20,11 +20,11 @@ public sealed class ArrangementHotkeyMigrationTests : IDisposable
 
     /// <summary>古い版は保存と取り込みのどちらでも整列キーを補い、現行の空設定は保つ。</summary>
     [Theory]
-    [InlineData(1, true, 10)]
-    [InlineData(2, true, 9)]
-    [InlineData(3, true, 8)]
-    [InlineData(4, false, 4)]
-    [InlineData(5, false, 0)]
+    [InlineData(1, true, 12)]
+    [InlineData(2, true, 11)]
+    [InlineData(3, true, 10)]
+    [InlineData(4, false, 6)]
+    [InlineData(5, false, 2)]
     public void StoreAndImportAddOnlyMissingDefaultsForOlderVersions(int version, bool added, int count)
     {
         File.WriteAllText(SettingsPath, $$$"""{"SchemaVersion":{{{version}}},"Hotkeys":{}}""");
@@ -71,7 +71,7 @@ public sealed class ArrangementHotkeyMigrationTests : IDisposable
             Assert.Equal(chord, stored.Hotkeys[assigned]);
             Assert.Equal(customAssignment, stored.Hotkeys.ContainsKey(command));
             Assert.Empty(HotkeyCatalog.FindConflicts(stored.Hotkeys));
-            Assert.Equal(8, stored.Hotkeys.Count);
+            Assert.Equal(10, stored.Hotkeys.Count);
         }
     }
 
