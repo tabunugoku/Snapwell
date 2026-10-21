@@ -178,7 +178,7 @@ public sealed partial class HotkeysPage : Page
         {
             Orientation = Orientation.Horizontal,
             Spacing = 4,
-            HorizontalAlignment = HorizontalAlignment.Center,
+            HorizontalAlignment = HorizontalAlignment.Right,
             VerticalAlignment = VerticalAlignment.Center,
         };
         actions.Children.Add(ActionButton("↺", $"{name}を既定に戻す", !_session.IsReadOnly && !isDefault,
@@ -218,7 +218,8 @@ public sealed partial class HotkeysPage : Page
             Height = 28,
             MinWidth = 28,
             MinHeight = 28,
-            Padding = new(0),
+            // 記号のフォントは字面が em ボックスの下寄りなので、実測した分だけ下の余白で持ち上げる。
+            Padding = text == "↺" ? new(0, 0, 0, 5) : new(0, 0, 0, 2),
             HorizontalContentAlignment = HorizontalAlignment.Center,
             VerticalContentAlignment = VerticalAlignment.Center,
             FontFamily = new FontFamily("Segoe UI Symbol"),
