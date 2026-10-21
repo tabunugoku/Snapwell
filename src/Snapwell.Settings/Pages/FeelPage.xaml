@@ -185,7 +185,7 @@
                 <TextBlock x:Name="FeelStateText" Style="{StaticResource SnapwellMonoTextStyle}"
                            VerticalAlignment="Center" />
                 <Button x:Name="FeelResetButton" Content="プリセットに戻す" Click="FeelReset_Click"
-                        Visibility="Collapsed" />
+                        Style="{StaticResource SnapwellActionButtonStyle}" Visibility="Collapsed" />
             </StackPanel>
             <Border Style="{StaticResource SnapwellRowsBorderStyle}">
                 <StackPanel>

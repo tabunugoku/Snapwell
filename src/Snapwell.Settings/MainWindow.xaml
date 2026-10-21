@@ -265,7 +265,7 @@
             </Grid.ColumnDefinitions>
             <TextBlock x:Name="ChangeStatus" VerticalAlignment="Center" TextWrapping="Wrap"
                        Style="{StaticResource SnapwellHintTextStyle}" />
-            <Button x:Name="SaveButton" Grid.Column="1" Content="保存" MinWidth="72"
+            <Button x:Name="SaveButton" Grid.Column="1" Content="保存"
                     Style="{StaticResource SnapwellPrimaryButtonStyle}" Click="Save_Click" />
         </Grid>
     </Grid>

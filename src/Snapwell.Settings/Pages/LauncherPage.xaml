@@ -132,9 +132,9 @@
             <TextBlock Text="ランチャーに並べるプリセットを選びます。区画の整数倍で作れないものは、ランチャーでは選べません。"
                        Style="{StaticResource SnapwellLeadTextStyle}" />
             <StackPanel Orientation="Horizontal" Spacing="8">
-                <Button Content="すべて選ぶ" Style="{StaticResource SnapwellButtonStyle}" Click="All_Click" />
-                <Button Content="すべて外す" Style="{StaticResource SnapwellButtonStyle}" Click="None_Click" />
-                <Button Content="既定に戻す" Style="{StaticResource SnapwellButtonStyle}" Click="Default_Click" />
+                <Button Content="すべて選ぶ" Style="{StaticResource SnapwellActionButtonStyle}" Click="All_Click" />
+                <Button Content="すべて外す" Style="{StaticResource SnapwellActionButtonStyle}" Click="None_Click" />
+                <Button Content="既定に戻す" Style="{StaticResource SnapwellActionButtonStyle}" Click="Default_Click" />
             </StackPanel>
             <TextBlock x:Name="Count" Margin="0,12,0,12" Style="{StaticResource SnapwellHintTextStyle}" />
             <StackPanel x:Name="Groups" Spacing="14" />
