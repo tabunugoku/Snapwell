@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.Json;
 using Snapwell.Core.Commands;
 using Snapwell.Core.Layout;
+using Snapwell.Core.Rules;
 using Snapwell.Core.Snapping;
 
 namespace Snapwell.Core.Settings;
@@ -12,7 +13,7 @@ public enum SettingsField
     Grid, Gap, Edge, Feel, SnapMode, ReduceMotion, ShowZonePreview,
     MagnetStrength, SnapRadius, Hotkey, ResizeStep, ResizeAnchor,
     CornerPreference, ShowZoneLines, ShowPredictionLine, SnapAfterResize, MonitorGrids, LauncherPresets,
-    MoveFixedSizeWindows, MovePopupWindows,
+    MoveFixedSizeWindows, MovePopupWindows, WindowRules,
 }
 
 /// <summary>ホットキーはコマンドごと、それ以外は項目ごとに識別する。</summary>
@@ -55,8 +56,21 @@ public static class SettingsTransfer
         var noHotkeys = new Dictionary<WindowCommand, KeyChordSpec>();
         var noPresets = Array.Empty<string>();
         var noMonitors = new Dictionary<string, GridSettings>();
-        return left with { Hotkeys = noHotkeys, MonitorGrids = noMonitors, LauncherPresets = noPresets } !=
-            right with { Hotkeys = noHotkeys, MonitorGrids = noMonitors, LauncherPresets = noPresets } ||
+        var noRules = Array.Empty<WindowRule>();
+        return left with
+        {
+            Hotkeys = noHotkeys,
+            MonitorGrids = noMonitors,
+            LauncherPresets = noPresets,
+            WindowRules = noRules,
+        } != right with
+        {
+            Hotkeys = noHotkeys,
+            MonitorGrids = noMonitors,
+            LauncherPresets = noPresets,
+            WindowRules = noRules,
+        } ||
+            !left.WindowRules.SequenceEqual(right.WindowRules) ||
             !left.LauncherPresets.SequenceEqual(right.LauncherPresets) ||
             !SameMonitorPlans(left.MonitorGrids, right.MonitorGrids) ||
             left.Hotkeys.Count != right.Hotkeys.Count ||
@@ -66,6 +80,7 @@ public static class SettingsTransfer
     /// <summary>空の書き出し先にも原子的に保存し、失敗時と未来の版は元のファイルを残す。</summary>
     public static void Export(string path, PortableSettings value)
     {
+        value.ValidateWindowRules();
         var destination = Path.GetFullPath(path);
         if (File.Exists(destination))
         {
@@ -166,6 +181,7 @@ public static class SettingsTransfer
         {
             value = key.Field switch
             {
+                SettingsField.WindowRules => value with { WindowRules = imported.WindowRules },
                 SettingsField.LauncherPresets => value with { LauncherPresets = imported.LauncherPresets },
                 SettingsField.Grid => value with { Grid = imported.Grid },
                 SettingsField.CornerPreference => value with { CornerPreference = imported.CornerPreference },
@@ -220,6 +236,10 @@ public static class SettingsTransfer
     private static IReadOnlyList<SettingsDifference> Compare(PortableSettings current, PortableSettings imported)
     {
         var differences = new List<SettingsDifference>();
+        Add(SettingsField.WindowRules, "アプリごとのルール", current.WindowRules, imported.WindowRules,
+            rules => string.Join(" / ", rules.Select(rule =>
+                $"{(rule.Enabled ? "オン" : "オフ")}: {rule.ProcessName}, {rule.ClassName}, {rule.TitlePattern}, " +
+                $"{rule.Placement}, {rule.Corner}")), (left, right) => left.SequenceEqual(right));
         Add(SettingsField.CornerPreference, "ウィンドウの角", current.CornerPreference,
             imported.CornerPreference, CornerName);
         Add(SettingsField.ShowZoneLines, "区画の線", current.ShowZoneLines, imported.ShowZoneLines, OnOff);

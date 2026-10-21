@@ -13,6 +13,10 @@ internal static class SettingsSchema
     internal static PortableSettings Migrate(PortableSettings value, double sourceVersion)
     {
         var normalized = value.Normalize();
+        if (sourceVersion < 12)
+        {
+            normalized.WindowRules = [];
+        }
         if (sourceVersion < 2 && !normalized.Hotkeys.ContainsKey(WindowCommand.OpenLauncher))
         {
             var chord = DefaultHotkeys.Create()[WindowCommand.OpenLauncher];

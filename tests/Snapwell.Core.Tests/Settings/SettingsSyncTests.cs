@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using Snapwell.Core.Rules;
 using Snapwell.Core.Settings;
 
 namespace Snapwell.Core.Tests.Settings;
@@ -17,6 +18,32 @@ public sealed class SettingsSyncTests : IDisposable
     {
         Directory.CreateDirectory(Path.GetDirectoryName(Local)!);
         Directory.CreateDirectory(Path.GetDirectoryName(Remote)!);
+    }
+
+    [Fact]
+    public void RulesSyncInBothDirectionsAndConflictsReplaceTheWholeArray()
+    {
+        var first = new WindowRule { ClassName = "Class", Placement = PlacementRule.Exclude };
+        var second = first with { TitlePattern = "日本語", Corner = CornerRule.SystemDefault };
+        var local = SettingsStores.Portable(Local);
+        var remote = SettingsStores.Portable(Remote);
+        var state = Store();
+        local.Save(new() { WindowRules = [first, second] });
+        Assert.Equal(SettingsSyncKind.Pushed, Create().Run(state).Kind);
+        Assert.Equal(new[] { first, second }, remote.Load().Value.WindowRules);
+        Assert.Equal(SettingsSyncKind.NoChange, Create().Run(state).Kind);
+
+        remote.Save(new() { WindowRules = [second, first] });
+        Assert.Equal(SettingsSyncKind.Pulled, Create().Run(state).Kind);
+        Assert.Equal(new[] { second, first }, local.Load().Value.WindowRules);
+
+        local.Save(new() { WindowRules = [first] });
+        remote.Save(new() { WindowRules = [second] });
+        File.SetLastWriteTimeUtc(Local, _time.GetUtcNow().UtcDateTime);
+        File.SetLastWriteTimeUtc(Remote, _time.GetUtcNow().AddMinutes(1).UtcDateTime);
+        Assert.Equal(SettingsSyncKind.ConflictRemoteWon, Create().Run(state).Kind);
+        Assert.Equal(new[] { second }, local.Load().Value.WindowRules);
+        Assert.Equal(new[] { second }, remote.Load().Value.WindowRules);
     }
 
     [Theory]

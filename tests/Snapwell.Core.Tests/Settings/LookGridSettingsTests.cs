@@ -71,7 +71,7 @@ public sealed class LookGridSettingsTests : IDisposable
     }
 
     [Theory]
-    [InlineData(12)]
+    [InlineData(13)]
     [InlineData(99)]
     public void FutureFilesRemainUnchangedWhenSavingOrExporting(int version)
     {

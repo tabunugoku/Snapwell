@@ -4,6 +4,7 @@ using Snapwell.Core.Commands;
 using Snapwell.Core.Layout;
 using Snapwell.Core.Overlay;
 using Snapwell.Core.Physics;
+using Snapwell.Core.Rules;
 using Snapwell.Core.Snapping;
 
 namespace Snapwell.Core.Settings;
@@ -23,7 +24,7 @@ public enum WindowCornerPreference
 /// <summary>他の端末にも持ち運べる設定。</summary>
 public sealed record PortableSettings
 {
-    public const int CurrentSchemaVersion = 11;
+    public const int CurrentSchemaVersion = 12;
 
     /// <summary>吸着半径の既定値。論理ピクセル。DESIGN.md §5.1 の feel の値。</summary>
     public const double DefaultSnapRadius = 28;
@@ -36,6 +37,8 @@ public sealed record PortableSettings
 
     // JSON のソース生成でも、欠けた値に初期化子を使うため set にする。
     public int SchemaVersion { get; set; } = CurrentSchemaVersion;
+    /// <summary>上から順に判定するアプリごとのルール。</summary>
+    public WindowRule[] WindowRules { get; set; } = [];
     /// <summary>ランチャーへ表示するプリセットの ID。空の一覧も有効。</summary>
     public string[] LauncherPresets { get; set; } = [.. LauncherPreset.DefaultIds];
     public string Feel { get; set; } = "Airy";
@@ -150,6 +153,13 @@ public sealed record PortableSettings
         return this with
         {
             SchemaVersion = CurrentSchemaVersion,
+            WindowRules = (WindowRules ?? []).Where(rule => rule is not null)
+                .Take(WindowRuleValidator.MaxRules).Select(rule => rule with
+                {
+                    ProcessName = rule.ProcessName ?? string.Empty,
+                    ClassName = rule.ClassName ?? string.Empty,
+                    TitlePattern = rule.TitlePattern ?? string.Empty,
+                }).ToArray(),
             Feel = Feel is not null && FeelPreset.ByName(Feel) is not null ? Feel : defaults.Feel,
             SnapMode = Enum.IsDefined(SnapMode) ? SnapMode : defaults.SnapMode,
             Grid = new(Grid?.Columns is >= 1 and <= 64 ? Grid.Columns : 8,
@@ -173,6 +183,22 @@ public sealed record PortableSettings
             ResizeAnchor = ToResizeSettings().Anchor,
             Hotkeys = hotkeys,
         };
+    }
+
+    internal void ValidateWindowRules()
+    {
+        // 読み込みの正規化とは分け、手書きの不正なルールも画面で修正できるように残す。
+        if (WindowRules is null || WindowRules.Length > WindowRuleValidator.MaxRules)
+        {
+            throw new ArgumentException("アプリごとのルールは 200 件まで指定する。", nameof(WindowRules));
+        }
+        foreach (var rule in WindowRules)
+        {
+            if (rule is null || WindowRuleValidator.Validate(rule) is not null)
+            {
+                throw new ArgumentException("アプリごとのルールに無効な条件または指定がある。", nameof(WindowRules));
+            }
+        }
     }
 
     private static double? ValidSpacing(double? value) =>
