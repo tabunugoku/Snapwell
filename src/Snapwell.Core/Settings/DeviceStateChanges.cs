@@ -48,12 +48,19 @@ public static class DeviceStateChanges
     public static DeviceState SetReplaceWinArrow(ISettingsStore<DeviceState> store, bool replace) =>
         Update(store, current => current with { ReplaceWinArrow = replace });
 
-    /// <summary>標準スナップの停止を更新し、停止するときだけ取得済みの同意を記録する。</summary>
-    public static DeviceState SetStandardSnap(ISettingsStore<DeviceState> store, bool disable) =>
-        Update(store, current => current with
+    /// <summary>最新値か今回の操作に同意があるときだけ停止を保存し、同意不足は例外で返す。</summary>
+    public static DeviceState SetStandardSnap(ISettingsStore<DeviceState> store, bool disable, bool consentObtained) =>
+        Update(store, current =>
         {
-            DisableStandardSnap = disable,
-            StandardSnapConsentGiven = disable || current.StandardSnapConsentGiven,
+            if (disable && !current.StandardSnapConsentGiven && !consentObtained)
+            {
+                throw new StandardSnapConsentRequiredException(current);
+            }
+            return current with
+            {
+                DisableStandardSnap = disable,
+                StandardSnapConsentGiven = current.StandardSnapConsentGiven || (disable && consentObtained),
+            };
         });
 
     private static DeviceState Apply(ISettingsStore<DeviceState> store, Func<DeviceState, DeviceState> update)
@@ -67,4 +74,12 @@ public static class DeviceStateChanges
         store.Save(value);
         return value;
     }
+}
+
+/// <summary>保存直前の同意不足と、保存されなかった最新の端末状態を返す。</summary>
+public sealed class StandardSnapConsentRequiredException(DeviceState state)
+    : InvalidOperationException("標準スナップの停止には同意が必要。")
+{
+    /// <summary>Mutex 内で読み取った、変更していない端末状態。</summary>
+    public DeviceState State { get; } = state;
 }
