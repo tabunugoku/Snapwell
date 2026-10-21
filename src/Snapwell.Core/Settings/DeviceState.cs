@@ -8,6 +8,7 @@ public sealed record DeviceState
     public int SchemaVersion { get; set; } = CurrentSchemaVersion;
     public bool Enabled { get; set; } = true;
     public bool DisableStandardSnap { get; set; }
+    public bool ReplaceWinArrow { get; set; }
     public bool StandardSnapConsentGiven { get; set; }
     public bool SetupCompleted { get; set; }
     public string? SyncFolder { get; set; }
@@ -20,6 +21,7 @@ public sealed record DeviceState
     {
         SchemaVersion = CurrentSchemaVersion,
         SetupCompleted = version < 2 || value.SetupCompleted,
+        ReplaceWinArrow = version >= 3 && value.ReplaceWinArrow,
         SyncFolder = version < 3 ? null : value.SyncFolder,
         SyncEnabled = version >= 3 && value.SyncEnabled,
         LastSyncUtc = version < 3 ? null : value.LastSyncUtc,
