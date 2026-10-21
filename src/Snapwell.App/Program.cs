@@ -58,6 +58,7 @@ internal static class Program
         var position = new Win32WindowPositionApi();
         var mover = new WindowMover(inspector, position);
         CornerStyler? corners = null;
+        var replaceWinArrow = false;
         var host = new AppHost(new UserInstanceMutex(),
             new SnapGuardService(new SnapSettingsGuard(new Win32SnapSystemSettings())),
             SettingsStores.Portable(), SettingsStores.Device(), hooks, tray, new WindowsConsentPrompt(),
@@ -73,6 +74,8 @@ internal static class Program
                 }
                 // 割り当ては AppHost が SetEnabled を呼んだときに、有効・一時停止に合わせて入れる。
                 var bindings = HotkeyBindingsBuilder.Build(settings.Hotkeys);
+                var applyBindings = HotkeyBindingsBuilder.CreateUpdater(bindings.Bindings,
+                    () => Volatile.Read(ref replaceWinArrow), matcher.SetBindings);
                 var motion = new MotionEngine(new DwmFramePacer(), new MonotonicClock(), mover,
                     new Win32MotionPreference(() => settings.ReduceMotion));
                 var previewSurface = new OverlaySession(interactive: false, diagnostic: LauncherLog.Write);
@@ -89,8 +92,8 @@ internal static class Program
                 var hotkeys = new HotkeyCommandExecutor(inspector, monitors, motion, position, () => settings,
                     enabled, toggle, (uint)Environment.ProcessId, () => launcher?.Open(), neighbors: neighbors.Snapshot);
                 launcher = new(inspector, monitors, () => settings, launcherSurface, hotkeys.Place,
-                    matcher.SetBindings, bindings.Bindings, (uint)Environment.ProcessId);
-                return new ResidentRuntime(drag, hotkeys, motion, bindings.Bindings, matcher.SetBindings,
+                    applyBindings, bindings.Bindings, (uint)Environment.ProcessId);
+                return new ResidentRuntime(drag, hotkeys, motion, bindings.Bindings, applyBindings,
                     launcher, preview, value =>
                     {
                         previewSurface.SetEnabled(value);
@@ -104,7 +107,8 @@ internal static class Program
             () => new SettingsLauncher(log).Open("--setup"), new SettingsWatcher(SettingsStores.DevicePath()),
             sync: new SettingsSyncService(SettingsStores.PortablePath(),
                 Path.Combine(Path.GetDirectoryName(SettingsStores.DevicePath())!, "sync-backups"),
-                SettingsStores.Device(), log));
+                SettingsStores.Device(), log),
+            setReplaceWinArrow: replace => Volatile.Write(ref replaceWinArrow, replace));
         UnhandledExceptionEventHandler unhandled = (_, args) => host.HandleUnhandledException(
             args.ExceptionObject as Exception ?? new InvalidOperationException("未処理の例外。"));
         EventHandler<UnobservedTaskExceptionEventArgs> unobserved = (_, args) =>
