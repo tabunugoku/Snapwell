@@ -191,8 +191,15 @@ public sealed partial class SetupWindow
             var index = i;
             var plan = SetupWizard.Plans[i];
             var content = new StackPanel();
-            var mini = new Border { Style = FindStyle("SetupMiniStyle") };
-            mini.SizeChanged += (_, e) => mini.Height = e.NewSize.Width * 9 / 16;
+            var mini = new Border { Style = FindStyle("SetupMiniStyle"), HorizontalAlignment = HorizontalAlignment.Center };
+            // 幅と高さを物理ピクセルでの分割数の倍数にして、どの区画も同じ大きさで描く。
+            content.SizeChanged += (_, e) =>
+            {
+                var scale = content.XamlRoot.RasterizationScale;
+                var width = (int)(e.NewSize.Width * scale);
+                mini.Width = Math.Max(1, width / plan.Grid.Columns) * plan.Grid.Columns / scale;
+                mini.Height = Math.Max(1, width * 9 / 16 / plan.Grid.Rows) * plan.Grid.Rows / scale;
+            };
             var cells = new Grid();
             for (var column = 0; column < plan.Grid.Columns; column++) { cells.ColumnDefinitions.Add(new()); }
             for (var row = 0; row < plan.Grid.Rows; row++) { cells.RowDefinitions.Add(new()); }
