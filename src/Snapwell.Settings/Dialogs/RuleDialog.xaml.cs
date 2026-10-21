@@ -19,19 +19,13 @@ public sealed partial class RuleDialog : ContentDialog
         _windows = session.OpenWindows.List().ToArray();
         _original = rule ?? (selectedWindow is null ? new() : WindowRuleListEditor.DraftFromWindow(selectedWindow));
         InitializeComponent();
+        DialogButtons.Compact(this);
         Title = rule is null ? "ルールを追加" : "ルールを編集";
         PrimaryButtonText = rule is null ? "追加" : "保存";
         ProcessBox.Text = _original.ProcessName;
         ClassBox.Text = _original.ClassName;
         TitleBox.Text = _original.TitlePattern;
-        var placementOption = _original.Placement switch
-        {
-            PlacementRule.Exclude => ExcludeOption,
-            PlacementRule.PositionOnly => PositionOption,
-            PlacementRule.ForceTarget => ForceOption,
-            _ => InheritOption,
-        };
-        placementOption.IsChecked = true;
+        PlacementBox.SelectedIndex = (int)_original.Placement;
         CornerBox.SelectedIndex = (int)_original.Corner;
         UwpNotice.Visibility = selectedWindow is not null && WindowRuleListEditor.IsUwpWindow(selectedWindow)
             ? Visibility.Visible : Visibility.Collapsed;
@@ -56,9 +50,15 @@ public sealed partial class RuleDialog : ContentDialog
         Corner = (CornerRule)Math.Max(0, CornerBox.SelectedIndex),
     };
 
-    private PlacementRule Placement => ExcludeOption.IsChecked == true ? PlacementRule.Exclude
-        : PositionOption.IsChecked == true ? PlacementRule.PositionOnly
-        : ForceOption.IsChecked == true ? PlacementRule.ForceTarget : PlacementRule.Inherit;
+    private static readonly string[] _placementHints =
+    [
+        "配置については、このルールでは何も決めません",
+        "動かす・大きさを変える・吸着させる操作の対象にしません",
+        "動かしますが、大きさは変えません",
+        "ポップアップなどでも、通常のウィンドウとして扱います",
+    ];
+
+    private PlacementRule Placement => (PlacementRule)Math.Max(0, PlacementBox.SelectedIndex);
 
     private void Refresh()
     {
@@ -69,8 +69,8 @@ public sealed partial class RuleDialog : ContentDialog
         ErrorText.Text = error ?? string.Empty;
         ErrorText.Visibility = error is null ? Visibility.Collapsed : Visibility.Visible;
         IsPrimaryButtonEnabled = error is null && !_session.IsReadOnly;
-        Control[] inputs = [ProcessBox, ClassBox, TitleBox, InheritOption, ExcludeOption,
-            PositionOption, ForceOption, CornerBox];
+        PlacementHint.Text = _placementHints[(int)draft.Placement];
+        Control[] inputs = [ProcessBox, ClassBox, TitleBox, PlacementBox, CornerBox];
         foreach (var input in inputs) { input.IsEnabled = !_session.IsReadOnly; }
         MatchText.Text = WindowRuleListEditor.MatchSummary(WindowRuleListEditor.FindMatches(draft, _windows));
     }
@@ -79,7 +79,7 @@ public sealed partial class RuleDialog : ContentDialog
     private void Session_Changed(object? sender, EventArgs e) => Refresh();
     private void Corner_Changed(object sender, SelectionChangedEventArgs e) => Refresh();
 
-    private void Placement_Changed(object sender, RoutedEventArgs e)
+    private void Placement_Changed(object sender, SelectionChangedEventArgs e)
     {
         if (_initializing) { return; }
         CornerBox.SelectedIndex = (int)WindowRuleListEditor.DefaultCorner(Placement, Draft.Corner);
