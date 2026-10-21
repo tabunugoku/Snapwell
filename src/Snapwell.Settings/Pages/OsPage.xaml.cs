@@ -65,6 +65,10 @@ public sealed partial class OsPage : Page
             SetTag(DragSnapTag, DragSnapTagText, view.ToggleOn ? "停止中" : "標準のまま", view.ToggleOn);
             SetTag(LayoutTag, LayoutTagText, view.SubTagText, view.ToggleOn);
             SetTag(SnapBarTag, SnapBarTagText, view.SubTagText, view.ToggleOn);
+            ReplaceWinArrowToggle.IsOn = _state.ReplaceWinArrow;
+            ReplaceWinArrowToggle.IsEnabled = !_readOnly && !_busy;
+            SetTag(WinArrowTag, WinArrowTagText, _state.ReplaceWinArrow ? "置き換え中" : "標準のまま",
+                _state.ReplaceWinArrow);
         }
         finally
         {
@@ -91,6 +95,42 @@ public sealed partial class OsPage : Page
         _busy = true;
         // Toggled が戻った後で表示を更新し、NativeAOT のアニメーション再入を避ける。
         DispatcherQueue.TryEnqueue(() => _ = ChangeStandardSnapAsync(disable));
+    }
+
+    private void ReplaceWinArrow_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (_syncing || _busy)
+        {
+            return;
+        }
+
+        var replace = ReplaceWinArrowToggle.IsOn;
+        _busy = true;
+        // Toggled が戻るまで待ち、失敗時の表示更新によるアニメーション再入を避ける。
+        DispatcherQueue.TryEnqueue(() => ChangeReplaceWinArrow(replace));
+    }
+
+    private void ChangeReplaceWinArrow(bool replace)
+    {
+        ErrorNotice.IsOpen = false;
+        try
+        {
+            _state = DeviceStateChanges.SetReplaceWinArrow(_deviceStore, replace);
+        }
+        catch (FutureSettingsVersionException)
+        {
+            Revert("新しい版の端末状態のため、Win + 矢印を変更できません。Snapwell を更新してください。");
+            _readOnly = true;
+        }
+        catch (Exception exception) when (IsFileFailure(exception))
+        {
+            Revert("Win + 矢印の選択を保存できませんでした。ファイルの場所とアクセス権を確認してください。");
+        }
+        finally
+        {
+            _busy = false;
+            Render();
+        }
     }
 
     private void Restore_Click(object sender, RoutedEventArgs e)
