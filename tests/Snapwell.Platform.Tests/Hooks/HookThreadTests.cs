@@ -254,6 +254,109 @@ public sealed class HookThreadTests
         Assert.Equal(7, api.UnregisterCount);
     }
 
+    /// <summary>送信がブロックしても入力判定とフック解除・破棄は待たされない。</summary>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task BlockedDummySendDoesNotBlockProcessingOrShutdown(bool stopFirst)
+    {
+        using var entered = new ManualResetEventSlim(false);
+        using var release = new ManualResetEventSlim(false);
+        using var finished = new ManualResetEventSlim(false);
+        var callbackThread = 0;
+        var senderThread = 0;
+        var sender = new CallbackDummySender(() =>
+        {
+            senderThread = Environment.CurrentManagedThreadId;
+            entered.Set();
+            release.Wait();
+            finished.Set();
+            return true;
+        });
+        var matcher = new HotkeyMatcher();
+        matcher.SetBindings([new(1, KeyModifiers.Win, 0x25)]);
+        using var api = new FakeHookApi();
+        using var hooks = new HookThread(matcher, 1, api, sender);
+        Assert.True(hooks.Start());
+        try
+        {
+            var processing = Task.Run(() =>
+            {
+                callbackThread = Environment.CurrentManagedThreadId;
+                hooks.ProcessKey(0x5B, true);
+                return hooks.ProcessKey(0x25, true);
+            });
+            Assert.True(await processing.WaitAsync(TimeSpan.FromSeconds(5)));
+            Assert.True(entered.Wait(TimeSpan.FromSeconds(5)));
+            Assert.NotEqual(callbackThread, senderThread);
+
+            var laterKeys = Task.Run(() =>
+            {
+                Assert.True(hooks.ProcessKey(0x25, true));
+                Assert.True(hooks.ProcessKey(0x25, false));
+                Assert.False(hooks.ProcessKey(0x5B, false));
+                hooks.ProcessKey(0x5B, true);
+                Assert.True(hooks.ProcessKey(0x25, true));
+            });
+            await laterKeys.WaitAsync(TimeSpan.FromSeconds(5));
+            await Task.Run(() =>
+            {
+                if (stopFirst) { Assert.True(hooks.Stop()); }
+                hooks.Dispose();
+                hooks.Dispose();
+            }).WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.Equal(7, api.UnregisterCount);
+            Assert.Null(hooks.Failure);
+        }
+        finally
+        {
+            release.Set();
+            Assert.True(finished.Wait(TimeSpan.FromSeconds(5)));
+        }
+    }
+
+    /// <summary>送信の失敗や例外でも次の要求を処理し、注入入力で修飾状態を変えない。</summary>
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    public async Task DummySendFailureAndInjectedInputDoNotDisableHotkeys(int outcome)
+    {
+        using var sent = new SemaphoreSlim(0);
+        var calls = 0;
+        var sender = new CallbackDummySender(() =>
+        {
+            Interlocked.Increment(ref calls);
+            sent.Release();
+            if (outcome == 2) { throw new InvalidOperationException(); }
+            return outcome == 1;
+        });
+        var matcher = new HotkeyMatcher();
+        matcher.SetBindings([new(1, KeyModifiers.Win, 0x25)]);
+        using var api = new FakeHookApi();
+        using var hooks = new HookThread(matcher, 8, api, sender);
+        Assert.True(hooks.Start());
+        hooks.ProcessKey(0x5B, true);
+        Assert.False(hooks.ProcessKey(0x25, true, injected: true));
+        Assert.True(hooks.ProcessKey(0x25, true));
+        Assert.True(await sent.WaitAsync(TimeSpan.FromSeconds(5)));
+        Assert.Equal(1, Volatile.Read(ref calls));
+        Assert.False(hooks.ProcessKey(0x5B, false, injected: true));
+        Assert.True(hooks.ProcessKey(0x25, true));
+        Assert.True(hooks.ProcessKey(0x25, false));
+        Assert.False(hooks.ProcessKey(0x5B, false));
+        hooks.ProcessKey(0x5B, true);
+        Assert.True(hooks.ProcessKey(0x25, true));
+        Assert.True(await sent.WaitAsync(TimeSpan.FromSeconds(5)));
+        Assert.Equal(2, Volatile.Read(ref calls));
+        Assert.Null(hooks.Failure);
+    }
+
+    private sealed class CallbackDummySender(Func<bool> send) : IDummyKeySender
+    {
+        public bool Send() => send();
+    }
+
     private sealed class FakeHookApi : IHookApi, IDisposable
     {
         private readonly ManualResetEventSlim _quit = new(false);
