@@ -154,27 +154,43 @@ public sealed partial class OsPage : Page
             {
                 throw new FutureSettingsVersionException("新しい版の端末状態は上書きできない。");
             }
-            if (disable && !loaded.Value.StandardSnapConsentGiven)
+            _state = loaded.Value;
+            var consentObtained = false;
+            while (true)
             {
-                var dialog = new ContentDialog
+                if (disable && !_state.StandardSnapConsentGiven)
                 {
-                    XamlRoot = XamlRoot,
-                    Title = "Windows の標準スナップを停止しますか",
-                    Content = "設定アプリの「ウィンドウのスナップ」（SPI_SETWINARRANGING）をこのセッションで停止します。" +
-                        "ドラッグでのスナップ・最大化ボタンのメニュー・画面上端のスナップ バーが一緒に止まります。" +
-                        "Snapwell の一時停止時と終了時には、変更前の設定に戻します。",
-                    PrimaryButtonText = "停止する",
-                    CloseButtonText = "やめる",
-                    DefaultButton = ContentDialogButton.Close,
-                };
-                if (await dialog.ShowAsync() != ContentDialogResult.Primary)
+                    var dialog = new ContentDialog
+                    {
+                        XamlRoot = XamlRoot,
+                        Title = "Windows の標準スナップを停止しますか",
+                        Content = "設定アプリの「ウィンドウのスナップ」（SPI_SETWINARRANGING）をこのセッションで停止します。" +
+                            "ドラッグでのスナップ・最大化ボタンのメニュー・画面上端のスナップ バーが一緒に止まります。" +
+                            "Snapwell の一時停止時と終了時には、変更前の設定に戻します。",
+                        PrimaryButtonText = "停止する",
+                        CloseButtonText = "やめる",
+                        DefaultButton = ContentDialogButton.Close,
+                    };
+                    if (await dialog.ShowAsync() != ContentDialogResult.Primary)
+                    {
+                        return;
+                    }
+                    consentObtained = true;
+                }
+
+                try
                 {
-                    return;
+                    // 本体の監視が追従するため、本体が起動していなくても端末状態だけを保存する。
+                    _state = DeviceStateChanges.SetStandardSnap(_deviceStore, disable, consentObtained);
+                    break;
+                }
+                catch (StandardSnapConsentRequiredException exception)
+                {
+                    // 保存待ちに取り消された同意は、最新の状態を表示して取り直す。
+                    _state = exception.State;
                 }
             }
 
-            // 本体の監視が追従するため、本体が起動していなくても端末状態だけを保存する。
-            _state = DeviceStateChanges.SetStandardSnap(_deviceStore, disable);
             _savedDragSnap = SnapSettingsGuard.ReadSavedDragSnap();
         }
         catch (FutureSettingsVersionException)
