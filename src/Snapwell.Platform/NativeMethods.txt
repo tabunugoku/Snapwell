@@ -85,3 +85,5 @@ SendInput
 DuplicateTokenEx
 GetShellWindow
 CreateProcessWithTokenW
+QueryFullProcessImageNameW
+GetProcessTimes
