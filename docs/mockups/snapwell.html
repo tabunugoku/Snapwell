@@ -529,14 +529,13 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
 .os-how .lay u.on::after { content: ""; width: 4px; height: 4px; border-radius: 50%; background: #fff; }
 .os-how .lay s { display: flex; flex-direction: column; gap: 1px; background: none; }
 .os-how .lay s u { flex: 1; }
-.os-how .tb { position: absolute; left: 0; right: 0; top: 0; height: 8px; background: var(--border-strong, var(--border)); border-radius: 2px 2px 0 0; }
-.os-how .tb::before { content: ""; position: absolute; left: 3px; top: 3px; width: 28%; height: 2px; border-radius: 1px; background: var(--muted); }
+.os-how .tb { position: absolute; left: 0; right: 0; top: 0; height: 9px; background: var(--surface); border-bottom: 1px solid var(--border); border-radius: 0; }
 .os-how .tb em { position: absolute; right: 2px; top: 1px; width: 8px; height: 5px; border: 1px solid var(--muted); border-radius: 1px; }
 .os-how .frames { display: flex; gap: 6px; margin-bottom: 8px; }
 .os-how .frame { flex: 1; min-width: 0; }
 .os-how .frame .scr { height: 76px; margin-bottom: 3px; }
 .os-how .frame small { display: block; font-size: 11.5px; color: var(--muted); text-align: center; }
-.os-how .scr .win.hold { border: 1.5px solid var(--ink); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3); }
+.os-how .scr .win.hold { border: 1.5px solid var(--border-strong); border-radius: 6px; background: var(--surface-2); overflow: hidden; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25); }
 .os-how .scr.grid { background-image: linear-gradient(to right, var(--border) 1px, transparent 1px), linear-gradient(to bottom, var(--border) 1px, transparent 1px); background-size: 12.5% 25%; }
 .os-how .scr.faint { background-image: none; }
 .os-how .scr .cell.on { background: var(--blue-bg); border: 1.5px solid var(--blue-tx); }
