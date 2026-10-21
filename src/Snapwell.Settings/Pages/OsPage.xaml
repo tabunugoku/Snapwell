@@ -4,10 +4,6 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:Snapwell.Settings.Controls"
     x:Class="Snapwell.Settings.Pages.OsPage">
-    <Page.Resources>
-        <Style x:Key="DemoSwitchStyle" TargetType="ToggleSwitch"
-               BasedOn="{StaticResource SnapwellDemoSwitchStyle}" />
-    </Page.Resources>
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
         <StackPanel Padding="32,28,32,40" HorizontalAlignment="Stretch">
             <TextBlock Text="Windows の標準機能" Style="{StaticResource SnapwellPageTitleStyle}" />
@@ -74,7 +70,6 @@
                         </Border>
                     </Grid>
                     <Border Style="{StaticResource SnapwellRowDividerStyle}" />
-                    <!-- デモ状態 (未実装) -->
                     <Grid Style="{StaticResource SnapwellRowGridStyle}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
@@ -87,23 +82,21 @@
                                 </Border>
                                 <TextBlock Text=" + 矢印" Style="{StaticResource SnapwellRowTitleStyle}"
                                            VerticalAlignment="Center" />
-                                <Border Style="{StaticResource SnapwellTagPendingStyle}">
-                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellTagPendingTextStyle}" />
-                                </Border>
                             </StackPanel>
-                            <TextBlock Text="Snapwell の操作に置き換えます" Style="{StaticResource SnapwellRowDescriptionStyle}" />
+                            <TextBlock Text="Snapwell の操作（左・右・上・下の半分）に置き換えます"
+                                       Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <Border Style="{StaticResource SnapwellTagGreenStyle}">
-                                <TextBlock Text="—" Style="{StaticResource SnapwellTagGreenTextStyle}" />
+                            <Border x:Name="WinArrowTag" Style="{StaticResource SnapwellTagPendingStyle}">
+                                <TextBlock x:Name="WinArrowTagText" Text="標準のまま"
+                                           Style="{StaticResource SnapwellTagTextStyle}" />
                             </Border>
-                            <ToggleSwitch IsEnabled="False"
-                                Style="{StaticResource DemoSwitchStyle}"
-                                IsOn="True"
+                            <ToggleSwitch x:Name="ReplaceWinArrowToggle" IsEnabled="False"
+                                Style="{StaticResource SnapwellToggleSwitchStyle}"
+                                Toggled="ReplaceWinArrow_Toggled"
                                 AutomationProperties.Name="Win 矢印" />
                         </StackPanel>
                     </Grid>
-                    <!-- デモ状態 (未実装) ここまで -->
                 </StackPanel>
             </Border>
             <Grid ColumnSpacing="10" Margin="0,12,0,0">
