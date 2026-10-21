@@ -174,7 +174,13 @@ public sealed partial class HotkeysPage : Page
         if (unavailable) { tags.Children.Add(CreateTag("他のアプリが使用中", "Yellow")); }
         Grid.SetColumn(tags, 2);
         row.Children.Add(tags);
-        var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
+        var actions = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 4,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+        };
         actions.Children.Add(ActionButton("↺", $"{name}を既定に戻す", !_session.IsReadOnly && !isDefault,
             () => SetHotkeys(HotkeyEditing.Reset(_session.Current.Hotkeys, command), command)));
         actions.Children.Add(ActionButton("✕", $"{name}の割り当てを外す", !_session.IsReadOnly && assigned,
@@ -208,8 +214,15 @@ public sealed partial class HotkeysPage : Page
             Content = text,
             Style = AppStyle("SnapwellButtonStyle"),
             IsEnabled = enabled,
-            Padding = new(7, 4, 7, 4),
-            MinWidth = 0,
+            Width = 28,
+            Height = 28,
+            MinWidth = 28,
+            MinHeight = 28,
+            Padding = new(0),
+            HorizontalContentAlignment = HorizontalAlignment.Center,
+            VerticalContentAlignment = VerticalAlignment.Center,
+            FontFamily = new FontFamily("Segoe UI Symbol"),
+            FontSize = text == "↺" ? 16 : 14,
             VerticalAlignment = VerticalAlignment.Center,
         };
         AutomationProperties.SetName(button, name);
