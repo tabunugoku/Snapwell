@@ -57,6 +57,8 @@ public sealed class SetupWizard(ISettingsStore<PortableSettings> portableStore, 
                 DeviceStateChanges.Update(deviceStore, device => device with
                 {
                     DisableStandardSnap = consent,
+                    // 手順 2 に並べた三つの変更は、同意と同時に反映する。
+                    ReplaceWinArrow = consent,
                     StandardSnapConsentGiven = consent,
                 });
             }

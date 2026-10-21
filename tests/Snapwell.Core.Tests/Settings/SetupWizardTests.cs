@@ -25,6 +25,7 @@ public sealed class SetupWizardTests
         Assert.True(wizard.TryNext(consent, out _));
         Assert.Equal(SetupStep.Hotkeys, wizard.Step);
         Assert.Equal(consent, device.Value.DisableStandardSnap);
+        Assert.Equal(consent, device.Value.ReplaceWinArrow);
         Assert.Equal(consent, device.Value.StandardSnapConsentGiven);
         Assert.False(device.Value.SetupCompleted);
         Assert.Equal(0, portable.Saves);
