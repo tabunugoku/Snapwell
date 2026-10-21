@@ -782,7 +782,7 @@ internal sealed class AppHost
                 _deviceReadOnly = true;
             }
             Log(exception);
-            _deviceSaveStatus = "端末状態を保存できませんでした。この起動中だけの状態です";
+            _deviceSaveStatus = "端末状態を保存できませんでした。変更はこの起動中だけ有効です";
         }
     }
 

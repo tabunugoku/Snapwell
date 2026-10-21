@@ -111,9 +111,9 @@ public sealed class WindowRuleListEditorTests
     [Theory]
     [InlineData(" ", "", "", PlacementRule.Exclude, CornerRule.Inherit, "条件を 1 つ以上入力してください。")]
     [InlineData("a.exe", "", "", PlacementRule.Inherit, CornerRule.Inherit,
-        "配置の扱いか、ウィンドウの角の、どちらかは「全体設定に従う」以外にしてください。")]
-    [InlineData("", "", "[", PlacementRule.PositionOnly, CornerRule.Inherit, "タイトルの正規表現が正しくありません")]
-    [InlineData("", "", "(?=x)", PlacementRule.PositionOnly, CornerRule.Inherit, "タイトルの正規表現が正しくありません")]
+        "「配置の扱い」と「ウィンドウの角」の少なくとも一方は、「全体設定に従う」以外にしてください。")]
+    [InlineData("", "", "[", PlacementRule.PositionOnly, CornerRule.Inherit, "タイトルの正規表現が正しくありません。")]
+    [InlineData("", "", "(?=x)", PlacementRule.PositionOnly, CornerRule.Inherit, "タイトルの正規表現が正しくありません。")]
     [InlineData("a.exe", "", "", PlacementRule.Exclude, CornerRule.Inherit, null)]
     [InlineData("", "Class", "", PlacementRule.Inherit, CornerRule.SystemDefault, null)]
     [InlineData("", "", "^Title$", PlacementRule.PositionOnly, CornerRule.Inherit, null)]

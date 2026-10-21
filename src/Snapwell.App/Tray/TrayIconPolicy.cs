@@ -32,7 +32,7 @@ internal static class TrayIconPolicy
     public static string Tip(TrayState state) => KindOf(state) switch
     {
         TrayIconKind.Attention => $"Snapwell: {state.Status}",
-        TrayIconKind.Paused => "Snapwell (一時停止中)",
+        TrayIconKind.Paused => "Snapwell（一時停止中）",
         _ => "Snapwell",
     };
 

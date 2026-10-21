@@ -171,7 +171,7 @@ public sealed partial class HotkeysPage : Page
         if (duplicated) { tags.Children.Add(CreateTag("重複", "Red")); }
         if (!assigned) { tags.Children.Add(CreateTag("未割り当て", "Pending")); }
         if (!isDefault) { tags.Children.Add(CreateTag("変更済み", "Blue")); }
-        if (unavailable) { tags.Children.Add(CreateTag("他のアプリが使用中", "Yellow")); }
+        if (unavailable) { tags.Children.Add(CreateTag("ほかのアプリが使用中", "Yellow")); }
         Grid.SetColumn(tags, 2);
         row.Children.Add(tags);
         var actions = new StackPanel

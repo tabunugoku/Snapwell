@@ -96,7 +96,7 @@
                             <ToggleSwitch x:Name="ReplaceWinArrowToggle" IsEnabled="False"
                                 Style="{StaticResource SnapwellToggleSwitchStyle}"
                                 Toggled="ReplaceWinArrow_Toggled"
-                                AutomationProperties.Name="Win 矢印" />
+                                AutomationProperties.Name="Win + 矢印" />
                         </StackPanel>
                     </Grid>
                     <controls:OsHowDiagram Kind="WinArrow" />

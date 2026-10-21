@@ -61,7 +61,7 @@
                                 Width="200"
                                 Style="{StaticResource DemoSelectStyle}"
                                 SelectedIndex="0"
-                                AutomationProperties.Name="角丸を強制する">
+                                AutomationProperties.Name="ウィンドウの角">
                                 <ComboBoxItem Content="角丸を強制する" />
                                 <ComboBoxItem Content="小さい角丸" />
                                 <ComboBoxItem Content="角丸なし" />
@@ -77,7 +77,7 @@
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
                             <TextBlock Text="区画のプレビュー" Style="{StaticResource SnapwellRowTitleStyle}" />
-                            <TextBlock Text="投げたウィンドウは、離した瞬間から着地するまで、吸着先の区画を青く塗ります。手動でリサイズするときは、ドラッグしている間ずっと、離したときに揃う区画を塗ります（「分割と間隔」で区画に揃えるをオンにしたとき）。オフにすると、どちらも何も表示しません"
+                            <TextBlock Text="ウィンドウを投げると、離した瞬間から着地するまで、吸着先の区画を青く塗ります。手動でリサイズするときは、ドラッグしている間ずっと、離したときにそろう区画を塗ります（「分割と間隔」で「手動でリサイズしたら区画にそろえる」をオンにしたとき）。オフにすると、どちらも何も表示しません"
                                        Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
                         <ToggleSwitch x:Name="ZonePreviewToggle" Grid.Column="1" OnContent="" OffContent="" MinWidth="0"
@@ -192,14 +192,14 @@
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="区画の線を表示する" Style="{StaticResource SnapwellRowTitleStyle}" />
                             </Grid>
-                            <TextBlock Text="吸着先の区画の縁に点線の枠を付けます（区画のプレビューがオンのとき）。ランチャーの区画の線にも効きます"
+                            <TextBlock Text="吸着先の区画の縁に点線の枠を付けます（区画のプレビューがオンのとき）。ランチャーの区画の線にも適用されます"
                                        Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                             <ToggleSwitch Toggled="Lines_Toggled"
                                 Style="{StaticResource DemoSwitchStyle}"
                                 IsOn="True"
-                                x:Name="ZoneLinesToggle" AutomationProperties.Name="区画の線" />
+                                x:Name="ZoneLinesToggle" AutomationProperties.Name="区画の線を表示する" />
                         </StackPanel>
                     </Grid>
                     <Border Style="{StaticResource SnapwellRowDividerStyle}" />
@@ -216,19 +216,19 @@
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="投げたときに予測の線を表示する" Style="{StaticResource SnapwellRowTitleStyle}" />
                             </Grid>
-                            <TextBlock Text="ウィンドウが止まる予測の位置まで、点線と丸印で示します。慣れたら消せます（区画のプレビューがオンのとき）" Style="{StaticResource SnapwellRowDescriptionStyle}" />
+                            <TextBlock Text="ウィンドウが止まると予測した位置までを、点線と丸印で示します（区画のプレビューがオンのとき）。慣れたらオフにできます" Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                             <ToggleSwitch Toggled="Lines_Toggled"
                                 Style="{StaticResource DemoSwitchStyle}"
                                 IsOn="True"
-                                x:Name="PredictionLineToggle" AutomationProperties.Name="予測の線" />
+                                x:Name="PredictionLineToggle" AutomationProperties.Name="投げたときに予測の線を表示する" />
                         </StackPanel>
                     </Grid>
                 </StackPanel>
             </Border>
             <TextBlock Text="オーバーレイの見え方" Style="{StaticResource SnapwellGroupTitleStyle}" />
-            <TextBlock Text="ウィンドウをドラッグして、右上へ投げた場面の例です。上の「区画のプレビュー」と、下の二つの切り替えを変えると、表示がどう変わるかをここで確かめられます。"
+            <TextBlock Text="ウィンドウをドラッグして、右上へ投げた場面の例です。上の「区画のプレビュー」と「オーバーレイ」の 2 つの切り替えを変えると、表示がどう変わるかをここで確かめられます。"
                        Style="{StaticResource SnapwellHintTextStyle}" TextWrapping="Wrap" Margin="0,0,0,8" />
             <Border Width="400" Height="190" HorizontalAlignment="Left" CornerRadius="10" BorderThickness="1"
                     BorderBrush="{ThemeResource SnapwellBorderBrush}"

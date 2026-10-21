@@ -477,8 +477,8 @@ public sealed class SettingsSyncTests : IDisposable
 
     [Theory]
     [InlineData(SettingsSyncKind.NoChange, "変更なし")]
-    [InlineData(SettingsSyncKind.Pushed, "書き出した")]
-    [InlineData(SettingsSyncKind.Pulled, "取り込んだ")]
+    [InlineData(SettingsSyncKind.Pushed, "書き出し済み")]
+    [InlineData(SettingsSyncKind.Pulled, "取り込み済み")]
     [InlineData(SettingsSyncKind.ConflictLocalWon, "競合: この PC の設定を採用")]
     [InlineData(SettingsSyncKind.ConflictRemoteWon, "競合: 同期先の設定を採用")]
     [InlineData(SettingsSyncKind.Failed, "失敗: 理由")]

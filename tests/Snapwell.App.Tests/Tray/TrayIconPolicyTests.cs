@@ -83,7 +83,7 @@ public sealed class TrayIconPolicyTests
     public void TipStatesTheStatusInText()
     {
         Assert.Equal("Snapwell", TrayIconPolicy.Tip(new TrayState(true, false)));
-        Assert.Equal("Snapwell (一時停止中)", TrayIconPolicy.Tip(new TrayState(false, false)));
+        Assert.Equal("Snapwell（一時停止中）", TrayIconPolicy.Tip(new TrayState(false, false)));
         Assert.Equal("Snapwell: 復元に失敗した", TrayIconPolicy.Tip(new TrayState(true, false, "復元に失敗した")));
     }
 
