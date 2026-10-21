@@ -201,6 +201,7 @@ public sealed partial class MainWindow : Window
                 IsPrimaryButtonEnabled = !_session.IsReadOnly,
                 DefaultButton = ContentDialogButton.Close,
             };
+            Dialogs.DialogButtons.UseSnapwellColors(dialog);
             var result = await dialog.ShowAsync();
             if (result == ContentDialogResult.Secondary || result == ContentDialogResult.Primary && Save())
             {

@@ -17,6 +17,7 @@ public sealed partial class ImportDialog : ContentDialog
     public ImportDialog(IReadOnlyList<SettingsDifference> differences)
     {
         InitializeComponent();
+        DialogButtons.Compact(this);
         // WinUI 2.3.9 では .NET のコレクションを ItemsSource に渡すと E_INVALIDARG になるため、Items に追加する。
         DifferenceList.Items.Clear();
         foreach (var difference in differences)
