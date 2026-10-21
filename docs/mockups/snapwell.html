@@ -463,6 +463,8 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
 .rule-list .rl-act { width: 120px; text-align: right; white-space: nowrap; }
 .rule-list .rl-cond { word-break: break-all; }
 .rule-list .rl-sub { display: block; margin-top: 2px; font-size: 12px; color: var(--muted); }
+.rl-none { color: var(--muted); }
+.rule-list .tag { text-transform: none; letter-spacing: 0; }
 .rl-builtin { margin: 0; padding-left: 18px; font-size: 12.5px; color: var(--muted); }
 .rl-warn { color: var(--yellow-tx); }
 .rd-form { display: grid; gap: 10px; margin: 14px 0 0; }
@@ -1056,14 +1058,15 @@ table.list tr:last-child td { border-bottom: 0; }
           <!-- アプリのルール -->
           <div class="spage" data-page="rules">
             <h3>アプリごとのルール</h3>
-            <p class="lead">特定のアプリのウィンドウを、対象から外したり、位置だけを動かすようにしたりできます。上のルールから順に調べ、最初に一致したものを使います。</p>
+            <p class="lead">特定のアプリのウィンドウについて、対象から外す・位置だけを動かす・ウィンドウの角を変える、といった例外を決められます。上のルールから順に調べ、「配置」と「角」はそれぞれ、指定のある最初のルールを使います。</p>
             <div class="rows" style="padding: 0">
               <table class="list rule-list">
-                <thead><tr><th class="rl-on">有効</th><th>条件</th><th>扱い</th><th class="rl-act"></th></tr></thead>
+                <thead><tr><th class="rl-on">有効</th><th>条件</th><th>配置</th><th>角</th><th class="rl-act"></th></tr></thead>
                 <tbody id="ruleBody">
-                  <tr><td class="rl-on"><label class="switch"><input type="checkbox" checked aria-label="有効"><span></span></label></td><td class="mono rl-cond">game-launcher.exe</td><td><span class="tag red">対象外</span></td><td class="rl-act"><button class="hk-ic" type="button" data-act="up" aria-label="上へ">↑</button><button class="hk-ic" type="button" data-act="down" aria-label="下へ">↓</button><button class="hk-ic" type="button" data-act="del" aria-label="削除">✕</button></td></tr>
-                  <tr><td class="rl-on"><label class="switch"><input type="checkbox" checked aria-label="有効"><span></span></label></td><td class="rl-cond"><span class="mono">chrome.exe</span><span class="rl-sub">タイトル <span class="mono">^ピクチャー イン ピクチャー$</span></span></td><td><span class="tag yellow">位置だけ</span></td><td class="rl-act"><button class="hk-ic" type="button" data-act="up" aria-label="上へ">↑</button><button class="hk-ic" type="button" data-act="down" aria-label="下へ">↓</button><button class="hk-ic" type="button" data-act="del" aria-label="削除">✕</button></td></tr>
-                  <tr><td class="rl-on"><label class="switch"><input type="checkbox" aria-label="有効"><span></span></label></td><td class="rl-cond"><span class="mono">TaskManagerWindow</span><span class="rl-sub">ウィンドウ クラス</span></td><td><span class="tag blue">強制的に対象</span></td><td class="rl-act"><button class="hk-ic" type="button" data-act="up" aria-label="上へ">↑</button><button class="hk-ic" type="button" data-act="down" aria-label="下へ">↓</button><button class="hk-ic" type="button" data-act="del" aria-label="削除">✕</button></td></tr>
+                  <tr><td class="rl-on"><label class="switch"><input type="checkbox" checked aria-label="有効"><span></span></label></td><td class="rl-cond"><span class="mono">game-launcher.exe</span></td><td><span class="tag red">対象外</span></td><td><span class="rl-none">—</span></td><td class="rl-act"><button class="hk-ic" type="button" data-act="up" aria-label="上へ">↑</button><button class="hk-ic" type="button" data-act="down" aria-label="下へ">↓</button><button class="hk-ic" type="button" data-act="del" aria-label="削除">✕</button></td></tr>
+                  <tr><td class="rl-on"><label class="switch"><input type="checkbox" checked aria-label="有効"><span></span></label></td><td class="rl-cond"><span class="mono">chrome.exe</span><span class="rl-sub">タイトル <span class="mono">^ピクチャー イン ピクチャー$</span></span></td><td><span class="tag yellow">位置だけ</span></td><td><span class="rl-none">—</span></td><td class="rl-act"><button class="hk-ic" type="button" data-act="up" aria-label="上へ">↑</button><button class="hk-ic" type="button" data-act="down" aria-label="下へ">↓</button><button class="hk-ic" type="button" data-act="del" aria-label="削除">✕</button></td></tr>
+                  <tr><td class="rl-on"><label class="switch"><input type="checkbox" checked aria-label="有効"><span></span></label></td><td class="rl-cond"><span class="mono">chat-overlay.exe</span><span class="rl-sub">ウィンドウ クラス <span class="mono">OverlayWindow</span></span></td><td><span class="rl-none">—</span></td><td><span class="tag">Windows の既定</span></td><td class="rl-act"><button class="hk-ic" type="button" data-act="up" aria-label="上へ">↑</button><button class="hk-ic" type="button" data-act="down" aria-label="下へ">↓</button><button class="hk-ic" type="button" data-act="del" aria-label="削除">✕</button></td></tr>
+                  <tr><td class="rl-on"><label class="switch"><input type="checkbox" aria-label="有効"><span></span></label></td><td class="rl-cond"><span class="mono">TaskManagerWindow</span><span class="rl-sub">ウィンドウ クラス</span></td><td><span class="tag blue">強制的に対象</span></td><td><span class="rl-none">—</span></td><td class="rl-act"><button class="hk-ic" type="button" data-act="up" aria-label="上へ">↑</button><button class="hk-ic" type="button" data-act="down" aria-label="下へ">↓</button><button class="hk-ic" type="button" data-act="del" aria-label="削除">✕</button></td></tr>
                 </tbody>
               </table>
             </div>
@@ -1179,11 +1182,21 @@ table.list tr:last-child td { border-bottom: 0; }
         <label>ウィンドウ クラス<input class="input mono" id="rdClass" placeholder="Chrome_WidgetWin_1" spellcheck="false"></label>
         <label>タイトル（正規表現）<input class="input mono" id="rdTitle" placeholder="^ピクチャー イン ピクチャー$" spellcheck="false"></label>
         <div class="rd-err" id="rdErr" hidden></div>
-        <fieldset class="rd-act"><legend>扱い</legend>
-          <label><input type="radio" name="rdAct" value="red" checked> 対象外<span>Snapwell は一切触りません</span></label>
+        <fieldset class="rd-act"><legend>配置の扱い</legend>
+          <label><input type="radio" name="rdAct" value="none" checked> 全体設定に従う<span>配置については、このルールでは何も決めません</span></label>
+          <label><input type="radio" name="rdAct" value="red"> 対象外<span>動かす・大きさを変える・吸着させる操作の対象にしません</span></label>
           <label><input type="radio" name="rdAct" value="yellow"> 位置だけ<span>動かしますが、大きさは変えません</span></label>
           <label><input type="radio" name="rdAct" value="blue"> 強制的に対象<span>ポップアップなどでも、通常のウィンドウとして扱います</span></label>
         </fieldset>
+        <label>ウィンドウの角
+          <select class="input" id="rdCorner">
+            <option value="none" selected>全体設定に従う</option>
+            <option value="default">Windows の既定（Snapwell は触らない）</option>
+            <option value="round">角丸を強制する</option>
+            <option value="small">小さい角丸</option>
+            <option value="square">角丸なし</option>
+          </select>
+        </label>
         <div class="rd-match" id="rdMatch"></div>
       </div>
       <div class="dlg-foot">
@@ -3212,31 +3225,43 @@ $$('.switch').forEach(makeSwitch);
 (() => {
   const body = $('#ruleBody');
   const dlg = $('#ruleDlg'), pick = $('#pickDlg');
-  const names = { red: '対象外', yellow: '位置だけ', blue: '強制的に対象' };
+  const placeTag = { red: '<span class="tag red">対象外</span>', yellow: '<span class="tag yellow">位置だけ</span>', blue: '<span class="tag blue">強制的に対象</span>' };
+  const cornerName = { default: 'Windows の既定', round: '角丸を強制する', small: '小さい角丸', square: '角丸なし' };
+  const none = '<span class="rl-none">—</span>';
   const acts = '<button class="hk-ic" type="button" data-act="up" aria-label="上へ">↑</button><button class="hk-ic" type="button" data-act="down" aria-label="下へ">↓</button><button class="hk-ic" type="button" data-act="del" aria-label="削除">✕</button>';
   const esc = (t) => t.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
   const samples = [
     { proc: 'chrome.exe', cls: 'Chrome_WidgetWin_1', title: 'ピクチャー イン ピクチャー' },
     { proc: 'chrome.exe', cls: 'Chrome_WidgetWin_1', title: 'Snapwell - Google Chrome' },
     { proc: 'game-launcher.exe', cls: 'LauncherWindow', title: 'Game Launcher' },
+    { proc: 'chat-overlay.exe', cls: 'OverlayWindow', title: 'チャット' },
     { proc: 'ApplicationFrameHost.exe', cls: 'ApplicationFrameWindow', title: '電卓' },
   ];
+  const act = () => dlg.querySelector('input[name=rdAct]:checked').value;
   const test = () => {
     const proc = $('#rdProc').value.trim().toLowerCase(), cls = $('#rdClass').value.trim().toLowerCase(), title = $('#rdTitle').value;
     const err = $('#rdErr'); let re = null;
     err.hidden = true;
     if (title) { try { re = new RegExp(title, 'i'); } catch (e) { err.textContent = 'タイトルの正規表現が正しくありません'; err.hidden = false; } }
-    const none = !proc && !cls && !title;
-    const hits = none || !err.hidden ? [] : samples.filter((w) => (!proc || w.proc.toLowerCase() === proc) && (!cls || w.cls.toLowerCase() === cls) && (!re || re.test(w.title)));
-    $('#rdMatch').textContent = none ? '条件を 1 つ以上入力してください。' : err.hidden ? `いま一致するウィンドウ: ${hits.length} 件${hits.length ? '（' + hits.map((w) => w.title).join('、') + '）' : ''}` : '';
-    $('#rdOk').disabled = none || !err.hidden;
+    const noCond = !proc && !cls && !title;
+    const noEffect = act() === 'none' && $('#rdCorner').value === 'none';
+    const hits = noCond || !err.hidden ? [] : samples.filter((w) => (!proc || w.proc.toLowerCase() === proc) && (!cls || w.cls.toLowerCase() === cls) && (!re || re.test(w.title)));
+    $('#rdMatch').textContent = noCond ? '条件を 1 つ以上入力してください。' : noEffect ? '配置の扱いか、ウィンドウの角の、どちらかは「全体設定に従う」以外にしてください。' : err.hidden ? `いま一致するウィンドウ: ${hits.length} 件${hits.length ? '（' + hits.map((w) => w.title).join('、') + '）' : ''}` : '';
+    $('#rdOk').disabled = noCond || noEffect || !err.hidden;
   };
   const open = (v) => {
     $('#rdProc').value = v.proc || ''; $('#rdClass').value = v.cls || ''; $('#rdTitle').value = v.title || '';
-    dlg.querySelector('input[name=rdAct][value=red]').checked = true;
+    dlg.querySelector('input[name=rdAct][value=none]').checked = true;
+    $('#rdCorner').value = 'none';
     test(); dlg.showModal();
   };
   ['#rdProc', '#rdClass', '#rdTitle'].forEach((q) => $(q).addEventListener('input', test));
+  dlg.querySelectorAll('input[name=rdAct]').forEach((r) => r.addEventListener('change', () => {
+    // 対象外にするウィンドウは、角も触らないのが普通なので、まだ選んでいなければ「Windows の既定」にそろえる。
+    if (r.value === 'red' && $('#rdCorner').value === 'none') { $('#rdCorner').value = 'default'; }
+    test();
+  }));
+  $('#rdCorner').addEventListener('change', test);
   $('#ruleAdd').addEventListener('click', () => open({}));
   $('#rulePick').addEventListener('click', () => pick.showModal());
   $('#pickCancel').addEventListener('click', () => pick.close());
@@ -3248,13 +3273,13 @@ $$('.switch').forEach(makeSwitch);
   }));
   $('#rdOk').addEventListener('click', () => {
     const proc = $('#rdProc').value.trim(), cls = $('#rdClass').value.trim(), title = $('#rdTitle').value;
-    const act = dlg.querySelector('input[name=rdAct]:checked').value;
     const parts = [];
     if (proc) parts.push(`<span class="mono">${esc(proc)}</span>`);
     if (cls) parts.push(`<span class="${proc ? 'rl-sub' : 'mono'}">${proc ? 'ウィンドウ クラス <span class="mono">' + esc(cls) + '</span>' : esc(cls)}</span>`);
     if (title) parts.push(`<span class="${parts.length ? 'rl-sub' : 'mono'}">${parts.length ? 'タイトル <span class="mono">' + esc(title) + '</span>' : esc(title)}</span>`);
+    const c = $('#rdCorner').value;
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td class="rl-on"><label class="switch"><input type="checkbox" checked aria-label="有効"><span></span></label></td><td class="rl-cond">${parts.join('')}</td><td><span class="tag ${act}">${names[act]}</span></td><td class="rl-act">${acts}</td>`;
+    tr.innerHTML = `<td class="rl-on"><label class="switch"><input type="checkbox" checked aria-label="有効"><span></span></label></td><td class="rl-cond">${parts.join('')}</td><td>${placeTag[act()] || none}</td><td>${c === 'none' ? none : '<span class="tag">' + cornerName[c] + '</span>'}</td><td class="rl-act">${acts}</td>`;
     body.appendChild(tr);
     makeSwitch(tr.querySelector('.switch'));
     dlg.close();
