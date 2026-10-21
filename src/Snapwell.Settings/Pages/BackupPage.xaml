@@ -74,7 +74,7 @@
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
                             <TextBlock Text="取り込む" Style="{StaticResource SnapwellRowTitleStyle}" />
-                            <TextBlock Text="取り込む前に、今の設定との違いを表示します。全部を置き換えるか、一部だけ取り込むかを選べます"
+                            <TextBlock Text="取り込む前に、いまの設定との違いを表示します。全部を置き換えるか、一部だけ取り込むかを選べます"
                                        Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
                         <Button x:Name="ImportButton" Grid.Column="1" Content="取り込む" IsEnabled="False"

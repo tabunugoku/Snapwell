@@ -42,7 +42,7 @@ public sealed partial class GeneralPage : Page
         {
             AutoStartToggle.IsEnabled = false;
             AdminStartToggle.IsEnabled = false;
-            RegistrationStatus.Text = "Snapwell.exe が同じフォルダーに無いため、自動起動を設定できません";
+            RegistrationStatus.Text = "Snapwell.exe が同じフォルダーにないため、自動起動を設定できません";
             RegistrationStatus.Visibility = Visibility.Visible;
             return;
         }

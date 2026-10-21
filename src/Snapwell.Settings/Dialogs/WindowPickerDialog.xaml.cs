@@ -35,7 +35,7 @@ public sealed partial class WindowPickerDialog : ContentDialog
             {
                 content.Children.Add(new TextBlock
                 {
-                    Text = "Windows のアプリ（UWP）は、プロセス名が共通です。クラスかタイトルで指定してください。",
+                    Text = "UWP アプリは、プロセス名が共通です。クラスかタイトルで指定してください。",
                     Style = (Style)Resources["PickWarningStyle"],
                 });
             }
