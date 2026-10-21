@@ -784,7 +784,8 @@
                 <Setter Property="BorderBrush" Value="{ThemeResource SnapwellInkBrush}" />
                 <Setter Property="BorderThickness" Value="1" />
                 <Setter Property="CornerRadius" Value="6" />
-                <Setter Property="Padding" Value="14,7" />
+                <Setter Property="Padding" Value="14,5" />
+                <Setter Property="MinHeight" Value="0" />
             </Style>
 
             <Style x:Key="SnapwellNavIconPathStyle" TargetType="Path">
