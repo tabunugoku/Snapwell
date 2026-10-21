@@ -23,10 +23,15 @@ public readonly record struct HotkeyMatch(bool Matched, int Id, bool Suppress);
 /// <summary>単一の入力スレッドでキー状態を追い、設定だけを別スレッドから差し替える。</summary>
 public sealed class HotkeyMatcher
 {
+    private readonly Func<bool>? _isCapturing;
     private HotkeyBinding[] _bindings = [];
     private readonly bool[] _suppressedKeys = new bool[256];
     private readonly bool[] _downKeys = new bool[256];
+    private readonly bool[] _captureKeys = new bool[256];
     private uint _pressedModifiers;
+
+    /// <summary>取り込みの確認は、開いたハンドルの即時確認だけを行う関数で受け取る。</summary>
+    public HotkeyMatcher(Func<bool>? isCapturing = null) => _isCapturing = isCapturing;
 
     /// <summary>列挙元から独立した不変の設定スナップショットを公開する。</summary>
     public void SetBindings(IEnumerable<HotkeyBinding> bindings)
@@ -60,13 +65,25 @@ public sealed class HotkeyMatcher
             return default;
         }
 
+        if (_isCapturing?.Invoke() == true)
+        {
+            // 修飾状態を追跡したまま通し、確定後の長押しでも同じキーの操作を実行しない。
+            _suppressedKeys[virtualKey] = false;
+            _downKeys[virtualKey] = isDown;
+            _captureKeys[virtualKey] = isDown;
+            return default;
+        }
+
         if (!isDown)
         {
             var suppress = _suppressedKeys[virtualKey];
             _suppressedKeys[virtualKey] = false;
             _downKeys[virtualKey] = false;
+            _captureKeys[virtualKey] = false;
             return new HotkeyMatch(false, 0, suppress);
         }
+
+        if (_captureKeys[virtualKey]) { return default; }
 
         var modifiers = GetModifiers();
         var repeated = _downKeys[virtualKey];
@@ -100,6 +117,7 @@ public sealed class HotkeyMatcher
         _pressedModifiers = 0;
         Array.Clear(_suppressedKeys);
         Array.Clear(_downKeys);
+        Array.Clear(_captureKeys);
     }
 
     private KeyModifiers GetModifiers()

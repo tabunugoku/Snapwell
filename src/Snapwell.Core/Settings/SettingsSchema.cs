@@ -83,6 +83,21 @@ internal static class SettingsSchema
         }
 
         // 版 10 は、ドラッグ中の見せ方の設定を一度出して取り下げた版。欠番にせず、版の数字だけ残している。
+        if (sourceVersion < 11)
+        {
+            // 既存の利用者が別の操作に割り当てたキーは奪わない。外した操作は版 11 以降の読み戻しで保たれる。
+            var defaults = DefaultHotkeys.Create();
+            WindowCommand[] commands = [WindowCommand.CenterWindow, WindowCommand.CenterWindowKeepSize];
+            foreach (var command in commands)
+            {
+                var chord = defaults[command];
+                if (!normalized.Hotkeys.ContainsKey(command) && !normalized.Hotkeys.ContainsValue(chord))
+                {
+                    normalized.Hotkeys.Add(command, chord);
+                }
+            }
+        }
+
         // 版 6 の追加分は初期化子で補う。版 5 以前の既存値には触れない。
         return normalized;
     }

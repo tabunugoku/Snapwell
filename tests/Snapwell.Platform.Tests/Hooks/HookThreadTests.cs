@@ -9,6 +9,55 @@ public sealed class HookThreadTests
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
+    public void CapturePassesKeysWithoutDispatchAndRestoresNextPressWithoutRebinding(bool allowRepeat)
+    {
+        var capturing = false;
+        var matcher = new HotkeyMatcher(() => capturing);
+        matcher.SetBindings([new(42, KeyModifiers.Control | KeyModifiers.Alt, 0x27, true, allowRepeat)]);
+        using var api = new FakeHookApi();
+        using var hooks = new HookThread(matcher, 8, api);
+        Assert.True(hooks.Start());
+        hooks.ProcessKey(0xA2, true);
+        hooks.ProcessKey(0xA4, true);
+        Assert.True(hooks.ProcessKey(0x27, true));
+        Assert.True(hooks.ProcessKey(0x27, false));
+
+        capturing = true;
+        Assert.False(hooks.ProcessKey(0x27, true));
+        Assert.False(hooks.ProcessKey(0x27, true));
+        capturing = false;
+        Assert.False(hooks.ProcessKey(0x27, true));
+        Assert.False(hooks.ProcessKey(0x27, false));
+        Assert.True(hooks.ProcessKey(0x27, true));
+        Assert.True(hooks.ProcessKey(0x27, false));
+        Assert.True(hooks.Stop());
+
+        var delivered = new List<HookEvent>();
+        while (hooks.Events.TryRead(out var value)) { delivered.Add(value); }
+        Assert.Equal<HookEvent>([new KeyChord(42), new KeyChord(42)], delivered);
+    }
+
+    [Fact]
+    public void CaptureTracksModifierReleasesAndPassesPreviouslySuppressedKeyUp()
+    {
+        var capturing = false;
+        var matcher = new HotkeyMatcher(() => capturing);
+        matcher.SetBindings([new(1, KeyModifiers.Control, 0x41)]);
+        matcher.ProcessKey(0xA2, true);
+        Assert.True(matcher.ProcessKey(0x41, true).Suppress);
+        capturing = true;
+        Assert.Equal(default, matcher.ProcessKey(0x41, false));
+        Assert.Equal(default, matcher.ProcessKey(0xA2, false));
+        capturing = false;
+        Assert.Equal(default, matcher.ProcessKey(0x41, true));
+        matcher.ProcessKey(0x41, false);
+        matcher.ProcessKey(0xA2, true);
+        Assert.Equal(new HotkeyMatch(true, 1, true), matcher.ProcessKey(0x41, true));
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
     public void LifecycleFloodNeverDisplacesCriticalEventsAtEitherDeliveryStage(bool callbackStage)
     {
         using var api = new FakeHookApi();

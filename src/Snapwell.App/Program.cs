@@ -6,6 +6,7 @@ using Snapwell.App.Lifecycle;
 using Snapwell.App.Motion;
 using Snapwell.App.Overlay;
 using Snapwell.App.Tray;
+using Snapwell.Core.Commands;
 using Snapwell.Core.Geometry;
 using Snapwell.Core.Overlay;
 using Snapwell.Core.Settings;
@@ -45,7 +46,11 @@ internal static class Program
         }
 
         var log = new FileAppLog();
-        var matcher = new HotkeyMatcher();
+        using var captureIdentity = WindowsIdentity.GetCurrent();
+        // フック停止の待機には上限があるため、ハンドルは判定関数とともに入力スレッドの寿命まで保つ。
+        var capture = new HotkeyCaptureMutex(HotkeyCaptureSession.MutexName(
+            captureIdentity.User?.Value ?? throw new InvalidOperationException("ユーザーの SID を取得できない。")));
+        var matcher = new HotkeyMatcher(() => capture.IsCapturing);
         var hooks = new HookService(new HookThread(matcher), log);
         var tray = new TrayIcon(log);
         var inspector = new Win32WindowInspector();
@@ -73,12 +78,13 @@ internal static class Program
                 var previewSurface = new OverlaySession(interactive: false, diagnostic: LauncherLog.Write);
                 var launcherSurface = new OverlaySession(interactive: true, diagnostic: LauncherLog.Write);
                 var preview = new ZonePreview(previewSurface, monitors, settings: () => settings);
+                var previewChannels = new ZonePreviewChannels(preview);
                 var tracking = new MouseTrackingVotes(value => hooks.MouseTrackingEnabled = value);
                 var neighbors = new NeighborWindowSource(inspector, monitors, (uint)Environment.ProcessId,
                     () => settings);
                 var drag = new DragSnapController(inspector, monitors, motion, () => settings,
                     tracking.SetDrag, (uint)Environment.ProcessId,
-                    preview: preview, cursorPosition: CursorPosition, neighbors: neighbors.Snapshot);
+                    preview: previewChannels.Drag, cursorPosition: CursorPosition, neighbors: neighbors.Snapshot);
                 LauncherController? launcher = null;
                 var hotkeys = new HotkeyCommandExecutor(inspector, monitors, motion, position, () => settings,
                     enabled, toggle, (uint)Environment.ProcessId, () => launcher?.Open(), neighbors: neighbors.Snapshot);
@@ -93,9 +99,12 @@ internal static class Program
                     new ForegroundTargetTracker(inspector, (uint)Environment.ProcessId, () => settings),
                     new CornerWindowController(corners, inspector, () => settings, (uint)Environment.ProcessId, log),
                     new ResizeSnapController(inspector, monitors, motion, () => settings,
-                        new Win32ResizeConstraints(), (uint)Environment.ProcessId));
+                        new Win32ResizeConstraints(), (uint)Environment.ProcessId, previewChannels.Resize));
             }, new SettingsWatcher(SettingsStores.PortablePath()),
-            () => new SettingsLauncher(log).Open("--setup"), new SettingsWatcher(SettingsStores.DevicePath()));
+            () => new SettingsLauncher(log).Open("--setup"), new SettingsWatcher(SettingsStores.DevicePath()),
+            sync: new SettingsSyncService(SettingsStores.PortablePath(),
+                Path.Combine(Path.GetDirectoryName(SettingsStores.DevicePath())!, "sync-backups"),
+                SettingsStores.Device(), log));
         UnhandledExceptionEventHandler unhandled = (_, args) => host.HandleUnhandledException(
             args.ExceptionObject as Exception ?? new InvalidOperationException("未処理の例外。"));
         EventHandler<UnobservedTaskExceptionEventArgs> unobserved = (_, args) =>
