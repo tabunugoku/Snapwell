@@ -60,8 +60,8 @@ public static class WindowRuleListEditor
         {
             WindowRuleError.NoCondition => "条件を 1 つ以上入力してください。",
             WindowRuleError.NoEffect =>
-                "配置の扱いか、ウィンドウの角の、どちらかは「全体設定に従う」以外にしてください。",
-            WindowRuleError.InvalidTitlePattern => "タイトルの正規表現が正しくありません",
+                "「配置の扱い」と「ウィンドウの角」の少なくとも一方は、「全体設定に従う」以外にしてください。",
+            WindowRuleError.InvalidTitlePattern => "タイトルの正規表現が正しくありません。",
             WindowRuleError.TooLong => "条件はそれぞれ 260 文字以内にしてください。",
             _ => null,
         };
