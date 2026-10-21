@@ -72,6 +72,14 @@ public static class WindowClassifier
         return (window.Style & (uint)WINDOW_STYLE.WS_THICKFRAME) == 0 ? WindowKind.FixedSize : WindowKind.Normal;
     }
 
+    /// <summary>
+    /// DWM が枠を描くウィンドウか。枠を自分で描くフレームなしのウィンドウ（浮かぶチャットバーなど）に
+    /// DWM の角の設定を当てると、四角い枠が出る（Claude のチャットバーで実機確認）。
+    /// </summary>
+    public static bool HasSystemFrame(WindowSnapshot window) =>
+        (window.Style & (uint)WINDOW_STYLE.WS_CAPTION) == (uint)WINDOW_STYLE.WS_CAPTION ||
+        (window.Style & (uint)WINDOW_STYLE.WS_THICKFRAME) != 0;
+
     /// <summary>通常のウィンドウだけサイズ変更を許可する。</summary>
     public static bool CanResize(WindowSnapshot window, uint ownProcessId) =>
         Classify(window, ownProcessId) == WindowKind.Normal;

@@ -50,6 +50,23 @@ public sealed class CornerWindowControllerTests
         }
     }
 
+    [Theory]
+    [InlineData(0x14000000u, 0x8u, false)]
+    [InlineData(0x14000000u, 0x200008u, false)]
+    [InlineData(0x14C00000u, 0u, true)]
+    [InlineData(0x14040000u, 0u, true)]
+    public void ShownWindowWithoutSystemFrameKeepsItsCorner(uint style, uint extendedStyle, bool expected)
+    {
+        var inspector = new FakeInspector();
+        inspector.Window = inspector.Window with { Style = style, ExtendedStyle = extendedStyle };
+        var api = new CornerApi();
+        var controller = new CornerWindowController(new(api), inspector,
+            () => new() { CornerPreference = WindowCornerPreference.Round }, 999, new Log());
+        controller.SetEnabled(true);
+        controller.Handle(new WindowShown(1));
+        Assert.Equal(expected ? new[] { CornerStyle.Round } : [], api.Calls);
+    }
+
     private sealed class CornerApi : ICornerApi
     {
         internal List<CornerStyle> Calls { get; } = [];

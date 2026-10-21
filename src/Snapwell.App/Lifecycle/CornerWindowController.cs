@@ -43,7 +43,7 @@ internal sealed class CornerWindowController(CornerStyler styler, IWindowInspect
 
     private void Apply(WindowSnapshot window)
     {
-        if (window.IsMaximized || (window.ExtendedStyle & 0x80) != 0 ||
+        if (window.IsMaximized || (window.ExtendedStyle & 0x80) != 0 || !WindowClassifier.HasSystemFrame(window) ||
             WindowClassifier.Classify(window, ownProcessId) is not (WindowKind.Normal or WindowKind.FixedSize))
         {
             return;
