@@ -111,6 +111,12 @@ public sealed class SettingsSession
             Changed?.Invoke(this, EventArgs.Empty);
             return false;
         }
+        catch (ArgumentException exception) when (exception.ParamName == nameof(PortableSettings.WindowRules))
+        {
+            // 手で書き換えられたファイルやインポートで、不正なルールが残っていることがある。保存は止め、編集中の値は保つ。
+            message = "アプリごとのルールに保存できないものがあります。「アプリのルール」で条件を直すか、削除してください。";
+            return false;
+        }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException or
             InvalidOperationException)
         {
