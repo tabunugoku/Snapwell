@@ -13,6 +13,7 @@ public sealed partial class WindowPickerDialog : ContentDialog
     public WindowPickerDialog(SettingsSession session)
     {
         InitializeComponent();
+        DialogButtons.Compact(this);
         var windows = session.OpenWindows.List();
         EmptyHint.Visibility = windows.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         foreach (var window in windows)
