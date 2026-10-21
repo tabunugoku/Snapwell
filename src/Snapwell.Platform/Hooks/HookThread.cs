@@ -17,6 +17,7 @@ public sealed class HookThread : IDisposable
     private readonly object _lifecycle = new();
     private readonly IHookApi _api;
     private readonly HotkeyMatcher _matcher;
+    private readonly IDummyKeySender _dummyKeySender;
     private readonly HookInputBuffer _buffer;
     private readonly HookEventDelivery _events;
     private readonly AutoResetEvent _wake = new(false);
@@ -37,10 +38,11 @@ public sealed class HookThread : IDisposable
     {
     }
 
-    internal HookThread(HotkeyMatcher matcher, int capacity, IHookApi api)
+    internal HookThread(HotkeyMatcher matcher, int capacity, IHookApi api, IDummyKeySender? dummyKeySender = null)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(capacity, 1);
         _matcher = matcher;
+        _dummyKeySender = dummyKeySender ?? new Win32DummyKeySender();
         _api = api;
         _buffer = new HookInputBuffer(capacity);
         _events = new HookEventDelivery(capacity);
@@ -265,9 +267,18 @@ public sealed class HookThread : IDisposable
         }
     }
 
-    internal bool ProcessKey(uint virtualKey, bool isDown)
+    internal bool ProcessKey(uint virtualKey, bool isDown, bool injected = false)
     {
+        if (injected)
+        {
+            return false;
+        }
         var match = _matcher.ProcessKey(virtualKey, isDown);
+        if (match.SendDummyKey)
+        {
+            // OS に Win の解放を渡す前に送る。送信の失敗で解放やフックを止めない。
+            _dummyKeySender.Send();
+        }
         if (match.Matched)
         {
             Enqueue(new RawHookEvent(RawHookKind.Key, Detail: match.Id));
@@ -346,7 +357,8 @@ public sealed class HookThread : IDisposable
             var messageId = (uint)message.Value;
             if (messageId is PInvoke.WM_KEYDOWN or PInvoke.WM_SYSKEYDOWN or PInvoke.WM_KEYUP or PInvoke.WM_SYSKEYUP)
             {
-                if (owner.ProcessKey(key->vkCode, messageId is PInvoke.WM_KEYDOWN or PInvoke.WM_SYSKEYDOWN))
+                if (owner.ProcessKey(key->vkCode, messageId is PInvoke.WM_KEYDOWN or PInvoke.WM_SYSKEYDOWN,
+                    (key->flags & KBDLLHOOKSTRUCT_FLAGS.LLKHF_INJECTED) != 0))
                 {
                     return new LRESULT(1);
                 }
