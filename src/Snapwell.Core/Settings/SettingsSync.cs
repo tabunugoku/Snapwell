@@ -28,8 +28,8 @@ public sealed record SettingsSyncResult(SettingsSyncKind Kind, string? Message =
     public string ToDisplayText() => Kind switch
     {
         SettingsSyncKind.NoChange => "変更なし",
-        SettingsSyncKind.Pushed => "書き出した",
-        SettingsSyncKind.Pulled => "取り込んだ",
+        SettingsSyncKind.Pushed => "書き出し済み",
+        SettingsSyncKind.Pulled => "取り込み済み",
         SettingsSyncKind.ConflictLocalWon => "競合: この PC の設定を採用",
         SettingsSyncKind.ConflictRemoteWon => "競合: 同期先の設定を採用",
         SettingsSyncKind.Busy => "同期中: ほかの処理の完了を待っています",

@@ -244,7 +244,7 @@ public static class SettingsTransfer
             imported.CornerPreference, CornerName);
         Add(SettingsField.ShowZoneLines, "区画の線", current.ShowZoneLines, imported.ShowZoneLines, OnOff);
         Add(SettingsField.ShowPredictionLine, "予測の線", current.ShowPredictionLine, imported.ShowPredictionLine, OnOff);
-        Add(SettingsField.SnapAfterResize, "手動リサイズ後に区画へ揃える", current.SnapAfterResize,
+        Add(SettingsField.SnapAfterResize, "手動でリサイズしたら区画にそろえる", current.SnapAfterResize,
             imported.SnapAfterResize, OnOff);
         Add(SettingsField.MoveFixedSizeWindows, "サイズ固定のウィンドウも動かす", current.MoveFixedSizeWindows,
             imported.MoveFixedSizeWindows, OnOff);

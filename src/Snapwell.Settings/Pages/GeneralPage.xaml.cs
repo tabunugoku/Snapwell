@@ -42,7 +42,7 @@ public sealed partial class GeneralPage : Page
         {
             AutoStartToggle.IsEnabled = false;
             AdminStartToggle.IsEnabled = false;
-            RegistrationStatus.Text = "Snapwell.exe が同じフォルダーに無いため、自動起動を設定できません";
+            RegistrationStatus.Text = "Snapwell.exe が同じフォルダーにないため、自動起動を設定できません";
             RegistrationStatus.Visibility = Visibility.Visible;
             return;
         }
@@ -265,23 +265,23 @@ public sealed partial class GeneralPage : Page
             if (result == StartupChangeResult.Cancelled)
             {
                 ErrorNotice.Severity = InfoBarSeverity.Informational;
-                ErrorNotice.Message = "管理者権限の許可が得られなかったため変更していません";
+                ErrorNotice.Message = "管理者権限の許可が得られなかったため、変更していません。";
                 ErrorNotice.IsOpen = true;
             }
             else if (result != StartupChangeResult.Success)
             {
                 ErrorNotice.Message = result switch
                 {
-                    StartupChangeResult.ExpandablePath => "パスに % を含む場所では管理者起動を登録できません",
-                    StartupChangeResult.UnprotectedLocation => "管理者以外が書き込めない場所に配置してください",
-                    _ => "タスク スケジューラに登録できませんでした",
+                    StartupChangeResult.ExpandablePath => "パスに % を含む場所では管理者起動を登録できません。",
+                    StartupChangeResult.UnprotectedLocation => "管理者以外が書き込めない場所に配置してください。",
+                    _ => "タスク スケジューラに登録できませんでした。",
                 };
                 ErrorNotice.IsOpen = true;
             }
             else if (admin && enabled)
             {
                 ErrorNotice.Severity = InfoBarSeverity.Informational;
-                ErrorNotice.Message = "次のサインインから管理者として起動します";
+                ErrorNotice.Message = "次のサインインから管理者として起動します。";
                 ErrorNotice.IsOpen = true;
             }
         }

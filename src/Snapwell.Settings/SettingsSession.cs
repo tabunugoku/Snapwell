@@ -95,7 +95,7 @@ public sealed class SettingsSession
         {
             if (!SettingsSync.WithLock(SettingsStores.PortablePath(), () => _store.Save(Current), _saveLockTimeout))
             {
-                message = "同期の実行中のため、少し待ってからもう一度保存してください";
+                message = "同期の実行中のため、少し待ってからもう一度保存してください。";
                 return false;
             }
             _saved = SettingsTransfer.Normalize(Current);
@@ -149,7 +149,7 @@ public sealed class SettingsSession
             else if (decision == SettingsSyncReloadKind.KeepEdits)
             {
                 IsReadOnly = false;
-                SyncMessage = "同期先の設定を取り込みました。未保存の変更は、保存すると取り込んだ内容を上書きします";
+                SyncMessage = "同期先の設定を取り込みました。未保存の変更は、保存すると取り込んだ内容を上書きします。";
             }
             else
             {

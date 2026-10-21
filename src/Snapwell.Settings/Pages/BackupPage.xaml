@@ -9,7 +9,7 @@
             <TextBlock Text="同期とバックアップ" Style="{StaticResource SnapwellPageTitleStyle}" TextWrapping="Wrap" />
             <TextBlock Text="ホットキー・分割案・間隔・操作感・ルールを、ほかの PC と共有できます。モニター構成ごとの配置は、この PC にだけ保存します。"
                        Style="{StaticResource SnapwellLeadTextStyle}" />
-            <TextBlock Text="Snapwell 自体には、設定をクラウドへ送る機能はありません。OneDrive や Dropbox など、お使いのファイル同期サービスが、同期フォルダーの中のファイルをほかの PC へ運びます。そのサービスの同期が終わるまで、ほかの PC には反映されません。"
+            <TextBlock Text="Snapwell 自体には、設定をクラウドへ送る機能はありません。OneDrive や Dropbox など、お使いのファイル同期サービスが、同期フォルダーの中のファイルをほかの PC にコピーします。そのサービスの同期が終わるまで、ほかの PC には反映されません。"
                        Style="{StaticResource SnapwellHintTextStyle}" TextWrapping="Wrap" Margin="0,0,0,12" />
             <InfoBar x:Name="TransferNotice" IsClosable="True" />
 
@@ -74,7 +74,7 @@
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
                             <TextBlock Text="取り込む" Style="{StaticResource SnapwellRowTitleStyle}" />
-                            <TextBlock Text="取り込む前に、今の設定との違いを表示します。全部を置き換えるか、一部だけ取り込むかを選べます"
+                            <TextBlock Text="取り込む前に、いまの設定との違いを表示します。全部を置き換えるか、一部だけ取り込むかを選べます"
                                        Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
                         <Button x:Name="ImportButton" Grid.Column="1" Content="取り込む" IsEnabled="False"

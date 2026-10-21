@@ -14,10 +14,10 @@
     </ContentDialog.Resources>
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
         <StackPanel Spacing="8" Width="440">
-            <TextBlock Text="指定した条件すべてに一致するウィンドウに適用します。空の欄は見ません。"
+            <TextBlock Text="指定した条件すべてに一致するウィンドウに適用します。空の欄は条件に含めません。"
                        Style="{StaticResource SnapwellHintTextStyle}" />
             <TextBlock x:Name="UwpNotice" Visibility="Collapsed" TextWrapping="Wrap"
-                       Text="UWP アプリはプロセス名ではアプリごとに分けられないので、クラスかタイトルで指定してください"
+                       Text="UWP アプリはプロセス名ではアプリごとに分けられないので、クラスかタイトルで指定してください。"
                        Foreground="{ThemeResource SnapwellYellowTextBrush}" />
             <TextBox x:Name="ProcessBox" Header="プロセス名" PlaceholderText="chrome.exe"
                      FontFamily="{StaticResource SnapwellMonoFontFamily}"
@@ -43,7 +43,7 @@
             <ComboBox x:Name="CornerBox" Header="ウィンドウの角" HorizontalAlignment="Stretch"
                       AutomationProperties.Name="ウィンドウの角" SelectionChanged="Corner_Changed">
                 <ComboBoxItem Content="全体設定に従う" />
-                <ComboBoxItem Content="Windows の既定（Snapwell は触らない）" />
+                <ComboBoxItem Content="Windows の既定（Snapwell は変更しない）" />
                 <ComboBoxItem Content="角丸を強制する" />
                 <ComboBoxItem Content="小さい角丸" />
                 <ComboBoxItem Content="角丸なし" />

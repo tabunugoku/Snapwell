@@ -11,7 +11,7 @@
     DefaultButton="Close"
     IsSecondaryButtonEnabled="False">
     <StackPanel Spacing="16">
-        <TextBlock Text="今の設定との違いです。一部だけ取り込む場合は、項目を選んでください。"
+        <TextBlock Text="いまの設定との違いです。一部だけ取り込む場合は、項目を選んでください。"
                    TextWrapping="Wrap" />
         <ListView x:Name="DifferenceList" SelectionMode="Multiple" IsMultiSelectCheckBoxEnabled="True"
                   SelectionChanged="Difference_SelectionChanged" MaxHeight="360" MinHeight="100"
