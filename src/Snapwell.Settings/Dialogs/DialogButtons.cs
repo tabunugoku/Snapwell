@@ -17,11 +17,15 @@ internal static class DialogButtons
     public static void Compact(ContentDialog dialog)
     {
         dialog.CornerRadius = new CornerRadius(8);
+        // 既定ボタンになった決定以外のボタンは、強調色の Style に戻されて文字が見えなくなる（実機で確認）。
+        // 決定以外を既定にしないことで避ける（Enter で押されるのは決定ボタンだけになる）
+        if (dialog.DefaultButton != ContentDialogButton.Primary) { dialog.DefaultButton = ContentDialogButton.None; }
         dialog.Opened += (_, _) =>
         {
             // 既定のままだと下のボタンが幅いっぱいに引き伸ばされるため、右に寄せて内容の幅にする
             if (Find(dialog, "CommandSpace") is { } commandSpace) { commandSpace.HorizontalAlignment = HorizontalAlignment.Right; }
-            var muted = Muted(dialog);
+            var text = ThemeBrush(dialog, "SnapwellTextBrush");
+            var border = ThemeBrush(dialog, "SnapwellBorderStrongBrush");
             foreach (var name in new[] { "PrimaryButton", "SecondaryButton", "CloseButton" })
             {
                 if (Find(dialog, name) is not Button button) { continue; }
@@ -30,11 +34,14 @@ internal static class DialogButtons
                 button.Height = ButtonHeight;
                 button.FontSize = 13;
                 button.CornerRadius = new CornerRadius(6);
+                button.VerticalContentAlignment = VerticalAlignment.Center;
+                button.Padding = new Thickness(14, 0, 14, 2); // 日本語のフォントは文字が下に寄るため、下に 2px 足して中央に見せる
                 if (name == "PrimaryButton") { continue; }
-                // 決定以外は枠なしの文字。既定ボタンでも塗らない
+                // 決定以外は枠つきで塗らない
                 button.Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
-                button.BorderThickness = new Thickness(0);
-                if (muted is not null) { button.Foreground = muted; button.Resources["ButtonForeground"] = muted; }
+                button.BorderThickness = new Thickness(1);
+                if (border is not null) { button.BorderBrush = border; }
+                if (text is not null) { button.Foreground = text; }
             }
         };
     }
@@ -49,12 +56,12 @@ internal static class DialogButtons
         Compact(dialog);
     }
 
-    private static Brush? Muted(FrameworkElement element)
+    private static Brush? ThemeBrush(FrameworkElement element, string key)
     {
         var theme = element.ActualTheme == ElementTheme.Dark ? "Dark" : "Light";
         return Application.Current.Resources.ThemeDictionaries.TryGetValue(theme, out var dictionary)
             && dictionary is ResourceDictionary themed
-            && themed.TryGetValue("SnapwellMutedBrush", out var brush) ? brush as Brush : null;
+            && themed.TryGetValue(key, out var brush) ? brush as Brush : null;
     }
 
     private static FrameworkElement? Find(DependencyObject parent, string name)
