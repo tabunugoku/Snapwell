@@ -225,7 +225,7 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
 .range-row output { font-family: var(--font-mono); font-size: 12px; text-align: right; }
 /* ボタンの形と大きさは、どこに置いても 1 種類。違いは「決定 (.primary)」とそれ以外の 2 段階で、色だけで出す。
    アイコンだけの .hk-ic、.seg、.lwin-pager、.chip はボタンではなく部品として別に扱う。
-   見せ方は案 B（決定だけ塗り、ほかは枠なしの文字）に決定済み。 */
+   見せ方は案 B（決定は塗り、ほかは枠つきで塗らない）に決定済み。 */
 :root { --btn-h: 28px; --btn-px: 14px; --btn-r: 6px; --btn-fs: 13px; --btn-minw: 72px; --step: #ECECEA; --step-hover: #E2E2DF; }
 :root[data-theme="dark"] { --step: #333332; --step-hover: #3C3C3A; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --step: #333332; --step-hover: #3C3C3A; } }
@@ -233,13 +233,13 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
   height: var(--btn-h); min-width: var(--btn-minw); padding: 0 var(--btn-px); border-radius: var(--btn-r);
   font-size: var(--btn-fs); line-height: 1; white-space: nowrap; cursor: pointer;
   display: inline-flex; align-items: center; justify-content: center;
-  border: 1px solid transparent; background: transparent; color: var(--muted);
+  border: 1px solid var(--border-strong); background: transparent; color: var(--text);
 }
-.btn:hover { color: var(--ink); background: var(--step); }
+.btn:hover { background: var(--step); }
 .btn:active { transform: scale(0.98); }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
 .btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
-.btn.primary { background: var(--ink); color: var(--ink-text); }
+.btn.primary { background: var(--ink); color: var(--ink-text); border-color: var(--ink); }
 .btn.primary:hover { background: var(--ink-hover); }
 .readout { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 12.5px; }
 .readout dt { color: var(--muted); }

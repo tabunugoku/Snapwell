@@ -777,16 +777,17 @@
             </Style>
 
             <!-- 操作ボタンの形と大きさは 1 種類（高さ 28・横の余白 14・最小幅 72・角 6・文字 13）。
-                 決定は Primary（塗り）、それ以外は Action（枠なしの文字）。docs/mockups/snapwell.html の案 B。
+                 決定は Primary（塗り）、それ以外は Action（枠つきで塗らない）。docs/mockups/snapwell.html の案 B。
                  チップ・カード・アイコンだけのボタンは SnapwellButtonStyle のまま別の部品として扱う -->
             <Style x:Key="SnapwellActionButtonStyle" TargetType="Button">
                 <Setter Property="FontFamily" Value="{StaticResource SnapwellUiFontFamily}" />
                 <Setter Property="FontSize" Value="13" />
                 <Setter Property="Background" Value="Transparent" />
-                <Setter Property="Foreground" Value="{ThemeResource SnapwellMutedBrush}" />
-                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="Foreground" Value="{ThemeResource SnapwellTextBrush}" />
+                <Setter Property="BorderBrush" Value="{ThemeResource SnapwellBorderStrongBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
                 <Setter Property="CornerRadius" Value="6" />
-                <Setter Property="Padding" Value="14,0" />
+                <Setter Property="Padding" Value="14,0,14,2" />
                 <Setter Property="MinHeight" Value="0" />
                 <Setter Property="MinWidth" Value="72" />
                 <Setter Property="Height" Value="28" />
@@ -800,7 +801,7 @@
                 <Setter Property="BorderBrush" Value="{ThemeResource SnapwellInkBrush}" />
                 <Setter Property="BorderThickness" Value="1" />
                 <Setter Property="CornerRadius" Value="6" />
-                <Setter Property="Padding" Value="14,0" />
+                <Setter Property="Padding" Value="14,0,14,2" />
                 <Setter Property="MinHeight" Value="0" />
                 <Setter Property="MinWidth" Value="72" />
                 <Setter Property="Height" Value="28" />
