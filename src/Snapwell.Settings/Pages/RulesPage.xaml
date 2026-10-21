@@ -57,7 +57,7 @@
                        Style="{StaticResource SnapwellHintTextStyle}" />
             <Expander Header="Snapwell が最初から対象外にしているもの" IsExpanded="False"
                       AutomationProperties.Name="Snapwell が最初から対象外にしているもの"
-                      HorizontalAlignment="Stretch" Margin="0,14,0,0">
+                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Margin="0,14,0,0">
                 <StackPanel Spacing="6">
                     <TextBlock Style="{StaticResource SnapwellHintTextStyle}"
                                Text="次のウィンドウは、ルールでは変えられません（「強制的に対象」にしても対象になりません）。" />

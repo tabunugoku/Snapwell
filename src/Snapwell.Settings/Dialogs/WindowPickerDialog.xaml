@@ -5,6 +5,10 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Title="ウィンドウを選んで追加" CloseButtonText="取り消す" DefaultButton="Close">
     <ContentDialog.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="ms-appx:///Dialogs/DialogResources.xaml" />
+            </ResourceDictionary.MergedDictionaries>
         <Style x:Key="PickRowStyle" TargetType="Button" BasedOn="{StaticResource SnapwellButtonStyle}">
             <Setter Property="HorizontalAlignment" Value="Stretch" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -17,8 +21,9 @@
         <Style x:Key="PickWarningStyle" TargetType="TextBlock" BasedOn="{StaticResource SnapwellHintTextStyle}">
             <Setter Property="Foreground" Value="{ThemeResource SnapwellYellowTextBrush}" />
         </Style>
+        </ResourceDictionary>
     </ContentDialog.Resources>
-    <StackPanel Spacing="12" MinWidth="360">
+    <StackPanel Spacing="12" Width="440">
         <TextBlock Text="いま開いているウィンドウから選びます。選ぶと、その値が入った状態で「ルールを追加」が開きます。"
                    Style="{StaticResource SnapwellHintTextStyle}" />
         <Border Style="{StaticResource SnapwellRowsBorderStyle}">

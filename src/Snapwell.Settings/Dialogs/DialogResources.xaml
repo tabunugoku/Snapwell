@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ダイアログの中の標準コントロールに、Windows の強調色（水色）ではなく Snapwell の色を使わせる。
+     App.xaml の上書きはダイアログの中まで届かないことを実機で確認したため、ダイアログ側にも同じ値を置く。 -->
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Light">
+            <SolidColorBrush x:Key="ContentDialogBackground" Color="#FFFFFFFF" />
+            <SolidColorBrush x:Key="ContentDialogBorderBrush" Color="#FFDADAD7" />
+            <SolidColorBrush x:Key="AccentFillColorDefaultBrush" Color="#FF111111" />
+            <SolidColorBrush x:Key="AccentFillColorSecondaryBrush" Color="#FF333333" />
+            <SolidColorBrush x:Key="AccentFillColorTertiaryBrush" Color="#FF333333" />
+            <SolidColorBrush x:Key="TextOnAccentFillColorPrimaryBrush" Color="#FFFFFFFF" />
+            <SolidColorBrush x:Key="AccentButtonBackground" Color="#FF111111" />
+            <SolidColorBrush x:Key="AccentButtonBackgroundPointerOver" Color="#FF333333" />
+            <SolidColorBrush x:Key="AccentButtonBackgroundPressed" Color="#FF333333" />
+            <SolidColorBrush x:Key="AccentButtonForeground" Color="#FFFFFFFF" />
+            <SolidColorBrush x:Key="AccentButtonForegroundPointerOver" Color="#FFFFFFFF" />
+            <SolidColorBrush x:Key="AccentButtonForegroundPressed" Color="#FFFFFFFF" />
+            <SolidColorBrush x:Key="AccentButtonBorderBrush" Color="#FF111111" />
+            <SolidColorBrush x:Key="AccentButtonBorderBrushPointerOver" Color="#FF333333" />
+            <SolidColorBrush x:Key="AccentButtonBorderBrushPressed" Color="#FF333333" />
+            <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStroke" Color="#FF111111" />
+            <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStrokePointerOver" Color="#FF333333" />
+            <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStrokePressed" Color="#FF333333" />
+            <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFill" Color="#FF111111" />
+            <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFillPointerOver" Color="#FF333333" />
+            <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFillPressed" Color="#FF333333" />
+            <SolidColorBrush x:Key="RadioButtonCheckGlyphFill" Color="#FFFFFFFF" />
+            <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#FF111111" />
+            <SolidColorBrush x:Key="ComboBoxBorderBrushFocused" Color="#FF111111" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Dark">
+            <SolidColorBrush x:Key="ContentDialogBackground" Color="#FF202020" />
+            <SolidColorBrush x:Key="ContentDialogBorderBrush" Color="#24FFFFFF" />
+            <SolidColorBrush x:Key="AccentFillColorDefaultBrush" Color="#FFF2F2F0" />
+            <SolidColorBrush x:Key="AccentFillColorSecondaryBrush" Color="#FFD9D9D6" />
+            <SolidColorBrush x:Key="AccentFillColorTertiaryBrush" Color="#FFD9D9D6" />
+            <SolidColorBrush x:Key="TextOnAccentFillColorPrimaryBrush" Color="#FF111111" />
+            <SolidColorBrush x:Key="AccentButtonBackground" Color="#FFF2F2F0" />
+            <SolidColorBrush x:Key="AccentButtonBackgroundPointerOver" Color="#FFD9D9D6" />
+            <SolidColorBrush x:Key="AccentButtonBackgroundPressed" Color="#FFD9D9D6" />
+            <SolidColorBrush x:Key="AccentButtonForeground" Color="#FF111111" />
+            <SolidColorBrush x:Key="AccentButtonForegroundPointerOver" Color="#FF111111" />
+            <SolidColorBrush x:Key="AccentButtonForegroundPressed" Color="#FF111111" />
+            <SolidColorBrush x:Key="AccentButtonBorderBrush" Color="#FFF2F2F0" />
+            <SolidColorBrush x:Key="AccentButtonBorderBrushPointerOver" Color="#FFD9D9D6" />
+            <SolidColorBrush x:Key="AccentButtonBorderBrushPressed" Color="#FFD9D9D6" />
+            <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStroke" Color="#FFF2F2F0" />
+            <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStrokePointerOver" Color="#FFD9D9D6" />
+            <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStrokePressed" Color="#FFD9D9D6" />
+            <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFill" Color="#FFF2F2F0" />
+            <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFillPointerOver" Color="#FFD9D9D6" />
+            <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFillPressed" Color="#FFD9D9D6" />
+            <SolidColorBrush x:Key="RadioButtonCheckGlyphFill" Color="#FF111111" />
+            <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#FFF2F2F0" />
+            <SolidColorBrush x:Key="ComboBoxBorderBrushFocused" Color="#FFF2F2F0" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Default">
+            <SolidColorBrush x:Key="ContentDialogBackground" Color="#FF202020" />
+            <SolidColorBrush x:Key="ContentDialogBorderBrush" Color="#24FFFFFF" />
+            <SolidColorBrush x:Key="AccentFillColorDefaultBrush" Color="#FFF2F2F0" />
+            <SolidColorBrush x:Key="AccentFillColorSecondaryBrush" Color="#FFD9D9D6" />
+            <SolidColorBrush x:Key="AccentFillColorTertiaryBrush" Color="#FFD9D9D6" />
+            <SolidColorBrush x:Key="TextOnAccentFillColorPrimaryBrush" Color="#FF111111" />
+            <SolidColorBrush x:Key="AccentButtonBackground" Color="#FFF2F2F0" />
+            <SolidColorBrush x:Key="AccentButtonBackgroundPointerOver" Color="#FFD9D9D6" />
+            <SolidColorBrush x:Key="AccentButtonBackgroundPressed" Color="#FFD9D9D6" />
+            <SolidColorBrush x:Key="AccentButtonForeground" Color="#FF111111" />
+            <SolidColorBrush x:Key="AccentButtonForegroundPointerOver" Color="#FF111111" />
+            <SolidColorBrush x:Key="AccentButtonForegroundPressed" Color="#FF111111" />
+            <SolidColorBrush x:Key="AccentButtonBorderBrush" Color="#FFF2F2F0" />
+            <SolidColorBrush x:Key="AccentButtonBorderBrushPointerOver" Color="#FFD9D9D6" />
+            <SolidColorBrush x:Key="AccentButtonBorderBrushPressed" Color="#FFD9D9D6" />
+            <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStroke" Color="#FFF2F2F0" />
+            <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStrokePointerOver" Color="#FFD9D9D6" />
+            <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStrokePressed" Color="#FFD9D9D6" />
+            <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFill" Color="#FFF2F2F0" />
+            <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFillPointerOver" Color="#FFD9D9D6" />
+            <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFillPressed" Color="#FFD9D9D6" />
+            <SolidColorBrush x:Key="RadioButtonCheckGlyphFill" Color="#FF111111" />
+            <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#FFF2F2F0" />
+            <SolidColorBrush x:Key="ComboBoxBorderBrushFocused" Color="#FFF2F2F0" />
+        </ResourceDictionary>
+    </ResourceDictionary.ThemeDictionaries>
+</ResourceDictionary>
