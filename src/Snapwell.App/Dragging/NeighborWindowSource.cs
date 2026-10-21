@@ -1,4 +1,5 @@
 using Snapwell.Core.Geometry;
+using Snapwell.Core.Rules;
 using Snapwell.Core.Settings;
 using Snapwell.Platform.Monitors;
 using Snapwell.Platform.Windows;
@@ -7,11 +8,14 @@ namespace Snapwell.App.Dragging;
 
 /// <summary>ドラッグ開始時に隣接吸着の対象となる見た目の矩形を取得する。</summary>
 internal sealed class NeighborWindowSource(IWindowInspector inspector, IMonitorSource monitors, uint ownProcessId,
-    Func<PortableSettings>? settings = null)
+    Func<PortableSettings>? settings = null, WindowTargetResolver? targets = null)
 {
+    private readonly WindowTargetResolver _targets = targets ??
+        new(new Win32ProcessNameSource(), settings ?? (() => new()), ownProcessId);
+
     /// <summary>
-    /// 通常・固定サイズの所有者なしウィンドウを、ドラッグ対象と最大化を除いて返す。
-    /// 設定で固定サイズを動かさないときは固定サイズを除く。
+    /// ドラッグ対象と最大化を除いて返す。配置を明示するルールがなければ、
+    /// 通常・固定サイズの所有者なしウィンドウだけを全体設定に従って含める。
     /// </summary>
     internal IReadOnlyList<PixelRect> Snapshot(nint draggedHandle)
     {
@@ -28,8 +32,6 @@ internal sealed class NeighborWindowSource(IWindowInspector inspector, IMonitorS
             return [];
         }
 
-        // 設定は呼び出しごとに読み、変更を次のドラッグから反映する。
-        var moveFixedSize = settings?.Invoke().MoveFixedSizeWindows ?? true;
         var bounds = new List<PixelRect>();
         var seen = new HashSet<nint>();
         foreach (var handle in handles)
@@ -46,9 +48,9 @@ internal sealed class NeighborWindowSource(IWindowInspector inspector, IMonitorS
                     continue;
                 }
 
-                var kind = WindowClassifier.Classify(window, ownProcessId);
-                if (kind is not (WindowKind.Normal or WindowKind.FixedSize) ||
-                    (kind == WindowKind.FixedSize && !moveFixedSize) || inspector.GetOwner(handle) != 0 ||
+                var target = _targets.Resolve(window);
+                if (!target.IsTarget || target.Kind is not (WindowKind.Normal or WindowKind.FixedSize) ||
+                    inspector.GetOwner(handle) != 0 && target.Placement == PlacementRule.Inherit ||
                     !areas.Any(area => area.Intersects(window.VisualBounds)))
                 {
                     continue;

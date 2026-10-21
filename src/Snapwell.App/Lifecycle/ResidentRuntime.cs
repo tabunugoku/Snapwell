@@ -3,6 +3,7 @@ using Snapwell.App.Hotkeys;
 using Snapwell.App.Motion;
 using Snapwell.App.Overlay;
 using Snapwell.Core.Commands;
+using Snapwell.Core.Rules;
 using Snapwell.Platform.Hooks;
 using Snapwell.Platform.Windows;
 
@@ -25,6 +26,7 @@ internal sealed class ResidentRuntime : IAppRuntime
     private readonly IReadOnlyList<IDisposable>? _overlays;
     private readonly CornerWindowController? _corners;
     private readonly ResizeSnapController? _resize;
+    private readonly Action<WindowRule[]>? _updateWindowRules;
     private bool _disposed;
     private bool _enabled = true;
 
@@ -34,7 +36,7 @@ internal sealed class ResidentRuntime : IAppRuntime
         IZonePreview? preview = null, Action<bool>? setOverlayEnabled = null,
         IReadOnlyList<IDisposable>? overlays = null,
         ForegroundTargetTracker? foregroundTargets = null, CornerWindowController? corners = null,
-        ResizeSnapController? resize = null)
+        ResizeSnapController? resize = null, Action<WindowRule[]>? updateWindowRules = null)
     {
         _drag = drag;
         _hotkeys = hotkeys;
@@ -50,6 +52,24 @@ internal sealed class ResidentRuntime : IAppRuntime
         _overlays = overlays;
         _corners = corners;
         _resize = resize;
+        _updateWindowRules = updateWindowRules;
+    }
+
+    /// <summary>操作開始時の判定を保ったまま、次の操作と表示中のウィンドウの角へ反映する。</summary>
+    public bool TryUpdateWindowRules(WindowRule[] rules)
+    {
+        lock (_gate)
+        {
+            if (_disposed || _updateWindowRules is null)
+            {
+                return false;
+            }
+
+            _updateWindowRules(rules);
+            _launcher?.Close();
+            _corners?.SetEnabled(_enabled);
+            return true;
+        }
     }
 
     public void SetEnabled(bool enabled)

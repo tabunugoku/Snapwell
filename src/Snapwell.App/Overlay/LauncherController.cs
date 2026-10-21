@@ -26,6 +26,7 @@ internal sealed class LauncherController : IDisposable
     private readonly IReadOnlyList<HotkeyBinding> _normalBindings;
     private readonly IReadOnlyList<HotkeyBinding> _pausedBindings;
     private readonly IReadOnlyList<HotkeyBinding> _launcherBindings;
+    private readonly WindowTargetResolver _targets;
     private readonly uint _ownProcessId;
     private readonly Func<OverlayTheme> _theme;
     private readonly LauncherArrangement _arrangement;
@@ -60,7 +61,7 @@ internal sealed class LauncherController : IDisposable
     internal LauncherController(IWindowInspector inspector, IMonitorSource monitors, Func<PortableSettings> settings,
         IOverlayPresenter presenter, Action<nint, PixelRect, PixelRect> place,
         Action<IReadOnlyList<HotkeyBinding>> applyBindings, IReadOnlyList<HotkeyBinding> normalBindings,
-        uint ownProcessId, Func<OverlayTheme>? theme = null)
+        uint ownProcessId, Func<OverlayTheme>? theme = null, WindowTargetResolver? targets = null)
     {
         _inspector = inspector;
         _monitors = monitors;
@@ -72,9 +73,10 @@ internal sealed class LauncherController : IDisposable
         _pausedBindings = HotkeyBindingsBuilder.Paused(normalBindings);
         _launcherBindings =
             [.. LauncherWindowBindings.WithoutConflicts(normalBindings), .. HotkeyBindingsBuilder.Launcher(normalBindings)];
+        _targets = targets ?? new(new Win32ProcessNameSource(), settings, ownProcessId);
         _ownProcessId = ownProcessId;
         _theme = theme ?? OverlayThemeSource.Read;
-        _arrangement = new(inspector, monitors, ownProcessId, place, settings: settings);
+        _arrangement = new(inspector, monitors, ownProcessId, place, settings: settings, targets: _targets);
         presenter.Pointer += HandlePointer;
         presenter.Faulted += CloseIfUnavailable;
     }
@@ -132,7 +134,7 @@ internal sealed class LauncherController : IDisposable
             }
 
             if (handle == 0 || !_inspector.TryInspect(handle, out var window) ||
-                !WindowTargetPolicy.IsTarget(WindowClassifier.Classify(window, _ownProcessId), _settings))
+                !_targets.Resolve(window).IsTarget)
             {
                 return;
             }
@@ -630,7 +632,7 @@ internal sealed class LauncherController : IDisposable
         }
 
         if (!_presenter.IsAvailable || !_inspector.TryInspect(_target, out var window) ||
-            !WindowTargetPolicy.IsTarget(WindowClassifier.Classify(window, _ownProcessId), _settings) ||
+            !_targets.Resolve(window).IsTarget ||
             !_monitors.GetMonitors().Any(monitor => monitor.ToMonitorArea() == _destination))
         {
             CloseCore();
