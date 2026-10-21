@@ -326,6 +326,23 @@ public sealed class AppHostTests
         Assert.Null(fixture.Tray.State!.Status);
     }
 
+    /// <summary>初回起動で端末状態のファイルがまだなくても、最初の読み込みは失敗を記録も表示もしない。</summary>
+    [Fact]
+    public void FirstDeviceReloadWithoutFileReportsNothing()
+    {
+        var delay = new FakeRetryDelay();
+        using var fixture = new Fixture(watchDevice: true, retryDelay: delay.WaitAsync);
+        fixture.Tray.QueuePosts = true;
+        fixture.Device.ReloadResult = null;
+        Assert.True(fixture.Host.Start());
+
+        fixture.Tray.Flush();
+
+        Assert.Empty(fixture.Log.Errors);
+        Assert.Null(fixture.Tray.State!.Status);
+        Assert.Empty(delay.Pending);
+    }
+
     /// <summary>遅延中・トレイ配送済みの再試行は、終了後に読込や OS の変更を行わない。</summary>
     [Theory]
     [InlineData(false)]
