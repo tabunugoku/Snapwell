@@ -48,6 +48,10 @@ public static class DeviceStateChanges
     public static DeviceState SetReplaceWinArrow(ISettingsStore<DeviceState> store, bool replace) =>
         Update(store, current => current with { ReplaceWinArrow = replace });
 
+    /// <summary>標準スナップの停止と Win と矢印の置き換えを一度に解除し、同意とほかの最新値を保持する。</summary>
+    public static DeviceState RestoreStandardBehavior(ISettingsStore<DeviceState> store) =>
+        Update(store, current => current with { DisableStandardSnap = false, ReplaceWinArrow = false });
+
     /// <summary>最新値か今回の操作に同意があるときだけ停止を保存し、同意不足は例外で返す。</summary>
     public static DeviceState SetStandardSnap(ISettingsStore<DeviceState> store, bool disable, bool consentObtained) =>
         Update(store, current =>

@@ -174,6 +174,60 @@ public sealed class StandardSnapChangesTests : IDisposable
         Assert.Equal(json, File.ReadAllText(path));
     }
 
+    /// <summary>最新値の停止と置き換えだけを一度の保存で解除し、解除済みでもほかの項目を保持する。</summary>
+    [Theory]
+    [InlineData(false, false, false)]
+    [InlineData(false, false, true)]
+    [InlineData(false, true, false)]
+    [InlineData(false, true, true)]
+    [InlineData(true, false, false)]
+    [InlineData(true, false, true)]
+    [InlineData(true, true, false)]
+    [InlineData(true, true, true)]
+    public void RestoreStandardBehaviorSavesLatestStateOnce(bool disable, bool replace, bool consentGiven)
+    {
+        var path = Path.Combine(_directory, "device.json");
+        var saves = 0;
+        var pageStore = new SettingsStore<DeviceState>(path, SettingsJsonContext.Default.DeviceState,
+            () => new(), value => value, beforeReplace: () => saves++,
+            currentSchemaVersion: DeviceState.CurrentSchemaVersion);
+        pageStore.Load();
+        var latest = new DeviceState
+        {
+            Enabled = disable,
+            SetupCompleted = replace,
+            DisableStandardSnap = disable,
+            ReplaceWinArrow = replace,
+            StandardSnapConsentGiven = consentGiven,
+            SyncFolder = "chosen",
+            SyncEnabled = true,
+            LastSyncUtc = DateTimeOffset.UtcNow,
+            LastSyncedHash = "hash",
+        };
+        SettingsStores.Device(path).Save(latest);
+
+        var result = DeviceStateChanges.RestoreStandardBehavior(pageStore);
+
+        Assert.Equal(latest with { DisableStandardSnap = false, ReplaceWinArrow = false }, result);
+        Assert.Equal(result, SettingsStores.Device(path).Load().Value);
+        Assert.Equal(1, saves);
+    }
+
+    /// <summary>復元の前に未来の版へ変わっても、元のファイルを保持する。</summary>
+    [Fact]
+    public void RestoreStandardBehaviorPreservesFutureVersion()
+    {
+        var path = Path.Combine(_directory, "device.json");
+        var store = SettingsStores.Device(path);
+        store.Save(new() { DisableStandardSnap = true, ReplaceWinArrow = true });
+        store.Load();
+        const string json = """{"SchemaVersion":999,"DisableStandardSnap":true,"ReplaceWinArrow":true}""";
+        File.WriteAllText(path, json);
+
+        Assert.Throws<FutureSettingsVersionException>(() => DeviceStateChanges.RestoreStandardBehavior(store));
+        Assert.Equal(json, File.ReadAllText(path));
+    }
+
     /// <summary>このテストだけの端末状態を片付ける。</summary>
     public void Dispose()
     {

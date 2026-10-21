@@ -4,8 +4,6 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <Page.Resources>
-        <Style x:Key="DemoSwitchStyle" TargetType="ToggleSwitch"
-               BasedOn="{StaticResource SnapwellDemoSwitchStyle}" />
         <Style x:Key="HotkeyRowStyle" TargetType="Grid" BasedOn="{StaticResource SnapwellRowGridStyle}">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="Padding" Value="12,10" />
@@ -103,41 +101,8 @@
                     <TextBlock Text="注意" Style="{StaticResource SnapwellTagYellowTextStyle}" />
                 </Border>
                 <TextBlock Grid.Column="1" Style="{StaticResource SnapwellHintTextStyle}"
-                    Text="Win キーを含む割り当ては、押したあとにスタートメニューが開くことがあります（実機未確認）。" />
+                    Text="Win を含む割り当ては、押したあとにスタート メニューが開かないよう、Snapwell が割り当てのないキーを 1 回送ります" />
             </Grid>
-            <TextBlock Text="Windows のキー" Style="{StaticResource SnapwellGroupTitleStyle}" />
-            <Border Style="{StaticResource SnapwellRowsBorderStyle}">
-                <StackPanel>
-                    <Grid Style="{StaticResource SnapwellRowGridStyle}">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <StackPanel VerticalAlignment="Center">
-                            <StackPanel Orientation="Horizontal" Spacing="4">
-                                <Border Style="{StaticResource SnapwellKbdBorderStyle}">
-                                    <TextBlock Text="Win" Style="{StaticResource SnapwellKbdTextStyle}" />
-                                </Border>
-                                <TextBlock Text=" + 矢印 を Snapwell で使う"
-                                           Style="{StaticResource SnapwellRowTitleStyle}"
-                                           VerticalAlignment="Center" />
-                                <Border Style="{StaticResource SnapwellTagPendingStyle}">
-                                    <TextBlock Text="準備中" Style="{StaticResource SnapwellTagPendingTextStyle}" />
-                                </Border>
-                            </StackPanel>
-                            <TextBlock
-                                Text="標準のスナップを止めているときだけ使えます（「標準機能」のページ）"
-                                Style="{StaticResource SnapwellRowDescriptionStyle}" />
-                        </StackPanel>
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <ToggleSwitch IsEnabled="False"
-                                Style="{StaticResource DemoSwitchStyle}"
-                                IsOn="True"
-                                AutomationProperties.Name="Win 矢印" />
-                        </StackPanel>
-                    </Grid>
-                </StackPanel>
-            </Border>
         </StackPanel>
     </ScrollViewer>
 </Page>
