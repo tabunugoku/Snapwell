@@ -509,6 +509,8 @@
                 <Setter Property="LineHeight" Value="20.8" />
                 <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
                 <Setter Property="Foreground" Value="{ThemeResource SnapwellTextBrush}" />
+                <!-- 日本語の文字が約 2 DIP 下に出るため、キー表示の中心に合わせる。上下の Margin の合計は 0 にする。 -->
+                <Setter Property="Margin" Value="0,-2,0,2" />
                 <Setter Property="VerticalAlignment" Value="Center" />
             </Style>
 

@@ -22,7 +22,7 @@ public sealed partial class SetupWindow : Window
     private bool _sized;
     private readonly bool _loadFailed;
 
-    /// <summary>通常の設定画面と同じリソース・DPI・最小サイズの仕組みを使う。</summary>
+    /// <summary>通常の設定画面と同じリソースと DPI の仕組みを使い、大きさは固定する。</summary>
     public SetupWindow()
     {
         InitializeComponent();
@@ -78,7 +78,7 @@ public sealed partial class SetupWindow : Window
         var area = DisplayArea.GetFromWindowId(AppWindow.Id, DisplayAreaFallback.Primary).WorkArea;
         AppWindow.Resize(new SizeInt32(Math.Min((int)(820 * scale), area.Width),
             Math.Min((int)(680 * scale), area.Height)));
-        MinimumWindowSize.Apply(WinRT.Interop.WindowNative.GetWindowHandle(this), 720, 520);
+        FixedWindowSize.Apply(WinRT.Interop.WindowNative.GetWindowHandle(this), 820, 680);
         NextButton.Focus(FocusState.Programmatic);
     }
 
