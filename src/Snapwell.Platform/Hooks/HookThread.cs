@@ -22,6 +22,7 @@ public sealed class HookThread : IDisposable
     private readonly HookEventDelivery _events;
     private readonly AutoResetEvent _wake = new(false);
     private readonly ManualResetEventSlim _ready = new(false);
+    private DummyKeyDispatcher? _dummyKeys;
     private Thread? _thread;
     private Thread? _pump;
     private uint _threadId;
@@ -154,6 +155,7 @@ public sealed class HookThread : IDisposable
             // OUTOFCONTEXT と低レベルフックの配送先は登録したこのスレッド。実機未確認。
             _current = this;
             _matcher.Reset();
+            _dummyKeys = new DummyKeyDispatcher(_dummyKeySender);
             _api.CreateMessageQueue();
             _threadId = _api.GetThreadId();
             winEvents[0] = _api.RegisterEvent(PInvoke.EVENT_SYSTEM_MOVESIZESTART,
@@ -213,6 +215,7 @@ public sealed class HookThread : IDisposable
 
             // static 関数ポインターは回収されない。解除後のコールバックも null を見て終了する。
             _current = null;
+            _dummyKeys?.Dispose();
             Volatile.Write(ref _completed, 1);
             _wake.Set();
             _ready.Set();
@@ -276,8 +279,8 @@ public sealed class HookThread : IDisposable
         var match = _matcher.ProcessKey(virtualKey, isDown);
         if (match.SendDummyKey)
         {
-            // OS に Win の解放を渡す前に送る。送信の失敗で解放やフックを止めない。
-            _dummyKeySender.Send();
+            // SendInput は他の低レベルフックを待ちうるため、ここでは合図だけを渡す。
+            _dummyKeys?.Request();
         }
         if (match.Matched)
         {

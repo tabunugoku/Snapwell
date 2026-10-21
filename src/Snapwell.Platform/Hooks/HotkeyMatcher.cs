@@ -29,7 +29,7 @@ public sealed class HotkeyMatcher
     private readonly bool[] _downKeys = new bool[256];
     private readonly bool[] _captureKeys = new bool[256];
     private uint _pressedModifiers;
-    private bool _sendDummyOnWinRelease;
+    private bool _dummyRequestedForWinPress;
 
     /// <summary>取り込みの確認は、開いたハンドルの即時確認だけを行う関数で受け取る。</summary>
     public HotkeyMatcher(Func<bool>? isCapturing = null) => _isCapturing = isCapturing;
@@ -66,12 +66,10 @@ public sealed class HotkeyMatcher
             return default;
         }
 
-        // 左右の Win を両方離すまで待つ。Win の解放自体は OS に通す。
-        var sendDummyKey = !isDown && virtualKey is 0x5B or 0x5C &&
-            (GetModifiers() & KeyModifiers.Win) == 0 && _sendDummyOnWinRelease;
-        if (sendDummyKey)
+        // 片方の Win が残る間は、同じ押下として送信済みの記録を保つ。
+        if (!isDown && virtualKey is 0x5B or 0x5C && (GetModifiers() & KeyModifiers.Win) == 0)
         {
-            _sendDummyOnWinRelease = false;
+            _dummyRequestedForWinPress = false;
         }
 
         if (_isCapturing?.Invoke() == true)
@@ -80,7 +78,7 @@ public sealed class HotkeyMatcher
             _suppressedKeys[virtualKey] = false;
             _downKeys[virtualKey] = isDown;
             _captureKeys[virtualKey] = isDown;
-            return new HotkeyMatch(false, 0, false, sendDummyKey);
+            return default;
         }
 
         if (!isDown)
@@ -89,7 +87,7 @@ public sealed class HotkeyMatcher
             _suppressedKeys[virtualKey] = false;
             _downKeys[virtualKey] = false;
             _captureKeys[virtualKey] = false;
-            return new HotkeyMatch(false, 0, suppress, sendDummyKey);
+            return new HotkeyMatch(false, 0, suppress);
         }
 
         if (_captureKeys[virtualKey]) { return default; }
@@ -103,16 +101,18 @@ public sealed class HotkeyMatcher
             var binding = snapshot[index];
             if (binding.VirtualKey == virtualKey && binding.Modifiers == modifiers)
             {
-                _sendDummyOnWinRelease |= binding.Suppress && (binding.Modifiers & KeyModifiers.Win) != 0;
+                var sendDummyKey = binding.Suppress && (binding.Modifiers & KeyModifiers.Win) != 0 &&
+                    !_dummyRequestedForWinPress;
+                _dummyRequestedForWinPress |= sendDummyKey;
                 if (repeated && !binding.AllowRepeat)
                 {
                     // 押しっぱなしの繰り返しは実行せず、キーだけ握りつぶす。
                     _suppressedKeys[virtualKey] |= binding.Suppress;
-                    return new HotkeyMatch(false, 0, _suppressedKeys[virtualKey]);
+                    return new HotkeyMatch(false, 0, _suppressedKeys[virtualKey], sendDummyKey);
                 }
 
                 _suppressedKeys[virtualKey] |= binding.Suppress;
-                return new HotkeyMatch(true, binding.Id, binding.Suppress || _suppressedKeys[virtualKey]);
+                return new HotkeyMatch(true, binding.Id, binding.Suppress || _suppressedKeys[virtualKey], sendDummyKey);
             }
         }
 
@@ -123,7 +123,7 @@ public sealed class HotkeyMatcher
     public void Reset()
     {
         _pressedModifiers = 0;
-        _sendDummyOnWinRelease = false;
+        _dummyRequestedForWinPress = false;
         Array.Clear(_suppressedKeys);
         Array.Clear(_downKeys);
         Array.Clear(_captureKeys);
