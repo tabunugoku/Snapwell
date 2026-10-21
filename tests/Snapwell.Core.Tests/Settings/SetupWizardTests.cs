@@ -30,6 +30,18 @@ public sealed class SetupWizardTests
         Assert.Equal(0, portable.Saves);
     }
 
+    /// <summary>間隔を触らずに完了しても、設定の既定値（8 px）で保存する。</summary>
+    [Fact]
+    public void GapStartsAtTheSettingsDefault()
+    {
+        var portable = new Store<PortableSettings>(new());
+        var wizard = AtGrid(portable, new Store<DeviceState>(new()));
+        Assert.Equal(8, wizard.Gap);
+        Assert.True(wizard.TryNext(false, out _));
+        Assert.Equal(8, portable.Value.Gap);
+        Assert.Equal(8, portable.Value.Edge);
+    }
+
     /// <summary>分割案と間隔以外の最新設定を保ち、保存成功後だけ完了にする。</summary>
     [Fact]
     public void FinishingPreservesOtherSettingsAndLatestDeviceFields()
