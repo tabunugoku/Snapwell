@@ -83,6 +83,8 @@ public sealed class SettingsStore<T>(string path, JsonTypeInfo<T> typeInfo, Func
                 throw new FutureSettingsVersionException("新しい版の設定は上書きできない。");
             }
 
+            if (value is PortableSettings portable) { portable.ValidateWindowRules(); }
+
             Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
             var temporaryPath = _path + "." + Guid.NewGuid().ToString("N") + ".tmp";
             var backupPath = _path + "." + Guid.NewGuid().ToString("N") + ".bak";
@@ -207,5 +209,6 @@ public static class SettingsStores
 
 [JsonSourceGenerationOptions(WriteIndented = true, UseStringEnumConverter = true)]
 [JsonSerializable(typeof(PortableSettings))]
+[JsonSerializable(typeof(Snapwell.Core.Rules.WindowRule))]
 [JsonSerializable(typeof(DeviceState))]
 internal sealed partial class SettingsJsonContext : JsonSerializerContext;
