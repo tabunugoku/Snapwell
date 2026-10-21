@@ -31,7 +31,7 @@ public sealed partial class OsPage : Page
             ReadState();
             if (_readOnly)
             {
-                ReportFailure("新しい版の端末状態のため、標準スナップを変更できません。Snapwell を更新してください。");
+                ReportFailure("新しい版の端末状態のため、標準のスナップを変更できません。Snapwell を更新してください。");
             }
         }
         catch (Exception exception) when (IsFileFailure(exception))
@@ -183,7 +183,7 @@ public sealed partial class OsPage : Page
                     var dialog = new ContentDialog
                     {
                         XamlRoot = XamlRoot,
-                        Title = "Windows の標準スナップを停止しますか？",
+                        Title = "Windows 標準のスナップを停止しますか？",
                         Content = "Windows の設定アプリの「ウィンドウのスナップ」をこのセッションで停止します。" +
                             "ドラッグでのスナップ・最大化ボタンのメニュー・画面上端のスナップ バーが一緒に止まります。" +
                             "Snapwell の一時停止時と終了時には、変更前の設定に戻します。",
@@ -216,12 +216,12 @@ public sealed partial class OsPage : Page
         }
         catch (FutureSettingsVersionException)
         {
-            Revert("新しい版の端末状態のため、標準スナップを変更できません。Snapwell を更新してください。");
+            Revert("新しい版の端末状態のため、標準のスナップを変更できません。Snapwell を更新してください。");
             _readOnly = true;
         }
         catch (Exception exception) when (IsFileFailure(exception))
         {
-            Revert("標準スナップの選択を保存できませんでした。ファイルの場所とアクセス権を確認してください。");
+            Revert("標準のスナップの選択を保存できませんでした。ファイルの場所とアクセス権を確認してください。");
         }
         finally
         {
