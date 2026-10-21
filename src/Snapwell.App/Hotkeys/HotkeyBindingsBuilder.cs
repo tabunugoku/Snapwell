@@ -19,7 +19,8 @@ internal sealed record HotkeyBindingsResult(IReadOnlyList<HotkeyBinding> Binding
 /// <summary>Core のキー指定をフックの割り当てへ変換する。</summary>
 internal static class HotkeyBindingsBuilder
 {
-    internal static HotkeyBindingsResult Build(IEnumerable<KeyValuePair<WindowCommand, KeyChordSpec>> hotkeys)
+    internal static HotkeyBindingsResult Build(IEnumerable<KeyValuePair<WindowCommand, KeyChordSpec>> hotkeys,
+        bool replaceWinArrow = false)
     {
         var bindings = new List<HotkeyBinding>();
         var dropped = new List<WindowCommand>();
@@ -41,8 +42,27 @@ internal static class HotkeyBindingsBuilder
                 AllowRepeat: repeatable));
         }
 
-        return new(bindings, dropped);
+        return new(WithWinArrows(bindings, replaceWinArrow), dropped);
     }
+
+    /// <summary>通常の割り当てにだけ、利用者のキー指定を優先して端末の置き換えを追加する。</summary>
+    internal static IReadOnlyList<HotkeyBinding> WithWinArrows(IReadOnlyList<HotkeyBinding> normal, bool replace)
+    {
+        if (!replace)
+        {
+            return normal;
+        }
+
+        var additions = WinArrowBindings.WithoutConflicts(normal.Select(binding =>
+            new KeyChordSpec((ChordModifiers)binding.Modifiers, binding.VirtualKey)));
+        return [.. normal, .. additions.Select(binding => new HotkeyBinding((int)binding.Key,
+            (KeyModifiers)binding.Value.Modifiers, binding.Value.VirtualKey, Suppress: true, AllowRepeat: true))];
+    }
+
+    /// <summary>通常へ戻るたびに端末の最新値を反映し、ランチャーと一時停止の一覧はそのまま通す。</summary>
+    internal static Action<IReadOnlyList<HotkeyBinding>> CreateUpdater(IReadOnlyList<HotkeyBinding> normal,
+        Func<bool> replace, Action<IReadOnlyList<HotkeyBinding>> apply) => current =>
+            apply(ReferenceEquals(current, normal) ? WithWinArrows(current, replace()) : current);
 
     /// <summary>一時停止中の割り当て。再開のキーだけを残し、ほかのキーはアプリへ通す。</summary>
     internal static IReadOnlyList<HotkeyBinding> Paused(IEnumerable<HotkeyBinding> bindings) =>

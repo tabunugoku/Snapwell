@@ -31,6 +31,7 @@ internal sealed class AppHost
     private readonly ISettingsWatcher? _deviceWatcher;
     private readonly ISettingsSyncService? _sync;
     private readonly Action? _openSetup;
+    private readonly Action<bool>? _setReplaceWinArrow;
     private readonly Func<TimeSpan, CancellationToken, Task> _retryDelay;
     private readonly CancellationTokenSource _deviceReloadStop = new();
     private readonly CancellationTokenSource _deliveryStop = new();
@@ -59,7 +60,8 @@ internal sealed class AppHost
         ISettingsStore<DeviceState> deviceStore, IHookService hooks, ITrayService tray, IConsentPrompt consent,
         IAppLog log, Action restoreCorners, RuntimeFactory createRuntime, ISettingsWatcher? watcher = null,
         Action? openSetup = null, ISettingsWatcher? deviceWatcher = null,
-        Func<TimeSpan, CancellationToken, Task>? retryDelay = null, ISettingsSyncService? sync = null)
+        Func<TimeSpan, CancellationToken, Task>? retryDelay = null, ISettingsSyncService? sync = null,
+        Action<bool>? setReplaceWinArrow = null)
     {
         _instance = instance;
         _guard = guard;
@@ -75,6 +77,7 @@ internal sealed class AppHost
         _openSetup = openSetup;
         _deviceWatcher = deviceWatcher;
         _sync = sync;
+        _setReplaceWinArrow = setReplaceWinArrow;
         _retryDelay = retryDelay ?? Task.Delay;
         if (_deviceWatcher is not null)
         {
@@ -131,6 +134,7 @@ internal sealed class AppHost
             _device = device.Value;
             _deviceReadOnly = device.IsReadOnly;
             _enabled = _device.Enabled;
+            _setReplaceWinArrow?.Invoke(_device.ReplaceWinArrow);
             if (!device.IsReadOnly) { _sync?.Configure(_device); }
             if (!_startupRecoveryFailed && (portable.ResetToDefaults || device.ResetToDefaults))
             {
@@ -704,6 +708,7 @@ internal sealed class AppHost
         var pausing = _enabled && !device.Enabled;
         _device = device;
         _enabled = device.Enabled;
+        _setReplaceWinArrow?.Invoke(device.ReplaceWinArrow);
         if (!_enabled || !device.DisableStandardSnap || !device.StandardSnapConsentGiven)
         {
             if (previouslyDisabled || pausing)

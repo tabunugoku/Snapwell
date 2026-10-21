@@ -18,6 +18,32 @@ namespace Snapwell.App.Tests.Lifecycle;
 
 public sealed class AppHostTests
 {
+    /// <summary>端末の選択を割り当て更新より先に渡し、変更通知でも同じ Runtime に再適用する。</summary>
+    [Fact]
+    public void WinArrowChoiceIsAppliedAtStartupAndBeforeRuntimeRebinding()
+    {
+        var replace = false;
+        using var fixture = new Fixture(new() { ReplaceWinArrow = true }, watchDevice: true,
+            setReplaceWinArrow: value => replace = value);
+        fixture.Factory = _ =>
+        {
+            Assert.True(replace);
+            return fixture.Runtime;
+        };
+        Assert.True(fixture.Host.Start());
+        var observed = new List<bool>();
+        fixture.Runtime.OnSetEnabled = _ => observed.Add(replace);
+        fixture.Device.ReloadResult = new(new() { ReplaceWinArrow = false });
+        fixture.DeviceWatcher.Notify();
+        Assert.False(replace);
+        fixture.Device.ReloadResult = new(new() { ReplaceWinArrow = true });
+        fixture.DeviceWatcher.Notify();
+        Assert.True(replace);
+        Assert.Equal([false, true], observed);
+        Assert.Single(fixture.Created);
+        Assert.Equal(0, fixture.Runtime.Disposals);
+    }
+
     [Fact]
     public void SyncReceivesStartupDeviceChangesAndLocalNotificationsAndStopsOnShutdown()
     {
@@ -1185,7 +1211,7 @@ public sealed class AppHostTests
 
         internal Fixture(DeviceState? state = null, bool watchDevice = false,
             ISettingsStore<DeviceState>? deviceStore = null, Func<TimeSpan, CancellationToken, Task>? retryDelay = null,
-            ISettingsSyncService? sync = null)
+            ISettingsSyncService? sync = null, Action<bool>? setReplaceWinArrow = null)
         {
             Instance = new(Calls);
             Guard = new(Calls);
@@ -1201,7 +1227,8 @@ public sealed class AppHostTests
                     Created.Add(runtime);
                     SettingsSeen.Add(settings);
                     return runtime;
-                }, Watcher, () => SetupOpens++, watchDevice ? DeviceWatcher : null, retryDelay, sync);
+                }, Watcher, () => SetupOpens++, watchDevice ? DeviceWatcher : null, retryDelay, sync,
+                setReplaceWinArrow);
         }
 
         public void Dispose() => Host.Shutdown();
