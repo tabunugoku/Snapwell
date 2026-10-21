@@ -61,7 +61,7 @@
                                 Width="200"
                                 Style="{StaticResource DemoSelectStyle}"
                                 SelectedIndex="0"
-                                AutomationProperties.Name="角丸を強制する">
+                                AutomationProperties.Name="ウィンドウの角">
                                 <ComboBoxItem Content="角丸を強制する" />
                                 <ComboBoxItem Content="小さい角丸" />
                                 <ComboBoxItem Content="角丸なし" />
@@ -199,7 +199,7 @@
                             <ToggleSwitch Toggled="Lines_Toggled"
                                 Style="{StaticResource DemoSwitchStyle}"
                                 IsOn="True"
-                                x:Name="ZoneLinesToggle" AutomationProperties.Name="区画の線" />
+                                x:Name="ZoneLinesToggle" AutomationProperties.Name="区画の線を表示する" />
                         </StackPanel>
                     </Grid>
                     <Border Style="{StaticResource SnapwellRowDividerStyle}" />
@@ -222,7 +222,7 @@
                             <ToggleSwitch Toggled="Lines_Toggled"
                                 Style="{StaticResource DemoSwitchStyle}"
                                 IsOn="True"
-                                x:Name="PredictionLineToggle" AutomationProperties.Name="予測の線" />
+                                x:Name="PredictionLineToggle" AutomationProperties.Name="投げたときに予測の線を表示する" />
                         </StackPanel>
                     </Grid>
                 </StackPanel>

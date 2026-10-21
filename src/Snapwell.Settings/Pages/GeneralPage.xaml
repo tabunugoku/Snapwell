@@ -35,7 +35,7 @@
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
                             <TextBlock Text="Snapwell を有効にする" Style="{StaticResource SnapwellRowTitleStyle}" />
-                            <TextBlock Text="オフにすると、標準のスナップ機能を元の状態に戻します。トレイメニューからも操作できます。保存を待たず、すぐに反映されます" Style="{StaticResource SnapwellRowDescriptionStyle}" />
+                            <TextBlock Text="オフにすると、標準のスナップ機能を元の状態に戻します。トレイのメニューからも操作できます。保存を待たず、すぐに反映されます" Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
                         <ToggleSwitch x:Name="EnabledToggle" Grid.Column="1" OnContent="" OffContent="" MinWidth="0"
                                       Style="{StaticResource SnapwellToggleSwitchStyle}"

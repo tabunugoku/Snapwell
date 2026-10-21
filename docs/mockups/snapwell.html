@@ -942,7 +942,7 @@ table.list tr:last-child td { border-bottom: 0; }
             <h3>一般</h3>
             <p class="lead">起動と動作の基本です。</p>
             <div class="rows">
-              <div class="row"><div><div class="t">Snapwell を有効にする</div><div class="d">オフにすると、標準のスナップ機能を元の状態に戻します。トレイメニューからも操作できます。保存を待たず、すぐに反映されます</div></div><div class="ctl"><label class="switch"><input type="checkbox" checked data-instant aria-label="有効"><span></span></label></div></div>
+              <div class="row"><div><div class="t">Snapwell を有効にする</div><div class="d">オフにすると、標準のスナップ機能を元の状態に戻します。トレイのメニューからも操作できます。保存を待たず、すぐに反映されます</div></div><div class="ctl"><label class="switch"><input type="checkbox" checked data-instant aria-label="有効"><span></span></label></div></div>
               <div class="row"><div><div class="t">サインイン時に起動する</div><div class="d">スタートアップに登録します</div></div><div class="ctl"><label class="switch"><input type="checkbox" checked data-instant aria-label="自動起動"><span></span></label></div></div>
               <div class="row"><div><div class="t">管理者として起動する</div><div class="d">管理者権限で動くアプリのウィンドウも動かせます。タスク スケジューラに登録します。Windows の確認画面が表示されます。次のサインインから有効です</div></div><div class="ctl"><label class="switch"><input type="checkbox" data-instant aria-label="管理者として起動"><span></span></label></div></div>
               <div class="row"><div><div class="t">言語 <span class="tag pending">準備中</span></div></div><div class="ctl"><select class="input" style="width: 160px" disabled aria-label="言語"><option>日本語</option><option>English</option></select></div></div>
@@ -978,16 +978,16 @@ table.list tr:last-child td { border-bottom: 0; }
               </div>
             </div>
             <div class="group-title">ホットキーでの拡大・縮小</div>
-            <p class="hint" style="margin: 0 0 8px">Ctrl+Alt+Shift+矢印キーで、前面のウィンドウを区画単位で広げたり狭めたりします（キーはホットキーのページで変えられます）。</p>
+            <p class="hint" style="margin: 0 0 8px">Ctrl+Alt+Shift+矢印キーで、前面のウィンドウを区画単位で広げたり縮めたりします（キーはホットキーのページで変えられます）。</p>
             <div class="rows">
               <div class="row"><div><div class="t">1 回の拡大・縮小の幅</div></div><div class="ctl"><select class="input" style="width: 160px"><option>1 区画</option><option>2 区画</option><option>3 区画</option><option>4 区画</option></select></div></div>
               <div class="row"><div><div class="t">固定する位置</div><div class="d">拡大・縮小するときに動かさない辺</div></div><div class="ctl"><select class="input" id="hkAnchorSel" style="width: 160px"><option>左上</option><option>中心</option><option>近い辺</option></select></div></div>
               </div>
             <div class="group-title">マウスでのリサイズ</div>
             <div class="rows">
-              <div class="row"><div><div class="t">手動でリサイズしたら区画に揃える</div><div class="d">ウィンドウの縁をドラッグして離すと、いちばん近い区画の境界にぴたりと揃えます。ドラッグ中は、揃う先を青く表示します</div></div><div class="ctl"><label class="switch"><input type="checkbox" checked id="rsOn" aria-label="区画に揃える"><span></span></label></div></div>
+              <div class="row"><div><div class="t">手動でリサイズしたら区画にそろえる</div><div class="d">ウィンドウの縁をドラッグして離すと、いちばん近い区画の境界にぴたりとそろえます。ドラッグ中は、そろう先を青く表示します</div></div><div class="ctl"><label class="switch"><input type="checkbox" checked id="rsOn" aria-label="手動でリサイズしたら区画にそろえる"><span></span></label></div></div>
             </div>
-            <p class="hint" style="margin: 10px 0 8px">右下のつまみをドラッグして、リサイズの場面を試せます。ドラッグ中に、離したときに揃う先を表示します（「外観」の「区画のプレビュー」がオンのとき。区画の線は「区画の線を表示する」に従います）。離したあとの動きは見せ方の例で、実際のアプリでは「操作感」の物理モデル（質量・剛性・減衰）で動きます。</p><div class="resnap-demo" id="resnapDemo"><div class="rs-grid" id="rsGrid" aria-label="リサイズで揃う先の例"><div class="rs-fill" id="rsFill"></div><div class="rs-box" id="rsBox"></div><div class="rs-win" id="rsWin"><div class="rs-bar"></div><div class="rs-grip" id="rsGrip" aria-hidden="true"></div></div></div><div class="rs-cap" id="rsCap"></div></div><p class="hint" style="margin-top: 10px">区画はウィンドウの見た目の輪郭を基準に決めるため、間隔を 0 にすると、並べたウィンドウどうしがぴったり接します。</p>
+            <p class="hint" style="margin: 10px 0 8px">右下のつまみをドラッグして、リサイズの場面を試せます。ドラッグ中に、離したときにそろう先を表示します（「外観」の「区画のプレビュー」がオンのとき。区画の線は「区画の線を表示する」に従います）。離したあとの動きは見せ方の例で、実際のアプリでは「操作感」の物理モデル（質量・剛性・減衰）で動きます。</p><div class="resnap-demo" id="resnapDemo"><div class="rs-grid" id="rsGrid" aria-label="リサイズでそろう先の例"><div class="rs-fill" id="rsFill"></div><div class="rs-box" id="rsBox"></div><div class="rs-win" id="rsWin"><div class="rs-bar"></div><div class="rs-grip" id="rsGrip" aria-hidden="true"></div></div></div><div class="rs-cap" id="rsCap"></div></div><p class="hint" style="margin-top: 10px">区画はウィンドウの見た目の輪郭を基準に決めるため、間隔を 0 にすると、並べたウィンドウどうしがぴったり接します。</p>
             <div class="group-title">数値での指定</div>
             <div class="rows">
               <div class="row"><div><div class="t">列数</div><div class="d">横方向の区画数 (1〜64)</div></div><div class="ctl"><input class="numbox" type="number" id="nCols" min="1" max="64" step="1" aria-label="列数"></div></div>
@@ -1025,7 +1025,7 @@ table.list tr:last-child td { border-bottom: 0; }
               </table>
             </div>
             <p class="hint" style="margin-top: 10px" id="hkHelp">キーの欄を選んで、割り当てたいキーを押します。<kbd>Esc</kbd> でやめる、<kbd>Backspace</kbd> か <kbd>Delete</kbd> で割り当てを外します。Ctrl・Alt・Shift・Win のどれかを含めてください。</p>
-            <p class="hint" style="margin-top: 6px">ほかのアプリとの競合は、キーを押したときと、このページを開いたときに調べます。ほかのアプリが使っているキーには <span class="tag yellow">他のアプリが使用中</span> と表示します（調べられるのは、ほかのアプリがホットキーとして登録しているキーだけです）。
+            <p class="hint" style="margin-top: 6px">ほかのアプリとの競合は、キーを押したときと、このページを開いたときに調べます。ほかのアプリが使っているキーには <span class="tag yellow">ほかのアプリが使用中</span> と表示します（調べられるのは、ほかのアプリがホットキーとして登録しているキーだけです）。
               <label class="hk-demo"><input type="checkbox" id="hkBusyDemo"> 表示の見本を出す</label></p>
           </div>
 
@@ -1074,7 +1074,7 @@ table.list tr:last-child td { border-bottom: 0; }
               <ul class="rl-builtin">
                 <li>表示されていない・最小化されている・ほかのウィンドウに隠された（クローク中の）ウィンドウ</li>
                 <li>Snapwell 自身のウィンドウ、子ウィンドウ</li>
-                <li>デスクトップ、タスクバー、スタートメニューなどのシェル、通知領域の溢れ窓</li>
+                <li>デスクトップ、タスクバー、スタート メニューなどのシェル、通知領域の溢れ窓</li>
               </ul>
             </details>
           </div>
@@ -1084,10 +1084,10 @@ table.list tr:last-child td { border-bottom: 0; }
             <h3>Windows の標準機能</h3>
             <p class="lead">Snapwell が有効な間だけ、Windows の標準の配置機能を止めたり、Snapwell の操作に置き換えたりします。各項目の下に、Windows では何が起きるか・Snapwell ではどうなるかを示します。止める前の値を保存しておき、無効にしたとき・終了したとき・異常終了のあとに起動したときに戻します。</p>
             <div class="rows">
-              <div class="row"><div><div class="t">ドラッグでのスナップ</div><div class="d">端へ持っていくと半分や 4 分の 1 に広がる標準の動きを、Snapwell の区画への吸着に置き換えます</div></div><div class="ctl"><span class="tag green">停止中</span><label class="switch"><input type="checkbox" checked aria-label="ドラッグでのスナップ"><span></span></label></div><details class="os-det"><summary>Windows の標準との違いを図で見る</summary><div class="os-how"><div class="side"><b>Windows の標準</b><div class="frames"><div class="frame"><div class="scr"><i class="ghost" style="left:0;top:0;width:50%;height:100%"></i><i class="win hold" style="left:8%;top:30%;width:28%;height:40%"><span class="tb"><em></em></span></i></div><small>① 持っている間</small></div><div class="frame"><div class="scr"><i class="win hold" style="left:0;top:0;width:50%;height:100%"><span class="tb"><em></em></span></i></div><small>② 離したあと</small></div></div><p>端や四隅へ持っていくと、灰色の枠が出ます。離すと、半分か 4 分の 1 の決まった大きさに広がり、続けて残りの場所に並べる窓の候補が出ます（これも同じ設定で止まります）。</p></div><div class="arrow">→</div><div class="side after"><b>Snapwell が有効な間</b><div class="frames"><div class="frame"><div class="scr grid"><i class="cell on" style="left:12.5%;top:25%;width:37.5%;height:50%"></i><i class="win hold" style="left:56%;top:12%;width:30%;height:40%"><span class="tb"><em></em></span></i></div><small>① 持っている間</small></div><div class="frame"><div class="scr grid"><i class="win hold" style="left:12.5%;top:25%;width:37.5%;height:50%"><span class="tb"><em></em></span></i></div><small>② 離したあと</small></div></div><p>標準の枠は出さず、自分の分割案の線が薄く出て、狙う区画だけ青くなります。離すと、ばねと磁石の物理モデルでその区画に収まります。大きさは決まった形に限りません。</p></div><p class="why"><b>止める理由:</b> 標準のスナップと同時に動くと、離した瞬間に 2 つの大きさが競い合うため。設定アプリの「ウィンドウのスナップ」と同じスイッチを切ります。</p></div></details></div>
+              <div class="row"><div><div class="t">ドラッグでのスナップ</div><div class="d">端へ持っていくと半分や 4 分の 1 に広がる標準の動きを、Snapwell の区画への吸着に置き換えます</div></div><div class="ctl"><span class="tag green">停止中</span><label class="switch"><input type="checkbox" checked aria-label="ドラッグでのスナップ"><span></span></label></div><details class="os-det"><summary>Windows の標準との違いを図で見る</summary><div class="os-how"><div class="side"><b>Windows の標準</b><div class="frames"><div class="frame"><div class="scr"><i class="ghost" style="left:0;top:0;width:50%;height:100%"></i><i class="win hold" style="left:8%;top:30%;width:28%;height:40%"><span class="tb"><em></em></span></i></div><small>① 持っている間</small></div><div class="frame"><div class="scr"><i class="win hold" style="left:0;top:0;width:50%;height:100%"><span class="tb"><em></em></span></i></div><small>② 離したあと</small></div></div><p>端や四隅へ持っていくと、灰色の枠が出ます。離すと、半分か 4 分の 1 の決まった大きさに広がり、続けて残りの場所に並べる窓の候補が出ます（これも同じ設定で止まります）。</p></div><div class="arrow">→</div><div class="side after"><b>Snapwell が有効な間</b><div class="frames"><div class="frame"><div class="scr grid"><i class="cell on" style="left:12.5%;top:25%;width:37.5%;height:50%"></i><i class="win hold" style="left:56%;top:12%;width:30%;height:40%"><span class="tb"><em></em></span></i></div><small>① 持っている間</small></div><div class="frame"><div class="scr grid"><i class="win hold" style="left:12.5%;top:25%;width:37.5%;height:50%"><span class="tb"><em></em></span></i></div><small>② 離したあと</small></div></div><p>標準の枠は出さず、自分の分割案の線が薄く出て、狙う区画だけ青くなります。離すと、ばねと磁石の物理モデルでその区画に収まります。大きさは決まった形に限りません。</p></div><p class="why"><b>止める理由:</b> 標準のスナップと同時に動くと、離した瞬間に 2 つの大きさが競い合うため。Windows の設定アプリの「ウィンドウのスナップ」と同じスイッチを切ります。</p></div></details></div>
               <div class="row"><div><div class="t">スナップ レイアウト（最大化ボタンのメニュー）</div><div class="d">レジストリの値 · Windows のビルドで差があります</div></div><div class="ctl"><span class="tag green">連動して停止</span></div><details class="os-det"><summary>Windows の標準との違いを図で見る</summary><div class="os-how"><div class="side"><b>Windows の標準</b><div class="scr"><i class="win hold" style="left:4%;top:6px;width:92%;height:92px"><span class="tb"><em></em></span></i><i class="fly col2" style="left:58%;top:16px;width:39%;height:78px"><div class="lay"><u></u><u class="on"></u></div><div class="lay"><u></u><u></u></div><div class="lay"><u style="flex:2"></u><u></u></div><div class="lay"><u></u><s><u></u><u></u></s></div><div class="lay"><s><u></u><u></u></s><s><u></u><u></u></s></div></i></div><p>ウィンドウの最大化ボタン（□）にポインターを載せると、右下にメニューが開きます。候補は 5 種類（半分ずつ・2 対 1・左と右の上下分け・4 分割など）で、選ぶとウィンドウがその形の区画に収まります。先頭の候補には、開いている別のアプリのアイコンが出ます（そのアプリと並べる提案）。</p></div><div class="arrow">→</div><div class="side after"><b>Snapwell が有効な間</b><div class="scr"><i class="win hold" style="left:4%;top:6px;width:92%;height:92px"><span class="tb"><em></em></span></i></div><p>最大化ボタンにポインターを載せても、メニューは出ません（ボタンそのものは普通に最大化します）。区画への配置は、ランチャー（Ctrl+Alt+Space）・ホットキー・ドラッグで行います。</p></div><p class="why"><b>止める理由:</b> 標準のメニューの形は Snapwell の分割案と別物で、同じウィンドウに 2 通りの配置先が出てしまうため。上の「ドラッグでのスナップ」を止めると一緒に消えることを、実機で確認しました。このため、この項目に個別のスイッチはありません（レジストリで個別に止めても、Explorer を再起動するまで反映されないため）。</p></div></details></div>
-              <div class="row"><div><div class="t">画面上端のスナップ バー</div><div class="d">24H2 以降</div></div><div class="ctl"><span class="tag green">連動して停止</span></div><details class="os-det"><summary>Windows の標準との違いを図で見る</summary><div class="os-how"><div class="side"><b>Windows の標準（24H2 以降）</b><div class="scr"><i class="fly row5" style="left:14%;top:5px;width:72%;height:30px"><div class="lay"><u></u><u class="on"></u></div><div class="lay"><u></u><u></u></div><div class="lay"><u style="flex:2"></u><u></u></div><div class="lay"><u></u><s><u></u><u></u></s></div><div class="lay"><s><u></u><u></u></s><s><u></u><u></u></s></div></i><i class="win hold" style="left:38%;top:56px;width:24%;height:40px"><span class="tb"><em></em></span></i></div><p>ウィンドウを持って画面の上端へ近づけると、上端の中央に配置の候補が横一列（5 種類）で出ます。候補の上で離すと、その形の区画に収まります。先頭の候補は、別のアプリと並べる提案です。</p></div><div class="arrow">→</div><div class="side after"><b>Snapwell が有効な間</b><div class="scr"><i class="win hold" style="left:38%;top:56px;width:24%;height:40px"><span class="tb"><em></em></span></i></div><p>上端に候補のバーは出ません。上端へ近づけても何も起きず、区画への吸着は Snapwell のドラッグ（離した先のプレビュー）が受け持ちます。</p></div><p class="why"><b>止める理由:</b> ドラッグ中に標準のバーと Snapwell の区画のプレビューが重なって見えるため。最大化ボタンのメニューと同じく、上の「ドラッグでのスナップ」を止めると一緒に消えることを、実機で確認しました。個別のスイッチはありません。24H2 より前の Windows には無い機能です。</p></div></details></div>
-              <div class="row"><div><div class="t"><kbd>Win</kbd> + 矢印</div><div class="d">Snapwell の操作に置き換えます</div></div><div class="ctl"><span class="tag green">置き換え中</span><label class="switch"><input type="checkbox" checked aria-label="Win 矢印"><span></span></label></div><details class="os-det"><summary>Windows の標準との違いを図で見る</summary><div class="os-how"><div class="side"><b>Windows の標準</b><div class="keys"><kbd>Win</kbd> + <kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd></div><p>ウィンドウを画面の左半分・右半分に寄せる、最大化する、元の大きさに戻す・最小化する。</p></div><div class="arrow">→</div><div class="side after"><b>Snapwell が有効な間</b><div class="keys"><kbd>Win</kbd> + <kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd></div><p>キーはそのまま、Snapwell の「左／右／上／下の半分」（既定では Ctrl+Alt+矢印と同じ操作）が動きます。半分の大きさは、分割と間隔の設定に従います。</p></div><p class="why"><b>仕組み:</b> Windows が予約しているキーのため、低レベルのキーボードフックで受け取り、標準の動作を呼ばずに Snapwell の操作へ渡します。オフにすると、標準の Win + 矢印に戻ります。</p></div></details></div>
+              <div class="row"><div><div class="t">画面上端のスナップ バー</div><div class="d">24H2 以降</div></div><div class="ctl"><span class="tag green">連動して停止</span></div><details class="os-det"><summary>Windows の標準との違いを図で見る</summary><div class="os-how"><div class="side"><b>Windows の標準（24H2 以降）</b><div class="scr"><i class="fly row5" style="left:14%;top:5px;width:72%;height:30px"><div class="lay"><u></u><u class="on"></u></div><div class="lay"><u></u><u></u></div><div class="lay"><u style="flex:2"></u><u></u></div><div class="lay"><u></u><s><u></u><u></u></s></div><div class="lay"><s><u></u><u></u></s><s><u></u><u></u></s></div></i><i class="win hold" style="left:38%;top:56px;width:24%;height:40px"><span class="tb"><em></em></span></i></div><p>ウィンドウを持って画面の上端へ近づけると、上端の中央に配置の候補が横一列（5 種類）で出ます。候補の上で離すと、その形の区画に収まります。先頭の候補は、別のアプリと並べる提案です。</p></div><div class="arrow">→</div><div class="side after"><b>Snapwell が有効な間</b><div class="scr"><i class="win hold" style="left:38%;top:56px;width:24%;height:40px"><span class="tb"><em></em></span></i></div><p>上端に候補のバーは出ません。上端へ近づけても何も起きず、区画への吸着は Snapwell のドラッグ（離した先のプレビュー）が受け持ちます。</p></div><p class="why"><b>止める理由:</b> ドラッグ中に標準のバーと Snapwell の区画のプレビューが重なって見えるため。最大化ボタンのメニューと同じく、上の「ドラッグでのスナップ」を止めると一緒に消えることを、実機で確認しました。個別のスイッチはありません。24H2 より前の Windows にはない機能です。</p></div></details></div>
+              <div class="row"><div><div class="t"><kbd>Win</kbd> + 矢印</div><div class="d">Snapwell の操作に置き換えます</div></div><div class="ctl"><span class="tag green">置き換え中</span><label class="switch"><input type="checkbox" checked aria-label="Win + 矢印"><span></span></label></div><details class="os-det"><summary>Windows の標準との違いを図で見る</summary><div class="os-how"><div class="side"><b>Windows の標準</b><div class="keys"><kbd>Win</kbd> + <kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd></div><p>ウィンドウを画面の左半分・右半分に寄せる、最大化する、元の大きさに戻す・最小化する。</p></div><div class="arrow">→</div><div class="side after"><b>Snapwell が有効な間</b><div class="keys"><kbd>Win</kbd> + <kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd></div><p>キーはそのまま、Snapwell の「左／右／上／下の半分」（既定では Ctrl+Alt+矢印と同じ操作）が動きます。半分の大きさは、分割と間隔の設定に従います。</p></div><p class="why"><b>仕組み:</b> Windows が予約しているキーのため、低レベルのキーボードフックで受け取り、標準の動作を呼ばずに Snapwell の操作へ渡します。オフにすると、標準の Win + 矢印に戻ります。</p></div></details></div>
             </div>
             <div style="margin-top: 12px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap"><button class="btn" type="button" disabled>標準の動作に戻す</button></div>
           </div>
@@ -1112,7 +1112,7 @@ table.list tr:last-child td { border-bottom: 0; }
             <div class="group-title">ファイル</div>
             <div class="rows">
               <div class="row"><div><div class="t">書き出す</div><div class="d">設定を 1 つの JSON ファイルに保存します</div></div><div class="ctl"><button class="btn" type="button">書き出す</button></div></div>
-              <div class="row"><div><div class="t">取り込む</div><div class="d">取り込む前に、今の設定との違いを表示します。全部を置き換えるか、一部だけ取り込むかを選べます</div></div><div class="ctl"><button class="btn" type="button" id="importBtn">取り込む</button></div></div>
+              <div class="row"><div><div class="t">取り込む</div><div class="d">取り込む前に、いまの設定との違いを表示します。全部を置き換えるか、一部だけ取り込むかを選べます</div></div><div class="ctl"><button class="btn" type="button" id="importBtn">取り込む</button></div></div>
             </div>
             <p class="hint" style="margin-top: 10px" id="importNote">取り込んだあと、画面下の「保存」で確定します。</p>
           </div>
@@ -1134,8 +1134,8 @@ table.list tr:last-child td { border-bottom: 0; }
             </div>
             <div class="group-title">オーバーレイ</div>
             <div class="rows">
-              <div class="row"><div><div class="t">区画の線を表示する</div><div class="d">吸着先の区画の縁に点線の枠を付けます（区画のプレビューがオンのとき）。ランチャーの区画の線にも効きます</div></div><div class="ctl"><label class="switch"><input type="checkbox" checked id="tgLines" aria-label="区画の線"><span></span></label></div></div>
-              <div class="row"><div><div class="t">投げたときに予測の線を表示する</div><div class="d">ウィンドウが止まる予測の位置まで、点線と丸印で示します。慣れたら消せます（区画のプレビューがオンのとき）</div></div><div class="ctl"><label class="switch"><input type="checkbox" checked id="tgPred" aria-label="予測の線"><span></span></label></div></div>
+              <div class="row"><div><div class="t">区画の線を表示する</div><div class="d">吸着先の区画の縁に点線の枠を付けます（区画のプレビューがオンのとき）。ランチャーの区画の線にも効きます</div></div><div class="ctl"><label class="switch"><input type="checkbox" checked id="tgLines" aria-label="区画の線を表示する"><span></span></label></div></div>
+              <div class="row"><div><div class="t">投げたときに予測の線を表示する</div><div class="d">ウィンドウが止まる予測の位置まで、点線と丸印で示します。慣れたら消せます（区画のプレビューがオンのとき）</div></div><div class="ctl"><label class="switch"><input type="checkbox" checked id="tgPred" aria-label="投げたときに予測の線を表示する"><span></span></label></div></div>
             </div>
             <div class="group-title">オーバーレイの見え方</div>
             <p class="hint" style="margin: 0 0 8px">ウィンドウをドラッグして、右上へ投げた場面の例です。上の「区画のプレビュー」と、下の二つの切り替えを変えると、表示がどう変わるかをここで確かめられます。</p>
@@ -1157,13 +1157,13 @@ table.list tr:last-child td { border-bottom: 0; }
     </div>
     <dialog class="dlg" id="importDlg" aria-labelledby="importTitle">
       <h4 id="importTitle">取り込む設定の確認</h4>
-      <p>今の設定との違いです。一部だけ取り込む場合は、項目を選んでください。</p>
+      <p>いまの設定との違いです。一部だけ取り込む場合は、項目を選んでください。</p>
       <div class="rows" id="importList">
         <label class="row"><div><div class="t">ウィンドウの角</div><div class="d">Windows の既定 → 角丸を強制する</div></div><div class="ctl"><input type="checkbox" aria-label="ウィンドウの角"></div></label>
         <label class="row"><div><div class="t">分割案</div><div class="d">8 × 8 → 12 × 6</div></div><div class="ctl"><input type="checkbox" aria-label="分割案"></div></label>
         <label class="row"><div><div class="t">ウィンドウの間隔</div><div class="d">8 px → 12 px</div></div><div class="ctl"><input type="checkbox" aria-label="ウィンドウの間隔"></div></label>
         <label class="row"><div><div class="t">操作感</div><div class="d">Airy → Heavy</div></div><div class="ctl"><input type="checkbox" aria-label="操作感"></div></label>
-        <label class="row"><div><div class="t">現在のモニターを整列 (グリッド)</div><div class="d">Ctrl+Alt+A → Ctrl+Alt+G</div></div><div class="ctl"><input type="checkbox" aria-label="整列のキー"></div></label>
+        <label class="row"><div><div class="t">現在のモニターを整列（グリッド）</div><div class="d">Ctrl+Alt+A → Ctrl+Alt+G</div></div><div class="ctl"><input type="checkbox" aria-label="整列のキー"></div></label>
       </div>
       <p class="hint">取り込むだけでは保存されません。画面下の「保存」で確定します。</p>
       <div class="dlg-foot">
@@ -1211,7 +1211,7 @@ table.list tr:last-child td { border-bottom: 0; }
       <div class="rows" id="pickList">
         <button class="row pick" type="button" data-proc="chrome.exe" data-class="Chrome_WidgetWin_1" data-title="ピクチャー イン ピクチャー"><div><div class="t">ピクチャー イン ピクチャー</div><div class="d mono">chrome.exe · Chrome_WidgetWin_1</div></div></button>
         <button class="row pick" type="button" data-proc="game-launcher.exe" data-class="LauncherWindow" data-title="Game Launcher"><div><div class="t">Game Launcher</div><div class="d mono">game-launcher.exe · LauncherWindow</div></div></button>
-        <button class="row pick" type="button" data-proc="ApplicationFrameHost.exe" data-class="ApplicationFrameWindow" data-title="電卓"><div><div class="t">電卓</div><div class="d mono">ApplicationFrameHost.exe · ApplicationFrameWindow</div><div class="d rl-warn">Windows のアプリ（UWP）は、プロセス名が共通です。クラスかタイトルで指定してください。</div></div></button>
+        <button class="row pick" type="button" data-proc="ApplicationFrameHost.exe" data-class="ApplicationFrameWindow" data-title="電卓"><div><div class="t">電卓</div><div class="d mono">ApplicationFrameHost.exe · ApplicationFrameWindow</div><div class="d rl-warn">UWP アプリは、プロセス名が共通です。クラスかタイトルで指定してください。</div></div></button>
       </div>
       <div class="dlg-foot"><button class="btn" type="button" id="pickCancel" autofocus>取り消す</button></div>
     </dialog>
@@ -2202,9 +2202,9 @@ function initKeysPage() {
     ['区画の移動', '左へ 1 区画移動', ''], ['区画の移動', '右へ 1 区画移動', ''],
     ['区画の移動', '上へ 1 区画移動', ''], ['区画の移動', '下へ 1 区画移動', ''],
     ['モニター', '次のモニターへ', M + 'PageDown'], ['モニター', '前のモニターへ', M + 'PageUp'],
-    ['整列', '現在のモニターを整列 (グリッド)', M + 'A'], ['整列', '現在のモニターを横一列に整列', S + 'H'],
+    ['整列', '現在のモニターを整列（グリッド）', M + 'A'], ['整列', '現在のモニターを横一列に整列', S + 'H'],
     ['整列', '現在のモニターを縦一列に整列', S + 'V'], ['整列', '現在のモニターをメインとスタックで整列', S + 'M'],
-    ['整列', '全モニターを整列 (グリッド)', S + 'A'],
+    ['整列', '全モニターを整列（グリッド）', S + 'A'],
     ['隣へ寄せる', '左の隣へ寄せる', S + 'J'], ['隣へ寄せる', '右の隣へ寄せる', S + 'L'],
     ['隣へ寄せる', '上の隣へ寄せる', S + 'I'], ['隣へ寄せる', '下の隣へ寄せる', S + 'K'],
     ['そのほか', 'ランチャーを開く', M + 'Space'], ['そのほか', '一時停止・再開', M + 'Pause'],
@@ -2252,7 +2252,7 @@ function initKeysPage() {
       if (dup) tags.push('<span class="tag red">重複</span>');
       if (!d.chord) tags.push('<span class="tag pending">未割り当て</span>');
       if (d.chord !== d.def) tags.push('<span class="tag blue">変更済み</span>');
-      if ($('#hkBusyDemo').checked && d.name === 'ランチャーを開く') tags.push('<span class="tag yellow">他のアプリが使用中</span>');
+      if ($('#hkBusyDemo').checked && d.name === 'ランチャーを開く') tags.push('<span class="tag yellow">ほかのアプリが使用中</span>');
       html += `<tr class="${flashId === d.id ? 'hk-flash' : ''}"><td>${label(d)}</td>`
         + `<td><button type="button" class="hk-key${isCap ? ' cap' : ''}${isCap && error ? ' err' : ''}" data-id="${d.id}" aria-label="${label(d)}のキーを変更: ${d.chord || '未割り当て'}">${keyCell}</button></td>`
         + `<td>${tags.join(' ')}</td>`
@@ -3172,9 +3172,9 @@ $$('.switch').forEach(makeSwitch);
     fill.style.display = show ? '' : 'none';
     box.style.display = show && lines.checked ? '' : 'none';
     const size = `${t.c} × ${t.r} 区画`;
-    if (!on.checked) cap.textContent = '「区画に揃える」がオフ: 離した位置のままです';
-    else if (!drag) cap.textContent = prev.checked ? '右下のつまみをドラッグしてください' : `「区画のプレビュー」がオフ: 離すと ${size} に揃います（表示はしません）`;
-    else cap.textContent = prev.checked ? `いま離すと ${size} に揃います` : `「区画のプレビュー」がオフ: 離すと ${size} に揃います（表示はしません）`;
+    if (!on.checked) cap.textContent = '「区画にそろえる」がオフ: 離した位置のままです';
+    else if (!drag) cap.textContent = prev.checked ? '右下のつまみをドラッグしてください' : `「区画のプレビュー」がオフ: 離すと ${size} にそろいます（表示はしません）`;
+    else cap.textContent = prev.checked ? `いま離すと ${size} にそろいます` : `「区画のプレビュー」がオフ: 離すと ${size} にそろいます（表示はしません）`;
   };
   const move = (e) => {
     const g = grid.getBoundingClientRect();

@@ -91,7 +91,7 @@
             <TextBlock Margin="0,10,0,0" Style="{StaticResource SnapwellHintTextStyle}"
                 Text="キーの欄を選んで、割り当てたいキーを押します。Esc でやめる、Backspace か Delete で割り当てを外します。Ctrl・Alt・Shift・Win のどれかを含めてください。" />
             <TextBlock Margin="0,8,0,0" Style="{StaticResource SnapwellHintTextStyle}"
-                Text="ほかのアプリとの競合は、キーを押したときと、このページを開いたときに調べます。ほかのアプリが使っているキーには「他のアプリが使用中」と表示します（調べられるのは、ほかのアプリがホットキーとして登録しているキーだけです）。" />
+                Text="ほかのアプリとの競合は、キーを押したときと、このページを開いたときに調べます。ほかのアプリが使っているキーには「ほかのアプリが使用中」と表示します（調べられるのは、ほかのアプリがホットキーとして登録しているキーだけです）。" />
             <Grid x:Name="WinNotice" ColumnSpacing="6" Margin="0,8,0,0" Visibility="Collapsed">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
