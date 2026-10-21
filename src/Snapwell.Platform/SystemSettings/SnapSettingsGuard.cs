@@ -18,6 +18,24 @@ public sealed class SnapSettingsGuard
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Snapwell", "os-state.json"));
     }
 
+    /// <summary>退避ファイルだけを読み、値が読めない場合はファイルを変更せず null を返す。</summary>
+    public static bool? ReadSavedDragSnap(string? statePath = null)
+    {
+        try
+        {
+            var path = statePath ?? Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Snapwell", "os-state.json");
+            using var stream = File.OpenRead(path);
+            var state = JsonSerializer.Deserialize(stream, SnapSettingsJsonContext.Default.SnapSettingsState);
+            return state?.Version == 1 ? state.DragSnapEnabled : null;
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException
+            or ArgumentException or NotSupportedException or System.Security.SecurityException)
+        {
+            return null;
+        }
+    }
+
     /// <summary>元の値の保存が完了してから標準スナップを無効にする。IO 失敗は呼び出し元へ返す。</summary>
     public bool Disable()
     {
