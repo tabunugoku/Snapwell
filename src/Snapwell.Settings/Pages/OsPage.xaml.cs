@@ -61,7 +61,6 @@ public sealed partial class OsPage : Page
             StandardSnapToggle.IsOn = view.ToggleOn;
             StandardSnapToggle.IsEnabled = !_readOnly && !_busy;
             RestoreButton.IsEnabled = view.RestoreEnabled && !_readOnly && !_busy;
-            RestoreHint.Text = view.HintText;
             SetTag(DragSnapTag, DragSnapTagText, view.ToggleOn ? "停止中" : "標準のまま", view.ToggleOn);
             SetTag(LayoutTag, LayoutTagText, view.SubTagText, view.ToggleOn);
             SetTag(SnapBarTag, SnapBarTagText, view.SubTagText, view.ToggleOn);

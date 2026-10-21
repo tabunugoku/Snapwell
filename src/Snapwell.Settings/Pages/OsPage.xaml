@@ -8,7 +8,7 @@
         <StackPanel Padding="32,28,32,40" HorizontalAlignment="Stretch">
             <TextBlock Text="Windows の標準機能" Style="{StaticResource SnapwellPageTitleStyle}" />
             <TextBlock
-                Text="Snapwell が有効な間だけ、次の機能を止めます。止める前の値を保存しておき、無効にしたとき・終了したとき・異常終了のあとに起動したときに戻します。"
+                Text="Snapwell が有効な間だけ、Windows の標準の配置機能を止めたり、Snapwell の操作に置き換えたりします。各項目の下に、Windows では何が起きるか・Snapwell ではどうなるかを示します。止める前の値を保存しておき、無効にしたとき・終了したとき・異常終了のあとに起動したときに戻します。"
                 Style="{StaticResource SnapwellLeadTextStyle}" />
             <InfoBar x:Name="ErrorNotice" IsOpen="False" Severity="Error" Margin="0,0,0,12" />
             <Border Style="{StaticResource SnapwellRowsBorderStyle}">
@@ -21,7 +21,7 @@
                         <StackPanel VerticalAlignment="Center">
                             <TextBlock Text="ドラッグでのスナップ" Style="{StaticResource SnapwellRowTitleStyle}" />
                             <TextBlock
-                                Text="設定アプリの「ウィンドウのスナップ」と同じ設定です"
+                                Text="端へ持っていくと半分や 4 分の 1 に広がる標準の動きを、Snapwell の区画への吸着に置き換えます"
                                 Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
@@ -34,6 +34,7 @@
                                 AutomationProperties.Name="ドラッグでのスナップ" />
                         </StackPanel>
                     </Grid>
+                    <controls:OsHowDiagram Kind="DragSnap" />
                     <Border Style="{StaticResource SnapwellRowDividerStyle}" />
                     <Grid Style="{StaticResource SnapwellRowGridStyle}">
                         <Grid.ColumnDefinitions>
@@ -52,6 +53,7 @@
                             <TextBlock x:Name="LayoutTagText" Style="{StaticResource SnapwellTagTextStyle}" />
                         </Border>
                     </Grid>
+                    <controls:OsHowDiagram Kind="SnapLayout" />
                     <Border Style="{StaticResource SnapwellRowDividerStyle}" />
                     <Grid Style="{StaticResource SnapwellRowGridStyle}">
                         <Grid.ColumnDefinitions>
@@ -68,6 +70,7 @@
                             <TextBlock x:Name="SnapBarTagText" Style="{StaticResource SnapwellTagTextStyle}" />
                         </Border>
                     </Grid>
+                    <controls:OsHowDiagram Kind="SnapBar" />
                     <Border Style="{StaticResource SnapwellRowDividerStyle}" />
                     <Grid Style="{StaticResource SnapwellRowGridStyle}">
                         <Grid.ColumnDefinitions>
@@ -96,21 +99,11 @@
                                 AutomationProperties.Name="Win 矢印" />
                         </StackPanel>
                     </Grid>
+                    <controls:OsHowDiagram Kind="WinArrow" />
                 </StackPanel>
             </Border>
-            <Grid ColumnSpacing="10" Margin="0,12,0,0">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-                <Button x:Name="RestoreButton" IsEnabled="False" Content="標準の動作に戻す"
-                        Style="{StaticResource SnapwellButtonStyle}" Click="Restore_Click" />
-                <TextBlock
-                    x:Name="RestoreHint"
-                    Grid.Column="1"
-                    Style="{StaticResource SnapwellHintTextStyle}"
-                    VerticalAlignment="Center" />
-            </Grid>
+            <Button x:Name="RestoreButton" IsEnabled="False" Content="標準の動作に戻す" Margin="0,12,0,0"
+                    Style="{StaticResource SnapwellButtonStyle}" Click="Restore_Click" />
         </StackPanel>
     </ScrollViewer>
 </Page>
