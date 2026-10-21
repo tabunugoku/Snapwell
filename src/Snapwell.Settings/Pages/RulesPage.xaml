@@ -62,7 +62,7 @@
                     <TextBlock Style="{StaticResource SnapwellHintTextStyle}"
                                Text="次のウィンドウは、ルールでは変えられません（「強制的に対象」にしても対象になりません）。" />
                     <TextBlock Style="{StaticResource SnapwellHintTextStyle}"
-                               Text="• 表示されていない・最小化されている・ほかのウィンドウに隠された（クローク中の）ウィンドウ" />
+                               Text="• 表示されていない・最小化されている・別の仮想デスクトップにあるなど、システムに隠された（クローク中の）ウィンドウ" />
                     <TextBlock Style="{StaticResource SnapwellHintTextStyle}" Text="• Snapwell 自身のウィンドウ、子ウィンドウ" />
                     <TextBlock Style="{StaticResource SnapwellHintTextStyle}"
                                Text="• デスクトップ、タスクバー、スタート メニューなどのシェル、通知領域の隠れたアイコンの一覧" />
