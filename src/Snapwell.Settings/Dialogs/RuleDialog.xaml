@@ -30,39 +30,15 @@
                      AutomationProperties.Name="タイトル（正規表現）" TextChanged="Input_Changed" />
             <TextBlock x:Name="ErrorText" Foreground="{ThemeResource SnapwellRedTextBrush}" TextWrapping="Wrap" MinHeight="40"
                        AutomationProperties.LiveSetting="Polite" />
-            <StackPanel Spacing="6" AutomationProperties.Name="配置の扱い">
-                <TextBlock Text="配置の扱い" Style="{StaticResource SnapwellRowTitleStyle}" />
-                <RadioButton x:Name="InheritOption" GroupName="Placement" Checked="Placement_Changed"
-                             AutomationProperties.Name="全体設定に従う">
-                    <StackPanel>
-                        <TextBlock Text="全体設定に従う" />
-                        <TextBlock Text="配置については、このルールでは何も決めません"
-                                   Style="{StaticResource SnapwellHintTextStyle}" />
-                    </StackPanel>
-                </RadioButton>
-                <RadioButton x:Name="ExcludeOption" GroupName="Placement" Checked="Placement_Changed"
-                             AutomationProperties.Name="対象外">
-                    <StackPanel>
-                        <TextBlock Text="対象外" />
-                        <TextBlock Text="動かす・大きさを変える・吸着させる操作の対象にしません"
-                                   Style="{StaticResource SnapwellHintTextStyle}" />
-                    </StackPanel>
-                </RadioButton>
-                <RadioButton x:Name="PositionOption" GroupName="Placement" Checked="Placement_Changed"
-                             AutomationProperties.Name="位置だけ">
-                    <StackPanel>
-                        <TextBlock Text="位置だけ" />
-                        <TextBlock Text="動かしますが、大きさは変えません" Style="{StaticResource SnapwellHintTextStyle}" />
-                    </StackPanel>
-                </RadioButton>
-                <RadioButton x:Name="ForceOption" GroupName="Placement" Checked="Placement_Changed"
-                             AutomationProperties.Name="強制的に対象">
-                    <StackPanel>
-                        <TextBlock Text="強制的に対象" />
-                        <TextBlock Text="ポップアップなどでも、通常のウィンドウとして扱います"
-                                   Style="{StaticResource SnapwellHintTextStyle}" />
-                    </StackPanel>
-                </RadioButton>
+            <StackPanel Spacing="4">
+                <ComboBox x:Name="PlacementBox" Header="配置の扱い" HorizontalAlignment="Stretch"
+                          AutomationProperties.Name="配置の扱い" SelectionChanged="Placement_Changed">
+                    <ComboBoxItem Content="全体設定に従う" />
+                    <ComboBoxItem Content="対象外" />
+                    <ComboBoxItem Content="位置だけ" />
+                    <ComboBoxItem Content="強制的に対象" />
+                </ComboBox>
+                <TextBlock x:Name="PlacementHint" Style="{StaticResource SnapwellHintTextStyle}" TextWrapping="Wrap" />
             </StackPanel>
             <ComboBox x:Name="CornerBox" Header="ウィンドウの角" HorizontalAlignment="Stretch"
                       AutomationProperties.Name="ウィンドウの角" SelectionChanged="Corner_Changed">
