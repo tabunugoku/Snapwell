@@ -81,6 +81,7 @@ OpenProcess
 OpenProcessToken
 GetTokenInformation
 TOKEN_ELEVATION
+SendInput
 DuplicateTokenEx
 GetShellWindow
 CreateProcessWithTokenW
