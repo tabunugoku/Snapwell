@@ -225,7 +225,7 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
 .range-row output { font-family: var(--font-mono); font-size: 12px; text-align: right; }
 /* ボタンの形と大きさは、どこに置いても 1 種類。違いは「決定 (.primary)」とそれ以外の 2 段階で、色だけで出す。
    アイコンだけの .hk-ic、.seg、.lwin-pager、.chip はボタンではなく部品として別に扱う。
-   見せ方は html[data-btn] (a〜d) で切り替える。docs/mockups/buttons.html に仕様の一覧がある。 */
+   見せ方は案 B（決定だけ塗り、ほかは枠なしの文字）に決定済み。 */
 :root { --btn-h: 28px; --btn-px: 14px; --btn-r: 6px; --btn-fs: 13px; --btn-minw: 72px; --step: #ECECEA; --step-hover: #E2E2DF; }
 :root[data-theme="dark"] { --step: #333332; --step-hover: #3C3C3A; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --step: #333332; --step-hover: #3C3C3A; } }
@@ -239,13 +239,8 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
 .btn:active { transform: scale(0.98); }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
 .btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
-:root[data-btn="a"] .btn.primary { color: var(--ink); font-weight: 600; text-decoration: underline; text-underline-offset: 4px; }
-:root[data-btn="b"] .btn.primary { background: var(--ink); color: var(--ink-text); }
-:root[data-btn="b"] .btn.primary:hover { background: var(--ink-hover); }
-:root[data-btn="c"] .btn { border-color: var(--border-strong); color: var(--text); }
-:root[data-btn="c"] .btn.primary { border-color: var(--ink); color: var(--ink); font-weight: 600; }
-:root[data-btn="d"] .btn.primary { background: var(--step); color: var(--ink); font-weight: 600; }
-:root[data-btn="d"] .btn.primary:hover { background: var(--step-hover); }
+.btn.primary { background: var(--ink); color: var(--ink-text); }
+.btn.primary:hover { background: var(--ink-hover); }
 .readout { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 12.5px; }
 .readout dt { color: var(--muted); }
 .readout dd { margin: 0; font-family: var(--font-mono); text-align: right; color: var(--ink); }
@@ -767,7 +762,6 @@ table.list tr:last-child td { border-bottom: 0; }
         <p>モックアップ v0.1 · 基本設計 <span class="mono">docs/DESIGN.md</span> に対応</p>
       </div>
     </div>
-    <button class="theme-toggle" id="btnToggle" type="button">ボタン: B 決定だけ塗る</button>
     <button class="theme-toggle" id="themeToggle" type="button">配色: OS に合わせる</button>
   </header>
 
@@ -3015,22 +3009,6 @@ $('#themeToggle').addEventListener('click', () => {
   try { localStorage.setItem('snapwell-mock-theme', THEMES[themeIdx][0]); } catch (err) { /* 無視 */ }
 });
 applyTheme();
-const BTNS = [['a', 'ボタン: A 文字だけ'], ['b', 'ボタン: B 決定だけ塗る'], ['c', 'ボタン: C 輪郭だけ'], ['d', 'ボタン: D 淡い面']];
-let btnIdx = 1;
-try {
-  const i = BTNS.findIndex((t) => t[0] === localStorage.getItem('snapwell-mock-btn'));
-  if (i >= 0) btnIdx = i;
-} catch (err) { /* 保存できない環境では B */ }
-function applyBtn() {
-  document.documentElement.dataset.btn = BTNS[btnIdx][0];
-  $('#btnToggle').textContent = BTNS[btnIdx][1];
-}
-$('#btnToggle').addEventListener('click', () => {
-  btnIdx = (btnIdx + 1) % BTNS.length;
-  applyBtn();
-  try { localStorage.setItem('snapwell-mock-btn', BTNS[btnIdx][0]); } catch (err) { /* 無視 */ }
-});
-applyBtn();
 // ---------- スイッチ ----------
 // つまみは feel の heavy-toggle と同じ物体 (質量 3 のばね + 壁 + ハンドばね)。"stiff, heavy" の数値は feel の語彙から:
 // 質量 3、固有振動数 = √(4.6 × 1.35) ≈ 2.492 Hz、減衰比 = (0.9 + 0.74) / 2 = 0.82。継続時間やイージングは持たない。
