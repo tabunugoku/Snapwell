@@ -35,7 +35,7 @@
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
         <StackPanel x:Name="Editor" Padding="32,28,32,40" HorizontalAlignment="Stretch">
             <TextBlock Text="操作感" Style="{StaticResource SnapwellPageTitleStyle}" />
-            <TextBlock Text="投げたときの動き方です。4 つはプリセットで、選ぶと 5 つの値がその値になります。値を変えると「カスタム」になります。曲線は手を離してから止まるまでの位置です。"
+            <TextBlock Text="投げたときの動き方です。4 つのプリセットのどれかを選ぶと、5 つの値がそのプリセットの値になります。値を変えると「カスタム」になります。曲線は、手を離してから止まるまでの位置の変化です。"
                        Style="{StaticResource SnapwellLeadTextStyle}" />
 
             <Grid ColumnSpacing="10">
@@ -175,7 +175,7 @@
                         <Button x:Name="TrialThrowButton" Content="ランダムに投げる" Click="TrialThrow_Click"
                                 Style="{StaticResource ChipButtonStyle}" />
                     </StackPanel>
-                    <TextBlock Text="ウィンドウのタイトルバーをつかんで投げます（本体をつかんでも動きません）。いまの 5 つの値で動き、止まる先は本体と同じ規則で決まります（離した速さが 150 px/s 未満だと吸着しません。区画では、中央から上へ強く投げると最大化になります）"
+                    <TextBlock Text="ウィンドウのタイトルバーをつかんで投げます（ウィンドウの中をつかんでも動きません）。いまの 5 つの値で動き、止まる先は Snapwell 本体と同じ規則で決まります（離した速さが 150 px/s 未満だと吸着しません。区画では、中央から上へ強く投げると最大化になります）"
                                Style="{StaticResource SnapwellRowDescriptionStyle}" TextWrapping="Wrap" />
                 </StackPanel>
             </Border>
@@ -213,7 +213,7 @@
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
                             <TextBlock Text="質量 m" Style="{StaticResource SnapwellRowTitleStyle}" />
-                            <TextBlock Text="feel の磁石場では力が質量に比例するため、吸着の動きは変わりません。導かれる値の k と c に効きます"
+                            <TextBlock Text="feel の磁石場では力が質量に比例するため、吸着の動きは変わりません。導かれる値の k と c が変わります"
                                        Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
                         <StackPanel x:Name="MassPanel" Grid.Column="1" Orientation="Horizontal" Spacing="12"

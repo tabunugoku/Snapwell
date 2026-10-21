@@ -65,7 +65,7 @@
                                Text="• 表示されていない・最小化されている・ほかのウィンドウに隠された（クローク中の）ウィンドウ" />
                     <TextBlock Style="{StaticResource SnapwellHintTextStyle}" Text="• Snapwell 自身のウィンドウ、子ウィンドウ" />
                     <TextBlock Style="{StaticResource SnapwellHintTextStyle}"
-                               Text="• デスクトップ、タスクバー、スタート メニューなどのシェル、通知領域の溢れ窓" />
+                               Text="• デスクトップ、タスクバー、スタート メニューなどのシェル、通知領域の隠れたアイコンの一覧" />
                 </StackPanel>
             </Expander>
         </StackPanel>
