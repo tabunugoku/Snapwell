@@ -132,8 +132,6 @@ public sealed partial class SetupWindow
             WindowCommand.TopHalf, WindowCommand.BottomHalf, WindowCommand.TopLeftQuarter,
             WindowCommand.TopRightQuarter, WindowCommand.BottomLeftQuarter, WindowCommand.BottomRightQuarter],
             hotkeys, unavailable);
-        AddHotkeyRow(rows, "区画単位で移動", [WindowCommand.MoveCellLeft, WindowCommand.MoveCellRight,
-            WindowCommand.MoveCellUp, WindowCommand.MoveCellDown], hotkeys, unavailable);
         var hint = Text("重なっているキーは、あとで設定の「ホットキー」で変えられます。", "SnapwellHintTextStyle");
         hint.Margin = new Thickness(0, 10, 0, 0);
         PageHost.Children.Add(hint);
