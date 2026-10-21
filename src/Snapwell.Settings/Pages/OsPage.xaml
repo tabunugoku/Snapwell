@@ -103,7 +103,7 @@
                 </StackPanel>
             </Border>
             <Button x:Name="RestoreButton" IsEnabled="False" Content="標準の動作に戻す" Margin="0,12,0,0"
-                    Style="{StaticResource SnapwellButtonStyle}" Click="Restore_Click" />
+                    Style="{StaticResource SnapwellActionButtonStyle}" Click="Restore_Click" />
         </StackPanel>
     </ScrollViewer>
 </Page>

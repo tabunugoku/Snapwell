@@ -47,10 +47,10 @@
             </Border>
             <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,12,0,0">
                 <Button x:Name="AddButton" Content="ルールを追加" AutomationProperties.Name="ルールを追加"
-                        Style="{StaticResource SnapwellButtonStyle}" Click="Add_Click" />
+                        Style="{StaticResource SnapwellActionButtonStyle}" Click="Add_Click" />
                 <Button x:Name="PickButton" Content="ウィンドウを選んで追加"
                         AutomationProperties.Name="ウィンドウを選んで追加"
-                        Style="{StaticResource SnapwellButtonStyle}" Click="Pick_Click" />
+                        Style="{StaticResource SnapwellActionButtonStyle}" Click="Pick_Click" />
             </StackPanel>
             <TextBlock x:Name="LimitHint" Margin="0,8,0,0" Visibility="Collapsed"
                        Text="ルールは 200 件までです。追加するには、先にルールを削除してください。"
