@@ -258,6 +258,11 @@ internal sealed class AppHost
                     {
                         ApplyDevice(device);
                     }
+                    else if (!device.Enabled || !device.DisableStandardSnap || !device.StandardSnapConsentGiven)
+                    {
+                        // 同値の保存も手動復元の再試行として扱い、フックや Runtime は再設定しない。
+                        Cleanup(RestoreSnap);
+                    }
                 }
 
                 _tray.Update(State());
@@ -683,9 +688,22 @@ internal sealed class AppHost
 
     private void RestoreSnap()
     {
-        if (!_guard.Restore())
+        try
         {
-            ReportSnapRestoreFailure();
+            if (!_guard.Restore())
+            {
+                ReportSnapRestoreFailure();
+                return;
+            }
+            _startupRecoveryFailed = false;
+            if (_status == SnapRestoreFailureStatus)
+            {
+                _status = null;
+            }
+        }
+        catch (Exception exception)
+        {
+            ReportSnapRestoreFailure(exception);
         }
     }
 
@@ -704,18 +722,14 @@ internal sealed class AppHost
 
     private void ApplyDevice(DeviceState device)
     {
-        var previouslyDisabled = _device.DisableStandardSnap && _device.StandardSnapConsentGiven;
         var pausing = _enabled && !device.Enabled;
         _device = device;
         _enabled = device.Enabled;
         _setReplaceWinArrow?.Invoke(device.ReplaceWinArrow);
         if (!_enabled || !device.DisableStandardSnap || !device.StandardSnapConsentGiven)
         {
-            if (previouslyDisabled || pausing)
-            {
-                // 移動の取り消しが固まっても、OS 設定は先に戻しておく。
-                Cleanup(RestoreSnap);
-            }
+            // 移動の取り消しが固まっても、OS 設定は先に戻しておく。
+            Cleanup(RestoreSnap);
         }
         else
         {
