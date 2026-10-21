@@ -1,7 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Documents;
 using Snapwell.Core.Commands;
 using Snapwell.Core.Settings;
 
@@ -36,18 +35,19 @@ public sealed partial class SetupWindow
         return rows;
     }
 
-    private RichTextBlock InlineDescription(params object[] parts)
+    /// <summary>キー表示と文字を、上下の中央をそろえて横に並べる。</summary>
+    private StackPanel InlineDescription(params object[] parts)
     {
-        var block = new RichTextBlock { Style = FindStyle("SetupInlineDescriptionStyle") };
-        var paragraph = new Paragraph();
+        var line = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
         foreach (var part in parts)
         {
-            paragraph.Inlines.Add(part is UIElement element
-                ? new InlineUIContainer { Child = element }
-                : new Run { Text = part.ToString() });
+            var element = part as FrameworkElement ?? Text(part.ToString()!, "SnapwellRowDescriptionStyle");
+            element.VerticalAlignment = VerticalAlignment.Center;
+            // 日本語の文字は行の中で約 2px 上に出るため、キー表示の中心に合わせて下げる。
+            if (part is not FrameworkElement) { element.Margin = new Thickness(0, 3, 0, 0); }
+            line.Children.Add(element);
         }
-        block.Blocks.Add(paragraph);
-        return block;
+        return line;
     }
 
     private void AddRow(StackPanel rows, string title, FrameworkElement? description = null, FrameworkElement? control = null)
@@ -85,8 +85,8 @@ public sealed partial class SetupWindow
         AddRow(rows, "投げて配置", Text("タイトルバーをつかんで、置きたい方向へ投げます", "SnapwellRowDescriptionStyle"));
         AddRow(rows, "なぞって配置", InlineDescription(Keys("Ctrl", "Alt", "Space"),
             "、またはトレイのメニューでランチャーを開きます"));
-        AddRow(rows, "キーで配置", InlineDescription(Keys("Ctrl", "Alt"), " + 矢印で半分、",
-            Keys("Shift"), " を足すと 1 区画ずつ拡大・縮小"));
+        AddRow(rows, "キーで配置", InlineDescription(Keys("Ctrl", "Alt"), "+ 矢印で半分、",
+            Keys("Shift"), "を足すと 1 区画ずつ拡大・縮小"));
     }
 
     private void ShowStandardFeatures()
