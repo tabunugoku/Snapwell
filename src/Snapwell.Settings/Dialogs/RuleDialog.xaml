@@ -5,8 +5,15 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Title="ルールを追加" PrimaryButtonText="追加" CloseButtonText="取り消す"
     DefaultButton="Primary" IsPrimaryButtonEnabled="False">
+    <ContentDialog.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="ms-appx:///Dialogs/DialogResources.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </ContentDialog.Resources>
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Spacing="12" MinWidth="360">
+        <StackPanel Spacing="8" Width="440">
             <TextBlock Text="指定した条件すべてに一致するウィンドウに適用します。空の欄は見ません。"
                        Style="{StaticResource SnapwellHintTextStyle}" />
             <TextBlock x:Name="UwpNotice" Visibility="Collapsed" TextWrapping="Wrap"
@@ -21,7 +28,7 @@
             <TextBox x:Name="TitleBox" Header="タイトル（正規表現）" PlaceholderText="^ピクチャー イン ピクチャー$"
                      FontFamily="{StaticResource SnapwellMonoFontFamily}"
                      AutomationProperties.Name="タイトル（正規表現）" TextChanged="Input_Changed" />
-            <TextBlock x:Name="ErrorText" Foreground="{ThemeResource SnapwellRedTextBrush}" TextWrapping="Wrap"
+            <TextBlock x:Name="ErrorText" Foreground="{ThemeResource SnapwellRedTextBrush}" TextWrapping="Wrap" MinHeight="40"
                        AutomationProperties.LiveSetting="Polite" />
             <StackPanel Spacing="6" AutomationProperties.Name="配置の扱い">
                 <TextBlock Text="配置の扱い" Style="{StaticResource SnapwellRowTitleStyle}" />
@@ -65,7 +72,7 @@
                 <ComboBoxItem Content="小さい角丸" />
                 <ComboBoxItem Content="角丸なし" />
             </ComboBox>
-            <TextBlock x:Name="MatchText" Style="{StaticResource SnapwellHintTextStyle}"
+            <TextBlock x:Name="MatchText" Style="{StaticResource SnapwellHintTextStyle}" TextWrapping="Wrap" MinHeight="20"
                        AutomationProperties.LiveSetting="Polite" />
         </StackPanel>
     </ScrollViewer>
