@@ -109,7 +109,7 @@ public sealed partial class MainWindow : Window
             "general" => new GeneralPage(_session),
             "feel" => new FeelPage(_session),
             "hotkeys" => new HotkeysPage(_session),
-            "rules" => new RulesPage(),
+            "rules" => new RulesPage(_session),
             "os" => new OsPage(),
             "backup" => new BackupPage(_session, WinRT.Interop.WindowNative.GetWindowHandle(this)),
             "launcher" => new LauncherPage(_session),

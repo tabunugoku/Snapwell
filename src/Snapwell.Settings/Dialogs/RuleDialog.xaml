@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ContentDialog
+    x:Class="Snapwell.Settings.Dialogs.RuleDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="ルールを追加" PrimaryButtonText="追加" CloseButtonText="取り消す"
+    DefaultButton="Primary" IsPrimaryButtonEnabled="False">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Spacing="12" MinWidth="360">
+            <TextBlock Text="指定した条件すべてに一致するウィンドウに適用します。空の欄は見ません。"
+                       Style="{StaticResource SnapwellHintTextStyle}" />
+            <TextBlock x:Name="UwpNotice" Visibility="Collapsed" TextWrapping="Wrap"
+                       Text="UWP アプリはプロセス名ではアプリごとに分けられないので、クラスかタイトルで指定してください"
+                       Foreground="{ThemeResource SnapwellYellowTextBrush}" />
+            <TextBox x:Name="ProcessBox" Header="プロセス名" PlaceholderText="chrome.exe"
+                     FontFamily="{StaticResource SnapwellMonoFontFamily}"
+                     AutomationProperties.Name="プロセス名" TextChanged="Input_Changed" />
+            <TextBox x:Name="ClassBox" Header="ウィンドウ クラス" PlaceholderText="Chrome_WidgetWin_1"
+                     FontFamily="{StaticResource SnapwellMonoFontFamily}"
+                     AutomationProperties.Name="ウィンドウ クラス" TextChanged="Input_Changed" />
+            <TextBox x:Name="TitleBox" Header="タイトル（正規表現）" PlaceholderText="^ピクチャー イン ピクチャー$"
+                     FontFamily="{StaticResource SnapwellMonoFontFamily}"
+                     AutomationProperties.Name="タイトル（正規表現）" TextChanged="Input_Changed" />
+            <TextBlock x:Name="ErrorText" Foreground="{ThemeResource SnapwellRedTextBrush}" TextWrapping="Wrap"
+                       AutomationProperties.LiveSetting="Polite" />
+            <StackPanel Spacing="6" AutomationProperties.Name="配置の扱い">
+                <TextBlock Text="配置の扱い" Style="{StaticResource SnapwellRowTitleStyle}" />
+                <RadioButton x:Name="InheritOption" GroupName="Placement" Checked="Placement_Changed"
+                             AutomationProperties.Name="全体設定に従う">
+                    <StackPanel>
+                        <TextBlock Text="全体設定に従う" />
+                        <TextBlock Text="配置については、このルールでは何も決めません"
+                                   Style="{StaticResource SnapwellHintTextStyle}" />
+                    </StackPanel>
+                </RadioButton>
+                <RadioButton x:Name="ExcludeOption" GroupName="Placement" Checked="Placement_Changed"
+                             AutomationProperties.Name="対象外">
+                    <StackPanel>
+                        <TextBlock Text="対象外" />
+                        <TextBlock Text="動かす・大きさを変える・吸着させる操作の対象にしません"
+                                   Style="{StaticResource SnapwellHintTextStyle}" />
+                    </StackPanel>
+                </RadioButton>
+                <RadioButton x:Name="PositionOption" GroupName="Placement" Checked="Placement_Changed"
+                             AutomationProperties.Name="位置だけ">
+                    <StackPanel>
+                        <TextBlock Text="位置だけ" />
+                        <TextBlock Text="動かしますが、大きさは変えません" Style="{StaticResource SnapwellHintTextStyle}" />
+                    </StackPanel>
+                </RadioButton>
+                <RadioButton x:Name="ForceOption" GroupName="Placement" Checked="Placement_Changed"
+                             AutomationProperties.Name="強制的に対象">
+                    <StackPanel>
+                        <TextBlock Text="強制的に対象" />
+                        <TextBlock Text="ポップアップなどでも、通常のウィンドウとして扱います"
+                                   Style="{StaticResource SnapwellHintTextStyle}" />
+                    </StackPanel>
+                </RadioButton>
+            </StackPanel>
+            <ComboBox x:Name="CornerBox" Header="ウィンドウの角" HorizontalAlignment="Stretch"
+                      AutomationProperties.Name="ウィンドウの角" SelectionChanged="Corner_Changed">
+                <ComboBoxItem Content="全体設定に従う" />
+                <ComboBoxItem Content="Windows の既定（Snapwell は触らない）" />
+                <ComboBoxItem Content="角丸を強制する" />
+                <ComboBoxItem Content="小さい角丸" />
+                <ComboBoxItem Content="角丸なし" />
+            </ComboBox>
+            <TextBlock x:Name="MatchText" Style="{StaticResource SnapwellHintTextStyle}"
+                       AutomationProperties.LiveSetting="Polite" />
+        </StackPanel>
+    </ScrollViewer>
+</ContentDialog>
