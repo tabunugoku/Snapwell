@@ -117,7 +117,7 @@ public sealed partial class SetupWindow
         checkbox.Checked += (_, _) => _consent = true;
         checkbox.Unchecked += (_, _) => _consent = false;
         PageHost.Children.Add(checkbox);
-        var hint = Text("止めない場合も Snapwell は使えます。その場合はドラッグでのスナップが両方動きます。", "SnapwellHintTextStyle");
+        var hint = Text("止めない場合も Snapwell は使えます。その場合は、ドラッグすると Windows と Snapwell のスナップが両方動きます。", "SnapwellHintTextStyle");
         hint.Margin = new Thickness(0, 8, 0, 0);
         PageHost.Children.Add(hint);
     }
