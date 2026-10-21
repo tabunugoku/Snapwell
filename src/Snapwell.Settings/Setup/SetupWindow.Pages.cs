@@ -200,7 +200,13 @@ public sealed partial class SetupWindow
             {
                 for (var column = 0; column < plan.Grid.Columns; column++)
                 {
-                    var cell = new Border { Style = FindStyle("SetupCellStyle") };
+                    // 外周に線を引くと角丸の外へはみ出すため、区画の間の線だけを引く。
+                    var cell = new Border
+                    {
+                        Style = FindStyle("SetupCellStyle"),
+                        BorderThickness = new Thickness(0, 0, column < plan.Grid.Columns - 1 ? 1 : 0,
+                            row < plan.Grid.Rows - 1 ? 1 : 0),
+                    };
                     Grid.SetColumn(cell, column);
                     Grid.SetRow(cell, row);
                     cells.Children.Add(cell);
