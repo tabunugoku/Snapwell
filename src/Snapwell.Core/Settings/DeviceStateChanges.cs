@@ -44,6 +44,10 @@ public static class DeviceStateChanges
     public static DeviceState SetEnabled(ISettingsStore<DeviceState> store, bool enabled) =>
         Update(store, current => current with { Enabled = enabled });
 
+    /// <summary>Win と矢印の置き換えだけを更新し、ほかの項目は最新値を保持する。</summary>
+    public static DeviceState SetReplaceWinArrow(ISettingsStore<DeviceState> store, bool replace) =>
+        Update(store, current => current with { ReplaceWinArrow = replace });
+
     /// <summary>標準スナップの停止を更新し、停止するときだけ取得済みの同意を記録する。</summary>
     public static DeviceState SetStandardSnap(ISettingsStore<DeviceState> store, bool disable) =>
         Update(store, current => current with
