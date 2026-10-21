@@ -35,7 +35,7 @@
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
         <StackPanel x:Name="Editor" Padding="32,28,32,40" HorizontalAlignment="Stretch">
             <TextBlock Text="操作感" Style="{StaticResource SnapwellPageTitleStyle}" />
-            <TextBlock Text="投げたときの動き方です。4 つのプリセットのどれかを選ぶと、5 つの値がそのプリセットの値になります。値を変えると「カスタム」になります。曲線は、手を離してから止まるまでの位置の変化です。"
+            <TextBlock Text="投げたときの動き方です。4 つのプリセットのどれかを選ぶと、5 つの値がそのプリセットの値になります。値を変えると「カスタム」になります。曲線は手を離してから止まるまでの位置の変化です。"
                        Style="{StaticResource SnapwellLeadTextStyle}" />
 
             <Grid ColumnSpacing="10">
