@@ -23,7 +23,8 @@ public sealed class SetupWizard(ISettingsStore<PortableSettings> portableStore, 
 
     public SetupStep Step { get; private set; }
     public int PlanIndex { get; set; }
-    public double Gap { get; set; }
+    /// <summary>設定の既定値と同じ間隔から始める。</summary>
+    public double Gap { get; set; } = new PortableSettings().Gap;
     public bool IsCompleted { get; private set; }
     public bool CanGoBack => !IsCompleted && Step > SetupStep.Welcome;
 
@@ -56,6 +57,8 @@ public sealed class SetupWizard(ISettingsStore<PortableSettings> portableStore, 
                 DeviceStateChanges.Update(deviceStore, device => device with
                 {
                     DisableStandardSnap = consent,
+                    // 手順 2 に並べた三つの変更は、同意と同時に反映する。
+                    ReplaceWinArrow = consent,
                     StandardSnapConsentGiven = consent,
                 });
             }

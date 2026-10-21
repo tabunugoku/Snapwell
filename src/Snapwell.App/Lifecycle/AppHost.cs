@@ -185,7 +185,8 @@ internal sealed class AppHost
                 Cleanup(() =>
                 {
                     _deviceWatcher.Start();
-                    _tray.Post(ReloadDevice);
+                    // 初回起動では端末状態のファイルがまだない場合があるため、最初の読み込みは失敗を知らせない。
+                    _tray.Post(() => ReloadDevice(reportUnreadable: false));
                 });
             }
             if (_watcher is not null)
@@ -221,15 +222,17 @@ internal sealed class AppHost
         }
     }
 
-    internal void ReloadDevice()
+    internal void ReloadDevice() => ReloadDevice(reportUnreadable: true);
+
+    private void ReloadDevice(bool reportUnreadable)
     {
         lock (_gate)
         {
-            ReloadDevice(0, ++_deviceReloadVersion);
+            ReloadDevice(0, ++_deviceReloadVersion, reportUnreadable);
         }
     }
 
-    private void ReloadDevice(int attempt, int version)
+    private void ReloadDevice(int attempt, int version, bool reportUnreadable = true)
     {
         lock (_gate)
         {
@@ -243,7 +246,10 @@ internal sealed class AppHost
                 var loaded = _deviceStore.TryReload();
                 if (loaded is null)
                 {
-                    RetryDeviceReload(new IOException("端末状態を再読み込みできない。"), attempt, version);
+                    if (reportUnreadable)
+                    {
+                        RetryDeviceReload(new IOException("端末状態を再読み込みできない。"), attempt, version);
+                    }
                     return;
                 }
 
