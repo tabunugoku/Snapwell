@@ -426,6 +426,107 @@ public sealed class AppHostTests
         Assert.False(fixture.Tray.State!.DisableStandardSnap);
     }
 
+    /// <summary>復元失敗後の同値通知は復元だけを再試行し、成功すると診断を消す。</summary>
+    [Theory]
+    [InlineData(false, true, false, true)]
+    [InlineData(true, true, false, true)]
+    [InlineData(false, false, true, true)]
+    [InlineData(false, true, true, false)]
+    public void SameDeviceNotificationRetriesFailedRestore(bool throws, bool enabled, bool disable, bool consent)
+    {
+        var replacements = new List<bool>();
+        using var fixture = new Fixture(new() { DisableStandardSnap = true, StandardSnapConsentGiven = true },
+            watchDevice: true, setReplaceWinArrow: replacements.Add);
+        Assert.True(fixture.Host.Start());
+        var target = fixture.Device.Value with
+        {
+            Enabled = enabled,
+            DisableStandardSnap = disable,
+            StandardSnapConsentGiven = consent,
+        };
+        fixture.Guard.RestoreSucceeds = false;
+        var cause = throws ? new IOException("restore") : null;
+        fixture.Guard.RestoreException = cause;
+        fixture.Device.Save(target);
+        fixture.Calls.Clear();
+
+        fixture.DeviceWatcher.Notify();
+
+        Assert.Equal(1, fixture.Calls.Count(call => call == "restore"));
+        Assert.Contains("Windows 標準のスナップを復元できませんでした", fixture.Tray.State!.Status);
+        var failure = Assert.IsType<IOException>(Assert.Single(fixture.Log.Errors));
+        Assert.Same(cause, failure.InnerException);
+        var state = fixture.Tray.State;
+        var saves = fixture.Device.Saves;
+        var cancels = fixture.Runtime.Cancels;
+        var replacementCount = replacements.Count;
+        fixture.Guard.RestoreSucceeds = true;
+        fixture.Guard.RestoreException = null;
+        fixture.Calls.Clear();
+
+        fixture.DeviceWatcher.Notify();
+
+        Assert.Equal(new[] { "restore" }, fixture.Calls.ToArray());
+        Assert.Equal(state with { Status = null }, fixture.Tray.State);
+        Assert.Equal(saves, fixture.Device.Saves);
+        Assert.Equal(cancels, fixture.Runtime.Cancels);
+        Assert.Equal(replacementCount, replacements.Count);
+        Assert.Single(fixture.Created);
+        Assert.Single(fixture.Log.Errors);
+    }
+
+    /// <summary>停止不要のまま起動時の復旧に失敗しても、同値通知で復元を再試行できる。</summary>
+    [Fact]
+    public void SameDeviceNotificationRetriesStartupRecoveryFailure()
+    {
+        using var fixture = new Fixture();
+        fixture.Guard.RecoverSucceeds = false;
+        Assert.True(fixture.Host.Start());
+        Assert.NotNull(fixture.Tray.State!.Status);
+        fixture.Calls.Clear();
+
+        fixture.Host.ReloadDevice();
+
+        Assert.Equal(new[] { "restore" }, fixture.Calls.ToArray());
+        Assert.Null(fixture.Tray.State!.Status);
+        Assert.Single(fixture.Log.Errors);
+        Assert.Equal(0, fixture.Device.Saves);
+    }
+
+    /// <summary>退避値のない復元と停止中の同値通知で、保存や Runtime の再設定を追加しない。</summary>
+    [Theory]
+    [InlineData(false, false, false, true)]
+    [InlineData(true, false, true, true)]
+    [InlineData(false, true, true, true)]
+    [InlineData(true, true, false, true)]
+    [InlineData(true, true, true, false)]
+    public void SameDeviceNotificationOnlyRestoresWhenStopIsUnnecessary(bool enabled, bool disable,
+        bool consent, bool restores)
+    {
+        var replacements = new List<bool>();
+        using var fixture = new Fixture(new()
+        {
+            Enabled = enabled,
+            DisableStandardSnap = disable,
+            StandardSnapConsentGiven = consent,
+        }, watchDevice: true, setReplaceWinArrow: replacements.Add);
+        Assert.True(fixture.Host.Start());
+        var replacementCount = replacements.Count;
+        var state = fixture.Tray.State;
+        fixture.Calls.Clear();
+
+        fixture.DeviceWatcher.Notify();
+        fixture.DeviceWatcher.Notify();
+
+        Assert.Equal(restores ? new[] { "restore", "restore" } : Array.Empty<string>(), fixture.Calls.ToArray());
+        Assert.Equal(state, fixture.Tray.State);
+        Assert.Equal(0, fixture.Device.Saves);
+        Assert.Equal(0, fixture.Runtime.Cancels);
+        Assert.Equal(replacementCount, replacements.Count);
+        Assert.Single(fixture.Created);
+        Assert.Empty(fixture.Log.Errors);
+    }
+
     /// <summary>変更通知より先にトレイを操作しても、ウィザードの変更を保持する。</summary>
     [Fact]
     public void TraySavePreservesSetupCompletionAndConsentBeforeNotificationArrives()
@@ -1247,6 +1348,8 @@ public sealed class AppHostTests
         internal Exception? RecoverException;
         internal bool DisableSucceeds = true;
         internal Exception? DisableException;
+        internal bool RestoreSucceeds = true;
+        internal Exception? RestoreException;
         public bool RecoverOnStartup()
         {
             calls.Enqueue("recover");
@@ -1261,7 +1364,12 @@ public sealed class AppHostTests
             return DisableSucceeds;
         }
 
-        public bool Restore() { calls.Enqueue("restore"); return true; }
+        public bool Restore()
+        {
+            calls.Enqueue("restore");
+            if (RestoreException is { } exception) { throw exception; }
+            return RestoreSucceeds;
+        }
     }
 
     private sealed class FakeStore<T>(T value, ConcurrentQueue<string> calls, string name) : ISettingsStore<T>
