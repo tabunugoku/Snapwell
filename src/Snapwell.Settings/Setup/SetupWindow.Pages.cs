@@ -1,7 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Documents;
 using Snapwell.Core.Commands;
 using Snapwell.Core.Settings;
 
@@ -36,18 +35,19 @@ public sealed partial class SetupWindow
         return rows;
     }
 
-    private RichTextBlock InlineDescription(params object[] parts)
+    /// <summary>キー表示と文字を、上下の中央をそろえて横に並べる。</summary>
+    private StackPanel InlineDescription(params object[] parts)
     {
-        var block = new RichTextBlock { Style = FindStyle("SetupInlineDescriptionStyle") };
-        var paragraph = new Paragraph();
+        var line = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
         foreach (var part in parts)
         {
-            paragraph.Inlines.Add(part is UIElement element
-                ? new InlineUIContainer { Child = element }
-                : new Run { Text = part.ToString() });
+            var element = part as FrameworkElement ?? Text(part.ToString()!, "SnapwellRowDescriptionStyle");
+            element.VerticalAlignment = VerticalAlignment.Center;
+            // 日本語の文字は行の中で約 2px 上に出るため、キー表示の中心に合わせて下げる。
+            if (part is not FrameworkElement) { element.Margin = new Thickness(0, 3, 0, 0); }
+            line.Children.Add(element);
         }
-        block.Blocks.Add(paragraph);
-        return block;
+        return line;
     }
 
     private void AddRow(StackPanel rows, string title, FrameworkElement? description = null, FrameworkElement? control = null)
@@ -85,8 +85,8 @@ public sealed partial class SetupWindow
         AddRow(rows, "投げて配置", Text("タイトルバーをつかんで、置きたい方向へ投げます", "SnapwellRowDescriptionStyle"));
         AddRow(rows, "なぞって配置", InlineDescription(Keys("Ctrl", "Alt", "Space"),
             "、またはトレイのメニューでランチャーを開きます"));
-        AddRow(rows, "キーで配置", InlineDescription(Keys("Ctrl", "Alt"), " + 矢印で半分、",
-            Keys("Shift"), " を足すと 1 区画ずつ拡大・縮小"));
+        AddRow(rows, "キーで配置", InlineDescription(Keys("Ctrl", "Alt"), "+ 矢印で半分、",
+            Keys("Shift"), "を足すと 1 区画ずつ拡大・縮小"));
     }
 
     private void ShowStandardFeatures()
@@ -108,6 +108,9 @@ public sealed partial class SetupWindow
             IsChecked = _consent,
             Margin = new Thickness(0, 16, 0, 0),
             HorizontalContentAlignment = HorizontalAlignment.Stretch,
+            // 既定の余白は文字を上に寄せるため、枠と文字の上下の中央をそろえる。
+            VerticalContentAlignment = VerticalAlignment.Center,
+            Padding = new Thickness(8, 0, 0, 0),
             Content = Text("変更前の値を保存し、Snapwell を無効にしたとき・終了したとき・異常終了のあとに元へ戻すことを理解しました。",
                 "SetupConsentTextStyle"),
         };
@@ -188,8 +191,15 @@ public sealed partial class SetupWindow
             var index = i;
             var plan = SetupWizard.Plans[i];
             var content = new StackPanel();
-            var mini = new Border { Style = FindStyle("SetupMiniStyle") };
-            mini.SizeChanged += (_, e) => mini.Height = e.NewSize.Width * 9 / 16;
+            var mini = new Border { Style = FindStyle("SetupMiniStyle"), HorizontalAlignment = HorizontalAlignment.Center };
+            // 幅と高さを物理ピクセルでの分割数の倍数にして、どの区画も同じ大きさで描く。
+            content.SizeChanged += (_, e) =>
+            {
+                var scale = content.XamlRoot.RasterizationScale;
+                var width = (int)(e.NewSize.Width * scale);
+                mini.Width = Math.Max(1, width / plan.Grid.Columns) * plan.Grid.Columns / scale;
+                mini.Height = Math.Max(1, width * 9 / 16 / plan.Grid.Rows) * plan.Grid.Rows / scale;
+            };
             var cells = new Grid();
             for (var column = 0; column < plan.Grid.Columns; column++) { cells.ColumnDefinitions.Add(new()); }
             for (var row = 0; row < plan.Grid.Rows; row++) { cells.RowDefinitions.Add(new()); }
@@ -197,7 +207,13 @@ public sealed partial class SetupWindow
             {
                 for (var column = 0; column < plan.Grid.Columns; column++)
                 {
-                    var cell = new Border { Style = FindStyle("SetupCellStyle") };
+                    // 外周に線を引くと角丸の外へはみ出すため、区画の間の線だけを引く。
+                    var cell = new Border
+                    {
+                        Style = FindStyle("SetupCellStyle"),
+                        BorderThickness = new Thickness(0, 0, column < plan.Grid.Columns - 1 ? 1 : 0,
+                            row < plan.Grid.Rows - 1 ? 1 : 0),
+                    };
                     Grid.SetColumn(cell, column);
                     Grid.SetRow(cell, row);
                     cells.Children.Add(cell);
