@@ -18,7 +18,7 @@ public sealed class StandardSnapViewTests
         var view = StandardSnapView.Create(new() { Enabled = enabled, DisableStandardSnap = true }, saved);
 
         Assert.True(view.ToggleOn);
-        Assert.Equal("1 で停止", view.SubTagText);
+        Assert.Equal("連動して停止", view.SubTagText);
         Assert.True(view.RestoreEnabled);
         Assert.Equal(hint, view.HintText);
     }
@@ -39,5 +39,23 @@ public sealed class StandardSnapViewTests
         Assert.Equal("標準のまま", view.SubTagText);
         Assert.Equal(restoreEnabled, view.RestoreEnabled);
         Assert.Equal("止めていません", view.HintText);
+    }
+
+    /// <summary>Win と矢印だけを置き換えている場合も、復元できることと現在の選択を表示する。</summary>
+    [Theory]
+    [InlineData(true, true)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(false, false)]
+    [InlineData(true, null)]
+    [InlineData(false, null)]
+    public void ReplacementOnlyView(bool enabled, bool? saved)
+    {
+        var view = StandardSnapView.Create(new() { Enabled = enabled, ReplaceWinArrow = true }, saved);
+
+        Assert.False(view.ToggleOn);
+        Assert.Equal("標準のまま", view.SubTagText);
+        Assert.True(view.RestoreEnabled);
+        Assert.Equal("止めていません。Win + 矢印の置き換えだけがオンです", view.HintText);
     }
 }

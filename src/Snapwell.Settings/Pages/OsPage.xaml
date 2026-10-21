@@ -21,9 +21,8 @@
                         <StackPanel VerticalAlignment="Center">
                             <TextBlock Text="ドラッグでのスナップ" Style="{StaticResource SnapwellRowTitleStyle}" />
                             <TextBlock
-                                Text="SPI_SETWINARRANGING"
-                                Style="{StaticResource SnapwellRowDescriptionStyle}"
-                                FontFamily="{StaticResource SnapwellMonoFontFamily}" />
+                                Text="設定アプリの「ウィンドウのスナップ」と同じ設定です"
+                                Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                             <Border x:Name="DragSnapTag" Style="{StaticResource SnapwellTagStyle}">

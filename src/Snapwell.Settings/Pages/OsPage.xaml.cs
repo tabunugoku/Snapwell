@@ -135,10 +135,31 @@ public sealed partial class OsPage : Page
 
     private void Restore_Click(object sender, RoutedEventArgs e)
     {
-        if (!_busy)
+        if (_busy)
         {
-            _busy = true;
-            _ = ChangeStandardSnapAsync(false);
+            return;
+        }
+
+        _busy = true;
+        ErrorNotice.IsOpen = false;
+        try
+        {
+            _state = DeviceStateChanges.RestoreStandardBehavior(_deviceStore);
+            _savedDragSnap = SnapSettingsGuard.ReadSavedDragSnap();
+        }
+        catch (FutureSettingsVersionException)
+        {
+            Revert("新しい版の端末状態のため、標準の動作に戻せません。Snapwell を更新してください。");
+            _readOnly = true;
+        }
+        catch (Exception exception) when (IsFileFailure(exception))
+        {
+            Revert("標準の動作に戻す選択を保存できませんでした。ファイルの場所とアクセス権を確認してください。");
+        }
+        finally
+        {
+            _busy = false;
+            Render();
         }
     }
 
@@ -164,7 +185,7 @@ public sealed partial class OsPage : Page
                     {
                         XamlRoot = XamlRoot,
                         Title = "Windows の標準スナップを停止しますか",
-                        Content = "設定アプリの「ウィンドウのスナップ」（SPI_SETWINARRANGING）をこのセッションで停止します。" +
+                        Content = "設定アプリの「ウィンドウのスナップ」をこのセッションで停止します。" +
                             "ドラッグでのスナップ・最大化ボタンのメニュー・画面上端のスナップ バーが一緒に止まります。" +
                             "Snapwell の一時停止時と終了時には、変更前の設定に戻します。",
                         PrimaryButtonText = "停止する",
