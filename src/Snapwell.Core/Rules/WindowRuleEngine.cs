@@ -1,5 +1,3 @@
-using System.Text.RegularExpressions;
-
 namespace Snapwell.Core.Rules;
 
 /// <summary>検証と正規表現の構築を一度だけ行い、一覧順にウィンドウを判定する。</summary>
@@ -13,15 +11,17 @@ public sealed class WindowRuleEngine
         var compiled = new List<CompiledRule>();
         foreach (var rule in rules)
         {
-            if (rule is null || !rule.Enabled || WindowRuleValidator.Validate(rule, out var titleRegex) is not null)
+            // 何も決めないルールと、条件が不正なルール（Create が null）は飛ばす。
+            if (rule is null || !rule.Enabled ||
+                rule.Placement == PlacementRule.Inherit && rule.Corner == CornerRule.Inherit ||
+                WindowRuleMatcher.Create(rule) is not { } matcher)
             {
                 continue;
             }
-            compiled.Add(new(rule, rule.ProcessName?.Trim() ?? string.Empty,
-                rule.ClassName?.Trim() ?? string.Empty, titleRegex));
+            compiled.Add(new(rule, matcher));
         }
         _rules = [.. compiled];
-        NeedsProcessName = _rules.Any(rule => rule.ProcessName.Length != 0);
+        NeedsProcessName = _rules.Any(rule => rule.Matcher.UsesProcessName);
     }
 
     /// <summary>判定にプロセス名の取得が必要か。</summary>
@@ -34,11 +34,7 @@ public sealed class WindowRuleEngine
         var corner = CornerRule.Inherit;
         foreach (var rule in _rules)
         {
-            if (rule.ProcessName.Length != 0 &&
-                    !string.Equals(rule.ProcessName, window.ProcessName, StringComparison.OrdinalIgnoreCase) ||
-                rule.ClassName.Length != 0 &&
-                    !string.Equals(rule.ClassName, window.ClassName, StringComparison.OrdinalIgnoreCase) ||
-                rule.TitleRegex is not null && !rule.TitleRegex.IsMatch(window.Title))
+            if (!rule.Matcher.Matches(window))
             {
                 continue;
             }
@@ -49,5 +45,5 @@ public sealed class WindowRuleEngine
         return new(placement, corner);
     }
 
-    private sealed record CompiledRule(WindowRule Value, string ProcessName, string ClassName, Regex? TitleRegex);
+    private sealed record CompiledRule(WindowRule Value, WindowRuleMatcher Matcher);
 }
