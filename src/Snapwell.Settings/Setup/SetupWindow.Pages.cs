@@ -108,6 +108,9 @@ public sealed partial class SetupWindow
             IsChecked = _consent,
             Margin = new Thickness(0, 16, 0, 0),
             HorizontalContentAlignment = HorizontalAlignment.Stretch,
+            // 既定の余白は文字を上に寄せるため、枠と文字の上下の中央をそろえる。
+            VerticalContentAlignment = VerticalAlignment.Center,
+            Padding = new Thickness(8, 0, 0, 0),
             Content = Text("変更前の値を保存し、Snapwell を無効にしたとき・終了したとき・異常終了のあとに元へ戻すことを理解しました。",
                 "SetupConsentTextStyle"),
         };
