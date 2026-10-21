@@ -460,8 +460,8 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
 .dlg input[type="checkbox"] { accent-color: var(--ink); }
 .rule-list .rl-on { width: 64px; }
 .rule-list .switch { display: block; }
-.rule-list .rl-act { width: 120px; text-align: right; white-space: nowrap; }
-.rule-list .rl-cond { word-break: break-all; }
+.rule-list .rl-act { width: 160px; text-align: right; white-space: nowrap; }
+.rule-list .rl-cond { word-break: break-all; cursor: pointer; }
 .rule-list .rl-sub { display: block; margin-top: 2px; font-size: 12px; color: var(--muted); }
 .rl-none { color: var(--muted); }
 .rule-list .tag { text-transform: none; letter-spacing: 0; }
@@ -1063,10 +1063,6 @@ table.list tr:last-child td { border-bottom: 0; }
               <table class="list rule-list">
                 <thead><tr><th class="rl-on">有効</th><th>条件</th><th>配置</th><th>角</th><th class="rl-act"></th></tr></thead>
                 <tbody id="ruleBody">
-                  <tr><td class="rl-on"><label class="switch"><input type="checkbox" checked aria-label="有効"><span></span></label></td><td class="rl-cond"><span class="mono">game-launcher.exe</span></td><td><span class="tag red">対象外</span></td><td><span class="rl-none">—</span></td><td class="rl-act"><button class="hk-ic" type="button" data-act="up" aria-label="上へ">↑</button><button class="hk-ic" type="button" data-act="down" aria-label="下へ">↓</button><button class="hk-ic" type="button" data-act="del" aria-label="削除">✕</button></td></tr>
-                  <tr><td class="rl-on"><label class="switch"><input type="checkbox" checked aria-label="有効"><span></span></label></td><td class="rl-cond"><span class="mono">chrome.exe</span><span class="rl-sub">タイトル <span class="mono">^ピクチャー イン ピクチャー$</span></span></td><td><span class="tag yellow">位置だけ</span></td><td><span class="rl-none">—</span></td><td class="rl-act"><button class="hk-ic" type="button" data-act="up" aria-label="上へ">↑</button><button class="hk-ic" type="button" data-act="down" aria-label="下へ">↓</button><button class="hk-ic" type="button" data-act="del" aria-label="削除">✕</button></td></tr>
-                  <tr><td class="rl-on"><label class="switch"><input type="checkbox" checked aria-label="有効"><span></span></label></td><td class="rl-cond"><span class="mono">chat-overlay.exe</span><span class="rl-sub">ウィンドウ クラス <span class="mono">OverlayWindow</span></span></td><td><span class="rl-none">—</span></td><td><span class="tag">Windows の既定</span></td><td class="rl-act"><button class="hk-ic" type="button" data-act="up" aria-label="上へ">↑</button><button class="hk-ic" type="button" data-act="down" aria-label="下へ">↓</button><button class="hk-ic" type="button" data-act="del" aria-label="削除">✕</button></td></tr>
-                  <tr><td class="rl-on"><label class="switch"><input type="checkbox" aria-label="有効"><span></span></label></td><td class="rl-cond"><span class="mono">TaskManagerWindow</span><span class="rl-sub">ウィンドウ クラス</span></td><td><span class="tag blue">強制的に対象</span></td><td><span class="rl-none">—</span></td><td class="rl-act"><button class="hk-ic" type="button" data-act="up" aria-label="上へ">↑</button><button class="hk-ic" type="button" data-act="down" aria-label="下へ">↓</button><button class="hk-ic" type="button" data-act="del" aria-label="削除">✕</button></td></tr>
                 </tbody>
               </table>
             </div>
@@ -3228,7 +3224,7 @@ $$('.switch').forEach(makeSwitch);
   const placeTag = { red: '<span class="tag red">対象外</span>', yellow: '<span class="tag yellow">位置だけ</span>', blue: '<span class="tag blue">強制的に対象</span>' };
   const cornerName = { default: 'Windows の既定', round: '角丸を強制する', small: '小さい角丸', square: '角丸なし' };
   const none = '<span class="rl-none">—</span>';
-  const acts = '<button class="hk-ic" type="button" data-act="up" aria-label="上へ">↑</button><button class="hk-ic" type="button" data-act="down" aria-label="下へ">↓</button><button class="hk-ic" type="button" data-act="del" aria-label="削除">✕</button>';
+  const acts = '<button class="hk-ic" type="button" data-act="edit" aria-label="編集" title="編集">✎</button><button class="hk-ic" type="button" data-act="up" aria-label="上へ">↑</button><button class="hk-ic" type="button" data-act="down" aria-label="下へ">↓</button><button class="hk-ic" type="button" data-act="del" aria-label="削除">✕</button>';
   const esc = (t) => t.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
   const samples = [
     { proc: 'chrome.exe', cls: 'Chrome_WidgetWin_1', title: 'ピクチャー イン ピクチャー' },
@@ -3237,6 +3233,36 @@ $$('.switch').forEach(makeSwitch);
     { proc: 'chat-overlay.exe', cls: 'OverlayWindow', title: 'チャット' },
     { proc: 'ApplicationFrameHost.exe', cls: 'ApplicationFrameWindow', title: '電卓' },
   ];
+  // 行の内容は tr._d に持ち、描画はここから行う（編集で同じ描画を使う）
+  const condHtml = (d) => {
+    const parts = [];
+    if (d.proc) parts.push(`<span class="mono">${esc(d.proc)}</span>`);
+    if (d.cls) parts.push(`<span class="${d.proc ? 'rl-sub' : 'mono'}">${d.proc ? 'ウィンドウ クラス <span class="mono">' + esc(d.cls) + '</span>' : esc(d.cls)}</span>`);
+    if (d.title) parts.push(`<span class="${parts.length ? 'rl-sub' : 'mono'}">${parts.length ? 'タイトル <span class="mono">' + esc(d.title) + '</span>' : esc(d.title)}</span>`);
+    return parts.join('');
+  };
+  const fillRow = (tr) => {
+    const d = tr._d, c = tr.children;
+    c[1].innerHTML = condHtml(d);
+    c[2].innerHTML = placeTag[d.act] || none;
+    c[3].innerHTML = d.corner === 'none' ? none : '<span class="tag">' + cornerName[d.corner] + '</span>';
+  };
+  const addRow = (d, on) => {
+    const tr = document.createElement('tr');
+    tr._d = d;
+    tr.innerHTML = `<td class="rl-on"><label class="switch"><input type="checkbox"${on ? ' checked' : ''} aria-label="有効"><span></span></label></td><td class="rl-cond"></td><td></td><td></td><td class="rl-act">${acts}</td>`;
+    fillRow(tr);
+    body.appendChild(tr);
+    makeSwitch(tr.querySelector('.switch'));
+  };
+  [
+    [{ proc: 'game-launcher.exe', cls: '', title: '', act: 'red', corner: 'none' }, true],
+    [{ proc: 'chrome.exe', cls: '', title: '^ピクチャー イン ピクチャー$', act: 'yellow', corner: 'none' }, true],
+    [{ proc: 'chat-overlay.exe', cls: 'OverlayWindow', title: '', act: 'none', corner: 'default' }, true],
+    [{ proc: '', cls: 'TaskManagerWindow', title: '', act: 'blue', corner: 'none' }, false],
+  ].forEach(([d, on]) => addRow(d, on));
+
+  let editing = null;
   const act = () => dlg.querySelector('input[name=rdAct]:checked').value;
   const test = () => {
     const proc = $('#rdProc').value.trim().toLowerCase(), cls = $('#rdClass').value.trim().toLowerCase(), title = $('#rdTitle').value;
@@ -3249,10 +3275,13 @@ $$('.switch').forEach(makeSwitch);
     $('#rdMatch').textContent = noCond ? '条件を 1 つ以上入力してください。' : noEffect ? '配置の扱いか、ウィンドウの角の、どちらかは「全体設定に従う」以外にしてください。' : err.hidden ? `いま一致するウィンドウ: ${hits.length} 件${hits.length ? '（' + hits.map((w) => w.title).join('、') + '）' : ''}` : '';
     $('#rdOk').disabled = noCond || noEffect || !err.hidden;
   };
-  const open = (v) => {
+  const open = (v, tr) => {
+    editing = tr || null;
+    $('#ruleTitle').textContent = editing ? 'ルールを編集' : 'ルールを追加';
+    $('#rdOk').textContent = editing ? '保存' : '追加';
     $('#rdProc').value = v.proc || ''; $('#rdClass').value = v.cls || ''; $('#rdTitle').value = v.title || '';
-    dlg.querySelector('input[name=rdAct][value=none]').checked = true;
-    $('#rdCorner').value = 'none';
+    dlg.querySelector(`input[name=rdAct][value=${v.act || 'none'}]`).checked = true;
+    $('#rdCorner').value = v.corner || 'none';
     test(); dlg.showModal();
   };
   ['#rdProc', '#rdClass', '#rdTitle'].forEach((q) => $(q).addEventListener('input', test));
@@ -3272,22 +3301,18 @@ $$('.switch').forEach(makeSwitch);
     open({ proc: d.proc.startsWith('ApplicationFrameHost') ? '' : d.proc, cls: d.class, title: d.title ? '^' + d.title + '$' : '' });
   }));
   $('#rdOk').addEventListener('click', () => {
-    const proc = $('#rdProc').value.trim(), cls = $('#rdClass').value.trim(), title = $('#rdTitle').value;
-    const parts = [];
-    if (proc) parts.push(`<span class="mono">${esc(proc)}</span>`);
-    if (cls) parts.push(`<span class="${proc ? 'rl-sub' : 'mono'}">${proc ? 'ウィンドウ クラス <span class="mono">' + esc(cls) + '</span>' : esc(cls)}</span>`);
-    if (title) parts.push(`<span class="${parts.length ? 'rl-sub' : 'mono'}">${parts.length ? 'タイトル <span class="mono">' + esc(title) + '</span>' : esc(title)}</span>`);
-    const c = $('#rdCorner').value;
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td class="rl-on"><label class="switch"><input type="checkbox" checked aria-label="有効"><span></span></label></td><td class="rl-cond">${parts.join('')}</td><td>${placeTag[act()] || none}</td><td>${c === 'none' ? none : '<span class="tag">' + cornerName[c] + '</span>'}</td><td class="rl-act">${acts}</td>`;
-    body.appendChild(tr);
-    makeSwitch(tr.querySelector('.switch'));
+    const d = { proc: $('#rdProc').value.trim(), cls: $('#rdClass').value.trim(), title: $('#rdTitle').value, act: act(), corner: $('#rdCorner').value };
+    if (editing) { editing._d = d; fillRow(editing); } else { addRow(d, true); }
     dlg.close();
   });
   body.addEventListener('click', (e) => {
-    const b = e.target.closest('[data-act]'); if (!b) return;
-    const tr = b.closest('tr');
-    if (b.dataset.act === 'del') { tr.remove(); }
+    const b = e.target.closest('[data-act]');
+    const tr = (b || e.target).closest('tr');
+    if (!tr) return;
+    // 条件の欄を押しても編集できる
+    if (!b) { if (e.target.closest('.rl-cond')) open(tr._d, tr); return; }
+    if (b.dataset.act === 'edit') { open(tr._d, tr); }
+    else if (b.dataset.act === 'del') { tr.remove(); }
     else if (b.dataset.act === 'up' && tr.previousElementSibling) { body.insertBefore(tr, tr.previousElementSibling); }
     else if (b.dataset.act === 'down' && tr.nextElementSibling) { body.insertBefore(tr.nextElementSibling, tr); }
   });
