@@ -256,7 +256,7 @@
                                 VerticalContentAlignment="Stretch" IsTabStop="True" />
             </Grid>
         </NavigationView>
-        <Grid Grid.Row="2" Padding="32,8" ColumnSpacing="16"
+        <Grid Grid.Row="2" Padding="32,17.67" ColumnSpacing="16"
               Background="{ThemeResource SnapwellSurfaceBrush}"
               BorderBrush="{ThemeResource SnapwellBorderBrush}" BorderThickness="0,1,0,0">
             <Grid.ColumnDefinitions>
