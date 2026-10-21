@@ -258,8 +258,8 @@ g と e は対象モニターの DPI で物理ピクセルに換算する。隣�
 | 対象 | 制御方法（案） | 備考 |
 |---|---|---|
 | ドラッグでのスナップ（Aero Snap） | `SystemParametersInfo(SPI_SETWINARRANGING, FALSE)` | 設定アプリの「ウィンドウのスナップ」と同じ設定 |
-| スナップレイアウト（最大化ボタンのフライアウト） | 上の `SPI_SETWINARRANGING` で一緒に止まる | ARM64 の Windows 11 26300 で、セッション限りの停止だけで消えることを確認した。レジストリは触らない（`EnableSnapAssistFlyout` は個別に止める場合の候補） |
-| 画面上端のスナップバー（24H2以降） | 同上 | 同上（`EnableSnapBar` は個別に止める場合の候補）。ドラッグ中の灰色の枠も一緒に止まる |
+| スナップレイアウト（最大化ボタンのフライアウト） | 上の `SPI_SETWINARRANGING` で一緒に止まる | ARM64 の Windows 11 26300 で、セッション限りの停止だけで消えることを確認した。レジストリは触らない。個別に止める `EnableSnapAssistFlyout` は、書き換えても Explorer の再起動まで反映されず、公開 API の通知（`WM_SETTINGCHANGE`）も効かなかったため使わない |
+| 画面上端のスナップバー（24H2以降） | 同上 | 同上（`EnableSnapBar` も同じ理由で使わない）。ドラッグ中の灰色の枠も一緒に止まる |
 | Win+矢印キー | 本ツールが有効な間だけ、低レベルキーボードフックで握りつぶして自前の操作に割り当てる | Explorerが予約しているため `RegisterHotKey` では登録できない |
 | 他プロセスのウィンドウの角 | `DWMWA_WINDOW_CORNER_PREFERENCE`（§13） | 変更前の値を `corners.json` に退避し、既定へ戻したとき・無効化・終了・異常終了後の起動で復元する |
 
