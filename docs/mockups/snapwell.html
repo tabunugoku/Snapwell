@@ -458,6 +458,24 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
 .dlg .rows { max-height: 280px; overflow: auto; margin: 14px 0 10px; }
 .dlg .row { cursor: pointer; }
 .dlg input[type="checkbox"] { accent-color: var(--ink); }
+.rule-list .rl-on { width: 64px; }
+.rule-list .switch { display: block; }
+.rule-list .rl-act { width: 120px; text-align: right; white-space: nowrap; }
+.rule-list .rl-cond { word-break: break-all; }
+.rule-list .rl-sub { display: block; margin-top: 2px; font-size: 12px; color: var(--muted); }
+.rl-builtin { margin: 0; padding-left: 18px; font-size: 12.5px; color: var(--muted); }
+.rl-warn { color: var(--yellow-tx); }
+.rd-form { display: grid; gap: 10px; margin: 14px 0 0; }
+.rd-form label { display: grid; gap: 4px; font-size: 12.5px; color: var(--muted); }
+.rd-form input.input { width: 100%; box-sizing: border-box; }
+.rd-err { font-size: 12.5px; color: var(--red-tx); }
+.rd-act { border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; display: grid; gap: 6px; margin: 0; }
+.rd-act legend { font-size: 12px; color: var(--muted); padding: 0 4px; }
+.rd-act label { display: block; font-size: 13px; color: var(--ink); }
+.rd-act label span { display: block; margin-left: 22px; font-size: 12px; color: var(--muted); }
+.rd-match { font-size: 12.5px; color: var(--muted); }
+#pickList .row.pick { width: 100%; text-align: left; background: transparent; border: 0; border-bottom: 1px solid var(--border); color: inherit; font: inherit; }
+#pickList .row.pick:hover { background: var(--surface-2); }
 .dlg-foot { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; margin-top: 16px; }
 .savebar { display: flex; align-items: center; gap: 16px; padding: 14px 32px; border-top: 1px solid var(--border); background: var(--surface); }
 .savebar .hint { flex: 1; }
@@ -1037,19 +1055,27 @@ table.list tr:last-child td { border-bottom: 0; }
 
           <!-- アプリのルール -->
           <div class="spage" data-page="rules">
-            <h3>アプリごとのルール <span class="tag pending">準備中</span></h3>
-            <p class="lead">特定のアプリを対象から外したり、位置だけを動かすようにしたりできます。</p>
+            <h3>アプリごとのルール</h3>
+            <p class="lead">特定のアプリのウィンドウを、対象から外したり、位置だけを動かすようにしたりできます。上のルールから順に調べ、最初に一致したものを使います。</p>
             <div class="rows" style="padding: 0">
-              <table class="list">
-                <thead><tr><th>条件</th><th>種類</th><th>扱い</th></tr></thead>
-                <tbody>
-                  <tr><td class="mono">game-launcher.exe</td><td>プロセス名</td><td><span class="tag red">対象外</span></td></tr>
-                  <tr><td class="mono">^ピクチャー イン ピクチャー$</td><td>タイトル（正規表現）</td><td><span class="tag yellow">位置だけ</span></td></tr>
-                  <tr><td class="mono">Shell_TrayWnd</td><td>ウィンドウ クラス</td><td><span class="tag red">対象外（既定）</span></td></tr>
+              <table class="list rule-list">
+                <thead><tr><th class="rl-on">有効</th><th>条件</th><th>扱い</th><th class="rl-act"></th></tr></thead>
+                <tbody id="ruleBody">
+                  <tr><td class="rl-on"><label class="switch"><input type="checkbox" checked aria-label="有効"><span></span></label></td><td class="mono rl-cond">game-launcher.exe</td><td><span class="tag red">対象外</span></td><td class="rl-act"><button class="hk-ic" type="button" data-act="up" aria-label="上へ">↑</button><button class="hk-ic" type="button" data-act="down" aria-label="下へ">↓</button><button class="hk-ic" type="button" data-act="del" aria-label="削除">✕</button></td></tr>
+                  <tr><td class="rl-on"><label class="switch"><input type="checkbox" checked aria-label="有効"><span></span></label></td><td class="rl-cond"><span class="mono">chrome.exe</span><span class="rl-sub">タイトル <span class="mono">^ピクチャー イン ピクチャー$</span></span></td><td><span class="tag yellow">位置だけ</span></td><td class="rl-act"><button class="hk-ic" type="button" data-act="up" aria-label="上へ">↑</button><button class="hk-ic" type="button" data-act="down" aria-label="下へ">↓</button><button class="hk-ic" type="button" data-act="del" aria-label="削除">✕</button></td></tr>
+                  <tr><td class="rl-on"><label class="switch"><input type="checkbox" aria-label="有効"><span></span></label></td><td class="rl-cond"><span class="mono">TaskManagerWindow</span><span class="rl-sub">ウィンドウ クラス</span></td><td><span class="tag blue">強制的に対象</span></td><td class="rl-act"><button class="hk-ic" type="button" data-act="up" aria-label="上へ">↑</button><button class="hk-ic" type="button" data-act="down" aria-label="下へ">↓</button><button class="hk-ic" type="button" data-act="del" aria-label="削除">✕</button></td></tr>
                 </tbody>
               </table>
             </div>
-            <div style="margin-top: 12px; display: flex; gap: 8px"><button class="btn" type="button">ルールを追加</button><button class="btn" type="button">ウィンドウを選んで追加</button></div>
+            <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap"><button class="btn" type="button" id="ruleAdd">ルールを追加</button><button class="btn" type="button" id="rulePick">ウィンドウを選んで追加</button></div>
+            <details class="os-det" style="margin-top: 14px"><summary>Snapwell が最初から対象外にしているもの</summary>
+              <p class="hint" style="margin: 0 0 6px">次のウィンドウは、ルールでは変えられません（「強制的に対象」にしても対象になりません）。</p>
+              <ul class="rl-builtin">
+                <li>表示されていない・最小化されている・ほかのウィンドウに隠された（クローク中の）ウィンドウ</li>
+                <li>Snapwell 自身のウィンドウ、子ウィンドウ</li>
+                <li>デスクトップ、タスクバー、スタートメニューなどのシェル、通知領域の溢れ窓</li>
+              </ul>
+            </details>
           </div>
 
           <!-- 標準機能 -->
@@ -1144,6 +1170,36 @@ table.list tr:last-child td { border-bottom: 0; }
         <button class="btn" type="button" id="importSome" disabled>選んだ項目だけ</button>
         <button class="btn" type="button" id="importCancel" autofocus>取り消す</button>
       </div>
+    </dialog>
+    <dialog class="dlg" id="ruleDlg" aria-labelledby="ruleTitle">
+      <h4 id="ruleTitle">ルールを追加</h4>
+      <p>指定した条件すべてに一致するウィンドウに適用します。空の欄は見ません。</p>
+      <div class="rd-form">
+        <label>プロセス名<input class="input mono" id="rdProc" placeholder="chrome.exe" spellcheck="false"></label>
+        <label>ウィンドウ クラス<input class="input mono" id="rdClass" placeholder="Chrome_WidgetWin_1" spellcheck="false"></label>
+        <label>タイトル（正規表現）<input class="input mono" id="rdTitle" placeholder="^ピクチャー イン ピクチャー$" spellcheck="false"></label>
+        <div class="rd-err" id="rdErr" hidden></div>
+        <fieldset class="rd-act"><legend>扱い</legend>
+          <label><input type="radio" name="rdAct" value="red" checked> 対象外<span>Snapwell は一切触りません</span></label>
+          <label><input type="radio" name="rdAct" value="yellow"> 位置だけ<span>動かしますが、大きさは変えません</span></label>
+          <label><input type="radio" name="rdAct" value="blue"> 強制的に対象<span>ポップアップなどでも、通常のウィンドウとして扱います</span></label>
+        </fieldset>
+        <div class="rd-match" id="rdMatch"></div>
+      </div>
+      <div class="dlg-foot">
+        <button class="btn primary" type="button" id="rdOk">追加</button>
+        <button class="btn" type="button" id="rdCancel">取り消す</button>
+      </div>
+    </dialog>
+    <dialog class="dlg" id="pickDlg" aria-labelledby="pickTitle">
+      <h4 id="pickTitle">ウィンドウを選んで追加</h4>
+      <p>いま開いているウィンドウから選びます。選ぶと、その値が入った状態で「ルールを追加」が開きます。</p>
+      <div class="rows" id="pickList">
+        <button class="row pick" type="button" data-proc="chrome.exe" data-class="Chrome_WidgetWin_1" data-title="ピクチャー イン ピクチャー"><div><div class="t">ピクチャー イン ピクチャー</div><div class="d mono">chrome.exe · Chrome_WidgetWin_1</div></div></button>
+        <button class="row pick" type="button" data-proc="game-launcher.exe" data-class="LauncherWindow" data-title="Game Launcher"><div><div class="t">Game Launcher</div><div class="d mono">game-launcher.exe · LauncherWindow</div></div></button>
+        <button class="row pick" type="button" data-proc="ApplicationFrameHost.exe" data-class="ApplicationFrameWindow" data-title="電卓"><div><div class="t">電卓</div><div class="d mono">ApplicationFrameHost.exe · ApplicationFrameWindow</div><div class="d rl-warn">Windows のアプリ（UWP）は、プロセス名が共通です。クラスかタイトルで指定してください。</div></div></button>
+      </div>
+      <div class="dlg-foot"><button class="btn" type="button" id="pickCancel" autofocus>取り消す</button></div>
     </dialog>
   </section>
 
@@ -3151,6 +3207,65 @@ $$('.switch').forEach(makeSwitch);
   };
   [prev, lines, pred].forEach((e) => e.addEventListener('change', sync));
   sync();
+})();
+
+(() => {
+  const body = $('#ruleBody');
+  const dlg = $('#ruleDlg'), pick = $('#pickDlg');
+  const names = { red: '対象外', yellow: '位置だけ', blue: '強制的に対象' };
+  const acts = '<button class="hk-ic" type="button" data-act="up" aria-label="上へ">↑</button><button class="hk-ic" type="button" data-act="down" aria-label="下へ">↓</button><button class="hk-ic" type="button" data-act="del" aria-label="削除">✕</button>';
+  const esc = (t) => t.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  const samples = [
+    { proc: 'chrome.exe', cls: 'Chrome_WidgetWin_1', title: 'ピクチャー イン ピクチャー' },
+    { proc: 'chrome.exe', cls: 'Chrome_WidgetWin_1', title: 'Snapwell - Google Chrome' },
+    { proc: 'game-launcher.exe', cls: 'LauncherWindow', title: 'Game Launcher' },
+    { proc: 'ApplicationFrameHost.exe', cls: 'ApplicationFrameWindow', title: '電卓' },
+  ];
+  const test = () => {
+    const proc = $('#rdProc').value.trim().toLowerCase(), cls = $('#rdClass').value.trim().toLowerCase(), title = $('#rdTitle').value;
+    const err = $('#rdErr'); let re = null;
+    err.hidden = true;
+    if (title) { try { re = new RegExp(title, 'i'); } catch (e) { err.textContent = 'タイトルの正規表現が正しくありません'; err.hidden = false; } }
+    const none = !proc && !cls && !title;
+    const hits = none || !err.hidden ? [] : samples.filter((w) => (!proc || w.proc.toLowerCase() === proc) && (!cls || w.cls.toLowerCase() === cls) && (!re || re.test(w.title)));
+    $('#rdMatch').textContent = none ? '条件を 1 つ以上入力してください。' : err.hidden ? `いま一致するウィンドウ: ${hits.length} 件${hits.length ? '（' + hits.map((w) => w.title).join('、') + '）' : ''}` : '';
+    $('#rdOk').disabled = none || !err.hidden;
+  };
+  const open = (v) => {
+    $('#rdProc').value = v.proc || ''; $('#rdClass').value = v.cls || ''; $('#rdTitle').value = v.title || '';
+    dlg.querySelector('input[name=rdAct][value=red]').checked = true;
+    test(); dlg.showModal();
+  };
+  ['#rdProc', '#rdClass', '#rdTitle'].forEach((q) => $(q).addEventListener('input', test));
+  $('#ruleAdd').addEventListener('click', () => open({}));
+  $('#rulePick').addEventListener('click', () => pick.showModal());
+  $('#pickCancel').addEventListener('click', () => pick.close());
+  $('#rdCancel').addEventListener('click', () => dlg.close());
+  pick.querySelectorAll('.pick').forEach((b) => b.addEventListener('click', () => {
+    pick.close();
+    const d = b.dataset;
+    open({ proc: d.proc.startsWith('ApplicationFrameHost') ? '' : d.proc, cls: d.class, title: d.title ? '^' + d.title + '$' : '' });
+  }));
+  $('#rdOk').addEventListener('click', () => {
+    const proc = $('#rdProc').value.trim(), cls = $('#rdClass').value.trim(), title = $('#rdTitle').value;
+    const act = dlg.querySelector('input[name=rdAct]:checked').value;
+    const parts = [];
+    if (proc) parts.push(`<span class="mono">${esc(proc)}</span>`);
+    if (cls) parts.push(`<span class="${proc ? 'rl-sub' : 'mono'}">${proc ? 'ウィンドウ クラス <span class="mono">' + esc(cls) + '</span>' : esc(cls)}</span>`);
+    if (title) parts.push(`<span class="${parts.length ? 'rl-sub' : 'mono'}">${parts.length ? 'タイトル <span class="mono">' + esc(title) + '</span>' : esc(title)}</span>`);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td class="rl-on"><label class="switch"><input type="checkbox" checked aria-label="有効"><span></span></label></td><td class="rl-cond">${parts.join('')}</td><td><span class="tag ${act}">${names[act]}</span></td><td class="rl-act">${acts}</td>`;
+    body.appendChild(tr);
+    makeSwitch(tr.querySelector('.switch'));
+    dlg.close();
+  });
+  body.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-act]'); if (!b) return;
+    const tr = b.closest('tr');
+    if (b.dataset.act === 'del') { tr.remove(); }
+    else if (b.dataset.act === 'up' && tr.previousElementSibling) { body.insertBefore(tr, tr.previousElementSibling); }
+    else if (b.dataset.act === 'down' && tr.nextElementSibling) { body.insertBefore(tr.nextElementSibling, tr); }
+  });
 })();
 </script>
 </body>
