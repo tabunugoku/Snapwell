@@ -14,13 +14,16 @@ namespace Snapwell.App.Dragging;
 internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSource monitors,
     IMotionEngine motion, Func<PortableSettings> settings, Action<bool> trackMouse, uint ownProcessId,
     Func<uint>? tickCount = null, IZonePreview? preview = null, Func<Vec2?>? cursorPosition = null,
-    Func<nint, IReadOnlyList<PixelRect>>? neighbors = null)
+    Func<nint, IReadOnlyList<PixelRect>>? neighbors = null, WindowTargetResolver? targets = null)
 {
     // 離したあとは、着地の動きが終わるまでプレビューを残す。動きの開始直後と、止まらない場合の上限を決めておく。
     private const int HoldPollMs = 50;
     private const int HoldMinMs = 150;
     private const int HoldMaxMs = 2000;
     private readonly object _gate = new();
+    private readonly WindowTargetResolver _targets = targets ?? new(new Win32ProcessNameSource(), settings, ownProcessId);
+    private WindowTarget? _startTarget;
+    private uint _startProcessId;
     private readonly IZonePreview _preview = preview ?? NullZonePreview.Instance;
     private readonly Func<uint> _tickCount = tickCount ?? (() => unchecked((uint)Environment.TickCount64));
     private bool _enabled = true;
@@ -71,13 +74,14 @@ internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSou
                 case MoveSizeStarted start:
                     StopTracking();
                     if (!inspector.TryInspect(start.Handle, out var window) || window.IsMaximized ||
-                        !IsTarget(WindowClassifier.Classify(window, ownProcessId)))
+                        !(_startTarget = _targets.Resolve(window)).IsTarget)
                     {
                         return;
                     }
 
                     motion.Cancel(start.Handle);
                     _tracked = start.Handle;
+                    _startProcessId = window.ProcessId;
                     _neighbors = neighbors?.Invoke(start.Handle).ToArray() ?? [];
                     _startBounds = window.VisualBounds;
                     _velocity = new();
@@ -97,10 +101,12 @@ internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSou
                     var pointer = _pointer ?? cursorPosition?.Invoke();
                     var dragNeighbors = _neighbors;
                     var startSize = (_startBounds.Width, _startBounds.Height);
+                    var target = _startTarget!;
+                    var processId = _startProcessId;
                     // 吸着が決まれば、着地するまで同じプレビューを出し続けるので、ここでは消さない。
                     StopTracking(keepPreview: true);
                     if (!inspector.TryInspect(end.Handle, out var current) || current.IsMaximized ||
-                        !IsTarget(WindowClassifier.Classify(current, ownProcessId)))
+                        current.ProcessId != processId || !current.IsVisible || current.IsCloaked || current.IsMinimized)
                     {
                         _preview.Hide();
                         return;
@@ -116,7 +122,7 @@ internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSou
                     var options = settings();
                     var areas = monitors.GetMonitors().Select(monitor => monitor.ToMonitorArea()).ToArray();
                     var result = MonitorGridResolver.ResolveSnap(options, current.VisualBounds, velocity, areas,
-                        WindowClassifier.CanResize(current, ownProcessId), pointer, dragNeighbors);
+                        target.CanResize, pointer, dragNeighbors);
                     if (result is { } snap)
                     {
                         var walls = areas.First(area => area.Id == snap.MonitorId).WorkArea;
@@ -142,9 +148,6 @@ internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSou
             }
         }
     }
-
-    // 設定は呼び出しごとに読み、変更を次のドラッグから反映する。サイズ固定・ポップアップを外すと吸着も予測線も出ない。
-    private bool IsTarget(WindowKind kind) => WindowTargetPolicy.IsTarget(kind, settings);
 
     // 線の終点は慣性だけで進む位置（SnapResult.PredictedPosition）ではなく、着地する区画のタイトルバー。
     // 慣性の距離は速度 × m/c で、既定の感触では 1000 px/s でも 20〜80 px しかなく、線が極端に短くなる。
@@ -219,6 +222,8 @@ internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSou
         }
 
         _tracked = 0;
+        _startTarget = null;
+        _startProcessId = 0;
         _velocity = null;
         _neighbors = [];
     }

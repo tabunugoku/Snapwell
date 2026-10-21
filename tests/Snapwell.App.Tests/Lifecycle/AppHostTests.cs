@@ -9,6 +9,7 @@ using Snapwell.App.Tests.Overlay;
 using Snapwell.App.Tray;
 using Snapwell.Core.Commands;
 using Snapwell.Core.Geometry;
+using Snapwell.Core.Rules;
 using Snapwell.Core.Settings;
 using Snapwell.Core.Tray;
 using Snapwell.Platform.Hooks;
@@ -18,6 +19,26 @@ namespace Snapwell.App.Tests.Lifecycle;
 
 public sealed class AppHostTests
 {
+    /// <summary>ルールだけの再読込では Runtime を交換せず、同じルールの再通知でも更新しない。</summary>
+    [Fact]
+    public void RulesOnlyReloadUpdatesExistingRuntimeWithoutCancelingDrag()
+    {
+        using var fixture = new Fixture();
+        fixture.Runtime.SupportsRuleUpdate = true;
+        Assert.True(fixture.Host.Start());
+        var rules = new WindowRule[] { new() { ClassName = "Editor", Placement = PlacementRule.Exclude } };
+        fixture.Portable.ReloadResult = new(new() { WindowRules = rules });
+        fixture.Host.ReloadSettings();
+        fixture.Host.ReloadSettings();
+        Assert.Equal(rules, Assert.Single(fixture.Runtime.RuleUpdates));
+        Assert.Single(fixture.Created);
+        Assert.Equal(0, fixture.Runtime.Cancels);
+        Assert.Equal(0, fixture.Runtime.Disposals);
+        fixture.Portable.ReloadResult = new(new() { WindowRules = [], Gap = 19 });
+        fixture.Host.ReloadSettings();
+        Assert.Equal(2, fixture.Created.Count);
+    }
+
     /// <summary>端末の選択を割り当て更新より先に渡し、変更通知でも同じ Runtime に再適用する。</summary>
     [Fact]
     public void WinArrowChoiceIsAppliedAtStartupAndBeforeRuntimeRebinding()
@@ -1516,6 +1537,15 @@ public sealed class AppHostTests
 
     private sealed class FakeRuntime(ConcurrentQueue<string> calls) : IAppRuntime
     {
+        internal bool SupportsRuleUpdate;
+        internal List<WindowRule[]> RuleUpdates { get; } = [];
+        public bool TryUpdateWindowRules(WindowRule[] rules)
+        {
+            if (!SupportsRuleUpdate) { return false; }
+            RuleUpdates.Add(rules);
+            return true;
+        }
+
         internal bool Enabled;
         internal int Cancels;
         internal int Disposals;

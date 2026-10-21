@@ -23,7 +23,7 @@ internal interface IResizeConstraints
 /// <summary>配送済みの操作通知から手動リサイズの吸着先を表示し、終了時に区画へ揃える。</summary>
 internal sealed class ResizeSnapController(IWindowInspector inspector, IMonitorSource monitors,
     IMotionEngine motion, Func<PortableSettings> settings, IResizeConstraints constraints, uint ownProcessId,
-    IZonePreview? preview = null, TimeProvider? timeProvider = null)
+    IZonePreview? preview = null, TimeProvider? timeProvider = null, WindowTargetResolver? targets = null)
 {
     // アニメーションとは無関係に、他プロセスへの問い合わせを入力頻度から切り離す。
     internal const int PreviewPollMs = 50;
@@ -32,6 +32,7 @@ internal sealed class ResizeSnapController(IWindowInspector inspector, IMonitorS
     private const int HoldMinMs = 150;
     private const int HoldMaxMs = 2000;
     private readonly object _gate = new();
+    private readonly WindowTargetResolver _targets = targets ?? new(new Win32ProcessNameSource(), settings, ownProcessId);
     private readonly IZonePreview _preview = preview ?? NullZonePreview.Instance;
     private readonly TimeProvider _time = timeProvider ?? TimeProvider.System;
     private WindowSnapshot? _start;
@@ -221,7 +222,8 @@ internal sealed class ResizeSnapController(IWindowInspector inspector, IMonitorS
         currentMonitors = [];
         var currentDpi = constraints.GetDpi(original.Handle);
         if (motion.IsMoving(original.Handle) || !inspector.TryInspect(original.Handle, out window) ||
-            window.ProcessId != original.ProcessId || !Eligible(window) ||
+            window.ProcessId != original.ProcessId || !CurrentlyAvailable(window) ||
+            window.Style != original.Style || window.ExtendedStyle != original.ExtendedStyle ||
             startDpi == 0 || currentDpi == 0 || startDpi != currentDpi ||
             (original.VisualBounds.Width == window.VisualBounds.Width &&
                 original.VisualBounds.Height == window.VisualBounds.Height))
@@ -258,7 +260,8 @@ internal sealed class ResizeSnapController(IWindowInspector inspector, IMonitorS
                 var options = settings();
                 if (!options.SnapAfterResize || !options.ShowZonePreview ||
                     !inspector.TryInspect(held.Handle, out var current) ||
-                    current.ProcessId != held.ProcessId || !Eligible(current) ||
+                    current.ProcessId != held.ProcessId || !CurrentlyAvailable(current) ||
+                    current.Style != held.Style || current.ExtendedStyle != held.ExtendedStyle ||
                     constraints.GetDpi(held.Handle) != _startDpi ||
                     GetMonitorDpi(current, _holdMonitors) != _startMonitorDpi ||
                     !_holdMonitors.SequenceEqual(GetMonitorsOrEmpty()) ||
@@ -348,8 +351,15 @@ internal sealed class ResizeSnapController(IWindowInspector inspector, IMonitorS
     private static uint GetMonitorDpi(WindowSnapshot window, IReadOnlyList<MonitorInfo> availableMonitors) =>
         availableMonitors.FirstOrDefault(monitor => monitor.Bounds.Contains(window.VisualBounds.Center))?.DpiX ?? 0;
 
-    private bool Eligible(WindowSnapshot window) => !window.IsMaximized &&
-        WindowClassifier.CanResize(window, ownProcessId);
+    private bool Eligible(WindowSnapshot window)
+    {
+        var target = _targets.Resolve(window);
+        return !window.IsMaximized && target.IsTarget && target.CanResize;
+    }
+
+    // 開始後はタイトルやルールで判定し直さず、現在の表示状態だけを確認する。
+    private static bool CurrentlyAvailable(WindowSnapshot window) =>
+        !window.IsMaximized && window.IsVisible && !window.IsCloaked && !window.IsMinimized;
 }
 
 /// <summary>公開メッセージで最小寸法を問い合わせ、応答しないアプリは揃えない。</summary>

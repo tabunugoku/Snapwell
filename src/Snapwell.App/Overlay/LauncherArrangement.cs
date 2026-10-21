@@ -2,6 +2,7 @@ using Snapwell.Core.Commands;
 using Snapwell.Core.Geometry;
 using Snapwell.Core.Layout;
 using Snapwell.Core.Overlay;
+using Snapwell.Core.Rules;
 using Snapwell.Core.Settings;
 using Snapwell.Core.Snapping;
 using Snapwell.Platform.Monitors;
@@ -11,8 +12,12 @@ namespace Snapwell.App.Overlay;
 
 /// <summary>一覧と整列で同じ対象判定を使い、ネイティブ調査を差し替える境界。</summary>
 internal sealed class LauncherArrangement(IWindowInspector inspector, IMonitorSource monitors, uint ownProcessId,
-    Action<nint, PixelRect, PixelRect> place, Action? monitorChanged = null, Func<PortableSettings>? settings = null)
+    Action<nint, PixelRect, PixelRect> place, Action? monitorChanged = null, Func<PortableSettings>? settings = null,
+    WindowTargetResolver? targets = null)
 {
+    private readonly WindowTargetResolver _targets = targets ??
+        new(new Win32ProcessNameSource(), settings ?? (() => new()), ownProcessId);
+
     internal IReadOnlyList<LauncherWindow> Snapshot() => inspector.GetTopLevelWindows().Distinct()
         .Select(Inspect).OfType<WindowSnapshot>()
         .Select(window => new LauncherWindow(window.Handle, window.Title)).ToArray();
@@ -76,12 +81,15 @@ internal sealed class LauncherArrangement(IWindowInspector inspector, IMonitorSo
     }
 
     // 設定は呼び出しごとに読み、変更をランチャーの次の表示から反映する。
-    private WindowSnapshot? Inspect(nint handle) => handle != 0 &&
-        inspector.TryInspect(handle, out var window) && inspector.GetOwner(handle) == 0 &&
-        WindowClassifier.Classify(window, ownProcessId) switch
+    private WindowSnapshot? Inspect(nint handle)
+    {
+        if (handle == 0 || !inspector.TryInspect(handle, out var window))
         {
-            WindowKind.Normal => true,
-            WindowKind.FixedSize => settings?.Invoke().MoveFixedSizeWindows ?? true,
-            _ => false,
-        } ? window : null;
+            return null;
+        }
+
+        var target = _targets.Resolve(window);
+        return target.IsTarget && target.Kind is WindowKind.Normal or WindowKind.FixedSize &&
+            (inspector.GetOwner(handle) == 0 || target.Placement != PlacementRule.Inherit) ? window : null;
+    }
 }

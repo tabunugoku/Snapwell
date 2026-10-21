@@ -342,7 +342,8 @@ public sealed class HotkeyTests
 
         internal BlockingRestoreFixture(Func<nint, IReadOnlyList<PixelRect>>? neighbors = null) =>
             Executor = new(this, new FakeMonitors(), this, this,
-                () => Failure == "settings" ? throw new InvalidOperationException() : new(),
+                // 設定の失敗は、復元後の背景スレッドでの再確認だけで起こす（最初の判定は呼び出し元のスレッドで設定を読む）。
+                () => Failure == "settings" && Volatile.Read(ref _restored) != 0 ? throw new InvalidOperationException() : new(),
                 () => Volatile.Read(ref Enabled), () => Toggles++, 999, neighbors: neighbors);
 
         public bool TryInspect(nint handle, [NotNullWhen(true)] out WindowSnapshot? snapshot)

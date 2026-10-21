@@ -1,4 +1,5 @@
 using System.Threading.Channels;
+using Snapwell.Core.Rules;
 using Snapwell.Core.Settings;
 using Snapwell.Platform.Hooks;
 
@@ -60,6 +61,9 @@ internal interface IAppLog
 /// <summary>配送する操作と移動スレッドの所有者。</summary>
 internal interface IAppRuntime : IDisposable
 {
+    /// <summary>ルールだけの更新を、進行中のドラッグを中断せず反映できる場合に行う。</summary>
+    bool TryUpdateWindowRules(WindowRule[] rules) => false;
+
     void SetEnabled(bool enabled);
     void Handle(HookEvent value);
     void ArrangeCurrentMonitor();

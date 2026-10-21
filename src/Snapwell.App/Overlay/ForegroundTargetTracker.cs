@@ -5,10 +5,12 @@ namespace Snapwell.App.Overlay;
 
 /// <summary>トレイへ前面が移る前の操作可能な対象を記録する。</summary>
 internal sealed class ForegroundTargetTracker(IWindowInspector inspector, uint ownProcessId,
-    Func<PortableSettings>? settings = null)
+    Func<PortableSettings>? settings = null, WindowTargetResolver? targets = null)
 {
     // Record は配送スレッド、Resolve はトレイから呼ばれる。調査は呼び出し側のロックの外で行うため、記録だけ守る。
     private readonly object _gate = new();
+    private readonly WindowTargetResolver _targets = targets ??
+        new(new Win32ProcessNameSource(), settings ?? (() => new()), ownProcessId);
     private (nint Handle, uint ProcessId, string ClassName)? _lastEligible;
 
     /// <summary>配送された前面だけを調べ、除外対象では記録を変えない。</summary>
@@ -59,6 +61,5 @@ internal sealed class ForegroundTargetTracker(IWindowInspector inspector, uint o
 
     // 設定は呼び出しごとに読み、未指定ならポップアップも対象にする。
     private bool IsEligible(WindowSnapshot? window) => window is not null &&
-        WindowTargetPolicy.IsTarget(
-            WindowClassifier.Classify(window, ownProcessId), settings ?? (() => new()));
+        _targets.Resolve(window).IsTarget;
 }

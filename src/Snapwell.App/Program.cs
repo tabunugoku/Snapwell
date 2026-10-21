@@ -83,26 +83,33 @@ internal static class Program
                 var preview = new ZonePreview(previewSurface, monitors, settings: () => settings);
                 var previewChannels = new ZonePreviewChannels(preview);
                 var tracking = new MouseTrackingVotes(value => hooks.MouseTrackingEnabled = value);
+                var targets = new WindowTargetResolver(new Win32ProcessNameSource(), () => settings,
+                    (uint)Environment.ProcessId);
                 var neighbors = new NeighborWindowSource(inspector, monitors, (uint)Environment.ProcessId,
-                    () => settings);
+                    () => settings, targets);
                 var drag = new DragSnapController(inspector, monitors, motion, () => settings,
                     tracking.SetDrag, (uint)Environment.ProcessId,
-                    preview: previewChannels.Drag, cursorPosition: CursorPosition, neighbors: neighbors.Snapshot);
+                    preview: previewChannels.Drag, cursorPosition: CursorPosition, neighbors: neighbors.Snapshot,
+                    targets: targets);
                 LauncherController? launcher = null;
                 var hotkeys = new HotkeyCommandExecutor(inspector, monitors, motion, position, () => settings,
-                    enabled, toggle, (uint)Environment.ProcessId, () => launcher?.Open(), neighbors: neighbors.Snapshot);
+                    enabled, toggle, (uint)Environment.ProcessId, () => launcher?.Open(), neighbors: neighbors.Snapshot,
+                    targets: targets);
                 launcher = new(inspector, monitors, () => settings, launcherSurface, hotkeys.Place,
-                    applyBindings, bindings.Bindings, (uint)Environment.ProcessId);
+                    applyBindings, bindings.Bindings, (uint)Environment.ProcessId, targets: targets);
                 return new ResidentRuntime(drag, hotkeys, motion, bindings.Bindings, applyBindings,
                     launcher, preview, value =>
                     {
                         previewSurface.SetEnabled(value);
                         launcherSurface.SetEnabled(value);
                     }, [previewSurface, launcherSurface],
-                    new ForegroundTargetTracker(inspector, (uint)Environment.ProcessId, () => settings),
-                    new CornerWindowController(corners, inspector, () => settings, (uint)Environment.ProcessId, log),
+                    new ForegroundTargetTracker(inspector, (uint)Environment.ProcessId, () => settings, targets),
+                    new CornerWindowController(corners, inspector, () => settings, (uint)Environment.ProcessId, log,
+                        targets),
                     new ResizeSnapController(inspector, monitors, motion, () => settings,
-                        new Win32ResizeConstraints(), (uint)Environment.ProcessId, previewChannels.Resize));
+                        new Win32ResizeConstraints(), (uint)Environment.ProcessId, previewChannels.Resize,
+                        targets: targets),
+                    rules => Volatile.Write(ref settings, settings with { WindowRules = rules }));
             }, new SettingsWatcher(SettingsStores.PortablePath()),
             () => new SettingsLauncher(log).Open("--setup"), new SettingsWatcher(SettingsStores.DevicePath()),
             sync: new SettingsSyncService(SettingsStores.PortablePath(),

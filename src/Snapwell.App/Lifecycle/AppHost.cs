@@ -355,7 +355,8 @@ internal sealed class AppHost
             }
 
             var settings = SettingsTransfer.Normalize(loaded.Value);
-            if (SettingsTransfer.GetDifferences(_portable, settings).Count == 0)
+            var differences = SettingsTransfer.GetDifferences(_portable, settings);
+            if (differences.Count == 0)
             {
                 _reloadStatus = null;
                 _tray.Update(State());
@@ -365,6 +366,16 @@ internal sealed class AppHost
             IAppRuntime replacement;
             try
             {
+                // ルールだけの保存で Runtime を交換すると、開始時の判定を保つドラッグまで失われる。
+                if (differences.All(difference => difference.Key.Field == SettingsField.WindowRules) &&
+                    _runtime!.TryUpdateWindowRules(settings.WindowRules))
+                {
+                    _portable = settings;
+                    _reloadStatus = null;
+                    _tray.Update(State());
+                    return;
+                }
+
                 replacement = _createRuntime(settings, () => Enabled, () => _tray.Post(ToggleEnabled));
             }
             catch (Exception exception)

@@ -2,6 +2,7 @@ using Snapwell.App.Motion;
 using Snapwell.Core.Commands;
 using Snapwell.Core.Geometry;
 using Snapwell.Core.Layout;
+using Snapwell.Core.Rules;
 using Snapwell.Core.Settings;
 using Snapwell.Core.Snapping;
 using Snapwell.Platform.Hooks;
@@ -15,9 +16,11 @@ namespace Snapwell.App.Hotkeys;
 internal sealed class HotkeyCommandExecutor(IWindowInspector inspector, IMonitorSource monitors,
     IMotionEngine motion, IWindowPositionApi positionApi, Func<PortableSettings> settings,
     Func<bool> enabled, Action toggleEnabled, uint ownProcessId, Action? openLauncher = null,
-    Func<Vec2?>? cursorPosition = null, Func<nint, IReadOnlyList<PixelRect>>? neighbors = null)
+    Func<Vec2?>? cursorPosition = null, Func<nint, IReadOnlyList<PixelRect>>? neighbors = null,
+    WindowTargetResolver? targets = null)
 {
     private readonly object _gate = new();
+    private readonly WindowTargetResolver _targets = targets ?? new(new Win32ProcessNameSource(), settings, ownProcessId);
     private readonly HashSet<nint> _restoring = [];
     private bool _stopped;
 
@@ -134,7 +137,7 @@ internal sealed class HotkeyCommandExecutor(IWindowInspector inspector, IMonitor
 
         var foregroundHandle = inspector.GetForegroundWindow();
         if (foregroundHandle == 0 || !inspector.TryInspect(foregroundHandle, out var foreground) ||
-            !IsTarget(WindowClassifier.Classify(foreground, ownProcessId)))
+            !_targets.Resolve(foreground).IsTarget)
         {
             return;
         }
@@ -149,10 +152,6 @@ internal sealed class HotkeyCommandExecutor(IWindowInspector inspector, IMonitor
         Arrange(layout, areas, targetMonitor, GetArrangementWindows(), foregroundHandle);
     }
 
-    // 設定は呼び出しごとに読み、変更を次の操作から反映する。
-    // 整列の対象は Normal と FixedSize だけで、ポップアップは設定にかかわらず含めない。
-    private bool IsTarget(WindowKind kind) => WindowTargetPolicy.IsTarget(kind, settings);
-
     private IReadOnlyList<WindowSnapshot> GetArrangementWindows()
     {
         var windows = new List<WindowSnapshot>();
@@ -164,10 +163,10 @@ internal sealed class HotkeyCommandExecutor(IWindowInspector inspector, IMonitor
                 continue;
             }
 
-            // クロークされた別仮想デスクトップのウィンドウや最小化・ポップアップ・所有されたダイアログは除外する。
-            var kind = WindowClassifier.Classify(window, ownProcessId);
-            if (kind is not (WindowKind.Normal or WindowKind.FixedSize) || !IsTarget(kind) ||
-                inspector.GetOwner(handle) != 0)
+            // ポップアップと所有されたダイアログの既定の除外は、明示した配置ルールで上書きできる。
+            var target = _targets.Resolve(window);
+            if (target.Kind is not (WindowKind.Normal or WindowKind.FixedSize) || !target.IsTarget ||
+                inspector.GetOwner(handle) != 0 && target.Placement == PlacementRule.Inherit)
             {
                 continue;
             }
@@ -215,14 +214,14 @@ internal sealed class HotkeyCommandExecutor(IWindowInspector inspector, IMonitor
         }
 
         if (!enabled() || handle == 0 || !inspector.TryInspect(handle, out var window) ||
-            !IsTarget(WindowClassifier.Classify(window, ownProcessId)))
+            _targets.Resolve(window) is not { IsTarget: true } target)
         {
             return;
         }
 
         if (!window.IsMaximized)
         {
-            PlanAndRequest(command, window, selected, area);
+            PlanAndRequest(command, window, target, selected, area);
             return;
         }
 
@@ -262,9 +261,9 @@ internal sealed class HotkeyCommandExecutor(IWindowInspector inspector, IMonitor
             // 最大化中の寸法や不可視枠は使わず、通常状態を取り直して計画する。実機未確認。
             if (!Volatile.Read(ref _stopped) && positionApi.Restore(handle) &&
                 inspector.TryInspect(handle, out var window) && !window.IsMaximized &&
-                IsTarget(WindowClassifier.Classify(window, ownProcessId)))
+                _targets.Resolve(window) is { IsTarget: true } target)
             {
-                PlanAndRequest(command, window, selected, area);
+                PlanAndRequest(command, window, target, selected, area);
             }
         }
         catch (Exception)
@@ -280,7 +279,8 @@ internal sealed class HotkeyCommandExecutor(IWindowInspector inspector, IMonitor
         }
     }
 
-    private void PlanAndRequest(WindowCommand command, WindowSnapshot window, PixelRect? selected, PixelRect? area)
+    private void PlanAndRequest(WindowCommand command, WindowSnapshot window, WindowTarget resolved,
+        PixelRect? selected, PixelRect? area)
     {
         var options = settings();
         // 目標と作業領域が渡された整列では、モニターを列挙しない。
@@ -312,7 +312,7 @@ internal sealed class HotkeyCommandExecutor(IWindowInspector inspector, IMonitor
         else
         {
             target = selected ?? MonitorGridResolver.PlanCommand(options, command, window.VisualBounds,
-                WindowClassifier.CanResize(window, ownProcessId), Areas());
+                resolved.CanResize, Areas());
         }
 
         if (target is not { } bounds)
@@ -332,7 +332,7 @@ internal sealed class HotkeyCommandExecutor(IWindowInspector inspector, IMonitor
             walls = new(left, top, right - left, bottom - top);
         }
 
-        if (selected is not null && !WindowClassifier.CanResize(window, ownProcessId))
+        if (selected is not null && !resolved.CanResize)
         {
             var current = window.VisualBounds;
             var fits = current.Width <= bounds.Width && current.Height <= bounds.Height;
