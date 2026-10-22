@@ -122,7 +122,7 @@ public sealed partial class HotkeysPage : Page
             ResizeAnchor.NearEdge => ("近い辺", "作業領域の端に近い辺を固定。遠い側の辺が動きます"),
             _ => ("左上", "左上を固定。右辺と下辺が動きます"),
         };
-        return $"動かさない辺: {name}（{description}）。「分割と間隔」の「固定する位置」で変えられます";
+        return $"固定する位置: {name}（{description}）。「分割と間隔」の「固定する位置」で変えられます";
     }
 
     private void AddRow(WindowCommand command, bool duplicated, bool unavailable)

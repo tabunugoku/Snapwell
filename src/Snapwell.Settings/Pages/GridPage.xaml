@@ -200,7 +200,7 @@
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="固定する位置" Style="{StaticResource SnapwellRowTitleStyle}" />
                             </Grid>
-                            <TextBlock Text="拡大・縮小するときに動かさない辺" Style="{StaticResource SnapwellRowDescriptionStyle}" />
+                            <TextBlock Text="拡大・縮小するときに動かさない位置" Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                             <ComboBox x:Name="ResizeAnchorBox"
