@@ -76,7 +76,7 @@ spikes/Snapwell.Spikes/bin/Release/net9.0-windows/win-arm64/Snapwell.Spikes.exe 
 | クライアントの中央 | `HTCLIENT`（`WindowFromPoint` は子ウィンドウ。`GA_ROOT` で本体に戻る） | 0.07 ms |
 | 閉じるボタン付近 | `HTCLOSE` | 0.08 ms |
 
-長押しの判定に使える。`SendMessageTimeout` は低レベルフックのコールバックの中では呼ばず、別のスレッドで呼ぶ（CLAUDE.md の「フックのコールバックはすぐ返す」）。
+長押しの判定に使える。`SendMessageTimeout` は低レベルフックのコールバックの中では呼ばず、別のスレッドで呼ぶ（開発方針 の「フックのコールバックはすぐ返す」）。
 
 ### 5. SetWindowPos の速さ
 

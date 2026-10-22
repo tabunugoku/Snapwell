@@ -7,7 +7,7 @@ CSS を WinUI / GDI に移したときの解釈の違い (`border-radius: 9999px
 
 ## 必要なもの
 - Windows 11、Node.js 20 以降、Microsoft Edge（ヘッドレスで撮影する。playwright の同梱ブラウザは要らない）
-- 実機の exe。`dotnet publish src/Snapwell.Settings/Snapwell.Settings.csproj -c Release -r win-arm64 -o artifacts/fidelity-settings-arm64`（x64 の PC では `win-x64`。CLAUDE.md のとおり、PowerShell から VS のインストーラーを PATH に足して実行する）
+- 実機の exe。`dotnet publish src/Snapwell.Settings/Snapwell.Settings.csproj -c Release -r win-arm64 -o artifacts/fidelity-settings-arm64`（x64 の PC では `win-x64`。開発方針 のとおり、PowerShell から VS のインストーラーを PATH に足して実行する）
 - 初回だけ: `cd tools/fidelity && npm install`（`playwright-core` と `pngjs` だけ。`node_modules` は Git に入れない）
 
 ## 使い方
@@ -66,7 +66,7 @@ node tools/fidelity/compare.mjs --mock tools/fidelity/out/mock --native tools/fi
 - 文字の UIA の矩形は、折り返す文では枠の幅になる。文字の Δw は括弧つきで、判定に使わない
 - UIA には角丸と色が出ない。実機側の形・色の差は、要素ごとの画素差とヒートマップで見つける。モックアップ側の値（`radius`、`bg`、`color`）は `elements.json` にある
 - 行の箱（`Border`）は UIA に出ないので、行の矩形の寸法比較はしない（行の中の文字・スイッチ・入力の位置で見る）
-- **配色**: 実機は OS の配色に従う。このツールは OS の設定を変えない（CLAUDE.md の「OS の設定は変えない」に合わせた）。ダークとライトの両方を測るには、OS の「アプリのモード」を利用者が切り替えて、もう一度 `run.ps1` を実行する。ファイル名の接頭辞（`dark` / `light`）は OS の現在の設定から決まる。モックアップは両方を常に撮れる（`--themes`）
+- **配色**: 実機は OS の配色に従う。このツールは OS の設定を変えない（開発方針 の「OS の設定は変えない」に合わせた）。ダークとライトの両方を測るには、OS の「アプリのモード」を利用者が切り替えて、もう一度 `run.ps1` を実行する。ファイル名の接頭辞（`dark` / `light`）は OS の現在の設定から決まる。モックアップは両方を常に撮れる（`--themes`）
 - 画面の中のスクロール先は撮らない（見えている範囲だけ）。実機のほうが縦に長いページは、下の部分が対応なしになる
 
 ## 拡張: ランチャーなどのオーバーレイ
