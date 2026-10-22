@@ -1032,7 +1032,7 @@ table.list tr:last-child td { border-bottom: 0; }
           <!-- 操作感 -->
           <div class="spage" data-page="feel">
             <h3>操作感</h3>
-            <p class="lead">投げたときの動き方です。4 つのプリセットのどれかを選ぶと、5 つの値がそのプリセットの値になります。値を変えると「カスタム」になります。曲線は手を離してから止まるまでの位置の変化です。</p>
+            <p class="lead">投げたときの動き方です。プリセットのどれかを選ぶと、吸着半径を除く 4 つの値がそのプリセットの値になります。そのどれかを変えると「カスタム」になります。曲線は、各プリセットでキー操作したときの、止まるまでの位置の変化です。</p>
             <div class="feel-cards" id="feelCards"></div>
             <div class="group-title">試す</div>
             <div class="feel-try">
@@ -2474,8 +2474,8 @@ function curvePath(p, w, h) {
 // 減衰比 0.1–1.6。磁石の強さ 0–2 と吸着半径 8–96 px は Snapwell の設定（feel では語彙と click radius から決まる）
 const TUNE = [
   { key: 'm', name: '質量 m', desc: 'feel の磁石場では力が質量に比例するため、吸着の動きは変わりません。導かれる値の k と c が変わります', min: 0.15, max: 8, log: true, step: 0.01, digits: 2, unit: '', tol: 0.005 },
-  { key: 'f', name: '固有振動数 f', desc: '大きいほど素早く吸着します', min: 0.4, max: 7, log: true, step: 0.01, digits: 2, unit: 'Hz', tol: 0.005 },
-  { key: 'z', name: '減衰比 ζ', desc: '1 に近いほど行き過ぎません', min: 0.1, max: 1.6, log: false, step: 0.01, digits: 2, unit: '', tol: 0.005 },
+  { key: 'f', name: '固有振動数 f', desc: 'キー操作での動きの速さと、投げたあとの勢いの止まり方に効きます', min: 0.4, max: 7, log: true, step: 0.01, digits: 2, unit: 'Hz', tol: 0.005 },
+  { key: 'z', name: '減衰比 ζ', desc: '大きいほど勢いを抑えます', min: 0.1, max: 1.6, log: false, step: 0.01, digits: 2, unit: '', tol: 0.005 },
   { key: 'magnet', name: '磁石の強さ', desc: '停止点へ吸い寄せる力。大きいほど強く引きます (0〜2)', min: 0, max: 2, log: false, step: 0.05, digits: 2, unit: '', tol: 0.005 },
   { key: 'radius', name: '吸着半径', desc: '強く吸い込まれる距離 (px)', min: 8, max: 96, log: false, step: 1, digits: 0, unit: 'px', tol: 0.5 },
 ];
@@ -2783,7 +2783,8 @@ function initFeelTry(getTune) {
 
 function initFeelPage() {
   const box = $('#feelCards');
-  const tune = {};
+  // 吸着半径はプリセットに含めない（本体の WithPreset と同じ）。選び直しても据え置く
+  const tune = { radius: 28 };
   let base = 'airy';
   const params = () => tune;
   initFeelTry(params);
@@ -2801,7 +2802,7 @@ function initFeelPage() {
     + `<span class="unit">${t.unit}</span></div></div>`).join('')
     + `<div class="row"><div><div class="t">導かれる値</div><div class="d">k = m(2πf)², c = 2ζ√(km)</div></div><div class="ctl mono" id="feelDerived"></div></div>`;
 
-  const isCustom = () => TUNE.some((t) => Math.abs(tune[t.key] - (t.key === 'radius' ? 28 : FEELS[base][t.key])) > t.tol);
+  const isCustom = () => TUNE.some((t) => t.key !== 'radius' && Math.abs(tune[t.key] - FEELS[base][t.key]) > t.tol);
   const refresh = (from) => {
     for (const t of TUNE) {
       const row = $(`.row[data-key="${t.key}"]`);
@@ -2823,7 +2824,7 @@ function initFeelPage() {
   const select = (key) => {
     base = key;
     const f = FEELS[key];
-    Object.assign(tune, { m: f.m, f: f.f, z: f.z, magnet: f.magnet, radius: 28 });
+    Object.assign(tune, { m: f.m, f: f.f, z: f.z, magnet: f.magnet });
     refresh();
   };
   $('#feelAdvanced').addEventListener('input', (ev) => {
