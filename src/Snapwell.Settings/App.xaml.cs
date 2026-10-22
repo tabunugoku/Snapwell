@@ -1,6 +1,8 @@
 using System.Security.Principal;
 using Microsoft.UI.Xaml;
+using Snapwell.Core.Localization;
 using Snapwell.Core.Settings;
+using Snapwell.Settings.Localization;
 using Snapwell.Settings.Setup;
 
 namespace Snapwell.Settings;
@@ -15,7 +17,11 @@ public partial class App : Application
     /// <summary>XAML のリソースを読み込む。</summary>
     public App()
     {
+        var language = SettingsLanguage.Resolve();
+        UiText.Use(language);
+        Microsoft.Windows.Globalization.ApplicationLanguages.PrimaryLanguageOverride = language.ToTag();
         InitializeComponent();
+        SettingsLanguage.ApplyFonts(Resources, language);
     }
 
     /// <summary>設定のウィンドウを開く。</summary>
@@ -34,6 +40,8 @@ public partial class App : Application
         }
 
         _window = setup ? new SetupWindow() : new MainWindow();
+        if (setup) { _window.Title = UiText.Current.Get("Window.SetupTitle"); }
+        if (_window.Content is FrameworkElement root) { root.Language = UiText.Current.Language.ToTag(); }
         _window.Closed += (_, _) => _instance.Dispose();
         _window.Activate();
     }

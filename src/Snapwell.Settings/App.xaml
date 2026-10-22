@@ -465,7 +465,7 @@
 
             <!-- モックアップの h3 (Yu Mincho 26px, weight 500, letter-spacing -0.02em) -->
             <Style x:Key="SnapwellPageTitleStyle" TargetType="TextBlock">
-                <Setter Property="FontFamily" Value="{StaticResource SnapwellDisplayFontFamily}" />
+                <Setter Property="FontFamily" Value="{ThemeResource SnapwellDisplayFontFamily}" />
                 <Setter Property="FontSize" Value="26" />
                 <Setter Property="FontWeight" Value="Medium" />
                 <Setter Property="CharacterSpacing" Value="-20" />
@@ -504,7 +504,7 @@
             </Style>
 
             <Style x:Key="SnapwellKbdCompanionTextStyle" TargetType="TextBlock">
-                <Setter Property="FontFamily" Value="{StaticResource SnapwellUiFontFamily}" />
+                <Setter Property="FontFamily" Value="{ThemeResource SnapwellUiFontFamily}" />
                 <Setter Property="FontSize" Value="13" />
                 <Setter Property="LineHeight" Value="20.8" />
                 <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
@@ -515,7 +515,7 @@
             </Style>
 
             <Style x:Key="SnapwellLeadTextStyle" TargetType="TextBlock">
-                <Setter Property="FontFamily" Value="{StaticResource SnapwellUiFontFamily}" />
+                <Setter Property="FontFamily" Value="{ThemeResource SnapwellUiFontFamily}" />
                 <Setter Property="FontSize" Value="14" />
                 <Setter Property="LineHeight" Value="22.4" />
                 <Setter Property="Foreground" Value="{ThemeResource SnapwellMutedBrush}" />
@@ -524,7 +524,7 @@
             </Style>
 
             <Style x:Key="SnapwellGroupTitleStyle" TargetType="TextBlock">
-                <Setter Property="FontFamily" Value="{StaticResource SnapwellUiFontFamily}" />
+                <Setter Property="FontFamily" Value="{ThemeResource SnapwellUiFontFamily}" />
                 <Setter Property="FontSize" Value="12.5" />
                 <Setter Property="FontWeight" Value="SemiBold" />
                 <Setter Property="LineHeight" Value="20" />
@@ -552,7 +552,7 @@
             </Style>
 
             <Style x:Key="SnapwellRowTitleStyle" TargetType="TextBlock">
-                <Setter Property="FontFamily" Value="{StaticResource SnapwellUiFontFamily}" />
+                <Setter Property="FontFamily" Value="{ThemeResource SnapwellUiFontFamily}" />
                 <Setter Property="FontSize" Value="14" />
                 <Setter Property="LineHeight" Value="22.4" />
                 <Setter Property="Foreground" Value="{ThemeResource SnapwellInkBrush}" />
@@ -560,7 +560,7 @@
             </Style>
 
             <Style x:Key="SnapwellRowDescriptionStyle" TargetType="TextBlock">
-                <Setter Property="FontFamily" Value="{StaticResource SnapwellUiFontFamily}" />
+                <Setter Property="FontFamily" Value="{ThemeResource SnapwellUiFontFamily}" />
                 <Setter Property="FontSize" Value="12.5" />
                 <Setter Property="LineHeight" Value="20" />
                 <Setter Property="Foreground" Value="{ThemeResource SnapwellMutedBrush}" />
@@ -568,7 +568,7 @@
             </Style>
 
             <Style x:Key="SnapwellHintTextStyle" TargetType="TextBlock">
-                <Setter Property="FontFamily" Value="{StaticResource SnapwellUiFontFamily}" />
+                <Setter Property="FontFamily" Value="{ThemeResource SnapwellUiFontFamily}" />
                 <Setter Property="FontSize" Value="12.5" />
                 <Setter Property="LineHeight" Value="20" />
                 <Setter Property="Foreground" Value="{ThemeResource SnapwellMutedBrush}" />
@@ -609,7 +609,7 @@
             </Style>
 
             <Style x:Key="SnapwellTagTextStyle" TargetType="TextBlock">
-                <Setter Property="FontFamily" Value="{StaticResource SnapwellUiFontFamily}" />
+                <Setter Property="FontFamily" Value="{ThemeResource SnapwellUiFontFamily}" />
                 <Setter Property="FontSize" Value="10.5" />
                 <Setter Property="FontWeight" Value="SemiBold" />
                 <Setter Property="CharacterSpacing" Value="50" />
@@ -763,7 +763,7 @@
             </Style>
 
             <Style x:Key="SnapwellButtonStyle" TargetType="Button">
-                <Setter Property="FontFamily" Value="{StaticResource SnapwellUiFontFamily}" />
+                <Setter Property="FontFamily" Value="{ThemeResource SnapwellUiFontFamily}" />
                 <Setter Property="FontSize" Value="14" />
                 <Setter Property="Background" Value="{ThemeResource SnapwellSurfaceBrush}" />
                 <Setter Property="Foreground" Value="{ThemeResource SnapwellTextBrush}" />
@@ -782,7 +782,7 @@
                  決定は Primary（塗り）、それ以外は Action（枠つきで塗らない）。docs/mockups/snapwell.html の案 B。
                  チップ・カード・アイコンだけのボタンは SnapwellButtonStyle のまま別の部品として扱う -->
             <Style x:Key="SnapwellActionButtonStyle" TargetType="Button">
-                <Setter Property="FontFamily" Value="{StaticResource SnapwellUiFontFamily}" />
+                <Setter Property="FontFamily" Value="{ThemeResource SnapwellUiFontFamily}" />
                 <Setter Property="FontSize" Value="13" />
                 <Setter Property="Background" Value="Transparent" />
                 <Setter Property="Foreground" Value="{ThemeResource SnapwellTextBrush}" />
@@ -796,7 +796,7 @@
             </Style>
 
             <Style x:Key="SnapwellPrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource AccentButtonStyle}">
-                <Setter Property="FontFamily" Value="{StaticResource SnapwellUiFontFamily}" />
+                <Setter Property="FontFamily" Value="{ThemeResource SnapwellUiFontFamily}" />
                 <Setter Property="FontSize" Value="13" />
                 <Setter Property="Background" Value="{ThemeResource SnapwellInkBrush}" />
                 <Setter Property="Foreground" Value="{ThemeResource SnapwellInkTextBrush}" />
