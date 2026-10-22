@@ -62,7 +62,7 @@
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
                             <TextBlock Text="画面上端のスナップ バー" Style="{StaticResource SnapwellRowTitleStyle}" />
-                            <TextBlock Text="24H2 以降。ドラッグでのスナップを止めると一緒に止まります"
+                            <TextBlock Text="22H2 以降。ドラッグでのスナップを止めると一緒に止まります"
                                        Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
                         <Border x:Name="SnapBarTag" Grid.Column="1" VerticalAlignment="Center"

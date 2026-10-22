@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Shapes;
 using Windows.Foundation;
 
 namespace Snapwell.Settings.Controls;
@@ -44,7 +45,7 @@ public sealed partial class OsHowDiagram : UserControl
         var (before, after, reason) = GetCopy();
         BeforeText.Text = before;
         AfterText.Text = after;
-        BeforeHeading.Text = Kind == OsHowDiagramKind.SnapBar ? "Windows の標準（24H2 以降）" : "Windows の標準";
+        BeforeHeading.Text = Kind == OsHowDiagramKind.SnapBar ? "Windows の標準（22H2 以降）" : "Windows の標準";
         Reason.Inlines.Clear();
         Reason.Inlines.Add(new Run
         {
@@ -67,21 +68,23 @@ public sealed partial class OsHowDiagram : UserControl
     {
         OsHowDiagramKind.DragSnap => (
             "端や四隅へ持っていくと、灰色の枠が出ます。離すと、半分か 4 分の 1 の決まった大きさに広がり、続けて残りの場所に並べるウィンドウの候補が出ます（これも同じ設定で止まります）。",
-            "標準の枠は出さず、自分の分割案の線が薄く出て、狙う区画だけ青くなります。離すと、ばねと磁石の物理モデルでその区画に収まります。大きさは決まった形に限りません。",
-            "標準のスナップと同時に動くと、離した瞬間に 2 つの大きさが取り合いになるため。Windows の設定アプリの「ウィンドウのスナップ」と同じスイッチを切ります。"),
+            "標準の枠は出しません。投げて離すと、吸着先の区画を青く表示し、ばねと磁石の物理モデルでその区画に収まります" +
+            "（青い表示は「区画のプレビュー」がオンのとき）。大きさは決まった形に限りません。",
+            "標準のスナップと同時に動くと、離したあとにウィンドウの位置と大きさが取り合いになるため。" +
+            "Windows の設定アプリの「ウィンドウのスナップ」と同じスイッチを切ります。"),
         OsHowDiagramKind.SnapLayout => (
             "ウィンドウの最大化ボタン（□）にポインターを載せると、右下にメニューが開きます。" +
-            "候補は 5 種類（半分ずつ・2 対 1・左と右の上下分け・4 分割など）で、選ぶとウィンドウがその形の区画に収まります。" +
+            "候補（半分ずつ・2 対 1・左と右の上下分け・4 分割など）から選ぶと、ウィンドウがその形の区画に収まります。" +
             "先頭の候補には、開いている別のアプリのアイコンが出ます（そのアプリと並べる提案）。",
             "最大化ボタンにポインターを載せても、メニューは出ません（ボタンを押すと、通常どおり最大化します）。区画への配置は、ランチャー（Ctrl+Alt+Space）・ホットキー・ドラッグで行います。",
             "標準のメニューの形は Snapwell の分割案と別物で、同じウィンドウに 2 通りの配置先が出てしまうため。上の「ドラッグでのスナップ」を止めると一緒に消えることを、実機で確認しました。" +
             "このため、この項目に個別のスイッチはありません（レジストリで個別に止めても、Explorer を再起動するまで反映されないため）。"),
         OsHowDiagramKind.SnapBar => (
-            "ウィンドウを持って画面の上端へ近づけると、上端の中央に配置の候補が横一列（5 種類）で出ます。候補の上で離すと、その形の区画に収まります。先頭の候補は、別のアプリと並べる提案です。",
+            "ウィンドウを持って画面の上端へ近づけると、上端の中央に配置の候補が横一列で出ます。候補の上で離すと、その形の区画に収まります。先頭の候補は、別のアプリと並べる提案です。",
             "上端に候補のバーは出ません。上端へ近づけても何も起きず、区画への吸着は Snapwell のドラッグ（離した先のプレビュー）で行います。",
-            "ドラッグ中に標準のバーと Snapwell の区画のプレビューが重なって見えるため。" +
+            "Windows と Snapwell の配置が干渉するのを防ぐため。" +
             "最大化ボタンのメニューと同じく、上の「ドラッグでのスナップ」を止めると一緒に消えることを、実機で確認しました。個別のスイッチはありません。" +
-            "24H2 より前の Windows にはない機能です。"),
+            "Windows 11 の 22H2 より前にはない機能です。"),
         OsHowDiagramKind.WinArrow => (
             "ウィンドウを画面の左半分・右半分に寄せる、最大化する、元の大きさに戻す・最小化する。",
             "キーはそのまま、Snapwell の「左／右／上／下の半分」（既定では Ctrl+Alt+矢印と同じ操作）が動きます。半分の大きさは、分割と間隔の設定に従います。",
@@ -114,11 +117,11 @@ public sealed partial class OsHowDiagram : UserControl
     private FrameworkElement CreateDrawing(bool after) => Kind switch
     {
         OsHowDiagramKind.DragSnap => CreateFrames(after),
-        OsHowDiagramKind.SnapLayout => Screen(104, false, after
+        OsHowDiagramKind.SnapLayout => Screen(104, after
             ? [At(Window(), 4, 6, 92, 92, verticalPixels: true)]
             : [At(Window(), 4, 6, 92, 92, verticalPixels: true),
                At(Flyout(false), 58, 16, 39, 78, verticalPixels: true)]),
-        OsHowDiagramKind.SnapBar => Screen(104, false, after
+        OsHowDiagramKind.SnapBar => Screen(104, after
             ? [At(Window(), 38, 56, 24, 40, verticalPixels: true)]
             : [At(Flyout(true), 14, 5, 72, 30, verticalPixels: true),
                At(Window(), 38, 56, 24, 40, verticalPixels: true)]),
@@ -130,12 +133,15 @@ public sealed partial class OsHowDiagram : UserControl
         var frames = new Grid { ColumnSpacing = 6, Margin = new Thickness(0, 0, 0, 8) };
         frames.ColumnDefinitions.Add(new ColumnDefinition());
         frames.ColumnDefinitions.Add(new ColumnDefinition());
+        // Snapwell はドラッグ中に何も描かない。離したあとは、2×2 の右上の区画を吸着先として、
+        // 塗りと点線の縁、ウィンドウのタイトルバーから区画のタイトルバーへの予測の線を描く（実際のプレビューと同じ）。
         var holding = after
-            ? Screen(76, true, At(Box("DiagramCell"), 12.5, 25, 37.5, 50), At(Window(), 56, 12, 30, 40))
-            : Screen(76, false, At(Box("DiagramGhost"), 0, 0, 50, 100), At(Window(), 8, 30, 28, 40));
+            ? Screen(76, [At(Window(), 12, 42, 30, 40), .. ThrowArrow(48, 50, 66, 22)])
+            : Screen(76, At(Box("DiagramGhost"), 0, 0, 50, 100), At(Window(), 8, 30, 28, 40));
         var released = after
-            ? Screen(76, true, At(Window(), 12.5, 25, 37.5, 50))
-            : Screen(76, false, At(Window(), 0, 0, 50, 100));
+            ? Screen(76, At(Zone(), 51, 4, 46, 44), Segment(PredictionLine(), 39, 56, 74, 10), Dot(74, 10),
+                At(Window(), 24, 50, 30, 40))
+            : Screen(76, At(Window(), 0, 0, 50, 100));
         AddFrame(holding, "① 持っている間", 0);
         AddFrame(released, "② 離したあと", 1);
         return frames;
@@ -157,22 +163,9 @@ public sealed partial class OsHowDiagram : UserControl
         }
     }
 
-    private Border Screen(double height, bool grid, params Placement[] shapes)
+    private Border Screen(double height, params Placement[] placements)
     {
         var canvas = new Canvas { Height = height - 2, IsHitTestVisible = false };
-        var placements = new List<Placement>();
-        if (grid)
-        {
-            for (var column = 1; column < 8; column++)
-            {
-                placements.Add(At(Box("DiagramGridLine"), column * 12.5, 0, 1, 100, widthPixels: true));
-            }
-            for (var row = 1; row < 4; row++)
-            {
-                placements.Add(At(Box("DiagramGridLine"), 0, row * 25, 100, 0));
-            }
-        }
-        placements.AddRange(shapes);
         foreach (var placement in placements)
         {
             canvas.Children.Add(placement.Element);
@@ -183,13 +176,17 @@ public sealed partial class OsHowDiagram : UserControl
             canvas.Clip = new RectangleGeometry { Rect = new Rect(0, 0, e.NewSize.Width, e.NewSize.Height) };
             foreach (var placement in placements)
             {
+                if (placement.Layout is { } layout)
+                {
+                    layout(e.NewSize);
+                    continue;
+                }
                 Canvas.SetLeft(placement.Element, e.NewSize.Width * placement.Left / 100);
                 Canvas.SetTop(placement.Element, placement.VerticalPixels
                     ? placement.Top : e.NewSize.Height * placement.Top / 100);
-                placement.Element.Width = placement.WidthPixels
-                    ? placement.Width : e.NewSize.Width * placement.Width / 100;
+                placement.Element.Width = e.NewSize.Width * placement.Width / 100;
                 placement.Element.Height = placement.VerticalPixels
-                    ? placement.Height : placement.Height == 0 ? 1 : e.NewSize.Height * placement.Height / 100;
+                    ? placement.Height : e.NewSize.Height * placement.Height / 100;
             }
         };
         var screen = Box("DiagramScreen");
@@ -294,10 +291,76 @@ public sealed partial class OsHowDiagram : UserControl
 
     private Border Box(string style) => new() { Style = (Style)Resources[style] };
 
-    private static Placement At(FrameworkElement element, double left, double top, double width, double height,
-        bool verticalPixels = false, bool widthPixels = false) =>
-        new(element, left, top, width, height, verticalPixels, widthPixels);
+    // 点線の間隔は Style で共有せず、要素ごとに作る。
+    private Rectangle Zone() => new()
+    {
+        Style = (Style)Resources["DiagramZone"],
+        StrokeDashArray = new DoubleCollection { 3, 3 },
+    };
 
+    private Line PredictionLine() => new()
+    {
+        Style = (Style)Resources["DiagramPredictionLine"],
+        StrokeDashArray = new DoubleCollection { 2.5, 2.5 },
+    };
+
+    // 予測の線の終点の丸。大きさは Style の px のまま、中心を % の位置に置く。
+    private Placement Dot(double left, double top)
+    {
+        var dot = new Ellipse { Style = (Style)Resources["DiagramPredictionDot"] };
+        return Custom(dot, size =>
+        {
+            Canvas.SetLeft(dot, size.Width * left / 100 - dot.Width / 2);
+            Canvas.SetTop(dot, size.Height * top / 100 - dot.Height / 2);
+        });
+    }
+
+    // 投げる向きの矢印。線の角度は画面の幅で変わるので、矢じりも描くたびに軸の向きから求める。
+    private Placement[] ThrowArrow(double x1, double y1, double x2, double y2)
+    {
+        const double headLength = 5;
+        const double cos = 0.866;
+        const double sin = 0.5;
+        var head = new Polyline { Style = (Style)Resources["DiagramThrowHead"] };
+        return
+        [
+            Segment(new Line { Style = (Style)Resources["DiagramThrowLine"] }, x1, y1, x2, y2),
+            Custom(head, size =>
+            {
+                var tip = new Point(size.Width * x2 / 100, size.Height * y2 / 100);
+                var backX = size.Width * x1 / 100 - tip.X;
+                var backY = size.Height * y1 / 100 - tip.Y;
+                var length = Math.Sqrt(backX * backX + backY * backY);
+                backX *= headLength / length;
+                backY *= headLength / length;
+                head.Points = new PointCollection
+                {
+                    new Point(tip.X + backX * cos - backY * sin, tip.Y + backX * sin + backY * cos),
+                    tip,
+                    new Point(tip.X + backX * cos + backY * sin, tip.Y - backX * sin + backY * cos),
+                };
+            }),
+        ];
+    }
+
+    // 線の角度は画面の幅で変わるので、端点を描くたびに % から求める。
+    private static Placement Segment(Line line, double x1, double y1, double x2, double y2) =>
+        Custom(line, size =>
+        {
+            line.X1 = size.Width * x1 / 100;
+            line.Y1 = size.Height * y1 / 100;
+            line.X2 = size.Width * x2 / 100;
+            line.Y2 = size.Height * y2 / 100;
+        });
+
+    private static Placement At(FrameworkElement element, double left, double top, double width, double height,
+        bool verticalPixels = false) =>
+        new(element, left, top, width, height, verticalPixels);
+
+    private static Placement Custom(FrameworkElement element, Action<Size> layout) =>
+        new(element, 0, 0, 0, 0, false, layout);
+
+    // Layout があれば、画面の大きさが変わるたびに矩形の代わりにそれで配置する。
     private sealed record Placement(FrameworkElement Element, double Left, double Top, double Width, double Height,
-        bool VerticalPixels, bool WidthPixels);
+        bool VerticalPixels, Action<Size>? Layout = null);
 }

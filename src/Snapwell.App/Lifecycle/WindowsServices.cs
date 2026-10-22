@@ -79,8 +79,9 @@ internal sealed class HookService(HookThread hooks, IAppLog log) : IHookService
 internal sealed class WindowsConsentPrompt : IConsentPrompt
 {
     public bool ConfirmStandardSnapChange() => PInvoke.MessageBox(default,
-        "Windows の設定アプリの「ウィンドウのスナップ」をこのセッションで停止します。\n" +
-        "Snapwell の一時停止時と終了時には、変更前の設定に戻します。\n\n停止してよいですか？",
+        "Windows の設定アプリの「ウィンドウのスナップ」を、Snapwell が有効な間だけ停止します。\n" +
+        "Snapwell を無効にしたとき・終了したとき・異常終了のあとに起動したときに、変更前の設定に戻します。\n\n" +
+        "停止してよいですか？",
         "Snapwell — Windows の設定変更", MESSAGEBOX_STYLE.MB_YESNO | MESSAGEBOX_STYLE.MB_ICONQUESTION) ==
         MESSAGEBOX_RESULT.IDYES;
 }

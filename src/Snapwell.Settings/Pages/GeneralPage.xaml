@@ -106,7 +106,7 @@
                                 Width="160"
                                 Style="{StaticResource DemoSelectStyle}"
                                 SelectedIndex="0"
-                                AutomationProperties.Name="日本語">
+                                AutomationProperties.Name="言語">
                                 <ComboBoxItem Content="日本語" />
                                 <ComboBoxItem Content="English" />
                             </ComboBox>
