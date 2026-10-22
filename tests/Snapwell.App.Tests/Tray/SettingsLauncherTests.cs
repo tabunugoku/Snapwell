@@ -50,7 +50,7 @@ public sealed class SettingsLauncherTests
             start: _ => starts++, show: messages.Add, userProcess: new FakeUserProcess());
         launcher.Open();
         Assert.Equal(0, starts);
-        Assert.Contains("見つかりません", Assert.Single(messages));
+        Assert.Contains("Snapwell.Settings.exe が必要です", Assert.Single(messages));
     }
 
     [Fact]
