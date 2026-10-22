@@ -1,5 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Snapwell.Core.Localization;
 using Snapwell.Core.Settings;
 using Snapwell.Platform.SystemSettings;
 
@@ -31,13 +32,13 @@ public sealed partial class OsPage : Page
             ReadState();
             if (_readOnly)
             {
-                ReportFailure("新しい版の端末状態のため、標準のスナップを変更できません。Snapwell を更新してください。");
+                ReportFailure(UiText.Current.Get("Os.Error.FutureSnap"));
             }
         }
         catch (Exception exception) when (IsFileFailure(exception))
         {
             _readOnly = true;
-            ReportFailure("端末状態を読み取れません。ファイルの場所とアクセス権を確認して、開き直してください。");
+            ReportFailure(UiText.Current.Get("Os.Error.Load"));
         }
         Render();
     }
@@ -61,12 +62,15 @@ public sealed partial class OsPage : Page
             StandardSnapToggle.IsOn = view.ToggleOn;
             StandardSnapToggle.IsEnabled = !_readOnly && !_busy;
             RestoreButton.IsEnabled = view.RestoreEnabled && !_readOnly && !_busy;
-            SetTag(DragSnapTag, DragSnapTagText, view.ToggleOn ? "停止中" : "標準のまま", view.ToggleOn);
+            SetTag(DragSnapTag, DragSnapTagText,
+                view.ToggleOn ? UiText.Current.Get("Os.Snap.Stopped") : UiText.Current.Get("Os.Snap.Unchanged"),
+                view.ToggleOn);
             SetTag(LayoutTag, LayoutTagText, view.SubTagText, view.ToggleOn);
             SetTag(SnapBarTag, SnapBarTagText, view.SubTagText, view.ToggleOn);
             ReplaceWinArrowToggle.IsOn = _state.ReplaceWinArrow;
             ReplaceWinArrowToggle.IsEnabled = !_readOnly && !_busy;
-            SetTag(WinArrowTag, WinArrowTagText, _state.ReplaceWinArrow ? "置き換え中" : "標準のまま",
+            SetTag(WinArrowTag, WinArrowTagText,
+                _state.ReplaceWinArrow ? UiText.Current.Get("Os.Snap.Replaced") : UiText.Current.Get("Os.Snap.Unchanged"),
                 _state.ReplaceWinArrow);
         }
         finally
@@ -118,12 +122,12 @@ public sealed partial class OsPage : Page
         }
         catch (FutureSettingsVersionException)
         {
-            Revert("新しい版の端末状態のため、Win + 矢印を変更できません。Snapwell を更新してください。");
+            Revert(UiText.Current.Get("Os.Error.FutureArrow"));
             _readOnly = true;
         }
         catch (Exception exception) when (IsFileFailure(exception))
         {
-            Revert("Win + 矢印の選択を保存できませんでした。ファイルの場所とアクセス権を確認してください。");
+            Revert(UiText.Current.Get("Os.Error.SaveArrow"));
         }
         finally
         {
@@ -148,12 +152,12 @@ public sealed partial class OsPage : Page
         }
         catch (FutureSettingsVersionException)
         {
-            Revert("新しい版の端末状態のため、標準の動作に戻せません。Snapwell を更新してください。");
+            Revert(UiText.Current.Get("Os.Error.FutureRestore"));
             _readOnly = true;
         }
         catch (Exception exception) when (IsFileFailure(exception))
         {
-            Revert("標準の動作に戻す選択を保存できませんでした。ファイルの場所とアクセス権を確認してください。");
+            Revert(UiText.Current.Get("Os.Error.SaveRestore"));
         }
         finally
         {
@@ -172,6 +176,7 @@ public sealed partial class OsPage : Page
             var loaded = _deviceStore.Load();
             if (loaded.IsReadOnly)
             {
+                // i18n-keep: 画面に出さない開発者向けの例外
                 throw new FutureSettingsVersionException("新しい版の端末状態は上書きできない。");
             }
             _state = loaded.Value;
@@ -183,12 +188,10 @@ public sealed partial class OsPage : Page
                     var dialog = new ContentDialog
                     {
                         XamlRoot = XamlRoot,
-                        Title = "Windows 標準のスナップを停止しますか？",
-                        Content = "Windows の設定アプリの「ウィンドウのスナップ」を、Snapwell が有効な間だけ停止します。" +
-                            "ドラッグでのスナップ・最大化ボタンのメニュー・画面上端のスナップ バーが一緒に止まります。" +
-                            "Snapwell を無効にしたとき・終了したとき・異常終了のあとに起動したときに、変更前の設定に戻します。",
-                        PrimaryButtonText = "停止する",
-                        CloseButtonText = "やめる",
+                        Title = UiText.Current.Get("Os.Consent.Title"),
+                        Content = UiText.Current.Get("Os.Consent.Message"),
+                        PrimaryButtonText = UiText.Current.Get("Os.Consent.Stop"),
+                        CloseButtonText = UiText.Current.Get("Os.Consent.Cancel"),
                         DefaultButton = ContentDialogButton.Close,
                     };
                     Dialogs.DialogButtons.UseSnapwellColors(dialog);
@@ -216,12 +219,12 @@ public sealed partial class OsPage : Page
         }
         catch (FutureSettingsVersionException)
         {
-            Revert("新しい版の端末状態のため、標準のスナップを変更できません。Snapwell を更新してください。");
+            Revert(UiText.Current.Get("Os.Error.FutureSnap"));
             _readOnly = true;
         }
         catch (Exception exception) when (IsFileFailure(exception))
         {
-            Revert("標準のスナップの選択を保存できませんでした。ファイルの場所とアクセス権を確認してください。");
+            Revert(UiText.Current.Get("Os.Error.SaveSnap"));
         }
         finally
         {

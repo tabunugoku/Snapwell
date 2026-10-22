@@ -32,11 +32,11 @@ public sealed class AppHostTests
             Assert.True(fixture.Host.Start());
             Assert.Equal(UiLanguage.English, UiText.Current.Language);
             var updates = fixture.Tray.Updates;
-            fixture.Device.ReloadResult = new(new() { Language = "zh-Hant" });
+            fixture.Device.ReloadResult = new(new() { Language = "ja" });
             fixture.DeviceWatcher.Notify();
-            Assert.Equal(UiLanguage.ChineseTraditional, UiText.Current.Language);
+            Assert.Equal(UiLanguage.Japanese, UiText.Current.Language);
             Assert.Equal(updates + 1, fixture.Tray.Updates);
-            Assert.Equal("Snapwell（已暫停）", TrayIconPolicy.Tip(fixture.Tray.State! with { Enabled = false }));
+            Assert.Equal("Snapwell（一時停止中）", TrayIconPolicy.Tip(fixture.Tray.State! with { Enabled = false }));
         }
         finally { UiText.Use(previous); }
     }
@@ -48,16 +48,16 @@ public sealed class AppHostTests
         var previous = UiText.Current.Language;
         try
         {
-            using var fixture = new Fixture(new() { Language = "en" }, watchDevice: true, osTag: "zh-CN");
+            using var fixture = new Fixture(new() { Language = "en" }, watchDevice: true, osTag: "ja-JP");
             fixture.Device.ReadOnly = true;
             Assert.True(fixture.Host.Start());
-            Assert.Equal(UiLanguage.ChineseSimplified, UiText.Current.Language);
+            Assert.Equal(UiLanguage.Japanese, UiText.Current.Language);
             fixture.Device.ReadOnly = false;
             fixture.DeviceWatcher.Notify();
             Assert.Equal(UiLanguage.English, UiText.Current.Language);
             fixture.Device.ReadOnly = true;
             fixture.DeviceWatcher.Notify();
-            Assert.Equal(UiLanguage.ChineseSimplified, UiText.Current.Language);
+            Assert.Equal(UiLanguage.Japanese, UiText.Current.Language);
         }
         finally { UiText.Use(previous); }
     }
