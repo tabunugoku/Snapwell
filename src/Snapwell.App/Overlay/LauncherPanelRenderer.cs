@@ -11,7 +11,8 @@ internal sealed class LauncherPanelRenderer
     private static LauncherPanelRenderer? _current;
     private readonly LauncherRasterCache _raster = new();
     private readonly LauncherWindowListRenderer _windows = new();
-    private (GridLayout Grid, double Scale, string Target, bool Menu, OverlayTheme Theme, string Presets)? _key;
+    private (GridLayout Grid, double Scale, string Target, bool Menu, OverlayTheme Theme, string Presets,
+        LauncherWindowListText? Text)? _key;
     private LauncherPanelLayout? _layout;
     private LauncherPanelLayer? _panel;
     private int _panelHeight;
@@ -49,7 +50,7 @@ internal sealed class LauncherPanelRenderer
     internal OverlayFrame Render(ZoneSelection selection, string target, double scale, bool menuOpen,
         OverlayTheme theme, Action<LauncherPanelLayout> publishLayout,
         Func<LauncherPanelLayout, LauncherWindowListLayout>? windowList = null, bool showZoneLines = true,
-        IReadOnlyList<string>? presetIds = null)
+        IReadOnlyList<string>? presetIds = null, LauncherWindowListText? windowText = null)
     {
         using var text = new GdiOverlayText(scale);
         var palette = OverlayPalette.For(theme);
@@ -75,7 +76,8 @@ internal sealed class LauncherPanelRenderer
             text.Draw(surface, area, item, color);
         }
 
-        var key = (selection.Grid, scale, target, menuOpen, theme, string.Join("|", presetIds ?? LauncherPreset.DefaultIds));
+        var key = (selection.Grid, scale, target, menuOpen, theme,
+            string.Join("|", presetIds ?? LauncherPreset.DefaultIds), windowText);
         var changed = _key != key;
         if (changed)
         {
