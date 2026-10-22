@@ -1,4 +1,5 @@
 using Snapwell.Core.Layout;
+using Snapwell.Core.Localization;
 
 namespace Snapwell.Core.Overlay;
 
@@ -6,25 +7,71 @@ namespace Snapwell.Core.Overlay;
 public sealed record LauncherPreset(string Id, string Name, double X0, double X1, double Y0, double Y1,
     string Group = "", bool KeepSize = false)
 {
+    private readonly string _name = Name;
+    private readonly string _group = Group;
+
+    /// <summary>既知のプリセット名を表示のたびに現在の言語で引く。</summary>
+    public string Name
+    {
+        get => Id switch
+        {
+            "top" => UiText.Current.Get("Launcher.Preset.top"),
+            "bottom" => UiText.Current.Get("Launcher.Preset.bottom"),
+            "left" => UiText.Current.Get("Launcher.Preset.left"),
+            "right" => UiText.Current.Get("Launcher.Preset.right"),
+            "tl" => UiText.Current.Get("Launcher.Preset.tl"),
+            "tr" => UiText.Current.Get("Launcher.Preset.tr"),
+            "bl" => UiText.Current.Get("Launcher.Preset.bl"),
+            "br" => UiText.Current.Get("Launcher.Preset.br"),
+            "l3" => UiText.Current.Get("Launcher.Preset.l3"),
+            "r3" => UiText.Current.Get("Launcher.Preset.r3"),
+            "l23" => UiText.Current.Get("Launcher.Preset.l23"),
+            "r23" => UiText.Current.Get("Launcher.Preset.r23"),
+            "c3" => UiText.Current.Get("Launcher.Preset.c3"),
+            "center" => UiText.Current.Get("Launcher.Preset.center"),
+            "centerKeep" => UiText.Current.Get("Launcher.Preset.centerKeep"),
+            "max" => UiText.Current.Get("Launcher.Preset.max"),
+            _ => _name,
+        };
+        init => _name = value;
+    }
+
+    /// <summary>保存値と分けたグループ名を、現在の言語で返す。</summary>
+    public string Group
+    {
+        get => _group switch
+        {
+            "Halves" => UiText.Current.Get("Launcher.Group.Halves"),
+            "Quarters" => UiText.Current.Get("Launcher.Group.Quarters"),
+            "Thirds" => UiText.Current.Get("Launcher.Group.Thirds"),
+            "TwoThirds" => UiText.Current.Get("Launcher.Group.TwoThirds"),
+            "CenterThird" => UiText.Current.Get("Launcher.Group.CenterThird"),
+            "Center" => UiText.Current.Get("Launcher.Group.Center"),
+            "Maximize" => UiText.Current.Get("Launcher.Group.Maximize"),
+            _ => _group,
+        };
+        init => _group = value;
+    }
+
     /// <summary>モックアップと同じ順序のプリセット。</summary>
     public static IReadOnlyList<LauncherPreset> All { get; } = Array.AsReadOnly<LauncherPreset>(
     [
-        new("top", "上半分", 0, 1, 0, .5, "上下左右の半分"),
-        new("bottom", "下半分", 0, 1, .5, 1, "上下左右の半分"),
-        new("left", "左半分", 0, .5, 0, 1, "上下左右の半分"),
-        new("right", "右半分", .5, 1, 0, 1, "上下左右の半分"),
-        new("tl", "左上 1/4", 0, .5, 0, .5, "四隅の 1/4"),
-        new("tr", "右上 1/4", .5, 1, 0, .5, "四隅の 1/4"),
-        new("bl", "左下 1/4", 0, .5, .5, 1, "四隅の 1/4"),
-        new("br", "右下 1/4", .5, 1, .5, 1, "四隅の 1/4"),
-        new("l3", "左 1/3", 0, 1.0 / 3, 0, 1, "左右の 1/3"),
-        new("r3", "右 1/3", 2.0 / 3, 1, 0, 1, "左右の 1/3"),
-        new("l23", "左 2/3", 0, 2.0 / 3, 0, 1, "左右の 2/3"),
-        new("r23", "右 2/3", 1.0 / 3, 1, 0, 1, "左右の 2/3"),
-        new("c3", "中央 1/3", 1.0 / 3, 2.0 / 3, 0, 1, "左右中央の 1/3"),
-        new("center", "中央", .25, .75, .125, .875, "中央"),
-        new("centerKeep", "中央（サイズ維持）", .375, .625, .3, .7, "中央", true),
-        new("max", "最大化", 0, 1, 0, 1, "最大化"),
+        new("top", "", 0, 1, 0, .5, "Halves"),
+        new("bottom", "", 0, 1, .5, 1, "Halves"),
+        new("left", "", 0, .5, 0, 1, "Halves"),
+        new("right", "", .5, 1, 0, 1, "Halves"),
+        new("tl", "", 0, .5, 0, .5, "Quarters"),
+        new("tr", "", .5, 1, 0, .5, "Quarters"),
+        new("bl", "", 0, .5, .5, 1, "Quarters"),
+        new("br", "", .5, 1, .5, 1, "Quarters"),
+        new("l3", "", 0, 1.0 / 3, 0, 1, "Thirds"),
+        new("r3", "", 2.0 / 3, 1, 0, 1, "Thirds"),
+        new("l23", "", 0, 2.0 / 3, 0, 1, "TwoThirds"),
+        new("r23", "", 1.0 / 3, 1, 0, 1, "TwoThirds"),
+        new("c3", "", 1.0 / 3, 2.0 / 3, 0, 1, "CenterThird"),
+        new("center", "", .25, .75, .125, .875, "Center"),
+        new("centerKeep", "", .375, .625, .3, .7, "Center", true),
+        new("max", "", 0, 1, 0, 1, "Maximize"),
     ]);
 
     /// <summary>既定で表示する八つの ID。</summary>

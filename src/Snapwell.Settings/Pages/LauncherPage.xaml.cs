@@ -2,6 +2,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Snapwell.Core.Layout;
+using Snapwell.Core.Localization;
 using Snapwell.Core.Overlay;
 using Windows.Foundation;
 
@@ -94,7 +95,7 @@ public sealed partial class LauncherPage : Page
             _borders[id].Style = (Style)Resources[
                 choice.IsChecked == true ? "PresetOptionSelectedBorder" : "PresetOptionBorder"];
         }
-        Count.Text = $"{ids.Length} / {LauncherPreset.All.Count} 件を表示";
+        Count.Text = UiText.Current.Plural("Launcher.Showing", ids.Length, ("total", LauncherPreset.All.Count));
         _preview.Children.Clear();
         foreach (var preset in LauncherPreset.All.Where(preset => ids.Contains(preset.Id)))
         {
