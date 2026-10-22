@@ -34,3 +34,4 @@ Thumbs.db
 # 忠実度ツール
 tools/fidelity/node_modules/
 tools/fidelity/out/
+.taste-skill/

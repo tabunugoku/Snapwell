@@ -5,6 +5,7 @@ Snapwell のスナップの物理モデル（語彙から質量・振動数・�
 ## feel
 
 - https://github.com/diip3sh/feel
+- ホームページ（`site/`）は、feel のランタイム（`runtime/feel.js`、v0.2）をそのまま `site/js/feel.js` に同梱して、デモと画面の動きを動かしている。
 
 ```
 MIT License

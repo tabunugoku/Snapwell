@@ -9,3 +9,5 @@ Windows 11 用のウィンドウマネージャー（開発中）。
 - x64 と ARM64 のネイティブ対応（x86 は非対応）
 
 設計は [docs/DESIGN.md](docs/DESIGN.md) を参照。
+
+ホームページは `site/`（GitHub Pages で公開。`.github/workflows/pages.yml`）。ローカルでは `.claude/launch.json` の `site` で表示できる。

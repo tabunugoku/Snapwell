@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Snapwell · Window manager for Windows 11</title>
+<meta name="description" content="Throw a window and a spring and a magnet pull it into the nearest zone. Snapwell snaps, arranges and resizes windows on Windows 11, natively on x64 and ARM64.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<link rel="stylesheet" href="css/site.css">
+<script>document.documentElement.classList.add('js');</script>
+</head>
+<body>
+
+<header class="bar">
+  <a class="brand" href="#top" aria-label="Snapwell, top of page">
+    <svg width="28" height="28" viewBox="0 0 44 44" aria-hidden="true">
+      <rect x="1.5" y="1.5" width="41" height="41" rx="9" fill="none" stroke="currentColor" stroke-width="3"/>
+      <rect x="23" y="7" width="14" height="14" rx="3" fill="currentColor"/>
+      <path d="M8 34 C 14 34, 18 26, 26 18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-dasharray="3 3" opacity=".55"/>
+    </svg>
+    <span>Snapwell</span>
+  </a>
+  <nav class="bar-links" aria-label="Page">
+    <a href="#features">Features</a>
+    <a href="#feel">Feel</a>
+    <a href="#how">How it works</a>
+    <a href="#faq">FAQ</a>
+  </nav>
+  <a class="btn btn-small" href="#download" data-fx>Download</a>
+</header>
+
+<main id="top">
+
+<section class="hero" aria-labelledby="h1">
+  <div class="hero-copy">
+    <h1 id="h1">Throw a window.<br>It lands in place.</h1>
+    <p class="lead" data-reveal>Snapwell is a window manager for Windows 11. Let go of a window and a spring and a magnet pull it into the nearest zone of your grid.</p>
+    <p class="actions" data-reveal>
+      <a class="btn" href="#download" data-fx>Download v1.0.0</a>
+      <a class="text-link" href="#how">See how it works <span aria-hidden="true">→</span></a>
+    </p>
+    <p class="small soft" data-reveal>Windows 11 · native on x64 and ARM64 · no network access</p>
+  </div>
+  <div class="hero-stage" data-reveal>
+    <div class="monitor" data-ui id="heroMonitor">
+      <div class="workarea"></div>
+      <div class="taskbar" aria-hidden="true">
+        <i class="tb-app start"></i><i class="tb-app"></i><i class="tb-app"></i><i class="tb-app"></i>
+        <span class="clock">10:24<br>2026/10/22</span>
+      </div>
+    </div>
+    <p class="stage-note small soft">
+      <span>Drag a title bar and let go. Faster throws fly farther.</span>
+      <button class="text-btn" type="button" id="heroThrow" data-fx>Throw one for me</button>
+    </p>
+  </div>
+</section>
+
+<section class="features" id="features" aria-labelledby="h-features">
+  <h2 id="h-features" class="section-title">What Snapwell does</h2>
+
+  <div class="band" data-band style="--band: var(--blue-bg); --band-ink: var(--blue-tx)">
+    <div class="band-in">
+      <div class="band-text">
+        <p class="band-line">Throw a window, it snaps to a zone.</p>
+        <p class="band-then">It reads the speed you let go with, works out where the window would coast, and carries it into the nearest zone.</p>
+      </div>
+      <button class="switch" type="button" role="switch" aria-checked="false" aria-label="Show: throw a window, it snaps to a zone"><span class="track"><span class="thumb"></span></span></button>
+    </div>
+  </div>
+
+  <div class="band" data-band style="--band: var(--green-bg); --band-ink: var(--green-tx)">
+    <div class="band-in">
+      <div class="band-text">
+        <p class="band-line">Gaps stay even, edges included.</p>
+        <p class="band-then">Windows sit flush or apart by the gap you choose, and zone widths never differ by more than one pixel.</p>
+      </div>
+      <button class="switch" type="button" role="switch" aria-checked="false" aria-label="Show: gaps stay even, edges included"><span class="track"><span class="thumb"></span></span></button>
+    </div>
+  </div>
+
+  <div class="band" data-band style="--band: var(--yellow-bg); --band-ink: var(--yellow-tx)">
+    <div class="band-in">
+      <div class="band-text">
+        <p class="band-line">One key arranges every window.</p>
+        <p class="band-then">Grid, row, column, or one main window beside a stack. Ctrl+Alt+A tidies the current monitor.</p>
+      </div>
+      <button class="switch" type="button" role="switch" aria-checked="false" aria-label="Show: one key arranges every window"><span class="track"><span class="thumb"></span></span></button>
+    </div>
+  </div>
+
+  <div class="band" data-band style="--band: var(--red-bg); --band-ink: var(--red-tx)">
+    <div class="band-in">
+      <div class="band-text">
+        <p class="band-line">Drag across a grid to place.</p>
+        <p class="band-then">The launcher shows your zones. Sweep over any span of them and the window takes exactly that area.</p>
+      </div>
+      <button class="switch" type="button" role="switch" aria-checked="false" aria-label="Show: drag across a grid to place"><span class="track"><span class="thumb"></span></span></button>
+    </div>
+  </div>
+
+  <div class="band" data-band style="--band: var(--blue-bg); --band-ink: var(--blue-tx)">
+    <div class="band-in">
+      <div class="band-text">
+        <p class="band-line">Native on x64 and ARM64.</p>
+        <p class="band-then">No DLL injection and no network access. Snapwell uses documented Windows hooks and nothing else.</p>
+      </div>
+      <button class="switch" type="button" role="switch" aria-checked="false" aria-label="Show: native on x64 and ARM64"><span class="track"><span class="thumb"></span></span></button>
+    </div>
+  </div>
+</section>
+
+<section class="feel" id="feel" aria-labelledby="h-feel">
+  <div class="feel-head">
+    <h2 id="h-feel">Tune the feel</h2>
+    <p class="lead" data-reveal>Choose how a window moves: light or heavy, loose or magnetic. Every motion comes from mass, stiffness and damping, never from a duration.</p>
+  </div>
+  <div class="panel" data-reveal>
+    <div class="panel-demo">
+      <div class="monitor" data-ui id="feelMonitor">
+        <div class="workarea"></div>
+        <div class="taskbar" aria-hidden="true">
+          <i class="tb-app start"></i><i class="tb-app"></i><i class="tb-app"></i><i class="tb-app"></i>
+          <span class="clock">10:24<br>2026/10/22</span>
+        </div>
+      </div>
+    </div>
+    <div class="panel-controls" data-ui>
+      <div class="row">
+        <span class="row-name" id="l-mode">Snap to</span>
+        <div class="seg" role="group" aria-labelledby="l-mode" id="ctlMode">
+          <button type="button" data-v="zones" aria-pressed="true">Zones</button>
+          <button type="button" data-v="corners" aria-pressed="false">Corners</button>
+        </div>
+      </div>
+      <div class="row">
+        <span class="row-name" id="l-grid">Grid</span>
+        <div class="seg" role="group" aria-labelledby="l-grid" id="ctlGrid">
+          <button type="button" data-v="2x2" aria-pressed="true">2 × 2</button>
+          <button type="button" data-v="3x2" aria-pressed="false">3 × 2</button>
+        </div>
+      </div>
+      <div class="row">
+        <label class="row-name" for="ctlGap">Gap</label>
+        <span class="range"><input type="range" id="ctlGap" min="0" max="24" step="1" value="8"><output id="outGap">8 px</output></span>
+      </div>
+      <div class="row">
+        <span class="row-name" id="l-feel">Feel</span>
+        <div class="seg seg-4" role="group" aria-labelledby="l-feel" id="ctlFeel">
+          <button type="button" data-v="airy" aria-pressed="true">Airy</button>
+          <button type="button" data-v="snappy" aria-pressed="false">Snappy</button>
+          <button type="button" data-v="heavy" aria-pressed="false">Heavy</button>
+          <button type="button" data-v="light" aria-pressed="false">Light</button>
+        </div>
+      </div>
+      <dl class="readout" id="readout">
+        <dt>Words</dt><dd data-r="words">—</dd>
+        <dt>Mass</dt><dd data-r="mass">—</dd>
+        <dt>Frequency</dt><dd data-r="freq">—</dd>
+        <dt>Damping ratio</dt><dd data-r="zeta">—</dd>
+        <dt>Overshoot</dt><dd data-r="over">—</dd>
+        <dt>Last throw</dt><dd data-r="throw">—</dd>
+      </dl>
+      <p class="panel-actions"><button class="btn btn-small" type="button" id="feelThrow" data-fx>Throw one for me</button></p>
+    </div>
+  </div>
+  <p class="small soft panel-foot" data-reveal>Drag a title bar, or use the arrow keys after focusing one. The windows are real bodies; the readout shows the numbers behind the spring you picked.</p>
+</section>
+
+<section class="how" id="how" aria-labelledby="h-how">
+  <h2 id="h-how">How a throw works</h2>
+  <div class="how-grid">
+    <div class="how-steps">
+      <div class="step" data-step="0">
+        <p class="step-line">Grab the title bar.</p>
+        <p class="step-then">Hold any window by its title bar and move it. Snapwell watches how fast you are going when you let go.</p>
+      </div>
+      <div class="step" data-step="1">
+        <p class="step-line">Let go.</p>
+        <p class="step-then">From that speed it works out where the window would coast to, and picks the nearest zone. A dotted line shows the plan.</p>
+      </div>
+      <div class="step" data-step="2">
+        <p class="step-line">It settles in.</p>
+        <p class="step-then">A spring pulls the window in, a magnet takes the last few pixels, and walls catch a throw that is too hard.</p>
+      </div>
+    </div>
+    <div class="how-stage">
+      <div class="stage-card">
+        <div class="monitor" data-ui id="howMonitor">
+          <div class="workarea"></div>
+          <div class="taskbar" aria-hidden="true">
+            <i class="tb-app start"></i><i class="tb-app"></i><i class="tb-app"></i><i class="tb-app"></i>
+            <span class="clock">10:24<br>2026/10/22</span>
+          </div>
+        </div>
+        <dl class="readout how-readout" data-ui id="howReadout">
+          <dt>Step</dt><dd data-h="step">Grab</dd>
+          <dt>Release speed</dt><dd data-h="speed">—</dd>
+          <dt>Lands in</dt><dd data-h="zone">—</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="faq" id="faq" aria-labelledby="h-faq">
+  <h2 id="h-faq">Questions</h2>
+  <div class="faq-list">
+    <details name="faq" open>
+      <summary>Which Windows does it run on?</summary>
+      <p>Windows 11, as native builds for x64 and for ARM64. There is no x86 build, and nothing runs through emulation.</p>
+    </details>
+    <details name="faq">
+      <summary>Will SmartScreen warn me?</summary>
+      <p>Yes, for now. The v1.0.0 builds are not code-signed, so Windows may say it protected your PC. Choose More info, then Run anyway. A SHA-256 checksum file sits beside each zip so you can check the download first.</p>
+    </details>
+    <details name="faq">
+      <summary>Does it send anything anywhere?</summary>
+      <p>No. There is no telemetry, no account and no update check. Settings sync is only a file in a folder you pick, such as one that OneDrive or Dropbox already syncs.</p>
+    </details>
+    <details name="faq">
+      <summary>Does it inject code into my apps?</summary>
+      <p>No. Snapwell uses out-of-process event hooks and the low-level keyboard and mouse hooks, the documented ones. It never loads a DLL into another program or touches another process's memory.</p>
+    </details>
+    <details name="faq">
+      <summary>Does it change Windows settings?</summary>
+      <p>Only if you ask it to replace Windows' own snapping. It then remembers the original value and puts it back when you switch it off, quit, or start again after a crash. Starting with Windows is also off until you turn it on.</p>
+    </details>
+    <details name="faq">
+      <summary>Can I change how windows move?</summary>
+      <p>Yes. Pick one of four presets, or set mass, natural frequency, damping ratio and magnet strength yourself. The page above uses the same model.</p>
+    </details>
+    <details name="faq">
+      <summary>Where do I set it up?</summary>
+      <p>The tray icon opens a settings window with a short first-run setup. Everything can be changed there, hotkeys included, without editing a file.</p>
+    </details>
+  </div>
+</section>
+
+<section class="get" id="download" aria-labelledby="h-get">
+  <div class="tile tile-side" aria-hidden="true"></div>
+  <div class="tile tile-main">
+    <h2 id="h-get">Get Snapwell 1.0.0</h2>
+    <p class="lead">A portable zip: unpack it anywhere and run Snapwell.exe. Pick the build that matches your PC.</p>
+    <p class="actions">
+      <a class="btn btn-light" href="https://github.com/tabunugoku/Snapwell/releases/download/v1.0.0/Snapwell-1.0.0-win-x64.zip" data-fx>Download for x64</a>
+      <a class="btn btn-light" href="https://github.com/tabunugoku/Snapwell/releases/download/v1.0.0/Snapwell-1.0.0-win-arm64.zip" data-fx>Download for ARM64</a>
+    </p>
+    <p class="small on-tile"><a href="https://github.com/tabunugoku/Snapwell/releases/tag/v1.0.0">Release notes and checksums</a></p>
+  </div>
+  <div class="tile tile-side" aria-hidden="true"></div>
+</section>
+
+</main>
+
+<footer class="foot">
+  <p>A window manager for Windows 11</p>
+  <nav aria-label="Project">
+    <a href="https://github.com/tabunugoku/Snapwell">GitHub</a>
+    <a href="https://github.com/tabunugoku/Snapwell/issues">Issues</a>
+    <a href="https://github.com/tabunugoku/Snapwell/blob/main/THIRD_PARTY_NOTICES.md">Third-party notices</a>
+  </nav>
+  <p class="foot-end">2026 · Motion by <a href="https://github.com/diip3sh/feel">feel</a></p>
+</footer>
+
+<script src="js/feel.js"></script>
+<script src="js/stage.js"></script>
+<script src="js/site.js"></script>
+</body>
+</html>
