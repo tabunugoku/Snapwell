@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
 
@@ -7,6 +8,86 @@ namespace Snapwell.Core.Tests.Localization;
 /// <summary>移行したソースに、例外指定のない日本語のリテラルが残っていないか調べる。</summary>
 internal static class SourceScan
 {
+    /// <summary>既存の厳密な走査を保ち、画面に出さない例外の生成とログの呼び出しだけを除外する。</summary>
+    internal static IReadOnlyList<int> FindDisplayJapaneseLiterals(string source, string extension)
+    {
+        var found = FindJapaneseLiterals(source, extension);
+        if (extension == ".xaml") { return found; }
+        var code = MaskCommentsAndStrings(source);
+        var excluded = new HashSet<int>();
+        const string calls = @"(?:\bnew\s+|:\s*)[\w.]*Exception\s*\(|\b(?:_?log|\w*Log)(?:\?\.|\.)\w+\s*\(";
+        foreach (Match match in Regex.Matches(code, calls, RegexOptions.IgnoreCase))
+        {
+            var start = match.Index;
+            var position = start + match.Length;
+            var depth = 1;
+            while (position < code.Length && depth > 0)
+            {
+                if (code[position] == '(') { depth++; }
+                if (code[position] == ')') { depth--; }
+                position++;
+            }
+            var first = source.AsSpan(0, start).Count('\n') + 1;
+            var last = first + source.AsSpan(start, position - start).Count('\n');
+            for (var line = first; line <= last; line++) { excluded.Add(line); }
+        }
+        return found.Where(line => !excluded.Contains(line)).ToArray();
+    }
+
+    private static string MaskCommentsAndStrings(string source)
+    {
+        var code = source.ToCharArray();
+        var position = 0;
+        void Mask(int start, int end)
+        {
+            for (var index = start; index < end; index++)
+            {
+                if (code[index] is not ('\r' or '\n')) { code[index] = ' '; }
+            }
+        }
+        while (position < source.Length)
+        {
+            var start = position;
+            if (source.AsSpan(position).StartsWith("//"))
+            {
+                var end = source.IndexOf('\n', position);
+                position = end < 0 ? source.Length : end;
+            }
+            else if (source.AsSpan(position).StartsWith("/*"))
+            {
+                var end = source.IndexOf("*/", position + 2, StringComparison.Ordinal);
+                position = end < 0 ? source.Length : end + 2;
+            }
+            else if (source[position] is '"' or '\'')
+            {
+                var quote = source[position++];
+                var verbatim = quote == '"' && start > 0 && source[start - 1] == '@';
+                var quotes = 1;
+                while (quote == '"' && position < source.Length && source[position] == quote)
+                { quotes++; position++; }
+                if (quotes == 2) { Mask(start, position); continue; }
+                var raw = quotes >= 3;
+                while (position < source.Length)
+                {
+                    if (raw && source.AsSpan(position).StartsWith(new string(quote, quotes)))
+                    { position += quotes; break; }
+                    if (!raw && source[position] == quote)
+                    {
+                        position++;
+                        if (verbatim && position < source.Length && source[position] == quote)
+                        { position++; continue; }
+                        break;
+                    }
+                    position += !raw && !verbatim && source[position] == '\\' ? 2 : 1;
+                }
+                position = Math.Min(position, source.Length);
+            }
+            else { position++; continue; }
+            Mask(start, position);
+        }
+        return new(code);
+    }
+
     internal static string RepositoryRoot()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
