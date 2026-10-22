@@ -1,4 +1,5 @@
 using Microsoft.UI.Xaml.Controls;
+using Snapwell.Core.Localization;
 using Snapwell.Core.Settings;
 using Snapwell.Settings.Dialogs;
 using Windows.Storage.Pickers;
@@ -33,7 +34,7 @@ public sealed partial class BackupPage
         catch (Exception)
         {
             // async の Click ハンドラーでは例外が表に出ずに消えるため、ここで最後に受けて利用者へ知らせる。
-            ShowNotice("ファイルの操作を完了できませんでした。ファイルの場所とアクセス権を確認してください。",
+            ShowNotice(UiText.Current.Get("Backup.Transfer.Failed"),
                 InfoBarSeverity.Error);
         }
         finally
@@ -52,7 +53,7 @@ public sealed partial class BackupPage
             SuggestedFileName = "Snapwell-settings",
         };
         // NativeAOT ではコレクション式の List に CCW が作られず InvalidCastException になる（実機確認済み）。
-        picker.FileTypeChoices.Add("JSON ファイル", new List<string> { ".json" });
+        picker.FileTypeChoices.Add(UiText.Current.Get("Backup.Transfer.JsonFile"), new List<string> { ".json" });
         picker.DefaultFileExtension = ".json";
         WinRT.Interop.InitializeWithWindow.Initialize(picker, owner);
         var file = await picker.PickSaveFileAsync();
@@ -64,7 +65,7 @@ public sealed partial class BackupPage
         var path = file.Path;
         var current = session.Current;
         await Task.Run(() => SettingsTransfer.Export(path, current));
-        ShowNotice("設定を書き出しました。", InfoBarSeverity.Success);
+        ShowNotice(UiText.Current.Get("Backup.Transfer.Exported"), InfoBarSeverity.Success);
     }
 
     private async Task ImportAsync(SettingsSession session, nint owner)
@@ -87,13 +88,14 @@ public sealed partial class BackupPage
         var preview = await Task.Run(() => SettingsTransfer.Read(path, current));
         if (!preview.IsSuccess)
         {
+            // i18n-keep: SettingsTransfer の失敗理由はフェーズ 3 で訳す
             ShowNotice(preview.Error!, InfoBarSeverity.Error);
             return;
         }
 
         if (preview.Differences.Count == 0)
         {
-            ShowNotice("いまの設定との違いはありません。", InfoBarSeverity.Informational);
+            ShowNotice(UiText.Current.Get("Backup.Transfer.NoDifferences"), InfoBarSeverity.Informational);
             return;
         }
 
@@ -106,7 +108,7 @@ public sealed partial class BackupPage
 
         session.Update(SettingsTransfer.Apply(current, preview,
             choice == ContentDialogResult.Primary ? null : dialog.SelectedKeys));
-        ShowNotice("画面に取り込みました。画面下の「保存」で確定してください。", InfoBarSeverity.Success);
+        ShowNotice(UiText.Current.Get("Backup.Transfer.Imported"), InfoBarSeverity.Success);
     }
 
     private void ShowNotice(string message, InfoBarSeverity severity)
