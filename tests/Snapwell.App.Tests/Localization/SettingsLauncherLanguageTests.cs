@@ -26,7 +26,7 @@ public sealed class SettingsLauncherLanguageTests
             UiText.Use(UiLanguage.English);
             launcher.Open();
             Assert.Equal(exists ? "Couldn't open settings." :
-                "Can't find Snapwell.Settings.exe. Place it in the same folder as Snapwell.", message);
+                "Snapwell.Settings.exe missing; put beside Snapwell.", message);
         }
         finally { UiText.Use(previous); }
     }
