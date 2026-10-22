@@ -8,28 +8,64 @@ namespace Snapwell.Core.Tests.Localization;
 /// <summary>カタログと呼び出し元の整合性、書式と落とし先を確かめる。</summary>
 public sealed class TextCatalogTests
 {
-    /// <summary>全言語のキーとプレースホルダーが一致し、複数形が対になっている。</summary>
+    /// <summary>日英のキーを一致させ、中国語は存在するキーの書式と複数形を検査する。</summary>
     [Fact]
     public void CatalogsHaveMatchingNonemptyKeysPlaceholdersAndPluralPairs()
     {
-        var catalogs = Enum.GetValues<UiLanguage>().Select(TextCatalog.Load).ToArray();
-        var keys = catalogs[0].Keys.Order().ToArray();
+        var japanese = TextCatalog.Load(UiLanguage.Japanese);
+        var keys = japanese.Keys.Order().ToArray();
         Assert.NotEmpty(keys);
-        foreach (var catalog in catalogs)
+        Assert.Equal(keys, TextCatalog.Load(UiLanguage.English).Keys.Order());
+        foreach (var language in Enum.GetValues<UiLanguage>())
         {
-            Assert.Equal(keys, catalog.Keys.Order());
-            foreach (var key in keys)
+            AssertTranslatedEntriesMatchJapanese(japanese, TextCatalog.Load(language));
+        }
+    }
+
+    /// <summary>中国語でキーを省略しても、残ったキーの書式は厳密に検査する。</summary>
+    [Fact]
+    public void OptionalChineseEntriesMayBeMissingButMustMatchJapanesePlaceholdersAndPluralPairs()
+    {
+        var japanese = new TextCatalog(UiLanguage.Japanese, new Dictionary<string, string>
+        {
+            ["Message"] = "{name}",
+            ["Count.One"] = "{count}",
+            ["Count.Other"] = "{count}",
+        }, new Dictionary<string, string>());
+        var partial = new TextCatalog(UiLanguage.ChineseSimplified,
+            new Dictionary<string, string> { ["Message"] = "{name}" }, new Dictionary<string, string>());
+        AssertTranslatedEntriesMatchJapanese(japanese, partial);
+        foreach (var entries in new Dictionary<string, string>[]
+        {
+            new() { ["Unknown"] = "value" },
+            new() { ["Message"] = "{different}" },
+            new() { ["Count.One"] = "{count}" },
+            new() { ["Count.Other"] = "{count}" },
+            new() { ["Message"] = " " },
+        })
+        {
+            var invalid = new TextCatalog(UiLanguage.ChineseTraditional, entries,
+                new Dictionary<string, string> { ["Count.One"] = "{count}", ["Count.Other"] = "{count}" });
+            Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => AssertTranslatedEntriesMatchJapanese(japanese, invalid));
+        }
+    }
+
+    private static void AssertTranslatedEntriesMatchJapanese(TextCatalog japanese, TextCatalog catalog)
+    {
+        var japaneseKeys = japanese.Keys.ToHashSet(StringComparer.Ordinal);
+        var localKeys = catalog.Keys.ToHashSet(StringComparer.Ordinal);
+        foreach (var key in localKeys)
+        {
+            Assert.Contains(key, japaneseKeys);
+            Assert.False(string.IsNullOrWhiteSpace(catalog.Get(key)), key);
+            Assert.Equal(Placeholders(japanese.Get(key)), Placeholders(catalog.Get(key)));
+            if (key.EndsWith(".One", StringComparison.Ordinal))
             {
-                Assert.False(string.IsNullOrWhiteSpace(catalog.Get(key)), key);
-                Assert.Equal(Placeholders(catalogs[0].Get(key)), Placeholders(catalog.Get(key)));
-                if (key.EndsWith(".One", StringComparison.Ordinal))
-                {
-                    Assert.Contains(key[..^4] + ".Other", keys);
-                }
-                if (key.EndsWith(".Other", StringComparison.Ordinal))
-                {
-                    Assert.Contains(key[..^6] + ".One", keys);
-                }
+                Assert.Contains(key[..^4] + ".Other", localKeys);
+            }
+            if (key.EndsWith(".Other", StringComparison.Ordinal))
+            {
+                Assert.Contains(key[..^6] + ".One", localKeys);
             }
         }
     }

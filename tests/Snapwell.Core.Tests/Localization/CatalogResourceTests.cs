@@ -47,9 +47,9 @@ public sealed class CatalogResourceTests
         Assert.Contains("i18n/grid/ja.json", exception.Message);
     }
 
-    /// <summary>ソースと埋め込みリソースの全領域で、4 言語を欠かさず同じ論理名にする。</summary>
+    /// <summary>全領域で日本語と英語を必須にし、任意の中国語も同じ論理名で埋め込む。</summary>
     [Fact]
-    public void EveryDomainHasAllLanguagesAndPortableResourceNames()
+    public void EveryDomainHasJapaneseAndEnglishAndPortableResourceNames()
     {
         var folder = Path.Combine(SourceScan.RepositoryRoot(), "src/Snapwell.Core/Localization/Strings");
         var expected = Directory.EnumerateFiles(folder, "*.json", SearchOption.AllDirectories)
@@ -76,20 +76,30 @@ public sealed class CatalogResourceTests
         }
     }
 
-    /// <summary>領域に一つでも言語があれば、残りの言語の欠落を検出する。</summary>
+    /// <summary>領域に一つでも言語があれば、日本語と英語の欠落を検出する。</summary>
     [Fact]
     public void DetectsIncompleteDomainEvenWithoutJapaneseResource()
     {
-        Assert.Equal(["i18n/grid/en.json", "i18n/grid/zh-Hans.json", "i18n/grid/zh-Hant.json"],
-            MissingLanguages(["i18n/grid/ja.json"]));
-        Assert.Contains("i18n/look/ja.json", MissingLanguages(["i18n/look/en.json"]));
+        Assert.Equal(["i18n/grid/en.json"], MissingLanguages(["i18n/grid/ja.json"]));
+        Assert.Equal(["i18n/look/ja.json"], MissingLanguages(["i18n/look/en.json"]));
+        Assert.Equal(["i18n/grid/en.json", "i18n/grid/ja.json"],
+            MissingLanguages(["i18n/grid/zh-Hans.json"]));
+    }
+
+    /// <summary>中国語が一つもない領域と、片方だけある領域を許す。</summary>
+    [Fact]
+    public void JapaneseAndEnglishAreSufficientWithOptionalChineseResources()
+    {
+        Assert.Empty(MissingLanguages(["i18n/launcher/ja.json", "i18n/launcher/en.json"]));
+        Assert.Empty(MissingLanguages(
+            ["i18n/launcher/ja.json", "i18n/launcher/en.json", "i18n/launcher/zh-Hant.json"]));
     }
 
     private static string[] MissingLanguages(IEnumerable<string> names)
     {
         var resources = names.ToHashSet(StringComparer.Ordinal);
         return resources.Select(name => name[..(name.LastIndexOf('/') + 1)]).Distinct()
-            .SelectMany(domain => Enum.GetValues<UiLanguage>().Select(language => domain + language.ToPreference() + ".json"))
+            .SelectMany(domain => new[] { "ja", "en" }.Select(language => domain + language + ".json"))
             .Where(name => !resources.Contains(name)).Order().ToArray();
     }
 }
