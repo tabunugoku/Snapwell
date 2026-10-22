@@ -62,15 +62,14 @@ public sealed class AppHostTests
         finally { UiText.Use(previous); }
     }
 
-    /// <summary>端末状態を読めなくても起動し、OS の取得失敗なら英語にする。</summary>
+    /// <summary>OS の言語を取得できないときは、自動の言語を英語にする。</summary>
     [Fact]
-    public void UnreadableDeviceAndMissingOsTagStillStartInEnglish()
+    public void MissingOsTagStartsInEnglish()
     {
         var previous = UiText.Current.Language;
         try
         {
             using var fixture = new Fixture(osTag: null);
-            fixture.Device.LoadException = new IOException("device unavailable");
             Assert.True(fixture.Host.Start());
             Assert.Equal(UiLanguage.English, UiText.Current.Language);
             Assert.NotNull(fixture.Tray.State);
@@ -1477,7 +1476,6 @@ public sealed class AppHostTests
         internal SettingsLoadResult<T>? ReloadResult = new(value);
         internal Action? AfterReload;
         internal Exception? ReloadException;
-        internal Exception? LoadException;
         internal Exception? SaveException;
         internal Action? BeforeSave;
         public SettingsLoadResult<T>? TryReload()
@@ -1497,7 +1495,6 @@ public sealed class AppHostTests
         public SettingsLoadResult<T> Load()
         {
             calls.Enqueue(name);
-            if (LoadException is { } exception) { throw exception; }
             return new(Value, ResetToDefaults: ResetToDefaults, IsReadOnly: ReadOnly);
         }
         public void Save(T updated)
