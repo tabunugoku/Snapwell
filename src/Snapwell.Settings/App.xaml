@@ -818,6 +818,8 @@
                 <Setter Property="StrokeEndLineCap" Value="Round" />
                 <Setter Property="StrokeLineJoin" Value="Round" />
                 <Setter Property="VerticalAlignment" Value="Center" />
+                <!-- 文字の見た目の中心が行の中心より約 1 DIP 下にあるため、アイコンを下げてそろえる（実機の実測）。 -->
+                <Setter Property="Margin" Value="0,2,0,0" />
             </Style>
         </ResourceDictionary>
     </Application.Resources>
