@@ -166,8 +166,11 @@
   function enterStep(i) {
     if (i === current) return;
     const back = i < current;
+    const prev = current;
     current = i;
     stepBodies.forEach((b, k) => b.to(k === i ? 100 : 0));
+    stepEls.forEach((el, k) => el.classList.toggle('on', k === i));
+    $$('button', $('#howTabs')).forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.v) === i)));
     H('step').textContent = stepLabels[i];
     howWin.el.classList.toggle('held', i === 0);
     if (i === 0) {
@@ -180,13 +183,20 @@
         howWin.bw.to(r.w); howWin.bh.to(r.h);
         howWin.body.kickTo(howStage.field.stops[0]);
       }
-    } else if (i === 1 && !back) {
+    } else if (prev <= 0) {
       howStage.throwTo(howWin, 3);
     }
   }
+  // Wide screens: the pinned stage follows the scroll. Narrow screens: three buttons step through it.
+  const narrow = matchMedia('(max-width: 900px)');
   const sio = new IntersectionObserver((entries) => {
+    if (narrow.matches) return;
     for (const e of entries) if (e.isIntersecting) enterStep(Number(e.target.dataset.step));
   }, { rootMargin: '-45% 0px -45% 0px' });
+  $('#howTabs').addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (b) enterStep(Number(b.dataset.v));
+  });
   stepEls.forEach((el) => sio.observe(el));
   enterStep(0);
 })();

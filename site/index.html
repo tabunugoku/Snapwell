@@ -22,6 +22,7 @@
     <span>Snapwell</span>
   </a>
   <nav class="bar-links" aria-label="Page">
+    <a href="#film">Film</a>
     <a href="#features">Features</a>
     <a href="#feel">Feel</a>
     <a href="#how">How it works</a>
@@ -55,6 +56,18 @@
       <button class="text-btn" type="button" id="heroThrow" data-fx>Throw one for me</button>
     </p>
   </div>
+</section>
+
+<section class="film" id="film" aria-labelledby="h-film">
+  <h2 id="h-film">Watch a throw</h2>
+  <div class="film-frame" data-reveal>
+    <video controls muted playsinline preload="metadata" poster="video/poster.jpg" width="1920" height="1080">
+      <source src="video/snapwell.webm" type="video/webm">
+      <source src="video/snapwell.mp4" type="video/mp4">
+      A 26-second film: windows are thrown into zones, then arranged with one key.
+    </video>
+  </div>
+  <p class="small soft film-note" data-reveal>26 seconds, no sound. Each frame is drawn from the same spring and magnet model as the demos on this page. It shows a mockup of the interface, not a screen recording.</p>
 </section>
 
 <section class="features" id="features" aria-labelledby="h-features">
@@ -199,6 +212,11 @@
           <dt>Release speed</dt><dd data-h="speed">—</dd>
           <dt>Lands in</dt><dd data-h="zone">—</dd>
         </dl>
+        <div class="seg how-tabs" role="group" aria-label="Step" id="howTabs">
+          <button type="button" data-v="0" aria-pressed="true">Grab</button>
+          <button type="button" data-v="1" aria-pressed="false">Let go</button>
+          <button type="button" data-v="2" aria-pressed="false">Settle</button>
+        </div>
       </div>
     </div>
   </div>
