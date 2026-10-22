@@ -54,6 +54,7 @@ internal sealed class TrayMenuPresentation(ITrayMenuPresentationPlatform platfor
             if (!IsCurrent(generation)) { return; }
             var foreground = platform.IsForeground;
             if (!IsCurrent(generation)) { return; }
+            // i18n-keep: 画面に出さない開発者向けの例外・ログ。
             if (!foreground) { throw new InvalidOperationException("メニューを前面にできない。"); }
             platform.Focus();
             if (!IsCurrent(generation)) { return; }
@@ -62,6 +63,7 @@ internal sealed class TrayMenuPresentation(ITrayMenuPresentationPlatform platfor
 
             var captured = platform.HasCapture;
             if (!IsCurrent(generation)) { return; }
+            // i18n-keep: 画面に出さない開発者向けの例外・ログ。
             if (!captured) { throw new InvalidOperationException("メニューのマウス入力を捕捉できない。"); }
         }
 

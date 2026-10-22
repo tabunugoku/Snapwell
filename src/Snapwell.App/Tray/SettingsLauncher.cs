@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Security;
 using Snapwell.App.Lifecycle;
+using Snapwell.Core.Localization;
 using Snapwell.Platform.Startup;
 using Windows.Win32;
 using Windows.Win32.UI.WindowsAndMessaging;
@@ -43,7 +44,7 @@ internal sealed class SettingsLauncher : ISettingsLauncher
     {
         if (!_exists(_path))
         {
-            _show("設定画面 (Snapwell.Settings.exe) が見つかりません。Snapwell と同じフォルダーに置いてください。");
+            _show(UiText.Current.Get("Status.SettingsMissing"));
             return;
         }
 
@@ -79,7 +80,7 @@ internal sealed class SettingsLauncher : ISettingsLauncher
                 // 記録が失敗しても、起動失敗の表示は行う。
             }
 
-            _show("設定画面を起動できませんでした。");
+            _show(UiText.Current.Get("Status.SettingsLaunchFailure"));
         }
     }
 

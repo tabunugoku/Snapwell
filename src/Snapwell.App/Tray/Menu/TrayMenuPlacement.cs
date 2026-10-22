@@ -32,6 +32,7 @@ internal sealed class TrayMenuAnchor(HWND owner) : ITrayMenuAnchor
 
         if (!PInvoke.GetCursorPos(out var point))
         {
+            // i18n-keep: 画面に出さない開発者向けの例外・ログ。
             throw new InvalidOperationException("トレイとカーソルの位置を取得できない。");
         }
 
@@ -49,6 +50,7 @@ internal static class TrayMenuPlacement
         var screens = monitors.GetMonitors();
         var monitor = screens.FirstOrDefault(screen => screen.Bounds.Contains(rectangle.Center)) ??
             screens.MinBy(screen => Distance(screen.Bounds, rectangle.Center)) ??
+            // i18n-keep: 画面に出さない開発者向けの例外・ログ。
             throw new InvalidOperationException("モニターがない。");
         var edge = TrayMenuLayout.DetectEdge(monitor.Bounds, monitor.WorkArea, rectangle);
         return (TrayMenuLayout.Create(rectangle, monitor.WorkArea, edge, monitor.DpiX / 96.0, hasStatus), screens.Count);

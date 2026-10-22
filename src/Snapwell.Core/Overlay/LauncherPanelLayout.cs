@@ -1,6 +1,7 @@
 using System.Globalization;
 using Snapwell.Core.Geometry;
 using Snapwell.Core.Layout;
+using Snapwell.Core.Localization;
 
 namespace Snapwell.Core.Overlay;
 
@@ -48,6 +49,9 @@ public sealed class LauncherPanelLayout
     private readonly List<LauncherPresetButton> _presets = [];
     private readonly List<PixelRect> _keys = [];
     private readonly List<PixelRect> _options = [];
+    private string _selectionOne = "";
+    private string _selectionOther = "";
+    private bool _english;
 
     /// <summary>選べる三つの分割案。</summary>
     public static IReadOnlyList<GridPlan> Plans { get; } = Array.AsReadOnly<GridPlan>(
@@ -93,6 +97,9 @@ public sealed class LauncherPanelLayout
             PresetsBounds = PresetsBounds,
             KeysBounds = KeysBounds,
             SelectionLabel = SelectionLabel,
+            _selectionOne = _selectionOne,
+            _selectionOther = _selectionOther,
+            _english = _english,
         };
         result._text.AddRange(_text);
         result._presets.AddRange(_presets);
@@ -115,15 +122,25 @@ public sealed class LauncherPanelLayout
         double Width(string text, double size, bool mono = false, bool bold = false) =>
             Math.Ceiling(measure(text, size, mono, bold) * scale) / scale;
         var shown = LauncherPreset.NormalizeIds(presetIds);
-        var result = new LauncherPanelLayout();
+        var result = new LauncherPanelLayout
+        {
+            _selectionOne = UiText.Current.Get("LauncherUi.Selection.One"),
+            _selectionOther = UiText.Current.Get("LauncherUi.Selection.Other"),
+            _english = UiText.Current.Language == UiLanguage.English,
+        };
         var area = selection.WorkArea;
         int Px(double value) => (int)Math.Round(value * scale);
         PixelRect Rect(double x, double y, double w, double h) =>
             new(area.X + Px(x), area.Y + Px(y), Math.Max(0, (int)Math.Ceiling(w * scale - 1e-7)),
                 Math.Max(0, Px(y + h) - Px(y)));
-        var minimum = Math.Max(LauncherPreset.All.Max(p => 42 + Width(p.Name, 12)),
-            Math.Max(4 * 22 + Width(" 移動", 11.5), Width("Shift", 11.5, true) + 14 + Width(" + 矢印 範囲", 11.5)));
-        var width = Math.Min(Math.Max(560, minimum + 30), area.Width / scale - 28);
+        var groups = new (string[] Keys, string Template)[]
+        {
+            (["←", "→", "↑", "↓"], UiText.Current.Get("LauncherUi.Hint.Move")),
+            (["Shift"], UiText.Current.Get("LauncherUi.Hint.Range")),
+            (["Enter"], UiText.Current.Get("LauncherUi.Hint.Place")),
+            (["Esc"], UiText.Current.Get("LauncherUi.Hint.Close")),
+        };
+        var width = Math.Min(560, area.Width / scale - 28);
         var left = (area.Width / scale - width) / 2;
         var inner = width - 30;
         // 全体を表示できない高さではパネルだけを省く。区画のキー操作は続けられる。
@@ -133,9 +150,10 @@ public sealed class LauncherPanelLayout
             var y = 27.0;
             const double TopHeight = 27.2;
             result.Top = Rect(x, y, inner, TopHeight);
-            var tagWidth = Width("対象", 10.5, bold: true) + 16 + 2 * 10.5 * .05;
+            var tag = UiText.Current.Get("LauncherUi.Target");
+            var tagWidth = Width(tag, 10.5, bold: true) + 16 + 2 * 10.5 * .05;
             result.Tag = Rect(x, y + (TopHeight - 18.8) / 2, tagWidth, 18.8);
-            result._text.Add(new("対象", result.Tag, 10.5, LauncherTextKind.Blue,
+            result._text.Add(new(tag, result.Tag, 10.5, LauncherTextKind.Blue,
                 Center: true, Bold: true, LetterSpacing: 10.5 * .05));
             var planWidth = Math.Max(Plans.Max(p => Width(PlanName(p), 12)) + 34, 78);
             result.Plan = Rect(x + inner - planWidth, y, planWidth, TopHeight);
@@ -152,7 +170,7 @@ public sealed class LauncherPanelLayout
             {
                 var preset = LauncherPreset.All[index];
                 if (!shown.Contains(preset.Id)) { continue; }
-                var buttonWidth = 42 + Width(preset.Name, 12);
+                var buttonWidth = Math.Min(inner, 42 + Width(preset.Name, 12));
                 if (used > 0 && used + buttonWidth > inner)
                 {
                     used = 0;
@@ -163,14 +181,18 @@ public sealed class LauncherPanelLayout
                 var buttonBounds = Rect(x + used, y, buttonWidth, ButtonHeight);
                 result._presets.Add(new(index, buttonBounds,
                     new(area.X + (x + used + 9) * scale, area.Y + (y + 8.6) * scale, 18 * scale, 12 * scale), enabled));
-                result._text.Add(new(preset.Name, Rect(x + used + 33, y + 5, buttonWidth - 42, 19.2),
+                var labelBounds = Rect(x + used + 33, y + 5, buttonWidth - 42, 19.2);
+                // 加減算の端数で実測幅を下回らないよう、確定した物理幅で省略を判定する。
+                result._text.Add(new(Ellipsize(preset.Name, labelBounds.Width / scale, value => Width(value, 12)),
+                    labelBounds,
                     12, enabled ? LauncherTextKind.Text : LauncherTextKind.Disabled));
                 used += buttonWidth + 6;
             }
 
             if (shown.Length == 0)
             {
-                result._text.Add(new("表示するプリセットがありません（設定の「ランチャー」で選べます）",
+                result._text.Add(new(Ellipsize(UiText.Current.Get("LauncherUi.NoPresets"),
+                    inner, value => Width(value, 12)),
                     Rect(x, y, inner, ButtonHeight), 12, LauncherTextKind.Muted));
             }
 
@@ -178,32 +200,48 @@ public sealed class LauncherPanelLayout
             y += ButtonHeight + 10;
             var keysTop = y;
             used = 0;
-            var groups = new (string[] Keys, string Suffix)[]
+            var hintX = area.X + Px(x);
+            PixelRect HintRect(double w)
             {
-                (["←", "→", "↑", "↓"], " 移動"), (["Shift"], " + 矢印 範囲"),
-                (["Enter"], " 配置"), (["Esc"], " 閉じる"),
-            };
+                // 行頭は元の丸めを保ち、幅を切り上げて右端から次を配置する。
+                var bounds = Rect(x, y, w, 22);
+                var hint = new PixelRect(hintX, bounds.Y, bounds.Width, bounds.Height);
+                hintX = hint.Right;
+                return hint;
+            }
             foreach (var group in groups)
             {
+                var parts = group.Template.Split("{keys}", StringSplitOptions.None);
+                var prefix = parts[0];
+                var suffix = parts[1];
                 var keyWidths = group.Keys.Select(key => Math.Max(22, Width(key, 11.5, true) + 14)).ToArray();
-                var groupWidth = keyWidths.Sum() + Width(group.Suffix, 11.5);
+                var groupWidth = keyWidths.Sum() + Width(prefix, 11.5) + Width(suffix, 11.5);
                 if (used > 0 && used + groupWidth > inner)
                 {
                     used = 0;
                     y += 26;
+                    hintX = area.X + Px(x);
                 }
 
+                if (prefix.Length > 0)
+                {
+                    var prefixWidth = Width(prefix, 11.5);
+                    result._text.Add(new(prefix, HintRect(prefixWidth),
+                        11.5, LauncherTextKind.Muted));
+                    used += prefixWidth;
+                }
                 for (var index = 0; index < group.Keys.Length; index++)
                 {
-                    var key = Rect(x + used, y, keyWidths[index], 22);
+                    var key = HintRect(keyWidths[index]);
                     result._keys.Add(key);
                     result._text.Add(new(group.Keys[index], key, 11.5, Mono: true, Center: true));
                     used += keyWidths[index];
                 }
 
-                var suffixWidth = Width(group.Suffix, 11.5);
-                result._text.Add(new(group.Suffix, Rect(x + used, y, suffixWidth, 22), 11.5, LauncherTextKind.Muted));
+                var suffixWidth = Width(suffix, 11.5);
+                result._text.Add(new(suffix, HintRect(suffixWidth), 11.5, LauncherTextKind.Muted));
                 used += suffixWidth + 14;
+                hintX += Px(14);
             }
 
             result.KeysBounds = Rect(x, keysTop, inner, y + 22 - keysTop);
@@ -211,7 +249,12 @@ public sealed class LauncherPanelLayout
             if (!area.Contains(result.Panel) || result.Tag.Right + Px(20) > result.Plan.X ||
                 result._text.Any(text => !result.Panel.Contains(text.Bounds)))
             {
-                result = new();
+                result = new()
+                {
+                    _selectionOne = result._selectionOne,
+                    _selectionOther = result._selectionOther,
+                    _english = result._english
+                };
             }
             else if (menuOpen)
             {
@@ -243,6 +286,9 @@ public sealed class LauncherPanelLayout
             Plan = Plan,
             PresetsBounds = PresetsBounds,
             KeysBounds = KeysBounds,
+            _selectionOne = _selectionOne,
+            _selectionOther = _selectionOther,
+            _english = _english,
         };
         result._text.AddRange(_text.Where(text => text.Kind != LauncherTextKind.Ink));
         result._presets.AddRange(_presets);
@@ -252,7 +298,12 @@ public sealed class LauncherPanelLayout
         int Px(double value) => (int)Math.Ceiling(value * scale);
         var range = selection.Range;
         var bounds = selection.Bounds;
-        var label = $"{range.Columns} × {range.Rows} 区画 · {bounds.Width} × {bounds.Height}";
+        // ドラッグ中は開始時のテンプレートだけを使い、共有カタログを引き直さない。
+        var label = (_english && range.Columns * range.Rows == 1 ? _selectionOne : _selectionOther)
+            .Replace("{columns}", range.Columns.ToString(CultureInfo.InvariantCulture), StringComparison.Ordinal)
+            .Replace("{rows}", range.Rows.ToString(CultureInfo.InvariantCulture), StringComparison.Ordinal)
+            .Replace("{width}", bounds.Width.ToString(CultureInfo.InvariantCulture), StringComparison.Ordinal)
+            .Replace("{height}", bounds.Height.ToString(CultureInfo.InvariantCulture), StringComparison.Ordinal);
         var labelWidth = Math.Min(area.Width, Px(measure(label, 12, true, false) + 22));
         var labelHeight = Math.Min(area.Height, Px(29.2));
         result.SelectionLabel = new((int)Math.Clamp(bounds.Center.X - labelWidth / 2.0,
@@ -284,9 +335,11 @@ public sealed class LauncherPanelLayout
     }
 
     /// <summary>分割案をモックアップと同じ表記にする。</summary>
-    public static string PlanName(GridPlan plan) => $"{plan.Columns} × {plan.Rows}";
+    public static string PlanName(GridPlan plan) => string.Create(CultureInfo.InvariantCulture,
+        $"{plan.Columns} × {plan.Rows}");
 
-    private static string Ellipsize(string value, double available, Func<string, double> measure)
+    /// <summary>結合文字を分断せず、描画する幅に文言を収める。</summary>
+    public static string Ellipsize(string value, double available, Func<string, double> measure)
     {
         if (measure(value) <= available)
         {

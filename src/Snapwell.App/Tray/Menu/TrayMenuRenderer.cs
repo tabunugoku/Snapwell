@@ -59,8 +59,8 @@ internal sealed class TrayMenuRenderer : IDisposable
             }
             if (snapshot.Status is { } status)
             {
-                Text(_background, status, layout.Rect(17, layout.IsCompact ? 54 : 80, 286,
-                    layout.IsCompact ? 22 : 24),
+                var bounds = layout.Rect(17, layout.IsCompact ? 54 : 80, 286, layout.IsCompact ? 22 : 24);
+                Text(_background, Ellipsize(status, bounds.Width / layout.Scale, 11.5), bounds,
                     11.5, _palette.Muted);
             }
 

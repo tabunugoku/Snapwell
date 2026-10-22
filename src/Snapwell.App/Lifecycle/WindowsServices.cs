@@ -1,5 +1,6 @@
 using System.Security.Principal;
 using System.Threading.Channels;
+using Snapwell.Core.Localization;
 using Snapwell.Core.Settings;
 using Snapwell.Platform.Hooks;
 using Snapwell.Platform.SystemSettings;
@@ -24,6 +25,7 @@ internal sealed class UserInstanceMutex(
     private static string CurrentSid()
     {
         using var identity = WindowsIdentity.GetCurrent();
+        // i18n-keep: 画面に出さない開発者向けの例外・ログ。
         return identity.User?.Value ?? throw new InvalidOperationException("ユーザーの SID を取得できない。");
     }
 
@@ -54,6 +56,7 @@ internal sealed class HookService(HookThread hooks, IAppLog log) : IHookService
             {
                 if (!hooks.Stop())
                 {
+                    // i18n-keep: 画面に出さない開発者向けの例外・ログ。
                     log.Error(new InvalidOperationException("フックを解除できない。"));
                 }
             }
@@ -70,20 +73,21 @@ internal sealed class HookService(HookThread hooks, IAppLog log) : IHookService
         });
         if (!stop.Wait(TimeSpan.FromMilliseconds(250)))
         {
+            // i18n-keep: 画面に出さない開発者向けの例外・ログ。
             log.Error(new TimeoutException("フックの停止完了を待たず、OS 設定の復元を続ける。"));
         }
     }
 }
 
 /// <summary>変更する設定と復元の条件を明示して同意を得る。</summary>
-internal sealed class WindowsConsentPrompt : IConsentPrompt
+internal sealed class WindowsConsentPrompt(Func<string, string, bool>? show = null) : IConsentPrompt
 {
-    public bool ConfirmStandardSnapChange() => PInvoke.MessageBox(default,
-        "Windows の設定アプリの「ウィンドウのスナップ」を、Snapwell が有効な間だけ停止します。\n" +
-        "Snapwell を無効にしたとき・終了したとき・異常終了のあとに起動したときに、変更前の設定に戻します。\n\n" +
-        "停止してよいですか？",
-        "Snapwell — Windows の設定変更", MESSAGEBOX_STYLE.MB_YESNO | MESSAGEBOX_STYLE.MB_ICONQUESTION) ==
-        MESSAGEBOX_RESULT.IDYES;
+    /// <summary>本文とタイトルをアプリの言語にし、OS の「はい」だけを同意として扱う。</summary>
+    public bool ConfirmStandardSnapChange() => (show ?? Show)(UiText.Current.Get("Consent.StandardSnap.Body"),
+        UiText.Current.Get("Consent.StandardSnap.Title"));
+
+    private static bool Show(string body, string title) => PInvoke.MessageBox(default, body, title,
+        MESSAGEBOX_STYLE.MB_YESNO | MESSAGEBOX_STYLE.MB_ICONQUESTION) == MESSAGEBOX_RESULT.IDYES;
 }
 
 /// <summary>外部へ送らず、端末内だけに障害を記録する。</summary>

@@ -44,6 +44,7 @@ internal static class TrayIconPolicy
     {
         if (available.Count == 0)
         {
+            // i18n-keep: 画面に出さない開発者向けの例外・ログ。
             throw new ArgumentException("フレームが無い。", nameof(available));
         }
 
