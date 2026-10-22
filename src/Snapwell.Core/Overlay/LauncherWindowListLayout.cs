@@ -109,19 +109,23 @@ public sealed record LauncherWindowListLayout(PixelRect Panel, PixelRect Header,
     }
     /// <summary>選択上限などの状態を知らせる。</summary>
     public string Status { get; init; } = "";
+    /// <summary>開くときに取得し、ドラッグ中の再配置でも使い回す表示文。</summary>
+    public LauncherWindowListText? Text { get; init; }
 
     /// <summary>ページとスクロールを独立に保ち、展開状態に応じて配置する。</summary>
     public static LauncherWindowListLayout Create(PixelRect area, PixelRect existingPanel, double scale,
         IReadOnlyList<LauncherWindow> windows, IReadOnlyList<nint> selected, int focused,
-        bool expanded = false, string status = "", int scroll = 0)
+        bool expanded = false, string status = "", int scroll = 0, LauncherWindowListText? text = null)
     {
+        text ??= LauncherWindowListText.Create();
         int Px(double value) => (int)Math.Round(value * scale);
         var top = existingPanel.Height > 0 ? existingPanel.Bottom : area.Y + Px(14);
         var width = existingPanel.Width > 0 ? existingPanel.Width : Math.Min(Px(560), area.Width - Px(28));
         var available = area.Bottom - Px(14) - top;
         if (width < Px(300) || available < Px(44))
         {
-            return new(default, default, default, default, default, [], [], 0, windows.Count, selected.Count);
+            return new(default, default, default, default, default, [], [], 0, windows.Count, selected.Count)
+            { Text = text };
         }
 
         var first = windows.Count == 0 ? 0 : Math.Clamp(focused, 0, windows.Count - 1) / PageSize * PageSize;
@@ -136,7 +140,7 @@ public sealed record LauncherWindowListLayout(PixelRect Panel, PixelRect Header,
         if (!expanded)
         {
             return new(panel, header, default, default, default, [], [], first, windows.Count, selected.Count)
-            { Status = status };
+            { Status = status, Text = text };
         }
 
         var viewport = new PixelRect(left, top + Px(44), inner, viewportHeight);
@@ -145,17 +149,19 @@ public sealed record LauncherWindowListLayout(PixelRect Panel, PixelRect Header,
             new(left, viewport.Y + row * Px(32) - scroll, inner, Px(28)), selected.Contains(windows[index].Handle),
             index == focused, row + 1, selected.Count > 0 && windows[index].Handle == selected[0])).ToArray();
         var pagerY = viewport.Bottom + Px(8);
-        var previous = new PixelRect(panel.Right - Px(122), pagerY, Px(50), Px(22));
+        // 英語の Previous も左右の余白を持つ。日本語の寸法はそのまま保つ。
+        var previousWidth = Math.Max(50, text.Previous.Sum(c => c > 255 ? 12 : 6.6) + 12);
+        var previous = new PixelRect(panel.Right - Px(72 + previousWidth), pagerY, Px(previousWidth), Px(22));
         var next = new PixelRect(panel.Right - Px(66), pagerY, Px(50), Px(22));
-        var labels = new[] { "グリッド", "横一列", "縦一列", "メインとスタック" };
         var buttons = Enumerable.Range(0, 4).Select(i =>
         {
             var x = left + i * (inner + Px(6)) / 4;
             var right = left + (i + 1) * (inner + Px(6)) / 4 - Px(6);
-            return new LauncherArrangeButton((ArrangeLayout)i, new(x, pagerY + Px(30), right - x, Px(76)), labels[i]);
+            return new LauncherArrangeButton((ArrangeLayout)i, new(x, pagerY + Px(30), right - x, Px(76)),
+                text.ArrangeLabels[i]);
         }).ToArray();
         var hint = new PixelRect(left, pagerY + Px(112), inner, Px(18));
         return new(panel, header, previous, next, hint, rows, buttons, first, windows.Count, selected.Count)
-        { Expanded = true, Viewport = viewport, Scroll = scroll, Status = status };
+        { Expanded = true, Viewport = viewport, Scroll = scroll, Status = status, Text = text };
     }
 }

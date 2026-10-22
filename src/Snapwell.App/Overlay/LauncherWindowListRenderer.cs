@@ -1,3 +1,4 @@
+using System.Globalization;
 using Snapwell.Core.Geometry;
 using Snapwell.Core.Overlay;
 
@@ -17,7 +18,7 @@ internal sealed class LauncherWindowListRenderer
         var palette = OverlayPalette.For(theme);
         void Add(object key, PixelRect bounds, Action<OverlayFrame> paint)
         {
-            var fullKey = (key, theme, scale);
+            var fullKey = (key, theme, scale, layout.Text);
             var index = layers.Count;
             if (index < _cache.Count && Equals(_cache[index].Key, fullKey))
             {
@@ -33,7 +34,9 @@ internal sealed class LauncherWindowListRenderer
         void Label(OverlayFrame frame, PixelRect bounds, string value, double size = 12,
             LauncherTextKind kind = LauncherTextKind.Text)
         {
-            var item = new LauncherText(value, bounds, size, kind);
+            var fitted = LauncherPanelLayout.Ellipsize(value, bounds.Width / scale,
+                candidate => text.Measure(candidate, size, false));
+            var item = new LauncherText(fitted, bounds, size, kind);
             text.Draw(frame, bounds, item, kind == LauncherTextKind.Blue ? palette.BlueText :
                 kind == LauncherTextKind.Muted ? palette.Muted : palette.Text);
         }
@@ -56,28 +59,32 @@ internal sealed class LauncherWindowListRenderer
             {
                 OverlayPainter.Fill(frame, new(0, 0, frame.Width, frame.Height), palette.Border);
             });
-            var count = layout.SelectedCount > 0 ? $"選択 {layout.SelectedCount} / 9" : "未選択";
-            var summary = $"{(layout.Expanded ? "▾" : "▸")} ウィンドウを選んで整列";
+            var labels = layout.Text!;
+            var count = labels.SelectionCount(layout.SelectedCount);
+            var summary = $"{(layout.Expanded ? "▾" : "▸")} {labels.Heading}";
             Add((layout.Header, summary, count), layout.Header, frame =>
             {
                 var label = new PixelRect(layout.Header.X, layout.Header.Y,
                     layout.Header.Width - (int)Math.Round(100 * scale), layout.Header.Height);
-                text.Draw(frame, layout.Header, new(summary, label, 12.5), palette.Ink);
+                var fitted = LauncherPanelLayout.Ellipsize(summary, label.Width / scale,
+                    candidate => text.Measure(candidate, 12.5, false));
+                text.Draw(frame, layout.Header, new(fitted, label, 12.5), palette.Ink);
                 var counter = new PixelRect(label.Right, label.Y, layout.Header.Right - label.Right, label.Height);
                 text.Draw(frame, layout.Header, new(count, counter, 11.5, Center: true),
                     layout.SelectedCount > 0 ? palette.BlueText : palette.Muted);
             });
             if (layout.Expanded)
             {
-                var page = $"{layout.First + (layout.Total > 0 ? 1 : 0)}–{layout.First + layout.Rows.Count} / {layout.Total}";
+                var page = string.Create(CultureInfo.InvariantCulture,
+                    $"{layout.First + (layout.Total > 0 ? 1 : 0)}–{layout.First + layout.Rows.Count} / {layout.Total}");
                 var pageBounds = new PixelRect(layout.Viewport.X, layout.Previous.Y,
                     layout.Previous.X - layout.Viewport.X, layout.Previous.Height);
                 Add((pageBounds, page), pageBounds, frame => Label(frame, pageBounds, page, 11.5,
                     LauncherTextKind.Muted));
                 foreach (var (bounds, value, enabled) in new[]
                 {
-                    (layout.Previous, "前へ", layout.First > 0),
-                    (layout.Next, "次へ", layout.First + layout.Rows.Count < layout.Total),
+                    (layout.Previous, labels.Previous, layout.First > 0),
+                    (layout.Next, labels.Next, layout.First + layout.Rows.Count < layout.Total),
                 })
                 {
                     Add((bounds, value, enabled), bounds, frame => Label(frame, bounds, value,
@@ -101,7 +108,8 @@ internal sealed class LauncherWindowListRenderer
                         var keyLocal = new PixelRect(key.X - clipped.X, key.Y - clipped.Y, key.Width, key.Height);
                         OverlayPainter.FillRounded(frame, keyLocal, palette.Surface, 4, scale);
                         OverlayPainter.StrokeRounded(frame, keyLocal, palette.BorderStrong, 4, 1, scale);
-                        text.Draw(frame, clipped, new(row.Number.ToString(), key, 11.5, Mono: true, Center: true), palette.Text);
+                        text.Draw(frame, clipped, new(row.Number.ToString(CultureInfo.InvariantCulture), key,
+                            11.5, Mono: true, Center: true), palette.Text);
                         var check = new PixelRect(row.Bounds.X + Px(40), row.Bounds.Y + Px(6), Px(16), Px(16));
                         OverlayPainter.StrokeRounded(frame, new(check.X - clipped.X, check.Y - clipped.Y,
                             check.Width, check.Height), row.Selected ? palette.BlueText : palette.Muted, 4, 1, scale);
@@ -141,7 +149,7 @@ internal sealed class LauncherWindowListRenderer
                                     dot.Width, dot.Height), tint, dot.Width / (double)scale / 2, scale);
                             }
 
-                            text.Draw(frame, clipped, new(row.Main ? "メイン" : "スタック", row.RoleLabelBounds(scale),
+                            text.Draw(frame, clipped, new(row.Main ? labels.Main : labels.Stack, row.RoleLabelBounds(scale),
                                 10.5), tint);
                         }
                     });
@@ -180,10 +188,13 @@ internal sealed class LauncherWindowListRenderer
                                     ? palette.BlueText : palette.Muted with { Alpha = 115 }, 2, scale);
                         }
 
-                        var label = new LauncherText(button.Label, button.LabelBounds(scale), 12, Center: true);
+                        var fitted = LauncherPanelLayout.Ellipsize(button.Label, button.Bounds.Width / scale,
+                            candidate => text.Measure(candidate, 12, false));
+                        var label = new LauncherText(fitted, button.LabelBounds(scale), 12, Center: true);
                         text.Draw(frame, button.Bounds, label, palette.Text, centerFontBody: true);
                         var key = new PixelRect(button.Bounds.X, button.Bounds.Bottom - Px(20), button.Bounds.Width, Px(16));
-                        text.Draw(frame, button.Bounds, new($"Alt+{(int)button.Layout + 1}", key, 10.5,
+                        text.Draw(frame, button.Bounds, new(string.Create(CultureInfo.InvariantCulture,
+                            $"Alt+{(int)button.Layout + 1}"), key, 10.5,
                             Mono: true, Center: true), palette.Muted);
                         if (layout.SelectedCount == 0)
                         {
@@ -193,7 +204,7 @@ internal sealed class LauncherWindowListRenderer
                 }
 
                 Add((layout.Hint, layout.Status), layout.Hint, frame =>
-                    Label(frame, layout.Hint, layout.Status.Length > 0 ? layout.Status : "1–9 選択の切り替え · Alt+1–4 整列",
+                    Label(frame, layout.Hint, layout.Status.Length > 0 ? layout.Status : labels.Hint,
                         11.5, LauncherTextKind.Muted));
             }
         }

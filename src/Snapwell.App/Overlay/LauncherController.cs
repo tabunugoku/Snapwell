@@ -3,6 +3,7 @@ using Snapwell.App.Hotkeys;
 using Snapwell.Core.Commands;
 using Snapwell.Core.Geometry;
 using Snapwell.Core.Layout;
+using Snapwell.Core.Localization;
 using Snapwell.Core.Overlay;
 using Snapwell.Core.Settings;
 using Snapwell.Core.Snapping;
@@ -40,6 +41,7 @@ internal sealed class LauncherController : IDisposable
     private int _focusedWindow;
     private bool _windowsExpanded;
     private string _windowStatus = "";
+    private LauncherWindowListText? _windowText;
     private int _windowScroll;
     private bool _scrollDragging;
     private SelectedArrangementPlan? _lastArrangement;
@@ -167,6 +169,7 @@ internal sealed class LauncherController : IDisposable
                 new LauncherWindow(item.Handle, DisplayTitle(item.Title))).ToArray();
             _focusedWindow = 0;
             _windowsExpanded = false;
+            _windowText = LauncherWindowListText.Create();
             _windowStatus = "";
             _windowScroll = 0;
             _ignorePointerUpToMs = ignorePointerUpToMs;
@@ -487,7 +490,8 @@ internal sealed class LauncherController : IDisposable
 
     private void ToggleWindow(nint handle)
     {
-        _windowStatus = _selectedWindows.Toggle(handle) ? "" : $"選べるのは最大 {WindowSelection.MaximumCount} 件です。";
+        _windowStatus = _selectedWindows.Toggle(handle) ? "" :
+            UiText.Current.Plural("LauncherUi.SelectionLimit", WindowSelection.MaximumCount);
     }
 
     private Action PrepareArrangementCore(ArrangeLayout layout)
@@ -609,8 +613,10 @@ internal sealed class LauncherController : IDisposable
             var selection = new ZoneSelection(old.WorkArea, plan, _spacing);
             var snapped = selection.Grid.SnapToGrid(old.Bounds);
             var anchor = selection.HitTest(new(snapped.X, snapped.Y))
+                // i18n-keep: 画面に出さず、分割案の変更を取り消すための例外。
                 ?? throw new ArgumentException("区画に当たらない。");
             var cursor = selection.HitTest(new(snapped.Right - 1, snapped.Bottom - 1))
+                // i18n-keep: 画面に出さず、分割案の変更を取り消すための例外。
                 ?? throw new ArgumentException("区画に当たらない。");
             _selection = selection.Select(anchor, cursor);
         }
@@ -658,9 +664,10 @@ internal sealed class LauncherController : IDisposable
         var expanded = _windowsExpanded;
         var status = _windowStatus;
         var scroll = _windowScroll;
+        var windowText = _windowText;
         _panelLayout ??= LauncherPanelLayout.Create(selection, scale, title, menuOpen, presetIds: _presetIds);
         _windowList = LauncherWindowListLayout.Create(selection.WorkArea, _panelLayout.Panel, scale,
-            windows, selected, focused, expanded, status, scroll);
+            windows, selected, focused, expanded, status, scroll, windowText);
         var generation = _displayGeneration;
         var renderedPanel = _panelLayout;
         var renderedList = _windowList;
@@ -669,9 +676,9 @@ internal sealed class LauncherController : IDisposable
             {
                 renderedPanel = layout;
                 renderedList = LauncherWindowListLayout.Create(selection.WorkArea, layout.Panel, scale,
-                    windows, selected, focused, expanded, status, scroll);
+                    windows, selected, focused, expanded, status, scroll, windowText);
             }, layout => LauncherWindowListLayout.Create(selection.WorkArea, layout.Panel, scale,
-                windows, selected, focused, expanded, status, scroll), showZoneLines, presetIds), () =>
+                windows, selected, focused, expanded, status, scroll, windowText), showZoneLines, presetIds, windowText), () =>
             {
                 lock (_gate)
                 {
