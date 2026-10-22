@@ -59,14 +59,35 @@
             <Setter Property="CornerRadius" Value="3" />
             <Setter Property="Opacity" Value="0.4" />
         </Style>
-        <Style x:Key="DiagramCell" TargetType="Border">
-            <Setter Property="Background" Value="{ThemeResource SnapwellBlueBackgroundBrush}" />
-            <Setter Property="BorderBrush" Value="{ThemeResource SnapwellBlueTextBrush}" />
-            <Setter Property="BorderThickness" Value="1.5" />
-            <Setter Property="CornerRadius" Value="3" />
+        <!-- 吸着先・予測の線・点は、外観ページの見え方の例と同じブラシにする。点線の間隔はコードで付ける。 -->
+        <Style x:Key="DiagramZone" TargetType="Rectangle">
+            <Setter Property="Fill" Value="{ThemeResource SnapwellBlueBackgroundBrush}" />
+            <Setter Property="Stroke" Value="{ThemeResource SnapwellBlueLineBrush}" />
+            <Setter Property="StrokeThickness" Value="1.5" />
+            <Setter Property="RadiusX" Value="3" />
+            <Setter Property="RadiusY" Value="3" />
         </Style>
-        <Style x:Key="DiagramGridLine" TargetType="Border">
-            <Setter Property="Background" Value="{ThemeResource SnapwellBorderBrush}" />
+        <Style x:Key="DiagramPredictionLine" TargetType="Line">
+            <Setter Property="Stroke" Value="{ThemeResource SnapwellBlueTextBrush}" />
+            <Setter Property="StrokeThickness" Value="1.5" />
+        </Style>
+        <Style x:Key="DiagramPredictionDot" TargetType="Ellipse">
+            <Setter Property="Fill" Value="{ThemeResource SnapwellBlueTextBrush}" />
+            <Setter Property="Width" Value="6" />
+            <Setter Property="Height" Value="6" />
+        </Style>
+        <Style x:Key="DiagramThrowLine" TargetType="Line">
+            <Setter Property="Stroke" Value="{ThemeResource SnapwellMutedBrush}" />
+            <Setter Property="StrokeThickness" Value="1.5" />
+            <Setter Property="StrokeStartLineCap" Value="Round" />
+            <Setter Property="StrokeEndLineCap" Value="Round" />
+        </Style>
+        <Style x:Key="DiagramThrowHead" TargetType="Polyline">
+            <Setter Property="Stroke" Value="{ThemeResource SnapwellMutedBrush}" />
+            <Setter Property="StrokeThickness" Value="1.5" />
+            <Setter Property="StrokeStartLineCap" Value="Round" />
+            <Setter Property="StrokeEndLineCap" Value="Round" />
+            <Setter Property="StrokeLineJoin" Value="Round" />
         </Style>
         <Style x:Key="DiagramFlyout" TargetType="Border">
             <Setter Property="Background" Value="{ThemeResource SnapwellSurfaceBrush}" />

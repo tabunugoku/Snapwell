@@ -35,7 +35,7 @@
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
         <StackPanel x:Name="Editor" Padding="32,28,32,40" HorizontalAlignment="Stretch">
             <TextBlock Text="操作感" Style="{StaticResource SnapwellPageTitleStyle}" />
-            <TextBlock Text="投げたときの動き方です。4 つのプリセットのどれかを選ぶと、5 つの値がそのプリセットの値になります。値を変えると「カスタム」になります。曲線は手を離してから止まるまでの位置の変化です。"
+            <TextBlock Text="投げたときの動き方です。プリセットのどれかを選ぶと、吸着半径を除く 4 つの値がそのプリセットの値になります。そのどれかを変えると「カスタム」になります。曲線は、各プリセットでキー操作したときの、止まるまでの位置の変化です。"
                        Style="{StaticResource SnapwellLeadTextStyle}" />
 
             <Grid ColumnSpacing="10">
@@ -234,7 +234,7 @@
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
                             <TextBlock Text="固有振動数 f" Style="{StaticResource SnapwellRowTitleStyle}" />
-                            <TextBlock Text="大きいほど素早く吸着します"
+                            <TextBlock Text="キー操作での動きの速さと、投げたあとの勢いの止まり方に効きます"
                                        Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
                         <StackPanel x:Name="FrequencyPanel" Grid.Column="1" Orientation="Horizontal" Spacing="12"
@@ -255,7 +255,7 @@
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
                             <TextBlock Text="減衰比 ζ" Style="{StaticResource SnapwellRowTitleStyle}" />
-                            <TextBlock Text="1 に近いほど行き過ぎません"
+                            <TextBlock Text="大きいほど勢いを抑えます"
                                        Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
                         <StackPanel x:Name="DampingRatioPanel" Grid.Column="1" Orientation="Horizontal" Spacing="12"

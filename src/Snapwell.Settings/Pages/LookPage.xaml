@@ -88,6 +88,8 @@
                 </StackPanel>
             </Border>
             <TextBlock Text="ウィンドウの角の見え方" Style="{StaticResource SnapwellGroupTitleStyle}" />
+            <TextBlock Text="最大化中のウィンドウと枠のないウィンドウは変えません。枠のないウィンドウは、アプリごとのルールで個別に指定できます。"
+                       Style="{StaticResource SnapwellHintTextStyle}" TextWrapping="Wrap" Margin="0,0,0,8" />
             <Grid ColumnSpacing="10">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -128,7 +130,7 @@
                             </Border>
                             <TextBlock Text="角丸を強制する" FontWeight="SemiBold" FontSize="13" TextWrapping="Wrap"
                                        Foreground="{ThemeResource SnapwellTextBrush}" />
-                            <TextBlock Text="すべてのウィンドウを標準の丸（約 8 px）にそろえます" FontSize="11.5" TextWrapping="Wrap"
+                            <TextBlock Text="通常のウィンドウを標準の丸（約 8 px）にそろえます" FontSize="11.5" TextWrapping="Wrap"
                                        Foreground="{ThemeResource SnapwellMutedBrush}" />
                         </StackPanel>
                     </Button>
@@ -168,7 +170,7 @@
                             </Border>
                             <TextBlock Text="角丸なし" FontWeight="SemiBold" FontSize="13" TextWrapping="Wrap"
                                        Foreground="{ThemeResource SnapwellTextBrush}" />
-                            <TextBlock Text="すべてのウィンドウを直角にします" FontSize="11.5" TextWrapping="Wrap"
+                            <TextBlock Text="通常のウィンドウを直角にします" FontSize="11.5" TextWrapping="Wrap"
                                        Foreground="{ThemeResource SnapwellMutedBrush}" />
                         </StackPanel>
                     </Button>
@@ -228,7 +230,7 @@
                 </StackPanel>
             </Border>
             <TextBlock Text="オーバーレイの見え方" Style="{StaticResource SnapwellGroupTitleStyle}" />
-            <TextBlock Text="ウィンドウをドラッグして、右上へ投げた場面の例です。上の「区画のプレビュー」と「オーバーレイ」の 2 つの切り替えを変えると、表示がどう変わるかをここで確かめられます。"
+            <TextBlock Text="ウィンドウをドラッグして、右上へ投げた場面の例です。上の「区画のプレビュー」と「オーバーレイ」のスイッチを切り替えると、表示がどう変わるかをここで確かめられます。"
                        Style="{StaticResource SnapwellHintTextStyle}" TextWrapping="Wrap" Margin="0,0,0,8" />
             <Border Width="400" Height="190" HorizontalAlignment="Left" CornerRadius="10" BorderThickness="1"
                     BorderBrush="{ThemeResource SnapwellBorderBrush}"
