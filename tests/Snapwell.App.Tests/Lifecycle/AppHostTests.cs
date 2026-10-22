@@ -25,10 +25,10 @@ public sealed class AppHostTests
     [Theory]
     [InlineData("reset", "壊れた設定を退避し、既定値で起動しました", "Damaged settings backed up; using defaults.")]
     [InlineData("future", "新しい版の設定を保護しています", "Protecting settings from a newer version")]
-    [InlineData("hooks", "入力フック開始失敗。標準スナップを使用します", "Couldn't start input hooks. Using Windows Snap.")]
-    [InlineData("restore", "標準スナップ復元失敗。次回起動時に再試行します", "Couldn't restore Windows Snap. Will retry on restart.")]
+    [InlineData("hooks", "入力フックを開始できません。Windows 標準のスナップを使用します", "Couldn't start input hooks. Using Windows Snap.")]
+    [InlineData("restore", "Windows 標準のスナップを復元できませんでした。再起動時に再試行します", "Couldn't restore Windows Snap. Will retry on restart.")]
     [InlineData("reload", "設定を反映できませんでした。前の設定を使用しています", "Couldn't apply settings. Using the previous settings.")]
-    [InlineData("save", "端末状態を保存できません。変更は終了まで有効です", "Device settings unsaved; changes last until exit.")]
+    [InlineData("save", "端末状態を保存できませんでした。変更はこの起動中だけ有効です", "Device settings unsaved; changes last until exit.")]
     public void RetainedStatusChangesLanguageWithoutRepeatingFailure(string failure, string japanese, string english)
     {
         var previous = UiText.Current.Language;
@@ -596,7 +596,7 @@ public sealed class AppHostTests
         fixture.DeviceWatcher.Notify();
 
         Assert.Equal(1, fixture.Calls.Count(call => call == "restore"));
-        Assert.Contains("標準スナップ復元失敗", fixture.Tray.State!.Status);
+        Assert.Contains("Windows 標準のスナップを復元できませんでした", fixture.Tray.State!.Status);
         var failure = Assert.IsType<IOException>(Assert.Single(fixture.Log.Errors));
         Assert.Same(cause, failure.InnerException);
         var state = fixture.Tray.State;
@@ -764,10 +764,10 @@ public sealed class AppHostTests
 
         Assert.True(fixture.Host.Start());
 
-        const string Status = "標準スナップ復元失敗。次回起動時に再試行します";
+        const string Status = "Windows 標準のスナップを復元できませんでした。再起動時に再試行します";
         Assert.Equal(Status, fixture.Tray.State?.Status);
         var error = Assert.IsType<IOException>(Assert.Single(fixture.Log.Errors));
-        Assert.Equal("Windows 標準のスナップを復元できませんでした。再起動時に再試行します", error.Message);
+        Assert.Equal(Status, error.Message);
         Assert.Same(cause, error.InnerException);
         Assert.Equal(new[] { "mutex", "recover", "portable", "device", "hooks.start", "tray.show" },
             fixture.Calls.ToArray());
@@ -788,7 +788,7 @@ public sealed class AppHostTests
 
         Assert.True(fixture.Host.Start());
 
-        Assert.Equal("標準スナップ復元失敗。次回起動時に再試行します", fixture.Tray.State?.Status);
+        Assert.Equal("Windows 標準のスナップを復元できませんでした。再起動時に再試行します", fixture.Tray.State?.Status);
         Assert.DoesNotContain("disable", fixture.Calls);
         Assert.False(fixture.Runtime.Enabled);
         Assert.Equal(throws ? 2 : 1, fixture.Log.Errors.Count);
@@ -817,7 +817,7 @@ public sealed class AppHostTests
 
         Assert.True(fixture.Host.Start());
 
-        Assert.StartsWith("標準スナップ復元失敗。次回起動時に再試行します", fixture.Tray.State?.Status);
+        Assert.StartsWith("Windows 標準のスナップを復元できませんでした。再起動時に再試行します", fixture.Tray.State?.Status);
         Assert.Single(fixture.Log.Errors);
     }
 
@@ -835,7 +835,7 @@ public sealed class AppHostTests
 
         Assert.True(fixture.Host.Start());
 
-        Assert.Equal("標準スナップ復元失敗。次回起動時に再試行します", fixture.Tray.State?.Status);
+        Assert.Equal("Windows 標準のスナップを復元できませんでした。再起動時に再試行します", fixture.Tray.State?.Status);
         Assert.Equal(new[] { "mutex", "recover", "portable", "device", "hooks.start", "disable", "tray.show" },
             fixture.Calls.ToArray());
         Assert.Equal(outcome == "exception" ? 2 : 1, fixture.Log.Errors.Count);
