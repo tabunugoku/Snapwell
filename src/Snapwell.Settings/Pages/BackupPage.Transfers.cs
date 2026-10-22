@@ -88,8 +88,7 @@ public sealed partial class BackupPage
         var preview = await Task.Run(() => SettingsTransfer.Read(path, current));
         if (!preview.IsSuccess)
         {
-            // i18n-keep: SettingsTransfer の失敗理由はフェーズ 3 で訳す
-            ShowNotice(preview.Error!, InfoBarSeverity.Error);
+            ShowNotice(preview.Error ?? UiText.Current.Get("Transfer.Error.Read"), InfoBarSeverity.Error);
             return;
         }
 

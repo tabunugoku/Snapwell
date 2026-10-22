@@ -1,5 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Snapwell.Core.Localization;
 using Snapwell.Core.Rules;
 
 namespace Snapwell.Settings.Dialogs;
@@ -20,8 +21,21 @@ public sealed partial class RuleDialog : ContentDialog
         _original = rule ?? (selectedWindow is null ? new() : WindowRuleListEditor.DraftFromWindow(selectedWindow));
         InitializeComponent();
         DialogButtons.Compact(this);
-        Title = rule is null ? "ルールを追加" : "ルールを編集";
-        PrimaryButtonText = rule is null ? "追加" : "保存";
+        Title = rule is null ? UiText.Current.Get("Dialogs.Rule.AddTitle") : UiText.Current.Get("Dialogs.Rule.EditTitle");
+        PrimaryButtonText = rule is null ? UiText.Current.Get("Dialogs.Rule.Add") : UiText.Current.Get("Dialogs.Rule.Save");
+        string[] placements = [UiText.Current.Get("Corner.Inherit"), UiText.Current.Get("Rules.Placement.Exclude"),
+            UiText.Current.Get("Rules.Placement.PositionOnly"), UiText.Current.Get("Rules.Placement.ForceTarget")];
+        string[] corners = [UiText.Current.Get("Corner.Inherit"),
+            UiText.Current.Format("Dialogs.Rule.CornerUnchanged", ("name", UiText.Current.Get("Corner.SystemDefault"))),
+            UiText.Current.Get("Corner.Round"), UiText.Current.Get("Corner.RoundSmall"), UiText.Current.Get("Corner.DoNotRound")];
+        for (var index = 0; index < placements.Length; index++)
+        {
+            ((ComboBoxItem)PlacementBox.Items[index]).Content = placements[index];
+        }
+        for (var index = 0; index < corners.Length; index++)
+        {
+            ((ComboBoxItem)CornerBox.Items[index]).Content = corners[index];
+        }
         ProcessBox.Text = _original.ProcessName;
         ClassBox.Text = _original.ClassName;
         TitleBox.Text = _original.TitlePattern;
@@ -50,12 +64,12 @@ public sealed partial class RuleDialog : ContentDialog
         Corner = (CornerRule)Math.Max(0, CornerBox.SelectedIndex),
     };
 
-    private static readonly string[] _placementHints =
+    private static string[] PlacementHints =>
     [
-        "配置については、このルールでは何も決めません",
-        "動かす・大きさを変える・吸着させる操作の対象にしません",
-        "動かしますが、大きさは変えません",
-        "ポップアップなどでも、通常のウィンドウとして扱います",
+        UiText.Current.Get("Dialogs.Rule.Hint.Inherit"),
+        UiText.Current.Get("Dialogs.Rule.Hint.Exclude"),
+        UiText.Current.Get("Dialogs.Rule.Hint.PositionOnly"),
+        UiText.Current.Get("Dialogs.Rule.Hint.ForceTarget"),
     ];
 
     private PlacementRule Placement => (PlacementRule)Math.Max(0, PlacementBox.SelectedIndex);
@@ -69,7 +83,7 @@ public sealed partial class RuleDialog : ContentDialog
         ErrorText.Text = error ?? string.Empty;
         ErrorText.Visibility = error is null ? Visibility.Collapsed : Visibility.Visible;
         IsPrimaryButtonEnabled = error is null && !_session.IsReadOnly;
-        PlacementHint.Text = _placementHints[(int)draft.Placement];
+        PlacementHint.Text = PlacementHints[(int)draft.Placement];
         Control[] inputs = [ProcessBox, ClassBox, TitleBox, PlacementBox, CornerBox];
         foreach (var input in inputs) { input.IsEnabled = !_session.IsReadOnly; }
         MatchText.Text = WindowRuleListEditor.MatchSummary(WindowRuleListEditor.FindMatches(draft, _windows));

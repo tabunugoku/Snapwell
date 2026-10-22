@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Snapwell.Core.Commands;
+using Snapwell.Core.Localization;
 
 namespace Snapwell.Core.Settings;
 
@@ -15,10 +16,11 @@ public enum SetupHotkeyStatus { Available, Conflict, Unassigned }
 /// <summary>手順の遷移と保存の順序を、画面や Win32 に依存せず管理する。</summary>
 public sealed class SetupWizard(ISettingsStore<PortableSettings> portableStore, ISettingsStore<DeviceState> deviceStore)
 {
-    public static IReadOnlyList<SetupPlan> Plans { get; } = Array.AsReadOnly<SetupPlan>([
-        new(new(8, 8), "おすすめ。半分・四分割・1/4 を作れます"),
-        new(new(12, 6), "1/3 や 2/3 も作れます"),
-        new(new(6, 4), "大きな区画で手早く"),
+    /// <summary>現在の言語で分割案の説明を返す。</summary>
+    public static IReadOnlyList<SetupPlan> Plans => Array.AsReadOnly<SetupPlan>([
+        new(new(8, 8), UiText.Current.Get("Setup.Plan.8x8")),
+        new(new(12, 6), UiText.Current.Get("Setup.Plan.12x6")),
+        new(new(6, 4), UiText.Current.Get("Setup.Plan.6x4")),
     ]);
 
     public SetupStep Step { get; private set; }
@@ -31,6 +33,30 @@ public sealed class SetupWizard(ISettingsStore<PortableSettings> portableStore, 
     /// <summary>未来の版を保護し、完了していない端末だけ案内する。</summary>
     public static bool ShouldOpen(SettingsLoadResult<DeviceState> device) =>
         !device.IsReadOnly && !device.Value.SetupCompleted;
+
+    /// <summary>テンプレートを文字と名前つきのキー図に分ける。</summary>
+    public static IReadOnlyList<(string Text, string? Placeholder)> SplitKeyTemplate(
+        string template, params string[] placeholders)
+    {
+        // 同じ図の繰り返しも別の部品として返し、翻訳の語順や図の省略を制限しない。
+        var parts = new List<(string Text, string? Placeholder)>();
+        var start = 0;
+        var position = 0;
+        while (position < template.Length)
+        {
+            if (template[position] == '{' && template.IndexOf('}', position + 1) is var end && end >= 0
+                && placeholders.Contains(template[(position + 1)..end], StringComparer.Ordinal))
+            {
+                if (position > start) { parts.Add((template[start..position], null)); }
+                parts.Add((string.Empty, template[(position + 1)..end]));
+                position = end + 1;
+                start = position;
+            }
+            else { position++; }
+        }
+        if (start < template.Length) { parts.Add((template[start..], null)); }
+        return parts;
+    }
 
     /// <summary>保存した同意や選択を消さず、一つ前の手順に戻る。</summary>
     public void Back()
@@ -81,8 +107,8 @@ public sealed class SetupWizard(ISettingsStore<PortableSettings> portableStore, 
             InvalidOperationException or ArgumentException)
         {
             error = exception is FutureSettingsVersionException
-                ? "この設定は読み取り専用のため、保存できません。Snapwell を更新して開き直してください。"
-                : "保存できませんでした。ファイルの場所とアクセス権を確認して、もう一度保存してください。";
+                ? UiText.Current.Get("Setup.Error.ReadOnly")
+                : UiText.Current.Get("Setup.Error.Save");
             return false;
         }
     }
@@ -92,6 +118,7 @@ public sealed class SetupWizard(ISettingsStore<PortableSettings> portableStore, 
     {
         if (planIndex < 0 || planIndex >= Plans.Count || !double.IsFinite(gap) || gap is < 0 or > 24)
         {
+            // i18n-keep: 入力の範囲を検査する開発者向け例外
             throw new ArgumentOutOfRangeException(nameof(planIndex), "分割案または間隔が範囲外。");
         }
 
@@ -117,6 +144,7 @@ public sealed class SetupWizard(ISettingsStore<PortableSettings> portableStore, 
         var loaded = store.TryReload() ?? store.Load();
         if (loaded.IsReadOnly)
         {
+            // i18n-keep: TryNext は Message を表示せず、例外の型から文言を選ぶ
             throw new FutureSettingsVersionException("新しい版の設定は上書きできない。");
         }
 
