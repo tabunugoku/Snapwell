@@ -1,4 +1,5 @@
 using Snapwell.App.Lifecycle;
+using Snapwell.Core.Localization;
 using Snapwell.Core.Tray;
 
 namespace Snapwell.App.Tray;
@@ -31,8 +32,8 @@ internal static class TrayIconPolicy
     /// <summary>ホバーの文言。色だけに頼らず、状態を文字でも伝える。</summary>
     public static string Tip(TrayState state) => KindOf(state) switch
     {
-        TrayIconKind.Attention => $"Snapwell: {state.Status}",
-        TrayIconKind.Paused => "Snapwell（一時停止中）",
+        TrayIconKind.Attention => UiText.Current.Format("Tray.Tip.Attention", ("status", state.Status!)),
+        TrayIconKind.Paused => UiText.Current.Get("Tray.Tip.Paused"),
         _ => "Snapwell",
     };
 
