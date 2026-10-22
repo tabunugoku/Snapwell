@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using Snapwell.Core.Localization;
 
 namespace Snapwell.Core.Settings;
 
@@ -27,14 +28,16 @@ public sealed record SettingsSyncResult(SettingsSyncKind Kind, string? Message =
     /// <summary>フォルダーのパスを含めず、画面とログに使う文言を返す。</summary>
     public string ToDisplayText() => Kind switch
     {
-        SettingsSyncKind.NoChange => "変更なし",
-        SettingsSyncKind.Pushed => "書き出し済み",
-        SettingsSyncKind.Pulled => "取り込み済み",
-        SettingsSyncKind.ConflictLocalWon => "競合: この PC の設定を採用",
-        SettingsSyncKind.ConflictRemoteWon => "競合: 同期先の設定を採用",
-        SettingsSyncKind.Busy => "同期中: ほかの処理の完了を待っています",
-        SettingsSyncKind.Skipped => "見送り: " + Message,
-        _ => "失敗: " + Message,
+        SettingsSyncKind.NoChange => UiText.Current.Get("Backup.Sync.NoChange"),
+        SettingsSyncKind.Pushed => UiText.Current.Get("Backup.Sync.Pushed"),
+        SettingsSyncKind.Pulled => UiText.Current.Get("Backup.Sync.Pulled"),
+        SettingsSyncKind.ConflictLocalWon => UiText.Current.Get("Backup.Sync.ConflictLocalWon"),
+        SettingsSyncKind.ConflictRemoteWon => UiText.Current.Get("Backup.Sync.ConflictRemoteWon"),
+        SettingsSyncKind.Busy => UiText.Current.Get("Backup.Sync.Busy"),
+        SettingsSyncKind.Skipped => UiText.Current.Format("Backup.Sync.Skipped", ("message", Message ?? string.Empty)),
+        SettingsSyncKind.Rejected =>
+            UiText.Current.Format("Backup.Sync.Rejected", ("message", Message ?? string.Empty)),
+        _ => UiText.Current.Format("Backup.Sync.Failed", ("message", Message ?? string.Empty)),
     };
 }
 
@@ -94,13 +97,13 @@ public sealed class SettingsSync
             var remoteFolder = Path.TrimEndingDirectorySeparator(Path.GetFullPath(folder));
             if (Contains(localFolder, remoteFolder) || Contains(remoteFolder, localFolder))
             {
-                return "設定ファイルと同じフォルダー、その中、または親フォルダーは選べません。";
+                return UiText.Current.Get("Backup.Folder.Overlaps");
             }
             return null;
         }
         catch (Exception exception) when (exception is ArgumentException or NotSupportedException or PathTooLongException)
         {
-            return "同期フォルダーのパスが正しくありません。";
+            return UiText.Current.Get("Backup.Folder.InvalidPath");
         }
     }
 
@@ -139,7 +142,7 @@ public sealed class SettingsSync
                 if (loaded.IsReadOnly || requireEnabled && !state.SyncEnabled ||
                     string.IsNullOrWhiteSpace(state.SyncFolder))
                 {
-                    result = new(SettingsSyncKind.Skipped, "同期がオフか、同期先が未設定か、端末状態が読み取り専用です。");
+                    result = new(SettingsSyncKind.Skipped, UiText.Current.Get("Backup.SyncReason.NotConfigured"));
                     return;
                 }
                 var rejection = ValidateFolder(_local, state.SyncFolder);
@@ -162,7 +165,7 @@ public sealed class SettingsSync
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or
             JsonException or FutureSettingsVersionException)
         {
-            return new(SettingsSyncKind.Failed, "ファイルを読み書きできません。接続とアクセス権を確認してください。");
+            return new(SettingsSyncKind.Failed, UiText.Current.Get("Backup.SyncReason.FileAccess"));
         }
     }
 
@@ -170,17 +173,17 @@ public sealed class SettingsSync
     {
         if (!Directory.Exists(Path.GetDirectoryName(remotePath)))
         {
-            return new(SettingsSyncKind.Failed, "同期フォルダーが見つかりません。");
+            return new(SettingsSyncKind.Failed, UiText.Current.Get("Backup.SyncReason.MissingFolder"));
         }
         var local = Read(_local);
         var remote = Read(remotePath);
         if (local.Future || remote.Future)
         {
-            return new(SettingsSyncKind.Skipped, "新しい版の設定は上書きできません。Snapwell を更新してください。");
+            return new(SettingsSyncKind.Skipped, UiText.Current.Get("Backup.SyncReason.Future"));
         }
         if (local.Broken)
         {
-            return new(SettingsSyncKind.Skipped, "この PC の設定が壊れているため、同期を見送りました。");
+            return new(SettingsSyncKind.Skipped, UiText.Current.Get("Backup.SyncReason.LocalBroken"));
         }
         if (local.Bytes is null && remote.Bytes is null)
         {
@@ -188,7 +191,7 @@ public sealed class SettingsSync
         }
         if (remote.Broken && local.Value is null)
         {
-            return new(SettingsSyncKind.Skipped, "同期先の設定が壊れています。");
+            return new(SettingsSyncKind.Skipped, UiText.Current.Get("Backup.SyncReason.RemoteBroken"));
         }
         if (local.Hash is not null && local.Hash == remote.Hash)
         {
@@ -238,6 +241,7 @@ public sealed class SettingsSync
             using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
             if (stream.Length > MaximumBytes)
             {
+                // i18n-keep: 画面に出さず、呼び出し側の固定文へ置き換える例外
                 throw new IOException("設定ファイルが大きすぎる。");
             }
             using var memory = new MemoryStream();
@@ -254,6 +258,7 @@ public sealed class SettingsSync
             var version = SettingsSchema.ReadVersion(document.RootElement);
             if (version > PortableSettings.CurrentSchemaVersion) { return new(bytes, modified, Future: true); }
             var value = document.RootElement.Deserialize(SettingsJsonContext.Default.PortableSettings)
+                // i18n-keep: 画面に出さず、呼び出し側の固定文へ置き換える例外
                 ?? throw new JsonException("設定が null。");
             value = SettingsSchema.Migrate(value, version).Normalize();
             return new(bytes, modified, value, Hash(value));
@@ -296,6 +301,7 @@ public sealed class SettingsSync
         if ((snapshot.Bytes is null) != (current.Bytes is null) || snapshot.Bytes is not null &&
             !snapshot.Bytes.AsSpan().SequenceEqual(current.Bytes))
         {
+            // i18n-keep: 画面に出さず、呼び出し側の固定文へ置き換える例外
             throw new IOException("判断中に設定が変更された。");
         }
         return current;
