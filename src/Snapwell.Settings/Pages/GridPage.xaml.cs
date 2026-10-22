@@ -1,7 +1,9 @@
+using System.Globalization;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Snapwell.Core.Layout;
+using Snapwell.Core.Localization;
 using Snapwell.Core.Settings;
 using Snapwell.Platform.Monitors;
 using Windows.Globalization.NumberFormatting;
@@ -61,15 +63,15 @@ public sealed partial class GridPage : Page
 
             MonitorBox.ItemsSource = _choices;
             MonitorBox.SelectedItem = _choices.First(choice => choice.Id == _monitorId);
-            MonitorStatus.Text = "未設定のモニターは共通の案を使います";
+            MonitorStatus.Text = UiText.Current.Get("Grid.Monitors.SharedHint");
         }
         catch (Exception exception) when (exception is InvalidOperationException or System.ComponentModel.Win32Exception)
         {
-            _choices = [new(null, "全モニター共通", null)];
+            _choices = [new(null, UiText.Current.Get("Grid.Monitors.Shared"), null)];
             _monitorId = null;
             MonitorBox.ItemsSource = _choices;
             MonitorBox.SelectedIndex = 0;
-            MonitorStatus.Text = "モニター一覧を取得できません。一覧を開くと再試行します";
+            MonitorStatus.Text = UiText.Current.Get("Grid.Monitors.Unavailable");
         }
         finally
         {
@@ -124,8 +126,8 @@ public sealed partial class GridPage : Page
         EdgeBox.Value = value.Edge;
         GapSlider.Value = Math.Clamp(value.Gap, GapSlider.Minimum, GapSlider.Maximum);
         EdgeSlider.Value = Math.Clamp(value.Edge, EdgeSlider.Minimum, EdgeSlider.Maximum);
-        GapOutputText.Text = $"{value.Gap:0.#} px";
-        EdgeOutputText.Text = $"{value.Edge:0.#} px";
+        GapOutputText.Text = value.Gap.ToString("0.#", CultureInfo.InvariantCulture) + " px";
+        EdgeOutputText.Text = value.Edge.ToString("0.#", CultureInfo.InvariantCulture) + " px";
         LinkEdgeCheck.IsChecked = _linkedEdge;
         EdgeSlider.IsEnabled = !_session.IsReadOnly && !_linkedEdge;
         PlanBox.SelectedIndex = value.Grid switch
@@ -160,7 +162,8 @@ public sealed partial class GridPage : Page
         Chip16x9.Style = is16x9 ? selectedStyle : normalStyle;
         ChipCustom.Style = !isPreset ? selectedStyle : normalStyle;
         ChipCustom.Opacity = isPreset ? 0.55 : 1.0;
-        ChipCustom.Content = !isPreset ? $"カスタム ({grid.Columns} × {grid.Rows})" : "カスタム…";
+        ChipCustom.Content = !isPreset ? UiText.Current.Format("Grid.CustomDimensions",
+            ("columns", grid.Columns), ("rows", grid.Rows)) : UiText.Current.Get("Common.CustomMore");
     }
 
     private void RenderPreview(PortableSettings value)
@@ -214,12 +217,14 @@ public sealed partial class GridPage : Page
 
         var halfCols = Math.Max(1, cols / 2);
         var halfRows = Math.Max(1, rows / 2);
-        AddPreviewWindow(0, 0, halfCols, halfRows, $"{halfCols} × {halfRows} 区画",
+        AddPreviewWindow(0, 0, halfCols, halfRows, UiText.Current.Plural("Grid.Preview.Cells", halfCols * halfRows,
+            ("columns", halfCols), ("rows", halfRows)),
             edge, gap, cellWidth, cellHeight);
         if (cols > halfCols)
         {
             var rightCols = cols - halfCols;
-            AddPreviewWindow(halfCols, 0, rightCols, rows, $"{rightCols} × {rows} 区画",
+            AddPreviewWindow(halfCols, 0, rightCols, rows, UiText.Current.Plural("Grid.Preview.Cells", rightCols * rows,
+                ("columns", rightCols), ("rows", rows)),
                 edge, gap, cellWidth, cellHeight);
         }
     }
@@ -379,14 +384,19 @@ internal sealed class GridMonitorCatalog(IMonitorSource source)
 {
     internal IReadOnlyList<GridMonitorChoice> GetChoices()
     {
-        var result = new List<GridMonitorChoice> { new(null, "全モニター共通", null) };
+        var result = new List<GridMonitorChoice> { new(null, UiText.Current.Get("Grid.Monitors.Shared"), null) };
         var monitors = source.GetMonitors().OrderBy(monitor => monitor.DeviceName, StringComparer.OrdinalIgnoreCase);
         var number = 0;
         foreach (var monitor in monitors)
         {
             number++;
-            var label = $"{number} · {monitor.Bounds.Width} × {monitor.Bounds.Height} · {monitor.DpiX / 96.0 * 100:0}%" +
-                (monitor.IsPrimary ? "（メイン）" : "");
+            var label = UiText.Current.Format("Grid.Monitor.Label", ("number", number),
+                ("width", monitor.Bounds.Width), ("height", monitor.Bounds.Height),
+                ("scale", Math.Round(monitor.DpiX / 96.0 * 100, MidpointRounding.AwayFromZero)));
+            if (monitor.IsPrimary)
+            {
+                label = UiText.Current.Format("Grid.Monitor.Primary", ("label", label));
+            }
             result.Add(new(monitor.DeviceName, label, monitor));
         }
 
