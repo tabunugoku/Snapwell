@@ -7,6 +7,7 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Snapwell.Core.Commands;
+using Snapwell.Core.Localization;
 using Snapwell.Platform.Hooks;
 using Snapwell.Settings.Setup;
 using Windows.System;
@@ -37,6 +38,7 @@ public sealed partial class HotkeysPage
     private static IDisposable? AcquireCaptureSignal()
     {
         using var identity = WindowsIdentity.GetCurrent();
+        // i18n-keep: 画面に出さない開発者向けの例外
         var sid = identity.User?.Value ?? throw new InvalidOperationException("ユーザーの SID を取得できない。");
         return HotkeyCaptureMutex.TryAcquire(HotkeyCaptureSession.MutexName(sid));
     }
@@ -102,12 +104,12 @@ public sealed partial class HotkeysPage
         StopEditing();
         if (!_capture.Begin(command))
         {
-            Announce(command, "ほかの設定画面でキーを取り込み中です");
+            Announce(command, UiText.Current.Get("Hotkeys.Capture.Busy"));
             return;
         }
         _keyButtons[command].Focus(FocusState.Programmatic);
-        UpdateKeyButton(command, "キーを押してください");
-        Announce(command, "キーを押してください");
+        UpdateKeyButton(command, UiText.Current.Get("Hotkeys.Capture.PressKey"));
+        Announce(command, UiText.Current.Get("Hotkeys.Capture.PressKey"));
     }
 
     private void StopEditing(WindowCommand? completedCommand = null)
@@ -160,7 +162,7 @@ public sealed partial class HotkeysPage
         var chord = new KeyChordSpec(modifiers, key);
         if (input == HotkeyCaptureInput.Invalid)
         {
-            const string error = "Ctrl・Alt・Shift・Win のどれかと組み合わせてください";
+            var error = UiText.Current.Get("Hotkeys.Capture.ModifierRequired");
             UpdateKeyButton(command, error, error: true);
             Announce(command, error);
             return;
@@ -168,16 +170,17 @@ public sealed partial class HotkeysPage
         var others = HotkeyEditing.FindOthers(_session.Current.Hotkeys, command, chord);
         if (others.Count > 0)
         {
-            var names = string.Join("」「", others.Select(DisplayName));
+            var names = string.Join(UiText.Current.Get("Hotkeys.Capture.NameSeparator"), others.Select(DisplayName));
             ShowConfirmation(command, chord,
-                $"「{names}」と同じキー {HotkeyCatalog.FormatChord(chord)} です。", busy: false);
+                UiText.Current.Format("Hotkeys.Capture.DuplicateMessage",
+                    ("names", names), ("chord", HotkeyCatalog.FormatChord(chord))), busy: false);
             return;
         }
         if ((!_session.Current.Hotkeys.TryGetValue(command, out var original) || original != chord) &&
             HotkeyAvailability.Check([chord]).Contains(chord))
         {
-            ShowConfirmation(command, chord, $"{HotkeyCatalog.FormatChord(chord)} は、ほかのアプリか Windows が使っているキーです。" +
-                "割り当てると、そのアプリでは使えなくなります（Windows が予約しているキーは、割り当てても Snapwell に届かないことがあります）。",
+            ShowConfirmation(command, chord, UiText.Current.Format("Hotkeys.Capture.InUseMessage",
+                ("chord", HotkeyCatalog.FormatChord(chord))),
                 busy: true);
             return;
         }
@@ -212,12 +215,15 @@ public sealed partial class HotkeysPage
         var buttons = new PresetWrapPanel();
         if (!busy)
         {
-            buttons.Children.Add(ActionButton("入れ替える", "入れ替える", !_session.IsReadOnly,
+            var swap = UiText.Current.Get("Hotkeys.Capture.Swap");
+            buttons.Children.Add(ActionButton(swap, swap, !_session.IsReadOnly,
                 () => AssignPending(AssignMode.Swap)));
         }
-        var keep = busy ? "このキーにする" : "重複のまま割り当てる";
+        var keep = busy ? UiText.Current.Get("Hotkeys.Capture.UseKey")
+            : UiText.Current.Get("Hotkeys.Capture.KeepDuplicate");
         buttons.Children.Add(ActionButton(keep, keep, !_session.IsReadOnly, () => AssignPending(AssignMode.Keep)));
-        buttons.Children.Add(ActionButton("やめる", "やめる", true, () =>
+        var cancel = UiText.Current.Get("Hotkeys.Capture.Cancel");
+        buttons.Children.Add(ActionButton(cancel, cancel, true, () =>
         {
             StopEditing();
             _keyButtons[command].Focus(FocusState.Programmatic);
@@ -331,6 +337,7 @@ public sealed partial class HotkeysPage
             FrameworkElementAutomationPeer.CreatePeerForElement(button);
         peer?.RaiseNotificationEvent(
             AutomationNotificationKind.ActionCompleted, AutomationNotificationProcessing.ImportantMostRecent,
-            $"{DisplayName(command)}: {text}", "HotkeyEditing");
+            UiText.Current.Format("Hotkeys.Capture.Announcement", ("name", DisplayName(command)), ("text", text)),
+            "HotkeyEditing");
     }
 }
