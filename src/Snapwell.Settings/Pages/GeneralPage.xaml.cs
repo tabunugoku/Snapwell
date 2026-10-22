@@ -1,6 +1,7 @@
 using System.Security;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Snapwell.Core.Localization;
 using Snapwell.Core.Settings;
 using Snapwell.Platform.Startup;
 
@@ -18,6 +19,8 @@ public sealed partial class GeneralPage : Page
     private bool _syncingEnabled = true;
     private bool _refreshing = true;
     private bool _syncingFixedSize = true;
+    private bool _syncingLanguage = true;
+    private string _languagePreference = "auto";
     private (StartupMode Mode, AutoStartState State) _lastStartup;
 
     /// <summary>同じフォルダーに本体がある場合だけ自動起動を操作できる画面を作る。</summary>
@@ -42,7 +45,7 @@ public sealed partial class GeneralPage : Page
         {
             AutoStartToggle.IsEnabled = false;
             AdminStartToggle.IsEnabled = false;
-            RegistrationStatus.Text = "Snapwell.exe が同じフォルダーにないため、自動起動を設定できません";
+            RegistrationStatus.Text = UiText.Current.Get("General.Startup.MissingExecutable");
             RegistrationStatus.Visibility = Visibility.Visible;
             return;
         }
@@ -68,19 +71,73 @@ public sealed partial class GeneralPage : Page
             var result = _deviceStore.Load();
             SetEnabledToggle(result.Value.Enabled);
             EnabledToggle.IsEnabled = !result.IsReadOnly;
+            SetLanguageSelection(result.IsReadOnly ? "auto" : result.Value.Language);
+            LanguageSelect.IsEnabled = !result.IsReadOnly;
             if (result.IsReadOnly)
             {
-                ReportEnabledFailure("新しい版の端末状態のため、有効・無効を切り替えられません。Snapwell を更新してください。");
+                ReportEnabledFailure(UiText.Current.Get("General.Device.FutureEnabled"));
             }
         }
         catch (Exception exception) when (IsFileFailure(exception))
         {
             EnabledToggle.IsEnabled = false;
-            ReportEnabledFailure("端末状態を読み取れません。ファイルの場所とアクセス権を確認して、開き直してください。");
+            SetLanguageSelection("auto");
+            LanguageSelect.IsEnabled = false;
+            ReportEnabledFailure(UiText.Current.Get("General.Device.Unreadable"));
         }
         finally
         {
             _syncingEnabled = false;
+            _syncingLanguage = false;
+        }
+    }
+
+    private void SetLanguageSelection(string preference)
+    {
+        var previous = _syncingLanguage;
+        _syncingLanguage = true;
+        try
+        {
+            _languagePreference = UiLanguageTags.NormalizePreference(preference);
+            LanguageSelect.SelectedItem = LanguageSelect.Items.OfType<ComboBoxItem>()
+                .Single(item => (string)item.Tag == _languagePreference);
+        }
+        finally { _syncingLanguage = previous; }
+    }
+
+    private void Language_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_syncingLanguage || LanguageSelect.SelectedItem is not ComboBoxItem { Tag: string preference }) { return; }
+        var previous = _languagePreference;
+        ErrorNotice.IsOpen = false;
+        try
+        {
+            var saved = DeviceStateChanges.Update(_deviceStore, state => state with { Language = preference });
+            SetLanguageSelection(saved.Language);
+            ErrorNotice.Severity = InfoBarSeverity.Informational;
+            ErrorNotice.Message = UiText.Current.Get("Language.ChangedNotice");
+            ErrorNotice.IsOpen = true;
+        }
+        catch (FutureSettingsVersionException)
+        {
+            SetLanguageSelection(previous);
+            LanguageSelect.IsEnabled = false;
+            ReportEnabledFailure(UiText.Current.Get("General.Language.Future"));
+        }
+        catch (Exception exception) when (IsFileFailure(exception))
+        {
+            SetLanguageSelection(previous);
+            try
+            {
+                var loaded = _deviceStore.Load();
+                SetLanguageSelection(loaded.Value.Language);
+                LanguageSelect.IsEnabled = !loaded.IsReadOnly;
+            }
+            catch (Exception reloadException) when (IsFileFailure(reloadException))
+            {
+                LanguageSelect.IsEnabled = false;
+            }
+            ReportEnabledFailure(UiText.Current.Get("General.Language.SaveFailed"));
         }
     }
 
@@ -114,12 +171,12 @@ public sealed partial class GeneralPage : Page
         }
         catch (FutureSettingsVersionException)
         {
-            RevertEnabled("新しい版の端末状態のため、有効・無効を切り替えられません。Snapwell を更新してください。");
+            RevertEnabled(UiText.Current.Get("General.Device.FutureEnabled"));
             EnabledToggle.IsEnabled = false;
         }
         catch (Exception exception) when (IsFileFailure(exception))
         {
-            RevertEnabled("有効・無効を保存できませんでした。ファイルの場所とアクセス権を確認してください。");
+            RevertEnabled(UiText.Current.Get("General.Device.SaveEnabledFailed"));
         }
     }
 
@@ -140,12 +197,13 @@ public sealed partial class GeneralPage : Page
 
     private void ReportEnabledFailure(string message)
     {
+        ErrorNotice.Severity = InfoBarSeverity.Error;
         ErrorNotice.Message = message;
         ErrorNotice.IsOpen = true;
     }
 
     private static bool IsFileFailure(Exception exception) =>
-        exception is UnauthorizedAccessException or IOException or System.Text.Json.JsonException;
+        exception is UnauthorizedAccessException or IOException or System.Text.Json.JsonException or SecurityException;
 
     private void Session_Changed(object? sender, EventArgs e) => SyncFixedSizeToggle();
 
@@ -193,7 +251,7 @@ public sealed partial class GeneralPage : Page
     private void ShowStatus()
     {
         RegistrationStatus.Text = _lastStartup.State == AutoStartState.Elsewhere
-            ? "別の場所の Snapwell が登録されています。オフにしてからオンにすると、このフォルダーの Snapwell に置き換えます"
+            ? UiText.Current.Get("General.Startup.Elsewhere")
             : "";
         RegistrationStatus.Visibility = RegistrationStatus.Text.Length > 0
             ? Visibility.Visible
@@ -203,12 +261,12 @@ public sealed partial class GeneralPage : Page
             (protectedLocation || _lastStartup.Mode == StartupMode.Admin);
         AutoStartToggle.IsEnabled = _startupAvailable && !_startupBusy;
         AdminStartStatus.Text = !ProtectedLocation.IsLiteralTaskPath(_executable)
-            ? "パスに % を含む場所では管理者起動を登録できません"
+            ? UiText.Current.Get("General.Startup.ExpandablePath")
             : protectedLocation ? "" :
-                "ローカル固定ディスクの保護された場所（Program Files など）に置いてください。リンクは使えません";
+                UiText.Current.Get("General.Startup.ProtectedLocation");
         if (_startup.HasPendingRunRestore)
         {
-            AdminStartStatus.Text = "元の自動起動の設定を戻せていません。管理者起動をオンにしてからオフにすると再試行します。" +
+            AdminStartStatus.Text = UiText.Current.Get("General.Startup.PendingRestore") +
                 (AdminStartStatus.Text.Length > 0 ? " " + AdminStartStatus.Text : "");
         }
 
@@ -265,23 +323,23 @@ public sealed partial class GeneralPage : Page
             if (result == StartupChangeResult.Cancelled)
             {
                 ErrorNotice.Severity = InfoBarSeverity.Informational;
-                ErrorNotice.Message = "管理者権限の許可が得られなかったため、変更していません。";
+                ErrorNotice.Message = UiText.Current.Get("General.Startup.Cancelled");
                 ErrorNotice.IsOpen = true;
             }
             else if (result != StartupChangeResult.Success)
             {
                 ErrorNotice.Message = result switch
                 {
-                    StartupChangeResult.ExpandablePath => "パスに % を含む場所では管理者起動を登録できません。",
-                    StartupChangeResult.UnprotectedLocation => "管理者以外が書き込めない場所に配置してください。",
-                    _ => "タスク スケジューラに登録できませんでした。",
+                    StartupChangeResult.ExpandablePath => UiText.Current.Get("General.Startup.ExpandablePathError"),
+                    StartupChangeResult.UnprotectedLocation => UiText.Current.Get("General.Startup.UnprotectedLocation"),
+                    _ => UiText.Current.Get("General.Startup.TaskFailed"),
                 };
                 ErrorNotice.IsOpen = true;
             }
             else if (admin && enabled)
             {
                 ErrorNotice.Severity = InfoBarSeverity.Informational;
-                ErrorNotice.Message = "次のサインインから管理者として起動します。";
+                ErrorNotice.Message = UiText.Current.Get("General.Startup.AdminNextSignIn");
                 ErrorNotice.IsOpen = true;
             }
         }
@@ -315,7 +373,7 @@ public sealed partial class GeneralPage : Page
     private void ReportFailure()
     {
         ErrorNotice.Severity = InfoBarSeverity.Error;
-        ErrorNotice.Message = "自動起動の登録を読み書きできませんでした。アクセス権を確認してください。";
+        ErrorNotice.Message = UiText.Current.Get("General.Startup.Failed");
         ErrorNotice.IsOpen = true;
     }
 

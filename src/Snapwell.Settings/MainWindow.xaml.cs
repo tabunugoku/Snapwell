@@ -2,6 +2,7 @@ using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Snapwell.Core.Localization;
 using Snapwell.Settings.Pages;
 using Windows.Graphics;
 using Windows.UI;
@@ -20,6 +21,8 @@ public sealed partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        Title = UiText.Current.Get("Window.SettingsTitle");
+        Root.Language = UiText.Current.Language.ToTag();
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(TitleBar);
         UpdateTitleBarColors();
@@ -144,8 +147,9 @@ public sealed partial class MainWindow : Window
     {
         SaveButton.IsEnabled = !_session.IsReadOnly && !_session.IsTransferInProgress;
         Navigation.IsEnabled = !_session.IsTransferInProgress;
-        ChangeStatus.Text = _session.IsReadOnly ? "読み取り専用です。保存できません。"
-            : _session.HasChanges ? "保存していない変更があります" : "保存すると、起動中の Snapwell に反映されます";
+        ChangeStatus.Text = _session.IsReadOnly ? UiText.Current.Get("MainWindow.Status.ReadOnly")
+            : _session.HasChanges ? UiText.Current.Get("MainWindow.Status.Changed")
+            : UiText.Current.Get("MainWindow.Status.SavingApplies");
     }
 
     private void Save_Click(object sender, RoutedEventArgs e) => Save();
@@ -193,11 +197,11 @@ public sealed partial class MainWindow : Window
             var dialog = new ContentDialog
             {
                 XamlRoot = Root.XamlRoot,
-                Title = "変更を保存しますか？",
-                Content = "保存していない変更があります。保存すると、起動中の Snapwell に反映されます。",
-                PrimaryButtonText = "保存して閉じる",
-                SecondaryButtonText = "保存せず閉じる",
-                CloseButtonText = "取り消す",
+                Title = UiText.Current.Get("MainWindow.Close.Title"),
+                Content = UiText.Current.Get("MainWindow.Close.Message"),
+                PrimaryButtonText = UiText.Current.Get("Common.SaveAndClose"),
+                SecondaryButtonText = UiText.Current.Get("Common.CloseWithoutSaving"),
+                CloseButtonText = UiText.Current.Get("Common.Cancel"),
                 IsPrimaryButtonEnabled = !_session.IsReadOnly,
                 DefaultButton = ContentDialogButton.Close,
             };

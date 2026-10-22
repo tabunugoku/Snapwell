@@ -2,6 +2,7 @@ using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.Principal;
 using Microsoft.Win32.SafeHandles;
+using Snapwell.Core.Localization;
 
 namespace Snapwell.Settings;
 
@@ -10,9 +11,14 @@ internal static partial class SettingsWindowActivator
 {
     internal static void Activate(string sid)
     {
-        if (!Activate(sid, "Snapwell の設定"))
+        foreach (var language in Enum.GetValues<UiLanguage>())
         {
-            Activate(sid, "Snapwell の初回セットアップ");
+            var catalog = TextCatalog.Load(language);
+            if (Activate(sid, catalog.Get("Window.SettingsTitle")) ||
+                Activate(sid, catalog.Get("Window.SetupTitle")))
+            {
+                return;
+            }
         }
     }
 

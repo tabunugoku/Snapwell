@@ -1,5 +1,6 @@
 using Snapwell.App.Overlay;
 using Snapwell.Core.Geometry;
+using Snapwell.Core.Localization;
 using Snapwell.Core.Overlay;
 using Snapwell.Core.Tray;
 
@@ -15,6 +16,9 @@ internal sealed class TrayMenuRenderer : IDisposable
     private readonly OverlayFrame[] _rows;
     // トグルのアニメ中は項目の領域が変わらないので、選択と操作方法が同じ間は合成結果を使い回す。
     private (int Selected, bool Keyboard, OverlayFrame Frame)? _items;
+
+    /// <summary>モニター数を現在の言語の単数形または複数形で表す。</summary>
+    internal static string MonitorDescription(int count) => UiText.Current.Plural("Tray.Monitors", count);
 
     internal TrayMenuRenderer(TrayMenuSnapshot snapshot)
     {
@@ -50,7 +54,7 @@ internal sealed class TrayMenuRenderer : IDisposable
                 10.5, tagText, bold: true, center: true);
             if (!layout.IsCompact)
             {
-                Text(_background, $"モニター構成: {snapshot.MonitorCount} 画面", layout.Rect(17, 58, 286, 22),
+                Text(_background, MonitorDescription(snapshot.MonitorCount), layout.Rect(17, 58, 286, 22),
                     11.5, _palette.Muted);
             }
             if (snapshot.Status is { } status)

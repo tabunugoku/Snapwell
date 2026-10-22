@@ -9,6 +9,7 @@ using Snapwell.App.Tests.Overlay;
 using Snapwell.App.Tray;
 using Snapwell.Core.Commands;
 using Snapwell.Core.Geometry;
+using Snapwell.Core.Localization;
 using Snapwell.Core.Rules;
 using Snapwell.Core.Settings;
 using Snapwell.Core.Tray;
@@ -17,8 +18,65 @@ using Snapwell.Platform.Windows;
 
 namespace Snapwell.App.Tests.Lifecycle;
 
+[Collection("UI language")]
 public sealed class AppHostTests
 {
+    /// <summary>端末状態の通知で言語を切り替え、トレイを一度だけ更新する。</summary>
+    [Fact]
+    public void DeviceLanguageChangeUpdatesCatalogAndTrayExactlyOnce()
+    {
+        var previous = UiText.Current.Language;
+        try
+        {
+            using var fixture = new Fixture(new() { Language = "en" }, watchDevice: true);
+            Assert.True(fixture.Host.Start());
+            Assert.Equal(UiLanguage.English, UiText.Current.Language);
+            var updates = fixture.Tray.Updates;
+            fixture.Device.ReloadResult = new(new() { Language = "zh-Hant" });
+            fixture.DeviceWatcher.Notify();
+            Assert.Equal(UiLanguage.ChineseTraditional, UiText.Current.Language);
+            Assert.Equal(updates + 1, fixture.Tray.Updates);
+            Assert.Equal("Snapwell（已暫停）", TrayIconPolicy.Tip(fixture.Tray.State! with { Enabled = false }));
+        }
+        finally { UiText.Use(previous); }
+    }
+
+    /// <summary>未来の版の言語は使わず、同じ端末状態に戻った場合も言語を復帰する。</summary>
+    [Fact]
+    public void ReadOnlyDeviceUsesOsLanguageAndRestoresPreferenceWhenReadableAgain()
+    {
+        var previous = UiText.Current.Language;
+        try
+        {
+            using var fixture = new Fixture(new() { Language = "en" }, watchDevice: true, osTag: "zh-CN");
+            fixture.Device.ReadOnly = true;
+            Assert.True(fixture.Host.Start());
+            Assert.Equal(UiLanguage.ChineseSimplified, UiText.Current.Language);
+            fixture.Device.ReadOnly = false;
+            fixture.DeviceWatcher.Notify();
+            Assert.Equal(UiLanguage.English, UiText.Current.Language);
+            fixture.Device.ReadOnly = true;
+            fixture.DeviceWatcher.Notify();
+            Assert.Equal(UiLanguage.ChineseSimplified, UiText.Current.Language);
+        }
+        finally { UiText.Use(previous); }
+    }
+
+    /// <summary>OS の言語を取得できないときは、自動の言語を英語にする。</summary>
+    [Fact]
+    public void MissingOsTagStartsInEnglish()
+    {
+        var previous = UiText.Current.Language;
+        try
+        {
+            using var fixture = new Fixture(osTag: null);
+            Assert.True(fixture.Host.Start());
+            Assert.Equal(UiLanguage.English, UiText.Current.Language);
+            Assert.NotNull(fixture.Tray.State);
+        }
+        finally { UiText.Use(previous); }
+    }
+
     /// <summary>ルールだけの再読込では Runtime を交換せず、同じルールの再通知でも更新しない。</summary>
     [Fact]
     public void RulesOnlyReloadUpdatesExistingRuntimeWithoutCancelingDrag()
@@ -1350,7 +1408,7 @@ public sealed class AppHostTests
 
         internal Fixture(DeviceState? state = null, bool watchDevice = false,
             ISettingsStore<DeviceState>? deviceStore = null, Func<TimeSpan, CancellationToken, Task>? retryDelay = null,
-            ISettingsSyncService? sync = null, Action<bool>? setReplaceWinArrow = null)
+            ISettingsSyncService? sync = null, Action<bool>? setReplaceWinArrow = null, string? osTag = "ja-JP")
         {
             Instance = new(Calls);
             Guard = new(Calls);
@@ -1367,7 +1425,7 @@ public sealed class AppHostTests
                     SettingsSeen.Add(settings);
                     return runtime;
                 }, Watcher, () => SetupOpens++, watchDevice ? DeviceWatcher : null, retryDelay, sync,
-                setReplaceWinArrow);
+                setReplaceWinArrow, osTag);
         }
 
         public void Dispose() => Host.Shutdown();
@@ -1489,8 +1547,9 @@ public sealed class AppHostTests
         public event Action? ExitRequested;
         public event Action? SessionEnding;
         internal TrayState? State;
+        internal int Updates;
         public void Show(TrayState state) { State = state; calls.Enqueue("tray.show"); }
-        public void Update(TrayState state) => State = state;
+        public void Update(TrayState state) { State = state; Updates++; }
         public void Remove() => calls.Enqueue("tray.remove");
         internal bool QueuePosts;
         internal ConcurrentQueue<Action> Posted { get; } = new();

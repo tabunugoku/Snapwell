@@ -1,4 +1,5 @@
 using Snapwell.Core.Geometry;
+using Snapwell.Core.Localization;
 using Snapwell.Core.Overlay;
 using Snapwell.Core.Tray;
 
@@ -14,9 +15,9 @@ internal sealed record TrayMenuSnapshot(TrayMenuLayout Layout, IReadOnlyList<Tra
     /// <summary>色だけに頼らず実行状態を伝える。</summary>
     internal string StatusLabel => IconKind switch
     {
-        TrayIconKind.Attention => "異常",
-        TrayIconKind.Paused => "一時停止中",
-        _ => "有効",
+        TrayIconKind.Attention => UiText.Current.Get("Tray.Status.Error"),
+        TrayIconKind.Paused => UiText.Current.Get("Tray.Status.Paused"),
+        _ => UiText.Current.Get("Tray.Status.Active"),
     };
 }
 

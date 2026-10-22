@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Snapwell.Core.Tests" />
+    <EmbeddedResource Include="Localization/Strings/*.json" LogicalName="i18n/%(Filename)%(Extension)" />
   </ItemGroup>
 
 </Project>
