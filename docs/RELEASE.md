@@ -35,3 +35,10 @@
 - **LICENSE**: リポジトリは非公開で、ライセンスを置いていない。公開する前に決める（`THIRD_PARTY_NOTICES.md` は zip に入る）
 - **ARM64 の実行テスト**: GitHub の ARM64 ランナーは非公開リポジトリでは使えない。CI は ARM64 をビルドまでしか確かめない
 - **ランナーの前提**: NativeAOT のリンクには Visual Studio の C++ ツール（x64・ARM64）が要る。`windows-latest` のイメージに入っている前提で、初回の実行で確かめること（入っていなければ手順を足す）
+
+## ホームページ（GitHub Pages）
+- `site/` が公開元。main に `site/**` の変更が入ると `.github/workflows/pages.yml` が公開する。URL は `https://tabunugoku.github.io/Snapwell/`
+- 初回だけ、リポジトリの Settings → Pages の Source を「GitHub Actions」にする
+- **非公開のリポジトリから公開するには、GitHub Pro 以上が要る**。無料のプランでは、リポジトリを公開にする必要がある（その場合は、先に LICENSE を決める）
+- ダウンロードのボタンは `releases/download/v1.0.0/Snapwell-1.0.0-win-<rid>.zip` を直接指す。v1.0.0 のリリースを公開するまでは 404 になる。公開は、ページと同じ日にそろえる
+- 動きは feel のランタイムで動かしている（`site/js/feel.js`、`THIRD_PARTY_NOTICES.md` に記載）。`transition` や `cubic-bezier` を足さない
