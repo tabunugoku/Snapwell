@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.UI.Dispatching;
+using Snapwell.Core.Localization;
 using Snapwell.Core.Rules;
 using Snapwell.Core.Settings;
 using Snapwell.Platform.Windows;
@@ -30,13 +31,13 @@ public sealed class SettingsSession
             Current = SettingsTransfer.Normalize(_saved);
             IsReadOnly = result.IsReadOnly;
             LoadMessage = result.IsReadOnly
-                ? "新しい版の設定のため、この画面では保存できません。Snapwell を更新してください。"
-                : result.ResetToDefaults ? "設定ファイルが壊れていたため、既定値を表示しています。" : null;
+                ? UiText.Current.Get("Session.Load.Future")
+                : result.ResetToDefaults ? UiText.Current.Get("Session.Load.Defaults") : null;
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException)
         {
             IsReadOnly = true;
-            LoadMessage = "設定ファイルを読み取れません。ファイルの場所とアクセス権を確認して、開き直してください。";
+            LoadMessage = UiText.Current.Get("Session.Load.Failed");
         }
         StartWatching();
         // セッションは画面全体で共有するため、ページ遷移ではなく UI スレッドの終了まで監視する。
@@ -87,7 +88,7 @@ public sealed class SettingsSession
     {
         if (IsReadOnly)
         {
-            message = "この設定は読み取り専用のため、保存できません。";
+            message = UiText.Current.Get("Session.Save.ReadOnly");
             return false;
         }
 
@@ -95,32 +96,32 @@ public sealed class SettingsSession
         {
             if (!SettingsSync.WithLock(SettingsStores.PortablePath(), () => _store.Save(Current), _saveLockTimeout))
             {
-                message = "同期の実行中のため、少し待ってからもう一度保存してください。";
+                message = UiText.Current.Get("Session.Save.Busy");
                 return false;
             }
             _saved = SettingsTransfer.Normalize(Current);
             HasChanges = false;
             SyncMessage = null;
             StartWatching();
-            message = "保存しました。Snapwell が起動していれば、すぐに反映されます。";
+            message = UiText.Current.Get("Session.Save.Saved");
         }
         catch (FutureSettingsVersionException)
         {
             IsReadOnly = true;
-            message = "新しい版の設定に変わったため、保存できません。Snapwell を更新して開き直してください。";
+            message = UiText.Current.Get("Session.Save.Future");
             Changed?.Invoke(this, EventArgs.Empty);
             return false;
         }
         catch (ArgumentException exception) when (exception.ParamName == nameof(PortableSettings.WindowRules))
         {
             // 手で書き換えられたファイルやインポートで、不正なルールが残っていることがある。保存は止め、編集中の値は保つ。
-            message = "アプリごとのルールに保存できないものがあります。「アプリのルール」で条件を直すか、削除してください。";
+            message = UiText.Current.Get("Session.Save.InvalidRules");
             return false;
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException or
             InvalidOperationException)
         {
-            message = "保存できませんでした。ファイルの場所とアクセス権を確認して、もう一度保存してください。";
+            message = UiText.Current.Get("Session.Save.Failed");
             return false;
         }
 
@@ -144,19 +145,19 @@ public sealed class SettingsSession
             if (decision == SettingsSyncReloadKind.ReadOnly)
             {
                 IsReadOnly = true;
-                SyncMessage = "新しい版の設定のため同期できません。Snapwell を更新してください。";
+                SyncMessage = UiText.Current.Get("Session.Sync.Future");
             }
             else if (decision == SettingsSyncReloadKind.KeepEdits)
             {
                 IsReadOnly = false;
-                SyncMessage = "同期先の設定を取り込みました。未保存の変更は、保存すると取り込んだ内容を上書きします。";
+                SyncMessage = UiText.Current.Get("Session.Sync.KeepEdits");
             }
             else
             {
                 _saved = SettingsTransfer.Normalize(loaded.Value);
                 Current = SettingsTransfer.Normalize(_saved);
                 IsReadOnly = false;
-                SyncMessage = "同期先の設定を取り込みました。";
+                SyncMessage = UiText.Current.Get("Session.Sync.Imported");
                 replaced = true;
             }
             Changed?.Invoke(this, EventArgs.Empty);
@@ -170,7 +171,7 @@ public sealed class SettingsSession
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException)
         {
-            SyncMessage = "取り込んだ設定を再読み込みできませんでした。画面を開き直してください。";
+            SyncMessage = UiText.Current.Get("Session.Sync.ReloadFailed");
             Changed?.Invoke(this, EventArgs.Empty);
         }
         finally
