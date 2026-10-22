@@ -99,8 +99,6 @@
                                 <ComboBoxItem Tag="auto" l:Loc.Uid="General_LanguageAuto" />
                                 <ComboBoxItem Tag="ja" l:Loc.Uid="General_LanguageJapanese" />
                                 <ComboBoxItem Tag="en" l:Loc.Uid="General_LanguageEnglish" />
-                                <ComboBoxItem Tag="zh-Hans" l:Loc.Uid="General_LanguageChineseSimplified" />
-                                <ComboBoxItem Tag="zh-Hant" l:Loc.Uid="General_LanguageChineseTraditional" />
                             </ComboBox>
                         </StackPanel>
                     </Grid>
