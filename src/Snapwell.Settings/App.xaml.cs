@@ -21,12 +21,14 @@ public partial class App : Application
         UiText.Use(language);
         Microsoft.Windows.Globalization.ApplicationLanguages.PrimaryLanguageOverride = language.ToTag();
         InitializeComponent();
-        SettingsLanguage.ApplyFonts(Resources, language);
     }
 
     /// <summary>設定のウィンドウを開く。</summary>
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
+        // コンストラクターの中では Application.Resources を読めない (E_UNEXPECTED、ARM64 の NativeAOT で確認)。
+        // 書体の差し替えは、スタイルが使われる前の、窓を作る直前に行う。
+        SettingsLanguage.ApplyFonts(Resources, UiText.Current.Language);
         using var identity = WindowsIdentity.GetCurrent();
         var sid = identity.User?.Value ?? throw new InvalidOperationException("ユーザーの SID を取得できない。");
         var setup = Environment.GetCommandLineArgs().Skip(1).Contains("--setup", StringComparer.Ordinal);
