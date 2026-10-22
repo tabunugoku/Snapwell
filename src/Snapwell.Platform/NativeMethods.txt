@@ -87,3 +87,5 @@ GetShellWindow
 CreateProcessWithTokenW
 QueryFullProcessImageNameW
 GetProcessTimes
+GetUserDefaultUILanguage
+LCIDToLocaleName

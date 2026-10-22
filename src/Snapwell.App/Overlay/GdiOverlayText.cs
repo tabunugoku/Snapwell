@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using Snapwell.Core.Geometry;
+using Snapwell.Core.Localization;
 using Snapwell.Core.Overlay;
 
 namespace Snapwell.App.Overlay;
@@ -8,7 +9,7 @@ namespace Snapwell.App.Overlay;
 internal sealed unsafe partial class GdiOverlayText : IDisposable
 {
     private readonly nint _dc;
-    private readonly Dictionary<(int Height, bool Mono, bool Bold, bool Japanese), nint> _fonts = [];
+    private readonly Dictionary<(int Height, bool Mono, bool Bold, string Face), nint> _fonts = [];
     private readonly double _scale;
 
     internal GdiOverlayText(double scale)
@@ -31,10 +32,25 @@ internal sealed unsafe partial class GdiOverlayText : IDisposable
 
     /// <summary>縮小後も維持する元サイズの文字幅を論理 px で測る。</summary>
     internal double Measure(string text, double size, bool mono, bool bold = false)
-        => SplitRuns(text, mono).Sum(run => MeasureRunPixels(run, size, mono, bold)) / _scale;
+    {
+        var catalog = UiText.Current;
+        var face = CjkFontFamily(catalog.Language);
+        return SplitRuns(text, mono).Sum(run => MeasureRunPixels(run, size, mono, bold, face)) / _scale;
+    }
 
-    /// <summary>等幅の数字と記号を保ち、非 ASCII の連続を日本語用のフォントへ分ける。</summary>
-    internal static (string Value, bool Japanese)[] SplitRuns(string text, bool mono, bool spaced = false)
+    /// <summary>非 ASCII の文字を描く書体を言語から選ぶ。</summary>
+    internal static string CjkFontFamily(UiLanguage language) => language switch
+    {
+        UiLanguage.ChineseSimplified => "Microsoft YaHei UI",
+        UiLanguage.ChineseTraditional => "Microsoft JhengHei UI",
+        _ => "Yu Gothic UI",
+    };
+
+    private static bool UsesCjk((string Value, bool Cjk) run, bool mono) =>
+        run.Cjk || !mono && run.Value.Any(value => value > 0x7F && value is not ('×' or '·'));
+
+    /// <summary>等幅の数字と記号を保ち、非 ASCII の連続を CJK 用のフォントへ分ける。</summary>
+    internal static (string Value, bool Cjk)[] SplitRuns(string text, bool mono, bool spaced = false)
     {
         if (text.Length == 0)
         {
@@ -42,12 +58,12 @@ internal sealed unsafe partial class GdiOverlayText : IDisposable
         }
 
         // サイズ表示の × と · は Cascadia Mono に字形があるため、数字と同じ run に残す。
-        static bool Japanese(int value) => value > 0x7F && value is not ('×' or '·');
+        static bool Cjk(int value) => value > 0x7F && value is not ('×' or '·');
 
         if (spaced)
         {
             return text.EnumerateRunes().Select(rune =>
-                (rune.ToString(), mono && Japanese(rune.Value))).ToArray();
+                (rune.ToString(), mono && Cjk(rune.Value))).ToArray();
         }
 
         if (!mono)
@@ -55,13 +71,13 @@ internal sealed unsafe partial class GdiOverlayText : IDisposable
             return [(text, false)];
         }
 
-        var runs = new List<(string Value, bool Japanese)>();
+        var runs = new List<(string Value, bool Cjk)>();
         var start = 0;
         for (var index = 1; index <= text.Length; index++)
         {
-            if (index == text.Length || Japanese(text[index]) != Japanese(text[start]))
+            if (index == text.Length || Cjk(text[index]) != Cjk(text[start]))
             {
-                runs.Add((text[start..index], Japanese(text[start])));
+                runs.Add((text[start..index], Cjk(text[start])));
                 start = index;
             }
         }
@@ -69,10 +85,10 @@ internal sealed unsafe partial class GdiOverlayText : IDisposable
         return runs.ToArray();
     }
 
-    private int MeasureRunPixels((string Value, bool Japanese) run, double size, bool mono, bool bold,
+    private int MeasureRunPixels((string Value, bool Cjk) run, double size, bool mono, bool bold, string face,
         int samples = 1)
     {
-        var previous = SelectObject(_dc, Font(size, mono, bold, samples, run.Japanese));
+        var previous = SelectObject(_dc, Font(size, mono, bold, samples, UsesCjk(run, mono), face));
         try
         {
             var rect = new NativeRect();
@@ -93,6 +109,7 @@ internal sealed unsafe partial class GdiOverlayText : IDisposable
     internal void Draw(OverlayFrame frame, PixelRect area, LauncherText text, OverlayColor color,
         bool centerFontBody = false)
     {
+        var catalog = UiText.Current;
         var bounds = text.Bounds;
         if (text.Value.Length == 0 || bounds.Width == 0 || bounds.Height == 0)
         {
@@ -100,24 +117,24 @@ internal sealed unsafe partial class GdiOverlayText : IDisposable
         }
 
         // 文字はすべて 4 倍解像度で描いて縮小する (区画のサイズ表示も同じ。短い文字列のため差分描画でも軽い)。
-        var mask = SupersampledMask(text, color, centerFontBody);
+        var mask = SupersampledMask(text, color, centerFontBody, CjkFontFamily(catalog.Language));
         OverlayPainter.Composite(frame, mask, bounds.X - area.X, bounds.Y - area.Y);
     }
 
-    private OverlayFrame SupersampledMask(LauncherText text, OverlayColor color, bool centerFontBody)
+    private OverlayFrame SupersampledMask(LauncherText text, OverlayColor color, bool centerFontBody, string face)
     {
         const int Samples = 4;
         var bounds = text.Bounds;
         var result = OverlayPainter.Create(bounds.Width, bounds.Height);
         var runs = SplitRuns(text.Value, text.Mono, text.LetterSpacing > 0);
-        var widths = runs.Select(run => MeasureRunPixels(run, text.Size, text.Mono, text.Bold)).ToArray();
+        var widths = runs.Select(run => MeasureRunPixels(run, text.Size, text.Mono, text.Bold, face)).ToArray();
         var spacing = text.LetterSpacing * _scale;
         var measuredWidth = widths.Sum() + Math.Max(0, runs.Length - 1) * spacing;
         var x = text.Center ? CenteredTextLeft(bounds.Width, measuredWidth) : 0;
         for (var index = 0; index < runs.Length; index++)
         {
             var width = widths[index];
-            var sourceWidth = MeasureRunPixels(runs[index], text.Size, text.Mono, text.Bold, Samples);
+            var sourceWidth = MeasureRunPixels(runs[index], text.Size, text.Mono, text.Bold, face, Samples);
             if (width > 0 && sourceWidth > 0)
             {
                 // 計測は元のフォントのままにし、高解像度で変わる送り幅だけを縮小時に合わせる。
@@ -128,7 +145,7 @@ internal sealed unsafe partial class GdiOverlayText : IDisposable
                     Center = false,
                     LetterSpacing = 0,
                 };
-                var font = Font(text.Size, text.Mono, text.Bold, Samples, runs[index].Japanese);
+                var font = Font(text.Size, text.Mono, text.Bold, Samples, UsesCjk(runs[index], text.Mono), face);
                 var mask = Rasterize(run, color, font, Samples, width, centerFontBody);
                 var left = text.LetterSpacing > 0 ? (int)Math.Round(x) : (int)x;
                 OverlayPainter.Composite(result, mask, left, 0);
@@ -287,16 +304,17 @@ internal sealed unsafe partial class GdiOverlayText : IDisposable
         DeleteDC(_dc);
     }
 
-    private nint Font(double size, bool mono, bool bold, int samples = 1, bool japanese = false)
+    private nint Font(double size, bool mono, bool bold, int samples = 1, bool cjk = false,
+        string cjkFace = "Yu Gothic UI")
     {
         var height = Math.Max(1, (int)Math.Round(size * _scale * samples));
-        var key = (height, mono, bold, japanese);
+        var requested = cjk ? cjkFace : mono ? "Cascadia Mono" : "Segoe UI Variable Text";
+        var key = (height, mono, bold, requested);
         if (_fonts.TryGetValue(key, out var cached))
         {
             return cached;
         }
 
-        var requested = japanese ? "Yu Gothic UI" : mono ? "Cascadia Mono" : "Segoe UI Variable Text";
         var font = CreateFont(requested, height, bold);
         var previous = SelectObject(_dc, font);
         Span<char> face = stackalloc char[64];
@@ -311,9 +329,9 @@ internal sealed unsafe partial class GdiOverlayText : IDisposable
         if (!string.Equals(resolved, requested, StringComparison.OrdinalIgnoreCase))
         {
             DeleteObject(font);
-            if (japanese)
+            if (cjk)
             {
-                // 日本語用の書体がなければ従来のフォントを共有する。Dispose で重複を除いて解放する。
+                // CJK 用の書体がなければ従来のフォントを共有する。Dispose で重複を除いて解放する。
                 font = Font(size, mono, bold, samples);
                 _fonts.Add(key, font);
                 return font;

@@ -45,7 +45,7 @@ public sealed class GdiOverlayTextTests
     {
         var runs = GdiOverlayText.SplitRuns(value, true);
         Assert.Equal(values, runs.Select(run => run.Value));
-        Assert.Equal(japanese, runs.Select(run => run.Japanese));
+        Assert.Equal(japanese, runs.Select(run => run.Cjk));
         Assert.Equal(value, string.Concat(runs.Select(run => run.Value)));
     }
 
@@ -56,8 +56,8 @@ public sealed class GdiOverlayTextTests
         Assert.Equal(("A区画·×B", false), Assert.Single(GdiOverlayText.SplitRuns("A区画·×B", false)));
         var spaced = GdiOverlayText.SplitRuns("A😀区·×", true, spaced: true);
         Assert.Equal(new[] { "A", "😀", "区", "·", "×" }, spaced.Select(run => run.Value));
-        Assert.Equal(new[] { false, true, true, false, false }, spaced.Select(run => run.Japanese));
-        Assert.All(GdiOverlayText.SplitRuns("A区画", false, spaced: true), run => Assert.False(run.Japanese));
+        Assert.Equal(new[] { false, true, true, false, false }, spaced.Select(run => run.Cjk));
+        Assert.All(GdiOverlayText.SplitRuns("A区画", false, spaced: true), run => Assert.False(run.Cjk));
     }
 
     /// <summary>中央ラベルの実測幅と各 run の描画幅をそろえ、四倍描画でも同じ位置と画素に収める。</summary>

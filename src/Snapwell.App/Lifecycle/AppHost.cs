@@ -1,5 +1,6 @@
 using Snapwell.App.Hotkeys;
 using Snapwell.Core.Commands;
+using Snapwell.Core.Localization;
 using Snapwell.Core.Settings;
 
 namespace Snapwell.App.Lifecycle;
@@ -17,6 +18,7 @@ internal sealed class AppHost
     private const int DeviceReloadRetryLimit = 3;
 
     private readonly object _gate = new();
+    private readonly string? _osTag;
     private readonly ISingleInstance _instance;
     private readonly ISnapGuard _guard;
     private readonly ISettingsStore<PortableSettings> _portableStore;
@@ -61,8 +63,9 @@ internal sealed class AppHost
         IAppLog log, Action restoreCorners, RuntimeFactory createRuntime, ISettingsWatcher? watcher = null,
         Action? openSetup = null, ISettingsWatcher? deviceWatcher = null,
         Func<TimeSpan, CancellationToken, Task>? retryDelay = null, ISettingsSyncService? sync = null,
-        Action<bool>? setReplaceWinArrow = null)
+        Action<bool>? setReplaceWinArrow = null, string? osTag = null)
     {
+        _osTag = osTag;
         _instance = instance;
         _guard = guard;
         _portableStore = portableStore;
@@ -133,6 +136,7 @@ internal sealed class AppHost
             var device = _deviceStore.Load();
             _device = device.Value;
             _deviceReadOnly = device.IsReadOnly;
+            ApplyLanguage(_device);
             _enabled = _device.Enabled;
             _setReplaceWinArrow?.Invoke(_device.ReplaceWinArrow);
             if (!device.IsReadOnly) { _sync?.Configure(_device); }
@@ -255,7 +259,11 @@ internal sealed class AppHost
 
                 _deviceReloadStatus = null;
                 _deviceReadOnly = loaded.IsReadOnly;
-                if (_deviceReadOnly) { _sync?.Configure(new()); }
+                ApplyLanguage(loaded.Value);
+                if (_deviceReadOnly)
+                {
+                    _sync?.Configure(new());
+                }
                 if (!loaded.IsReadOnly)
                 {
                     // 保存できなかった一時停止は、古いディスクの有効状態では解除しない。
@@ -741,6 +749,7 @@ internal sealed class AppHost
     {
         var pausing = _enabled && !device.Enabled;
         _device = device;
+        ApplyLanguage(device);
         _enabled = device.Enabled;
         _setReplaceWinArrow?.Invoke(device.ReplaceWinArrow);
         if (!_enabled || !device.DisableStandardSnap || !device.StandardSnapConsentGiven)
@@ -758,6 +767,12 @@ internal sealed class AppHost
             Cleanup(() => _runtime?.CancelAll());
         }
         if (!_deviceReadOnly) { _sync?.Configure(device); }
+    }
+
+    private void ApplyLanguage(DeviceState device)
+    {
+        var language = UiLanguageResolver.Resolve(_deviceReadOnly ? "auto" : device.Language, _osTag);
+        if (UiText.Current.Language != language) { UiText.Use(language); }
     }
 
     private void SaveDevice(Func<DeviceState, DeviceState> update)
