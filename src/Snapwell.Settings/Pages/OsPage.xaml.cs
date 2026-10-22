@@ -184,9 +184,9 @@ public sealed partial class OsPage : Page
                     {
                         XamlRoot = XamlRoot,
                         Title = "Windows 標準のスナップを停止しますか？",
-                        Content = "Windows の設定アプリの「ウィンドウのスナップ」をこのセッションで停止します。" +
+                        Content = "Windows の設定アプリの「ウィンドウのスナップ」を、Snapwell が有効な間だけ停止します。" +
                             "ドラッグでのスナップ・最大化ボタンのメニュー・画面上端のスナップ バーが一緒に止まります。" +
-                            "Snapwell の一時停止時と終了時には、変更前の設定に戻します。",
+                            "Snapwell を無効にしたとき・終了したとき・異常終了のあとに起動したときに、変更前の設定に戻します。",
                         PrimaryButtonText = "停止する",
                         CloseButtonText = "やめる",
                         DefaultButton = ContentDialogButton.Close,
