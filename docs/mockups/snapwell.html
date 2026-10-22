@@ -981,7 +981,7 @@ table.list tr:last-child td { border-bottom: 0; }
             <p class="hint" style="margin: 0 0 8px">Ctrl+Alt+Shift+矢印キーで、前面のウィンドウを区画単位で広げたり縮めたりします（キーはホットキーのページで変えられます）。</p>
             <div class="rows">
               <div class="row"><div><div class="t">1 回の拡大・縮小の幅</div></div><div class="ctl"><select class="input" style="width: 160px"><option>1 区画</option><option>2 区画</option><option>3 区画</option><option>4 区画</option></select></div></div>
-              <div class="row"><div><div class="t">固定する位置</div><div class="d">拡大・縮小するときに動かさない辺</div></div><div class="ctl"><select class="input" id="hkAnchorSel" style="width: 160px"><option>左上</option><option>中心</option><option>近い辺</option></select></div></div>
+              <div class="row"><div><div class="t">固定する位置</div><div class="d">拡大・縮小するときに動かさない位置</div></div><div class="ctl"><select class="input" id="hkAnchorSel" style="width: 160px"><option>左上</option><option>中心</option><option>近い辺</option></select></div></div>
               </div>
             <div class="group-title">マウスでのリサイズ</div>
             <div class="rows">
@@ -2210,7 +2210,7 @@ function initKeysPage() {
     ['隣へ寄せる', '上の隣へ寄せる', S + 'I'], ['隣へ寄せる', '下の隣へ寄せる', S + 'K'],
     ['そのほか', 'ランチャーを開く', M + 'Space'], ['そのほか', '一時停止・再開', M + 'Pause'],
   ].map(([group, name, def], id) => ({ id, group, name, def, chord: def }));
-  // 広げる・縮めるの 4 操作は、動かさない辺（「分割と間隔」ページの「固定する位置」）で動きが変わるので、名前も合わせる
+  // 広げる・縮めるの 4 操作は、動かさない位置（「分割と間隔」ページの「固定する位置」）で動きが変わるので、名前も合わせる
   const RESIZE_NAMES = {
     '右へ 1 区画広げる': { 中心: '幅を左右へ 1 区画広げる', 近い辺: '幅を 1 区画広げる' },
     '下へ 1 区画広げる': { 中心: '高さを上下へ 1 区画広げる', 近い辺: '高さを 1 区画広げる' },
@@ -2238,7 +2238,7 @@ function initKeysPage() {
     let html = '', last = '', shown = 0;
     DEFS.filter((d) => !q || label(d).includes(q)).forEach((d) => {
       if (d.group !== last) {
-        const note = d.group === '広げる・縮める' ? ` <span class="hk-anchor">動かさない辺: ${anchorSel.value}（${ANCHOR_NOTE[anchorSel.value]}）。「分割と間隔」の「固定する位置」で変えられます</span>` : '';
+        const note = d.group === '広げる・縮める' ? ` <span class="hk-anchor">固定する位置: ${anchorSel.value}（${ANCHOR_NOTE[anchorSel.value]}）。「分割と間隔」の「固定する位置」で変えられます</span>` : '';
         html += `<tr class="hk-grp"><td colspan="4">${d.group}${note}</td></tr>`; last = d.group;
       }
       shown++;
