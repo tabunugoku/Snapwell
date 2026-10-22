@@ -1,7 +1,9 @@
+using System.Globalization;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Shapes;
+using Snapwell.Core.Localization;
 using Snapwell.Core.Physics;
 using Snapwell.Core.Settings;
 using Snapwell.Core.Snapping;
@@ -92,11 +94,13 @@ public sealed partial class FeelPage : Page
         CardSnappy.Style = !custom && feel == "Snappy" ? selectedStyle : normalStyle;
         CardHeavy.Style = !custom && feel == "Heavy" ? selectedStyle : normalStyle;
         CardBouncy.Style = !custom && feel == "Bouncy" ? selectedStyle : normalStyle;
-        FeelStateText.Text = custom ? $"カスタム（{feel} から変更）" : $"プリセット: {feel}";
+        FeelStateText.Text = custom ? UiText.Current.Format("Feel.State.Custom", ("feel", feel))
+            : UiText.Current.Format("Feel.State.Preset", ("feel", feel));
         FeelResetButton.Visibility = custom ? Visibility.Visible : Visibility.Collapsed;
 
         var preset = current.ToFeelPreset();
-        DerivedValueText.Text = $"k {preset.Stiffness:F0} · c {preset.Damping:F1} · m/c {preset.CoastTime:0.00} s";
+        DerivedValueText.Text = string.Create(CultureInfo.InvariantCulture,
+            $"k {preset.Stiffness:F0} · c {preset.Damping:F1} · m/c {preset.CoastTime:0.00} s");
     }
 
     // 編集中のスライダーを動かし直すと指に逆らうため、編集元のスライダー以外へ現在の値を戻す。
