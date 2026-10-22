@@ -2,8 +2,9 @@
 <ContentDialog
     x:Class="Snapwell.Settings.Dialogs.WindowPickerDialog"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:l="using:Snapwell.Settings.Localization"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    Title="ウィンドウを選んで追加" CloseButtonText="取り消す" DefaultButton="Close"
+    l:Loc.Uid="WindowPicker_Dialog" DefaultButton="Close"
     CornerRadius="8">
     <ContentDialog.Resources>
         <ResourceDictionary>
@@ -25,14 +26,14 @@
         </ResourceDictionary>
     </ContentDialog.Resources>
     <StackPanel Spacing="12" Width="440">
-        <TextBlock Text="いま開いているウィンドウから選びます。選ぶと、その値が入った状態で「ルールを追加」が開きます。"
+        <TextBlock l:Loc.Uid="WindowPicker_Lead"
                    Style="{StaticResource SnapwellHintTextStyle}" />
         <Border Style="{StaticResource SnapwellRowsBorderStyle}">
             <ScrollViewer MaxHeight="360" HorizontalScrollBarVisibility="Disabled">
                 <StackPanel x:Name="WindowRows" />
             </ScrollViewer>
         </Border>
-        <TextBlock x:Name="EmptyHint" Text="いま選べるウィンドウはありません。"
+        <TextBlock x:Name="EmptyHint" l:Loc.Uid="WindowPicker_EmptyHint"
                    Style="{StaticResource SnapwellHintTextStyle}" />
     </StackPanel>
 </ContentDialog>

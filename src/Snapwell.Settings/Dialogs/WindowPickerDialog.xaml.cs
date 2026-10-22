@@ -2,6 +2,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using Snapwell.Core.Localization;
 using Snapwell.Core.Rules;
 
 namespace Snapwell.Settings.Dialogs;
@@ -35,7 +36,7 @@ public sealed partial class WindowPickerDialog : ContentDialog
             {
                 content.Children.Add(new TextBlock
                 {
-                    Text = "UWP アプリは、プロセス名が共通です。クラスかタイトルで指定してください。",
+                    Text = UiText.Current.Get("Dialogs.Picker.Uwp"),
                     Style = (Style)Resources["PickWarningStyle"],
                 });
             }
@@ -45,7 +46,8 @@ public sealed partial class WindowPickerDialog : ContentDialog
                 Style = (Style)Resources["PickRowStyle"],
                 IsEnabled = !session.IsReadOnly,
             };
-            AutomationProperties.SetName(button, $"{window.Title}、{window.ProcessName}、{window.ClassName}");
+            AutomationProperties.SetName(button, UiText.Current.Format("Dialogs.Picker.WindowName",
+                ("title", window.Title), ("process", window.ProcessName ?? string.Empty), ("class", window.ClassName)));
             button.Click += (_, _) =>
             {
                 SelectedWindow = window;
