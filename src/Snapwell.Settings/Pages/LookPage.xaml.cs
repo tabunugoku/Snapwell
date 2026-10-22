@@ -1,5 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Snapwell.Core.Localization;
 using Snapwell.Core.Settings;
 
 namespace Snapwell.Settings.Pages;
@@ -15,6 +16,10 @@ public sealed partial class LookPage : Page
     {
         _session = session;
         InitializeComponent();
+        SetCornerLabel(CornerRoundItem, CardRound, CornerRoundLabel, UiText.Current.Get("Corner.Round"));
+        SetCornerLabel(CornerSmallItem, CardSmall, CornerSmallLabel, UiText.Current.Get("Corner.RoundSmall"));
+        SetCornerLabel(CornerNoneItem, CardNone, CornerNoneLabel, UiText.Current.Get("Corner.DoNotRound"));
+        SetCornerLabel(CornerDefaultItem, CardDefault, CornerDefaultLabel, UiText.Current.Get("Corner.SystemDefault"));
         Loaded += (_, _) =>
         {
             _session.Changed += Session_Changed;
@@ -22,6 +27,13 @@ public sealed partial class LookPage : Page
         };
         Unloaded += (_, _) => _session.Changed -= Session_Changed;
         Refresh();
+    }
+
+    private static void SetCornerLabel(ComboBoxItem item, Button card, TextBlock label, string text)
+    {
+        item.Content = text;
+        label.Text = text;
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(card, text);
     }
 
     private void Session_Changed(object? sender, EventArgs e) => Refresh();
@@ -112,6 +124,6 @@ public sealed partial class LookPage : Page
         var prediction = preview && PredictionLineToggle.IsOn ? Visibility.Visible : Visibility.Collapsed;
         OverlayPredLine.Visibility = prediction;
         OverlayPredDot.Visibility = prediction;
-        OverlayLegend.Text = preview ? string.Empty : "区画のプレビューがオフ: ドラッグ中は何も表示しません";
+        OverlayLegend.Text = preview ? string.Empty : UiText.Current.Get("Look.Preview.Off");
     }
 }
