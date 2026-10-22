@@ -1,7 +1,10 @@
 <!--
 多言語対応フェーズ 1 を Codex に渡すプロンプトの下書き（.claude/skills/codex-prompt のひな形に合わせた）。
 渡す前に Opus が次を埋める・確かめる:
-- <コミット>: worktree を作った origin/main のコミット（この設計のブランチを main に入れたあと）
+- 前提: このプロンプトは docs/I18N.md と docs/I18N_GLOSSARY.md を読ませる。どちらも i18n-design ブランチにしかないので、
+  (a) ユーザーの指示で i18n-design を main に入れてから origin/main で worktree を作るか、
+  (b) i18n-design から worktree を作る（下の origin/main を i18n-design に読み替える）。
+- <コミット>: worktree を作ったコミット
 - docs/I18N.md §8 の判断（とくに 1〜4・11）がユーザーの決定と食い違っていないか。食い違えば該当の項目を直す
 - 実装役: Codex（gpt-6.1-sol）。Settings・App の Win32/WinUI と Core の基盤にまたがり、項目が多いため（CLAUDE.md の目安）
 - worktree: git worktree add ../Snapwell-wt/i18n-phase1 -b codex/i18n-phase1 origin/main のあと dotnet restore（-r を付けない）
@@ -30,7 +33,9 @@
   - D: src/Snapwell.Settings/ の App.xaml、App.xaml.cs、MainWindow.xaml、MainWindow.xaml.cs、Pages/GeneralPage.xaml、Pages/GeneralPage.xaml.cs、SettingsWindowActivator.cs、Localization/ 以下 (新規)
   - E: src/Snapwell.Core/Tray/TrayMenuModel.cs、src/Snapwell.App/Program.cs、src/Snapwell.App/Lifecycle/AppHost.cs、src/Snapwell.App/Lifecycle/AppContracts.cs、src/Snapwell.App/Tray/TrayIconPolicy.cs、src/Snapwell.App/Tray/Menu/TrayMenuController.cs、src/Snapwell.App/Tray/Menu/TrayMenuRenderer.cs、src/Snapwell.App/Overlay/GdiOverlayText.cs、tests/Snapwell.App.Tests/ 以下 (新しいテストと、言語に関するテストの追加)
   - DOC: docs/DESIGN.md (§12.1 に端末状態の版 4 と Language を書く)、docs/MANUAL_TEST.md (「多言語（フェーズ 1）」の節を足す。すべて実機未確認)
-  - ほかのファイルは触らない。既存のテストの日本語の期待値は変えない (Text.Current の既定が日本語なので、そのまま通るはず)。
+  - ほかのファイルは触らない。既存のテストの日本語の期待値は変えない (UiText.Current の既定が日本語なので、そのまま通るはず)。
+  - 例外: E で AppHost のコンストラクターに引数を足した結果、既存の App のテストが AppHost を作る箇所でコンパイルできなくなる場合は、その作る箇所だけを直してよい (期待値は変えない)。できれば引数は末尾の省略可能な引数にして、既存のテストを触らずに済ませる。
+- 文言の呼び出しは必ず `UiText.Current.Get("キー")`・`UiText.Current.Format("キー", ...)`・`UiText.Current.Plural("キー", ...)` の形で、キーは文字列リテラルで書く。`UiText` に別名 (`using L = ...`) を付けない。型の名前を `Text` にしない (TrayMenuRenderer などの `Text(...)` メソッドと衝突する)。A の参照の網羅のテストが、この形だけを拾うため。
 - 項目の間で同じファイルを触らない。カタログの JSON (4 言語) は A だけが書く。D と E が使うキーは、下の一覧のとおり A で先に入れる。
 - 各項目に、変更前のコード (<コミット>) では成り立たない振る舞いを確かめるテストを足す。テストのクラス名とメソッド名は、確かめることが分かる英語の名前にする。
 - 新しく書くコメントは日本語の常体。公開する型とメソッドには 1 行の /// <summary> を書く。
@@ -41,7 +46,7 @@
 1. src/Snapwell.Core/Localization/ に次を置く (名前は docs/I18N.md §2.4 の案に従う):
    - `UiLanguage` (Japanese, English, ChineseSimplified, ChineseTraditional) と、タグとの変換 (`ja-JP`/`en-US`/`zh-Hans`/`zh-Hant`。PrimaryLanguageOverride と FrameworkElement.Language に使う) と、保存値 (`ja`/`en`/`zh-Hans`/`zh-Hant`/`auto`) との変換。
    - `UiLanguageResolver.Resolve(string? preference, string? osTag)`: docs/I18N.md §3.3 の表のとおり。
-   - `TextCatalog` (1 言語分。`Load(UiLanguage)`、`Get`、`Format`、`Plural`、`Keys`) と `Text` (`Current`、`Use`)。`Text.Current` の既定は日本語。`Use` は参照を volatile で差し替える。
+   - `TextCatalog` (1 言語分。`Load(UiLanguage)`、`Get`、`Format`、`Plural`、`Keys`) と `UiText` (`Current`、`Use`)。`UiText.Current` の既定は日本語。`Use` は参照を volatile で差し替える。
    - JSON は Strings/ja.json・en.json・zh-Hans.json・zh-Hant.json。平らなオブジェクト。`//` コメント可。`Utf8JsonReader` (`JsonCommentHandling.Skip`) で読む。csproj で EmbeddedResource (`LogicalName="i18n/%(Filename)%(Extension)"`)。
    - 足りないキー: 選んだ言語 → 英語 → キーそのもの。DEBUG では `⟦キー⟧`。
    - `Format` のプレースホルダーは名前つき `{name}`。`{{` と `}}` はかっこそのもの。値の数値は InvariantCulture。未知のプレースホルダーは残す。
@@ -58,16 +63,16 @@
    - 4 言語のキーの集合が一致する。値が空でない。
    - 各キーのプレースホルダー名の集合が 4 言語で一致する。
    - `.One` と `.Other` が対になっている。
-   - 参照の網羅: リポジトリのルート (Snapwell.sln のあるフォルダー。テストの出力フォルダーから上へたどる) の src/**/*.cs から `Text.Current.Get("…")`・`Text.Current.Format("…"`・`Text.Current.Plural("…"` のリテラルのキーを、src/**/*.xaml から `Loc.Uid="…"` を集め、Uid は `<Uid>.` で始まるキーが 1 つ以上、それ以外はキーそのものが ja.json にあること。呼び出しの形を変えるなら、この正規表現も合わせる。
-   - `Format`・`Plural`・足りないキーの落とし先。言語を変えるテストは `TextCatalog.Load` を使い、`Text.Use` を使うなら元に戻し、並列のテストと共有しない。
+   - 参照の網羅: リポジトリのルート (Snapwell.sln のあるフォルダー。テストの出力フォルダーから上へたどる) の src/**/*.cs から `UiText.Current.Get("…")`・`UiText.Current.Format("…"`・`UiText.Current.Plural("…"` のリテラルのキーを、src/**/*.xaml から `Loc.Uid="…"` を集める。Get と Format のキーはそのまま、Plural のキーは `<キー>.One` と `<キー>.Other` の両方、Uid は `<Uid>.` で始まるキーが 1 つ以上、ja.json にあること。1 件も拾えなかったら失敗にする (正規表現の誤りで空振りしないため)。
+   - `Format`・`Plural`・足りないキーの落とし先。言語を変えるテストは `TextCatalog.Load` を使い、`UiText.Use` を使うなら元に戻し、並列のテストと共有しない。
 受け入れ条件 (それぞれテストで確かめる):
 - §3.3 の表のすべての行で期待どおりの言語になる。
 - 4 言語の JSON のキーとプレースホルダーが一致し、空の値がない。
-- `Text.Current` の既定が日本語で、`Text.Current.Get("Tray.Arrange")` が「現在のモニターを整列」。
+- `UiText.Current` の既定が日本語で、`UiText.Current.Get("Tray.Arrange")` が「現在のモニターを整列」。
 - 英語で `Plural("Tray.Monitors", 1)` と `Plural("Tray.Monitors", 2)` が別の文言になる。
 競合・境界の観点:
 - 埋め込みリソースの名前が App と Settings の exe でも同じに引けること (Core のアセンブリから `GetManifestResourceStream`)。
-- `Text.Use` をフックのスレッドやオーバーレイのスレッドから読んでも安全なこと (参照の差し替えだけで、カタログ自体は変更しない)。
+- `UiText.Use` をフックのスレッドやオーバーレイのスレッドから読んでも安全なこと (参照の差し替えだけで、カタログ自体は変更しない)。
 - JSON の BOM、末尾のカンマ (`AllowTrailingCommas`)、重複キー (テストで検出して失敗させる)。
 
 【B. Core: 端末状態の言語 (設計: docs/I18N.md §3.1)】
@@ -95,10 +100,10 @@
 
 【D. Settings: 言語の適用・添付プロパティ・一般ページとナビゲーション (設計: docs/I18N.md §2.4, §3.4, §5.3)】
 作り方:
-1. App.xaml.cs のコンストラクターで、InitializeComponent の前に: 端末状態を読み (`SettingsStores.Device().Load()` の値。読めなければ "auto")、`UiLanguageResolver.Resolve(state.Language, OsLanguageSource.GetDisplayLanguageTag())` → `Text.Use` → `Microsoft.Windows.Globalization.ApplicationLanguages.PrimaryLanguageOverride = タグ` (自動のときも必ず設定する)。`Windows.Globalization.ApplicationLanguages` (OS 版) は使わない (パッケージなしで例外になる)。
+1. App.xaml.cs のコンストラクターで、InitializeComponent の前に: 端末状態を読み (`SettingsStores.Device().Load()` の値。読めなければ "auto")、`UiLanguageResolver.Resolve(state.Language, OsLanguageSource.GetDisplayLanguageTag())` → `UiText.Use` → `Microsoft.Windows.Globalization.ApplicationLanguages.PrimaryLanguageOverride = タグ` (自動のときも必ず設定する)。`Windows.Globalization.ApplicationLanguages` (OS 版) は使わない (パッケージなしで例外になる)。
 2. InitializeComponent のあと、窓を作る前に、`Resources["SnapwellUiFontFamily"]` と `Resources["ContentControlThemeFontFamily"]` を docs/I18N.md §5.3 の表の書体に差し替える。各窓のルート要素の `Language` にタグを入れる。
-3. src/Snapwell.Settings/Localization/Loc.cs: 添付プロパティ `Loc.Uid`。値が入ったら、カタログの `<Uid>.Text`・`.Content`・`.Header`・`.PlaceholderText`・`.ToolTip`・`.AutomationName` を探し、要素の型に合わせて設定する (switch で書く。リフレクションを使わない)。フェーズ 1 で要る型 (TextBlock、Button、ComboBoxItem、NavigationViewItem、ToggleSwitch、ComboBox、InfoBar の Title/Message) を必ず扱う。対応していない組み合わせは DEBUG で例外にする。
-4. MainWindow.xaml・GeneralPage.xaml の日本語の属性を `l:Loc.Uid` に置き換え、日本語の Text/Content/AutomationProperties.Name を消す。Window の Title はコードで `Text.Current.Get("Window.SettingsTitle")` を設定する。MainWindow.xaml.cs・GeneralPage.xaml.cs の文言も Text.Current に置き換える。
+3. src/Snapwell.Settings/Localization/Loc.cs: 添付プロパティ `Loc.Uid`。値が入ったら、カタログの `<Uid>.Text`・`.Content`・`.Header`・`.PlaceholderText`・`.Title`・`.Message`・`.ToolTip`・`.AutomationName` を探し (ContentDialog のボタンの 3 つはフェーズ 3 で足す)、要素の型に合わせて設定する (switch で書く。リフレクションを使わない)。フェーズ 1 で要る型 (TextBlock、Button、ComboBoxItem、NavigationViewItem、ToggleSwitch、ComboBox、InfoBar の Title/Message) を必ず扱う。対応していない組み合わせは DEBUG で例外にする。
+4. MainWindow.xaml・GeneralPage.xaml の日本語の属性を `l:Loc.Uid` に置き換え、日本語の Text/Content/AutomationProperties.Name を消す。Window の Title はコードで `UiText.Current.Get("Window.SettingsTitle")` を設定する。MainWindow.xaml.cs・GeneralPage.xaml.cs の文言も UiText.Current に置き換える。
 5. 一般ページの「言語」: 「準備中」のタグと IsEnabled="False" を外す。項目は 自動／日本語／English／简体中文／繁體中文 の順。幅は 200 (モックアップに合わせた)。選んだら、有効・無効のトグルと同じ流れ (`DeviceStateChanges.Update`、新しい版・読み取り専用・失敗の InfoBar) で `Language` をすぐ保存し、成功したら Language.ChangedNotice を Informational の InfoBar で出す。ページを開いたときは、保存されている値を選んだ状態にする (このとき保存しない)。
 6. SettingsWindowActivator: 4 言語すべての Window.SettingsTitle と Window.SetupTitle を順に探す (`TextCatalog.Load` で各言語のタイトルを取る)。
 受け入れ条件:
@@ -114,16 +119,16 @@
 【E. App: 言語の適用とトレイ (設計: docs/I18N.md §3.4, §5.3)】
 作り方:
 1. Program.cs: 起動時に OS の表示言語のタグを 1 回だけ取り、AppHost に渡す (AppContracts.cs に必要なら引数や小さなインターフェースを足す)。
-2. AppHost: 起動時の端末状態の読み込みと `ApplyDevice` で、`UiLanguageResolver.Resolve(device.Language, osTag)` → `Text.Use`。言語が変わったら、既存の `_tray.Update(State())` の流れでホバーの文言が作り直されることを確かめる。状態の文言 (`_status` など) はこのフェーズでは変えない。
-3. TrayMenuModel.cs の 4 項目、TrayMenuController.cs の状態タグ、TrayIconPolicy.Tip、TrayMenuRenderer.cs の「モニター構成」を `Text.Current` から引く。
-4. GdiOverlayText: ASCII 以外の文字を描く書体を、`Text.Current` の言語で選ぶ (ja・en: Yu Gothic UI、zh-Hans: Microsoft YaHei UI、zh-Hant: Microsoft JhengHei UI)。書体がなければ、いまと同じく既定の書体へ落とす。フォントのキャッシュのキーに書体の名前を含め、言語を変えたあとに古い書体を使わない。`japanese` という名前は `cjk` に改める (このファイルの中だけ)。
+2. AppHost: 起動時の端末状態の読み込みと `ApplyDevice` で、`UiLanguageResolver.Resolve(device.Language, osTag)` → `UiText.Use`。言語が変わったら、既存の `_tray.Update(State())` の流れでホバーの文言が作り直されることを確かめる。状態の文言 (`_status` など) はこのフェーズでは変えない。
+3. TrayMenuModel.cs の 4 項目、TrayMenuController.cs の状態タグ、TrayIconPolicy.Tip、TrayMenuRenderer.cs の「モニター構成」を `UiText.Current` から引く。
+4. GdiOverlayText: ASCII 以外の文字を描く書体を、`UiText.Current` の言語で選ぶ (ja・en: Yu Gothic UI、zh-Hans: Microsoft YaHei UI、zh-Hant: Microsoft JhengHei UI)。書体がなければ、いまと同じく既定の書体へ落とす。フォントのキャッシュのキーに書体の名前を含め、言語を変えたあとに古い書体を使わない。`japanese` という名前は `cjk` に改める (このファイルの中だけ)。
 受け入れ条件 (それぞれテストで確かめる):
 - 既存のトレイのテスト (日本語の期待値) がそのまま通る。
-- 英語のカタログを使ったとき、トレイの 4 項目・状態タグ・ホバー・モニター構成が英語になる (`Text.Use` を使うテストは元に戻し、並列で共有しない)。
-- `ApplyDevice` に Language を変えた端末状態を渡すと、`Text.Current` の言語が変わり、トレイの更新が 1 回行われる (既存の AppHost のテストの偽物を使う)。
+- 英語のカタログを使ったとき、トレイの 4 項目・状態タグ・ホバー・モニター構成が英語になる (`UiText.Use` を使うテストは元に戻し、並列で共有しない)。
+- `ApplyDevice` に Language を変えた端末状態を渡すと、`UiText.Current` の言語が変わり、トレイの更新が 1 回行われる (既存の AppHost のテストの偽物を使う)。
 - GdiOverlayText の書体の選択が言語ごとに期待どおり (Win32 に触れない判断の関数を切り出してテストする)。
 競合・境界の観点:
-- `Text.Use` はトレイの STA から呼ぶ。オーバーレイのスレッドが描画中に言語が変わっても、1 回の描画の中で言語が混ざらないこと (描画の最初に `Text.Current` を 1 回だけ取る)。
+- `UiText.Use` はトレイの STA から呼ぶ。オーバーレイのスレッドが描画中に言語が変わっても、1 回の描画の中で言語が混ざらないこと (描画の最初に `UiText.Current` を 1 回だけ取る)。
 - NOTIFYICONDATA の szTip は 128 文字まで。英語・中国語のホバーで超えないこと (既存の切り詰めがあれば、それに従う)。
 - 端末状態が読み取り専用・新しい版のときも、言語は自動として扱い、起動を止めない。
 
