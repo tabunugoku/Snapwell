@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.Json;
 using Snapwell.Core.Commands;
 using Snapwell.Core.Layout;
+using Snapwell.Core.Localization;
 using Snapwell.Core.Rules;
 using Snapwell.Core.Snapping;
 
@@ -90,6 +91,7 @@ public static class SettingsTransfer
                 using var document = JsonDocument.Parse(stream);
                 if (IsFuture(document.RootElement))
                 {
+                    // i18n-keep: ExportAsync は Message を表示せず、転送失敗の固定文言を表示する
                     throw new FutureSettingsVersionException("新しい版の設定は上書きできない。");
                 }
             }
@@ -138,31 +140,31 @@ public static class SettingsTransfer
             var root = document.RootElement;
             if (root.ValueKind != JsonValueKind.Object)
             {
-                return Failure("設定の JSON オブジェクトがありません。");
+                return Failure(UiText.Current.Get("Transfer.Error.NotObject"));
             }
 
             if (IsFuture(root))
             {
-                return Failure("新しい版の設定のため、取り込めません。Snapwell を更新してください。");
+                return Failure(UiText.Current.Get("Transfer.Error.Future"));
             }
 
             var value = root.Deserialize(SettingsJsonContext.Default.PortableSettings);
             var imported = value is null ? null : SettingsSchema.Migrate(value, SettingsSchema.ReadVersion(root));
             if (imported is null)
             {
-                return Failure("設定が空のため、取り込めません。");
+                return Failure(UiText.Current.Get("Transfer.Error.Empty"));
             }
 
             return new(imported, GetDifferences(current, imported), null);
         }
         catch (JsonException)
         {
-            return Failure("設定ファイルが空か壊れているため、取り込めません。");
+            return Failure(UiText.Current.Get("Transfer.Error.Invalid"));
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or
             ArgumentException or NotSupportedException)
         {
-            return Failure("設定ファイルを読み取れません。ファイルの場所とアクセス権を確認してください。");
+            return Failure(UiText.Current.Get("Transfer.Error.Read"));
         }
     }
 
@@ -170,6 +172,7 @@ public static class SettingsTransfer
     public static PortableSettings Apply(PortableSettings current, SettingsImportResult result,
         IEnumerable<SettingsTransferKey>? selected = null)
     {
+        // i18n-keep: 呼び出し側は成功を確認してから適用し、転送例外の Message は表示しない
         var imported = result.Value ?? throw new InvalidOperationException("取り込めない設定は適用できない。");
         if (selected is null)
         {
@@ -236,37 +239,46 @@ public static class SettingsTransfer
     private static IReadOnlyList<SettingsDifference> Compare(PortableSettings current, PortableSettings imported)
     {
         var differences = new List<SettingsDifference>();
-        Add(SettingsField.WindowRules, "アプリごとのルール", current.WindowRules, imported.WindowRules,
+        Add(SettingsField.WindowRules, UiText.Current.Get("Transfer.Diff.WindowRules"), current.WindowRules, imported.WindowRules,
             rules => string.Join(" / ", rules.Select(rule =>
-                $"{(rule.Enabled ? "オン" : "オフ")}: {rule.ProcessName}, {rule.ClassName}, {rule.TitlePattern}, " +
-                $"{rule.Placement}, {rule.Corner}")), (left, right) => left.SequenceEqual(right));
-        Add(SettingsField.CornerPreference, "ウィンドウの角", current.CornerPreference,
+                UiText.Current.Format("Transfer.Value.Rule", ("enabled", OnOff(rule.Enabled)),
+                    ("process", rule.ProcessName), ("class", rule.ClassName), ("pattern", rule.TitlePattern),
+                    ("placement", rule.Placement), ("corner", rule.Corner)))), (left, right) => left.SequenceEqual(right));
+        Add(SettingsField.CornerPreference, UiText.Current.Get("Transfer.Diff.CornerPreference"), current.CornerPreference,
             imported.CornerPreference, CornerName);
-        Add(SettingsField.ShowZoneLines, "区画の線", current.ShowZoneLines, imported.ShowZoneLines, OnOff);
-        Add(SettingsField.ShowPredictionLine, "予測の線", current.ShowPredictionLine, imported.ShowPredictionLine, OnOff);
-        Add(SettingsField.SnapAfterResize, "手動でリサイズしたら区画にそろえる", current.SnapAfterResize,
+        Add(SettingsField.ShowZoneLines, UiText.Current.Get("Transfer.Diff.ShowZoneLines"),
+            current.ShowZoneLines, imported.ShowZoneLines, OnOff);
+        Add(SettingsField.ShowPredictionLine, UiText.Current.Get("Transfer.Diff.ShowPredictionLine"),
+            current.ShowPredictionLine, imported.ShowPredictionLine, OnOff);
+        Add(SettingsField.SnapAfterResize, UiText.Current.Get("Transfer.Diff.SnapAfterResize"), current.SnapAfterResize,
             imported.SnapAfterResize, OnOff);
-        Add(SettingsField.MoveFixedSizeWindows, "サイズ固定のウィンドウも動かす", current.MoveFixedSizeWindows,
-            imported.MoveFixedSizeWindows, OnOff);
-        Add(SettingsField.MovePopupWindows, "ポップアップとフライアウトも動かす", current.MovePopupWindows,
+        Add(SettingsField.MoveFixedSizeWindows, UiText.Current.Get("Transfer.Diff.MoveFixedSizeWindows"),
+            current.MoveFixedSizeWindows, imported.MoveFixedSizeWindows, OnOff);
+        Add(SettingsField.MovePopupWindows, UiText.Current.Get("Transfer.Diff.MovePopupWindows"), current.MovePopupWindows,
             imported.MovePopupWindows, OnOff);
-        Add(SettingsField.MonitorGrids, "モニター別の分割案", current.MonitorGrids, imported.MonitorGrids,
-            MonitorPlans, SameMonitorPlans);
-        Add(SettingsField.LauncherPresets, "ランチャーのプリセット", current.LauncherPresets,
+        Add(SettingsField.MonitorGrids, UiText.Current.Get("Transfer.Diff.MonitorGrids"),
+            current.MonitorGrids, imported.MonitorGrids, MonitorPlans, SameMonitorPlans);
+        Add(SettingsField.LauncherPresets, UiText.Current.Get("Transfer.Diff.LauncherPresets"), current.LauncherPresets,
             imported.LauncherPresets, ids => string.Join(" / ", ids), (left, right) => left.SequenceEqual(right));
-        Add(SettingsField.Grid, "分割案", current.Grid, imported.Grid, grid => $"{grid.Columns} × {grid.Rows}");
-        Add(SettingsField.Gap, "ウィンドウの間隔", current.Gap, imported.Gap, Pixels);
-        Add(SettingsField.Edge, "画面端の余白", current.Edge, imported.Edge, Pixels);
-        Add(SettingsField.Feel, "操作感", (current.Feel, current.Mass, current.Frequency, current.DampingRatio),
+        Add(SettingsField.Grid, UiText.Current.Get("Transfer.Diff.Grid"), current.Grid, imported.Grid,
+            grid => UiText.Current.Format("Transfer.Value.Grid", ("columns", grid.Columns), ("rows", grid.Rows)));
+        Add(SettingsField.Gap, UiText.Current.Get("Transfer.Diff.Gap"), current.Gap, imported.Gap, Pixels);
+        Add(SettingsField.Edge, UiText.Current.Get("Transfer.Diff.Edge"), current.Edge, imported.Edge, Pixels);
+        Add(SettingsField.Feel, UiText.Current.Get("Transfer.Diff.Feel"),
+            (current.Feel, current.Mass, current.Frequency, current.DampingRatio),
             (imported.Feel, imported.Mass, imported.Frequency, imported.DampingRatio), FeelName);
-        Add(SettingsField.SnapMode, "吸着の方式", current.SnapMode, imported.SnapMode, ModeName);
-        Add(SettingsField.ReduceMotion, "動きを減らす", current.ReduceMotion, imported.ReduceMotion, OnOff);
-        Add(SettingsField.ShowZonePreview, "区画のプレビュー", current.ShowZonePreview, imported.ShowZonePreview, OnOff);
-        Add(SettingsField.MagnetStrength, "磁石の強さ", current.MagnetStrength, imported.MagnetStrength, Strength);
-        Add(SettingsField.SnapRadius, "吸着半径", current.SnapRadius, imported.SnapRadius, Pixels);
-        Add(SettingsField.ResizeStep, "1 回の拡大・縮小の幅", current.ResizeStep, imported.ResizeStep,
-            step => $"{step} 区画");
-        Add(SettingsField.ResizeAnchor, "拡大・縮小で固定する位置", current.ResizeAnchor,
+        Add(SettingsField.SnapMode, UiText.Current.Get("Transfer.Diff.SnapMode"), current.SnapMode, imported.SnapMode, ModeName);
+        Add(SettingsField.ReduceMotion, UiText.Current.Get("Transfer.Diff.ReduceMotion"),
+            current.ReduceMotion, imported.ReduceMotion, OnOff);
+        Add(SettingsField.ShowZonePreview, UiText.Current.Get("Transfer.Diff.ShowZonePreview"),
+            current.ShowZonePreview, imported.ShowZonePreview, OnOff);
+        Add(SettingsField.MagnetStrength, UiText.Current.Get("Transfer.Diff.MagnetStrength"),
+            current.MagnetStrength, imported.MagnetStrength, Strength);
+        Add(SettingsField.SnapRadius, UiText.Current.Get("Transfer.Diff.SnapRadius"),
+            current.SnapRadius, imported.SnapRadius, Pixels);
+        Add(SettingsField.ResizeStep, UiText.Current.Get("Transfer.Diff.ResizeStep"), current.ResizeStep, imported.ResizeStep,
+            step => UiText.Current.Plural("Transfer.Value.Cells", step, ("step", step)));
+        Add(SettingsField.ResizeAnchor, UiText.Current.Get("Transfer.Diff.ResizeAnchor"), current.ResizeAnchor,
             imported.ResizeAnchor, AnchorName);
         foreach (var command in current.Hotkeys.Keys.Union(imported.Hotkeys.Keys).OrderBy(HotkeyCatalog.GetDisplayOrder))
         {
@@ -274,9 +286,10 @@ public static class SettingsTransfer
             imported.Hotkeys.TryGetValue(command, out var after);
             if (before != after)
             {
-                differences.Add(new(new(SettingsField.Hotkey, command), HotkeyCatalog.GetDisplayName(command, current.ResizeStep),
-                    before is null ? "未割り当て" : HotkeyCatalog.FormatChord(before),
-                    after is null ? "未割り当て" : HotkeyCatalog.FormatChord(after)));
+                differences.Add(new(new(SettingsField.Hotkey, command), UiText.Current.Format("Transfer.Diff.Hotkey",
+                    ("name", HotkeyCatalog.GetDisplayName(command, current.ResizeStep))),
+                    before is null ? UiText.Current.Get("Transfer.Value.Unassigned") : HotkeyCatalog.FormatChord(before),
+                    after is null ? UiText.Current.Get("Transfer.Value.Unassigned") : HotkeyCatalog.FormatChord(after)));
             }
         }
 
@@ -292,14 +305,15 @@ public static class SettingsTransfer
         }
     }
 
-    private static string OnOff(bool value) => value ? "オン" : "オフ";
+    private static string OnOff(bool value) => value
+        ? UiText.Current.Get("Transfer.Value.On") : UiText.Current.Get("Transfer.Value.Off");
 
     private static string CornerName(WindowCornerPreference value) => value switch
     {
-        WindowCornerPreference.Round => "角丸を強制する",
-        WindowCornerPreference.RoundSmall => "小さい角丸",
-        WindowCornerPreference.DoNotRound => "角丸なし",
-        _ => "Windows の既定",
+        WindowCornerPreference.Round => UiText.Current.Get("Transfer.Corner.Round"),
+        WindowCornerPreference.RoundSmall => UiText.Current.Get("Transfer.Corner.RoundSmall"),
+        WindowCornerPreference.DoNotRound => UiText.Current.Get("Transfer.Corner.DoNotRound"),
+        _ => UiText.Current.Get("Transfer.Corner.Default"),
     };
 
     private static bool SameMonitorPlans(Dictionary<string, GridSettings> left, Dictionary<string, GridSettings> right) =>
@@ -307,35 +321,39 @@ public static class SettingsTransfer
 
     private static string MonitorPlans(Dictionary<string, GridSettings> value) => string.Join(" / ",
         value.OrderBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase).Select(pair =>
-            $"{pair.Key.ToUpperInvariant()}: {pair.Value.Columns} × {pair.Value.Rows}, " +
-            $"間隔 {Number(pair.Value.Gap)}, 余白 {Number(pair.Value.Edge)}"));
+            UiText.Current.Format("Transfer.Value.Monitor", ("name", pair.Key.ToUpperInvariant()),
+                ("columns", pair.Value.Columns), ("rows", pair.Value.Rows),
+                ("gap", Number(pair.Value.Gap)), ("edge", Number(pair.Value.Edge)))));
 
     private static string FeelName((string Feel, double? Mass, double? Frequency, double? DampingRatio) value) =>
         value.Mass is null && value.Frequency is null &&
         value.DampingRatio is null
         ? value.Feel
-        : $"カスタム（{value.Feel} から。質量 {Number(value.Mass)}、振動数 {Number(value.Frequency)}、減衰比 {Number(value.DampingRatio)}）";
+        : UiText.Current.Format("Transfer.Value.CustomFeel", ("feel", value.Feel), ("mass", Number(value.Mass)),
+            ("frequency", Number(value.Frequency)), ("damping", Number(value.DampingRatio)));
 
     private static string Number(double? value) =>
-        value is { } number ? number.ToString("0.##", CultureInfo.InvariantCulture) : "プリセットのまま";
+        value is { } number ? number.ToString("0.##", CultureInfo.InvariantCulture)
+            : UiText.Current.Get("Transfer.Value.Preset");
 
     private static string Strength(double? value) =>
-        value is { } strength ? strength.ToString("0.##", CultureInfo.InvariantCulture) : "操作感に従う";
+        value is { } strength ? strength.ToString("0.##", CultureInfo.InvariantCulture)
+            : UiText.Current.Get("Transfer.Value.FollowFeel");
 
-    private static string Pixels(double value) => value.ToString(CultureInfo.InvariantCulture) + " px";
+    private static string Pixels(double value) => UiText.Current.Format("Transfer.Value.Pixels", ("value", value));
 
     private static string AnchorName(ResizeAnchor anchor) => anchor switch
     {
-        ResizeAnchor.TopLeft => "左上",
-        ResizeAnchor.Center => "中心",
-        ResizeAnchor.NearEdge => "近い辺",
+        ResizeAnchor.TopLeft => UiText.Current.Get("Transfer.Anchor.TopLeft"),
+        ResizeAnchor.Center => UiText.Current.Get("Transfer.Anchor.Center"),
+        ResizeAnchor.NearEdge => UiText.Current.Get("Transfer.Anchor.NearEdge"),
         _ => anchor.ToString(),
     };
 
     private static string ModeName(SnapMode mode) => mode switch
     {
-        SnapMode.Zones => "区画",
-        SnapMode.Corners => "四隅",
+        SnapMode.Zones => UiText.Current.Get("Transfer.Mode.Zones"),
+        SnapMode.Corners => UiText.Current.Get("Transfer.Mode.Corners"),
         _ => mode.ToString(),
     };
 }

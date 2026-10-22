@@ -67,6 +67,10 @@ public static class Loc
                 case ("Header", Expander expander): expander.Header = value; break;
                 case ("PlaceholderText", ComboBox combo): combo.PlaceholderText = value; break;
                 case ("Title", InfoBar info): info.Title = value; break;
+                case ("Title", ContentDialog dialog): dialog.Title = value; break;
+                case ("PrimaryButtonText", ContentDialog dialog): dialog.PrimaryButtonText = value; break;
+                case ("SecondaryButtonText", ContentDialog dialog): dialog.SecondaryButtonText = value; break;
+                case ("CloseButtonText", ContentDialog dialog): dialog.CloseButtonText = value; break;
                 case ("Message", InfoBar info): info.Message = value; break;
                 case ("ToolTip", FrameworkElement framework): ToolTipService.SetToolTip(framework, value); break;
                 case ("AutomationName", _): AutomationProperties.SetName(element, value); break;

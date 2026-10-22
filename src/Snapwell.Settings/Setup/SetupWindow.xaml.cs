@@ -4,6 +4,7 @@ using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Snapwell.Core.Localization;
 using Snapwell.Core.Settings;
 using Windows.Graphics;
 using Windows.System;
@@ -26,6 +27,8 @@ public sealed partial class SetupWindow : Window
     public SetupWindow()
     {
         InitializeComponent();
+        Title = UiText.Current.Get("Window.SetupTitle");
+        Root.Language = UiText.Current.Language.ToTag();
         _wizard = new(_portableStore, _deviceStore);
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(TitleBar);
@@ -44,6 +47,7 @@ public sealed partial class SetupWindow : Window
             _initialSettings = _portableStore.Load().Value;
             if (device.IsReadOnly)
             {
+                // i18n-keep: 読み込み失敗は呼び出し側の固定文言で表示する
                 throw new InvalidOperationException("新しい版の端末状態。");
             }
             DeviceStateChanges.Update(_deviceStore, current => current);
@@ -52,7 +56,7 @@ public sealed partial class SetupWindow : Window
             JsonException or InvalidOperationException)
         {
             _loadFailed = true;
-            ErrorNotice.Message = "設定を読み書きできません。ファイルの場所とアクセス権、Snapwell の版を確認して開き直してください。";
+            ErrorNotice.Message = UiText.Current.Get("Setup.Error.Load");
             ErrorNotice.IsOpen = true;
         }
 
@@ -97,7 +101,7 @@ public sealed partial class SetupWindow : Window
         }
         if (!_wizard.TryNext(_consent, out var error))
         {
-            ErrorNotice.Message = error ?? "保存できませんでした。";
+            ErrorNotice.Message = error ?? UiText.Current.Get("Setup.Error.SaveFallback");
             ErrorNotice.IsOpen = true;
             return;
         }
@@ -114,7 +118,8 @@ public sealed partial class SetupWindow : Window
     {
         Steps.Children.Clear();
         Steps.ColumnDefinitions.Clear();
-        string[] labels = ["ようこそ", "標準機能", "ホットキー", "分割案"];
+        string[] labels = [UiText.Current.Get("Setup.Step.Welcome"), UiText.Current.Get("Setup.Step.StandardFeatures"),
+            UiText.Current.Get("Setup.Step.Hotkeys"), UiText.Current.Get("Setup.Step.Grid")];
         for (var i = 0; i < labels.Length; i++)
         {
             Steps.ColumnDefinitions.Add(new());
@@ -138,10 +143,11 @@ public sealed partial class SetupWindow : Window
         }
         BackButton.IsEnabled = _wizard.CanGoBack;
         NextButton.IsEnabled = !_loadFailed;
-        NextButton.Content = _wizard.Step == SetupStep.Grid ? "完了" : "次へ";
-        Count.Text = $"{(int)_wizard.Step + 1} / 4";
+        NextButton.Content = _wizard.Step == SetupStep.Grid ? UiText.Current.Get("Setup.Done") : UiText.Current.Get("Setup.Next");
+        Count.Text = UiText.Current.Format("Setup.Count", ("step", (int)_wizard.Step + 1));
         BodyScroll.ChangeView(null, 0, null, true);
-        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(Heading, $"{Count.Text} {Heading.Text}");
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(Heading,
+            UiText.Current.Format("Setup.HeadingName", ("count", Count.Text), ("heading", Heading.Text)));
         NextButton.Focus(FocusState.Programmatic);
     }
 
