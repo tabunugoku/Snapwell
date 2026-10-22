@@ -10,4 +10,4 @@ Windows 11 用のウィンドウマネージャー（開発中）。
 
 設計は [docs/DESIGN.md](docs/DESIGN.md) を参照。
 
-ホームページは `site/`（GitHub Pages で公開。`.github/workflows/pages.yml`）。ローカルでは `.claude/launch.json` の `site` で表示できる。
+ホームページは `site/`（GitHub Pages で公開。`.github/workflows/pages.yml`）。ローカルでは `python -m http.server --directory site` などで表示できる。
