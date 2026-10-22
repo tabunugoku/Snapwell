@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Media;
 using Snapwell.Core.Commands;
 using Snapwell.Core.Layout;
+using Snapwell.Core.Localization;
 using Snapwell.Settings.Setup;
 
 namespace Snapwell.Settings.Pages;
@@ -62,7 +63,8 @@ public sealed partial class HotkeysPage : Page
                 TextWrapping = TextWrapping.Wrap,
             };
             title.Inlines.Add(new Run { Text = group.Key });
-            if (group.Key == "広げる・縮める")
+            if (group.Any(command => command is WindowCommand.GrowRight or WindowCommand.GrowDown
+                or WindowCommand.ShrinkLeft or WindowCommand.ShrinkUp))
             {
                 title.Inlines.Add(new Run
                 {
@@ -82,7 +84,7 @@ public sealed partial class HotkeysPage : Page
         {
             HotkeyRows.Children.Add(new TextBlock
             {
-                Text = "該当する操作がありません",
+                Text = UiText.Current.Get("Hotkeys.Empty"),
                 Style = AppStyle("SnapwellHintTextStyle"),
                 Margin = new(12),
             });
@@ -90,10 +92,10 @@ public sealed partial class HotkeysPage : Page
         Summary.Children.Clear();
         if (conflicts.Count > 0)
         {
-            Summary.Children.Add(CreateTag($"重複 {conflicts.Count} 件", "Red"));
+            Summary.Children.Add(CreateTag(UiText.Current.Plural("Hotkeys.Duplicates", conflicts.Count), "Red"));
             Summary.Children.Add(new TextBlock
             {
-                Text = "同じキーを複数の操作に割り当てています",
+                Text = UiText.Current.Get("Hotkeys.ConflictsHint"),
                 Style = AppStyle("SnapwellHintTextStyle"),
             });
         }
@@ -101,7 +103,7 @@ public sealed partial class HotkeysPage : Page
         {
             Summary.Children.Add(new TextBlock
             {
-                Text = $"{commands.Length} 件を表示",
+                Text = UiText.Current.Plural("Hotkeys.Showing", commands.Length),
                 Style = AppStyle("SnapwellHintTextStyle"),
             });
         }
@@ -118,11 +120,14 @@ public sealed partial class HotkeysPage : Page
     {
         var (name, description) = _session.Current.ResizeAnchor switch
         {
-            ResizeAnchor.Center => ("中心", "中心を固定。左右・上下の両側が動きます"),
-            ResizeAnchor.NearEdge => ("近い辺", "作業領域の端に近い辺を固定。遠い側の辺が動きます"),
-            _ => ("左上", "左上を固定。右辺と下辺が動きます"),
+            ResizeAnchor.Center => (UiText.Current.Get("Hotkeys.Anchor.CenterName"),
+                UiText.Current.Get("Hotkeys.Anchor.CenterDescription")),
+            ResizeAnchor.NearEdge => (UiText.Current.Get("Hotkeys.Anchor.NearEdgeName"),
+                UiText.Current.Get("Hotkeys.Anchor.NearEdgeDescription")),
+            _ => (UiText.Current.Get("Hotkeys.Anchor.TopLeftName"),
+                UiText.Current.Get("Hotkeys.Anchor.TopLeftDescription")),
         };
-        return $"固定する位置: {name}（{description}）。「分割と間隔」の「固定する位置」で変えられます";
+        return UiText.Current.Format("Hotkeys.Anchor.Note", ("name", name), ("description", description));
     }
 
     private void AddRow(WindowCommand command, bool duplicated, bool unavailable)
@@ -139,7 +144,7 @@ public sealed partial class HotkeysPage : Page
         var row = new Grid { Style = (Style)Resources["HotkeyRowStyle"] };
         // 3:4 は、最小幅のウィンドウでも既定のキー（Ctrl・Alt・Shift と 1 キー）が 1 行に収まり、既定の幅で最も長い
         // 操作名が 1 行に収まる比。星の列に MinWidth を付けると、長い操作名の行だけ列がずれて右にはみ出したので使わない。
-        // 状態の列は最も長い「ほかのアプリが使用中」が収まる幅。列の幅は見出しの行（HotkeysPage.xaml）とそろえる。
+        // 英語の操作名は折り返し、状態は短い文言にする。列幅は見出しの行（HotkeysPage.xaml）とそろえる。
         row.ColumnDefinitions.Add(new() { Width = new(3, GridUnitType.Star) });
         row.ColumnDefinitions.Add(new() { Width = new(4, GridUnitType.Star) });
         row.ColumnDefinitions.Add(new() { Width = new(120) });
@@ -147,6 +152,7 @@ public sealed partial class HotkeysPage : Page
         row.Children.Add(new TextBlock
         {
             Text = name,
+            TextWrapping = TextWrapping.Wrap,
             Style = AppStyle("SnapwellRowTitleStyle"),
             FontSize = 13,
             VerticalAlignment = VerticalAlignment.Center,
@@ -171,10 +177,10 @@ public sealed partial class HotkeysPage : Page
         Grid.SetColumn(keyHost, 1);
         row.Children.Add(keyHost);
         var tags = new PresetWrapPanel { VerticalAlignment = VerticalAlignment.Center };
-        if (duplicated) { tags.Children.Add(CreateTag("重複", "Red")); }
-        if (!assigned) { tags.Children.Add(CreateTag("未割り当て", "Pending")); }
-        if (!isDefault) { tags.Children.Add(CreateTag("変更済み", "Blue")); }
-        if (unavailable) { tags.Children.Add(CreateTag("ほかのアプリが使用中", "Yellow")); }
+        if (duplicated) { tags.Children.Add(CreateTag(UiText.Current.Get("Hotkeys.Status.Duplicate"), "Red")); }
+        if (!assigned) { tags.Children.Add(CreateTag(UiText.Current.Get("Hotkeys.Status.Unassigned"), "Pending")); }
+        if (!isDefault) { tags.Children.Add(CreateTag(UiText.Current.Get("Hotkeys.Status.Changed"), "Blue")); }
+        if (unavailable) { tags.Children.Add(CreateTag(UiText.Current.Get("Hotkeys.Status.InUse"), "Yellow")); }
         Grid.SetColumn(tags, 2);
         row.Children.Add(tags);
         var actions = new StackPanel
@@ -184,9 +190,11 @@ public sealed partial class HotkeysPage : Page
             HorizontalAlignment = HorizontalAlignment.Right,
             VerticalAlignment = VerticalAlignment.Center,
         };
-        actions.Children.Add(ActionButton("↺", $"{name}を既定に戻す", !_session.IsReadOnly && !isDefault,
+        actions.Children.Add(ActionButton("↺", UiText.Current.Format("Hotkeys.ResetAction", ("name", name)),
+            !_session.IsReadOnly && !isDefault,
             () => SetHotkeys(HotkeyEditing.Reset(_session.Current.Hotkeys, command), command)));
-        actions.Children.Add(ActionButton("✕", $"{name}の割り当てを外す", !_session.IsReadOnly && assigned,
+        actions.Children.Add(ActionButton("✕", UiText.Current.Format("Hotkeys.ClearAction", ("name", name)),
+            !_session.IsReadOnly && assigned,
             () => SetHotkeys(HotkeyEditing.Clear(_session.Current.Hotkeys, command), command)));
         Grid.SetColumn(actions, 3);
         row.Children.Add(actions);
@@ -240,10 +248,11 @@ public sealed partial class HotkeysPage : Page
         StopCapturePulse();
         var button = _keyButtons[command];
         var assigned = _session.Current.Hotkeys.TryGetValue(command, out var chord);
-        var chordText = assigned ? HotkeyCatalog.FormatChord(chord!) : "未割り当て";
+        var chordText = assigned ? HotkeyCatalog.FormatChord(chord!) : UiText.Current.Get("Hotkeys.Status.Unassigned");
         button.Style = (Style)Resources[captureText is null ? "HotkeyButtonStyle"
             : error ? "HotkeyErrorStyle" : "HotkeyCaptureStyle"];
-        AutomationProperties.SetName(button, $"{DisplayName(command)}のキーを変更: {chordText}");
+        AutomationProperties.SetName(button, UiText.Current.Format("Hotkeys.ChangeAction",
+            ("name", DisplayName(command)), ("chord", chordText)));
         AutomationProperties.SetHelpText(button, captureText ?? "");
         if (captureText is not null || !assigned)
         {
