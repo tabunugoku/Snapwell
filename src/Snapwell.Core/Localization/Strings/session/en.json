@@ -1,0 +1,15 @@
+{
+  "Session.Load.Future": "These settings are from a newer version, so you can't save here. Update Snapwell.",
+  "Session.Load.Defaults": "The settings file was damaged. Showing defaults.",
+  "Session.Load.Failed": "Can't read the settings file. Check the file location and permissions, then reopen settings.",
+  "Session.Save.ReadOnly": "Can't save read-only settings.",
+  "Session.Save.Busy": "Sync is running. Wait a moment, then save again.",
+  "Session.Save.Saved": "Saved. Changes apply immediately if Snapwell is running.",
+  "Session.Save.Future": "The settings changed to a newer version, so you can't save. Update Snapwell and reopen settings.",
+  "Session.Save.InvalidRules": "Some app rules can't be saved. Fix their conditions or delete them on the App rules page.",
+  "Session.Save.Failed": "Couldn't save. Check the file location and permissions, then save again.",
+  "Session.Sync.Future": "These settings are from a newer version, so you can't sync. Update Snapwell.",
+  "Session.Sync.KeepEdits": "Imported the settings from the sync folder. Saving your unsaved changes will overwrite them.",
+  "Session.Sync.Imported": "Imported the settings from the sync folder.",
+  "Session.Sync.ReloadFailed": "Couldn't reload the imported settings. Reopen settings."
+}

@@ -33,12 +33,45 @@ public sealed class TextCatalog
 
     private static Dictionary<string, string> ReadResource(UiLanguage language)
     {
-        using var stream = typeof(TextCatalog).Assembly.GetManifestResourceStream(
-            $"i18n/{language.ToPreference()}.json")
-            ?? throw new InvalidOperationException("文言のカタログが見つからない。");
-        using var buffer = new MemoryStream();
-        stream.CopyTo(buffer);
-        return ReadStrings(buffer.ToArray());
+        var assembly = typeof(TextCatalog).Assembly;
+        var fileName = language.ToPreference() + ".json";
+        var names = assembly.GetManifestResourceNames().Where(name => name.StartsWith("i18n/", StringComparison.Ordinal)
+            && (name == "i18n/" + fileName || name.EndsWith("/" + fileName, StringComparison.Ordinal))).ToArray();
+        if (!names.Contains("i18n/" + fileName))
+        {
+            throw new InvalidOperationException("文言のカタログが見つからない。");
+        }
+        return MergeResources(names.Select(name =>
+        {
+            using var stream = assembly.GetManifestResourceStream(name)!;
+            using var buffer = new MemoryStream();
+            stream.CopyTo(buffer);
+            return (name, buffer.ToArray());
+        }));
+    }
+
+    internal static Dictionary<string, string> MergeResources(IEnumerable<(string Name, byte[] Data)> resources)
+    {
+        var strings = new Dictionary<string, string>(StringComparer.Ordinal);
+        var origins = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var (name, data) in resources)
+        {
+            Dictionary<string, string> entries;
+            try { entries = ReadStrings(data); }
+            catch (JsonException exception)
+            {
+                throw new JsonException($"カタログを読み取れない: {name} ({exception.Message})", exception);
+            }
+            foreach (var (key, value) in entries)
+            {
+                if (!strings.TryAdd(key, value))
+                {
+                    throw new JsonException($"重複したキー: {key} ({origins[key]}, {name})");
+                }
+                origins.Add(key, name);
+            }
+        }
+        return strings;
     }
 
     internal static Dictionary<string, string> ReadStrings(ReadOnlySpan<byte> data)

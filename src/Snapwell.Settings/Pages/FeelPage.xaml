@@ -2,6 +2,7 @@
 <Page
     x:Class="Snapwell.Settings.Pages.FeelPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:l="using:Snapwell.Settings.Localization"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:Snapwell.Settings.Controls">
     <Page.Resources>
@@ -34,8 +35,8 @@
     </Page.Resources>
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
         <StackPanel x:Name="Editor" Padding="32,28,32,40" HorizontalAlignment="Stretch">
-            <TextBlock Text="操作感" Style="{StaticResource SnapwellPageTitleStyle}" />
-            <TextBlock Text="投げたときの動き方です。プリセットを選ぶと、吸着半径を除く 4 つの値がその値になり、どれかを変えると「カスタム」になります。曲線は、各プリセットでキー操作したときの、止まるまでの位置の変化です。"
+            <TextBlock l:Loc.Uid="Feel_Title" Style="{StaticResource SnapwellPageTitleStyle}" />
+            <TextBlock l:Loc.Uid="Feel_Lead"
                        Style="{StaticResource SnapwellLeadTextStyle}" />
 
             <Grid ColumnSpacing="10">
@@ -45,9 +46,9 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
-                <Button x:Name="CardAiry" Tag="Airy" Click="FeelCard_Click"
+                <Button l:Loc.Uid="Feel_CardAiry" x:Name="CardAiry" Tag="Airy" Click="FeelCard_Click"
                         Style="{StaticResource FeelCardButtonStyle}"
-                        AutomationProperties.Name="airy — airy, slightly magnetic">
+                        >
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
@@ -56,7 +57,7 @@
                         </Grid.RowDefinitions>
                         <TextBlock Text="airy" FontWeight="SemiBold" FontSize="13" LineHeight="20.8"
                                    Foreground="{ThemeResource SnapwellInkBrush}" />
-                        <TextBlock Grid.Row="1" Text="airy, slightly magnetic"
+                        <TextBlock l:Loc.Uid="Feel_AiryDescription" Grid.Row="1"
                                    FontFamily="{StaticResource SnapwellMonoFontFamily}" FontSize="11" LineHeight="17.6"
                                    Foreground="{ThemeResource SnapwellMutedBrush}" TextWrapping="Wrap" />
                         <Viewbox Grid.Row="2" VerticalAlignment="Bottom" Height="54" Stretch="Fill" Margin="0,8,0,0">
@@ -70,9 +71,9 @@
                         </Viewbox>
                     </Grid>
                 </Button>
-                <Button x:Name="CardSnappy" Grid.Column="1" Tag="Snappy" Click="FeelCard_Click"
+                <Button l:Loc.Uid="Feel_CardSnappy" x:Name="CardSnappy" Grid.Column="1" Tag="Snappy" Click="FeelCard_Click"
                         Style="{StaticResource FeelCardButtonStyle}"
-                        AutomationProperties.Name="snappy — snappy, precise">
+                        >
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
@@ -81,7 +82,7 @@
                         </Grid.RowDefinitions>
                         <TextBlock Text="snappy" FontWeight="SemiBold" FontSize="13" LineHeight="20.8"
                                    Foreground="{ThemeResource SnapwellInkBrush}" />
-                        <TextBlock Grid.Row="1" Text="snappy, precise"
+                        <TextBlock l:Loc.Uid="Feel_SnappyDescription" Grid.Row="1"
                                    FontFamily="{StaticResource SnapwellMonoFontFamily}" FontSize="11" LineHeight="17.6"
                                    Foreground="{ThemeResource SnapwellMutedBrush}" TextWrapping="Wrap" />
                         <Viewbox Grid.Row="2" VerticalAlignment="Bottom" Height="54" Stretch="Fill" Margin="0,8,0,0">
@@ -95,9 +96,9 @@
                         </Viewbox>
                     </Grid>
                 </Button>
-                <Button x:Name="CardHeavy" Grid.Column="2" Tag="Heavy" Click="FeelCard_Click"
+                <Button l:Loc.Uid="Feel_CardHeavy" x:Name="CardHeavy" Grid.Column="2" Tag="Heavy" Click="FeelCard_Click"
                         Style="{StaticResource FeelCardButtonStyle}"
-                        AutomationProperties.Name="heavy — heavy, settled">
+                        >
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
@@ -106,7 +107,7 @@
                         </Grid.RowDefinitions>
                         <TextBlock Text="heavy" FontWeight="SemiBold" FontSize="13" LineHeight="20.8"
                                    Foreground="{ThemeResource SnapwellInkBrush}" />
-                        <TextBlock Grid.Row="1" Text="heavy, settled"
+                        <TextBlock l:Loc.Uid="Feel_HeavyDescription" Grid.Row="1"
                                    FontFamily="{StaticResource SnapwellMonoFontFamily}" FontSize="11" LineHeight="17.6"
                                    Foreground="{ThemeResource SnapwellMutedBrush}" TextWrapping="Wrap" />
                         <Viewbox Grid.Row="2" VerticalAlignment="Bottom" Height="54" Stretch="Fill" Margin="0,8,0,0">
@@ -120,9 +121,9 @@
                         </Viewbox>
                     </Grid>
                 </Button>
-                <Button x:Name="CardBouncy" Grid.Column="3" Tag="Bouncy" Click="FeelCard_Click"
+                <Button l:Loc.Uid="Feel_CardBouncy" x:Name="CardBouncy" Grid.Column="3" Tag="Bouncy" Click="FeelCard_Click"
                         Style="{StaticResource FeelCardButtonStyle}"
-                        AutomationProperties.Name="bouncy — light, playful">
+                        >
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
@@ -131,7 +132,7 @@
                         </Grid.RowDefinitions>
                         <TextBlock Text="bouncy" FontWeight="SemiBold" FontSize="13" LineHeight="20.8"
                                    Foreground="{ThemeResource SnapwellInkBrush}" />
-                        <TextBlock Grid.Row="1" Text="light, playful"
+                        <TextBlock l:Loc.Uid="Feel_BouncyDescription" Grid.Row="1"
                                    FontFamily="{StaticResource SnapwellMonoFontFamily}" FontSize="11" LineHeight="17.6"
                                    Foreground="{ThemeResource SnapwellMutedBrush}" TextWrapping="Wrap" />
                         <Viewbox Grid.Row="2" VerticalAlignment="Bottom" Height="54" Stretch="Fill" Margin="0,8,0,0">
@@ -147,7 +148,7 @@
                 </Button>
             </Grid>
 
-            <TextBlock Text="試す" Style="{StaticResource SnapwellGroupTitleStyle}" />
+            <TextBlock l:Loc.Uid="Feel_TrialTitle" Style="{StaticResource SnapwellGroupTitleStyle}" />
             <Border Style="{StaticResource SnapwellRowsBorderStyle}" Padding="12">
                 <StackPanel Spacing="10">
                     <Canvas x:Name="TrialStage" Height="260" HorizontalAlignment="Stretch"
@@ -156,10 +157,9 @@
                             PointerReleased="TrialStage_PointerReleased"
                             PointerCanceled="TrialStage_PointerCanceled"
                             PointerCaptureLost="TrialStage_PointerCanceled">
-                        <Border x:Name="TrialCard" IsTabStop="True" CornerRadius="8"
+                        <Border l:Loc.Uid="Feel_TrialCard" x:Name="TrialCard" IsTabStop="True" CornerRadius="8"
                                 BorderThickness="1" Background="{ThemeResource SnapwellSurfaceBrush}"
                                 BorderBrush="{ThemeResource SnapwellBorderStrongBrush}"
-                                AutomationProperties.Name="試すウィンドウ。タイトルバーをドラッグして投げる。矢印キーで投げる"
                                 RenderTransformOrigin="0.5,0.5" KeyDown="TrialCard_KeyDown">
                             <Border.RenderTransform>
                                 <CompositeTransform x:Name="TrialCardTransform" />
@@ -173,7 +173,7 @@
                                             VerticalAlignment="Center">
                                     <Border Width="12" Height="12" CornerRadius="3"
                                             Background="{ThemeResource SnapwellMutedBrush}" />
-                                    <TextBlock Text="Window" FontSize="12"
+                                    <TextBlock l:Loc.Uid="Feel_TrialWindowLabel" FontSize="12"
                                                Foreground="{ThemeResource SnapwellTextBrush}" />
                                 </StackPanel>
                                 <StackPanel Grid.Row="1" Spacing="7" Padding="12,10,12,0">
@@ -188,23 +188,23 @@
                         </Border>
                     </Canvas>
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                        <Button x:Name="TrialZonesButton" Content="区画" Click="TrialMode_Click" Tag="Zones"
+                        <Button l:Loc.Uid="Feel_TrialZonesButton" x:Name="TrialZonesButton" Click="TrialMode_Click" Tag="Zones"
                                 Style="{StaticResource SelectedChipButtonStyle}" />
-                        <Button x:Name="TrialCornersButton" Content="四隅" Click="TrialMode_Click" Tag="Corners"
+                        <Button l:Loc.Uid="Feel_TrialCornersButton" x:Name="TrialCornersButton" Click="TrialMode_Click" Tag="Corners"
                                 Style="{StaticResource ChipButtonStyle}" />
-                        <Button x:Name="TrialThrowButton" Content="ランダムに投げる" Click="TrialThrow_Click"
+                        <Button l:Loc.Uid="Feel_TrialThrowButton" x:Name="TrialThrowButton" Click="TrialThrow_Click"
                                 Style="{StaticResource ChipButtonStyle}" />
                     </StackPanel>
-                    <TextBlock Text="ウィンドウのタイトルバーをつかんで投げます（ウィンドウの中をつかんでも動きません）。いまの 5 つの値で動き、止まる先は Snapwell 本体と同じ規則で決まります（離した速さが 150 px/s 未満だと吸着しません。区画では、中央から上へ強く投げると最大化になります）"
+                    <TextBlock l:Loc.Uid="Feel_TrialHint"
                                Style="{StaticResource SnapwellRowDescriptionStyle}" TextWrapping="Wrap" />
                 </StackPanel>
             </Border>
 
             <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                <TextBlock Text="詳細" Style="{StaticResource SnapwellGroupTitleStyle}" VerticalAlignment="Center" />
+                <TextBlock l:Loc.Uid="Feel_DetailsTitle" Style="{StaticResource SnapwellGroupTitleStyle}" VerticalAlignment="Center" />
                 <TextBlock x:Name="FeelStateText" Style="{StaticResource SnapwellMonoTextStyle}"
                            VerticalAlignment="Center" />
-                <Button x:Name="FeelResetButton" Content="プリセットに戻す" Click="FeelReset_Click"
+                <Button l:Loc.Uid="Feel_FeelResetButton" x:Name="FeelResetButton" Click="FeelReset_Click"
                         Style="{StaticResource SnapwellActionButtonStyle}" Visibility="Collapsed" />
             </StackPanel>
             <Border Style="{StaticResource SnapwellRowsBorderStyle}">
@@ -215,14 +215,14 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="吸着の方式" Style="{StaticResource SnapwellRowTitleStyle}" />
-                            <TextBlock Text="投げたウィンドウを吸い寄せる対象"
+                            <TextBlock l:Loc.Uid="Feel_ModeTitle" Style="{StaticResource SnapwellRowTitleStyle}" />
+                            <TextBlock l:Loc.Uid="Feel_ModeDescription"
                                        Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
-                        <ComboBox x:Name="ModeBox" Grid.Column="1" Width="240" VerticalAlignment="Center"
-                                  AutomationProperties.Name="吸着の方式" SelectionChanged="Mode_SelectionChanged">
-                            <ComboBoxItem Content="区画 — 半分・四分割・最大化" />
-                            <ComboBoxItem Content="四隅 — サイズを変えずに移動" />
+                        <ComboBox l:Loc.Uid="Feel_ModeBox" x:Name="ModeBox" Grid.Column="1" Width="240" VerticalAlignment="Center"
+                                   SelectionChanged="Mode_SelectionChanged">
+                            <ComboBoxItem l:Loc.Uid="Feel_ModeZones" />
+                            <ComboBoxItem l:Loc.Uid="Feel_ModeCorners" />
                         </ComboBox>
                     </Grid>
                     <Border Style="{StaticResource SnapwellRowDividerStyle}" />
@@ -232,17 +232,17 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="質量 m" Style="{StaticResource SnapwellRowTitleStyle}" />
-                            <TextBlock Text="feel の磁石場は力が質量に比例するため、吸着の動きは変わりません。変わるのは導かれる k と c です"
+                            <TextBlock l:Loc.Uid="Feel_MassTitle" Style="{StaticResource SnapwellRowTitleStyle}" />
+                            <TextBlock l:Loc.Uid="Feel_MassDescription"
                                        Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
                         <StackPanel x:Name="MassPanel" Grid.Column="1" Orientation="Horizontal" Spacing="12"
                                     VerticalAlignment="Center">
-                            <Slider x:Name="MassSlider" Width="200" Minimum="0" Maximum="1000"
-                                    AutomationProperties.Name="質量 m（スライダー）" />
-                            <NumberBox x:Name="MassBox" Width="130" Minimum="0.15" Maximum="8"
+                            <Slider l:Loc.Uid="Feel_MassSlider" x:Name="MassSlider" Width="200" Minimum="0" Maximum="1000"
+                                     />
+                            <NumberBox l:Loc.Uid="Feel_MassBox" x:Name="MassBox" Width="130" Minimum="0.15" Maximum="8"
                                        SmallChange="0.05" LargeChange="0.5"
-                                       SpinButtonPlacementMode="Compact" AutomationProperties.Name="質量 m"
+                                       SpinButtonPlacementMode="Compact"
                                        ValidationMode="InvalidInputOverwritten" />
                         </StackPanel>
                     </Grid>
@@ -253,17 +253,17 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="固有振動数 f" Style="{StaticResource SnapwellRowTitleStyle}" />
-                            <TextBlock Text="キー操作での動きの速さと、投げたあとの勢いの止まり方に効きます"
+                            <TextBlock l:Loc.Uid="Feel_FrequencyTitle" Style="{StaticResource SnapwellRowTitleStyle}" />
+                            <TextBlock l:Loc.Uid="Feel_FrequencyDescription"
                                        Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
                         <StackPanel x:Name="FrequencyPanel" Grid.Column="1" Orientation="Horizontal" Spacing="12"
                                     VerticalAlignment="Center">
-                            <Slider x:Name="FrequencySlider" Width="200" Minimum="0" Maximum="1000"
-                                    AutomationProperties.Name="固有振動数 f (Hz)（スライダー）" />
-                            <NumberBox x:Name="FrequencyBox" Width="130" Minimum="0.4" Maximum="7"
+                            <Slider l:Loc.Uid="Feel_FrequencySlider" x:Name="FrequencySlider" Width="200" Minimum="0" Maximum="1000"
+                                     />
+                            <NumberBox l:Loc.Uid="Feel_FrequencyBox" x:Name="FrequencyBox" Width="130" Minimum="0.4" Maximum="7"
                                        SmallChange="0.05" LargeChange="0.5"
-                                       SpinButtonPlacementMode="Compact" AutomationProperties.Name="固有振動数 f (Hz)"
+                                       SpinButtonPlacementMode="Compact"
                                        ValidationMode="InvalidInputOverwritten" />
                         </StackPanel>
                     </Grid>
@@ -274,17 +274,17 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="減衰比 ζ" Style="{StaticResource SnapwellRowTitleStyle}" />
-                            <TextBlock Text="大きいほど勢いを抑えます"
+                            <TextBlock l:Loc.Uid="Feel_DampingTitle" Style="{StaticResource SnapwellRowTitleStyle}" />
+                            <TextBlock l:Loc.Uid="Feel_DampingDescription"
                                        Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
                         <StackPanel x:Name="DampingRatioPanel" Grid.Column="1" Orientation="Horizontal" Spacing="12"
                                     VerticalAlignment="Center">
-                            <Slider x:Name="DampingRatioSlider" Width="200" Minimum="0" Maximum="1000"
-                                    AutomationProperties.Name="減衰比 ζ（スライダー）" />
-                            <NumberBox x:Name="DampingRatioBox" Width="130" Minimum="0.1" Maximum="1.6"
+                            <Slider l:Loc.Uid="Feel_DampingRatioSlider" x:Name="DampingRatioSlider" Width="200" Minimum="0" Maximum="1000"
+                                     />
+                            <NumberBox l:Loc.Uid="Feel_DampingRatioBox" x:Name="DampingRatioBox" Width="130" Minimum="0.1" Maximum="1.6"
                                        SmallChange="0.01" LargeChange="0.1"
-                                       SpinButtonPlacementMode="Compact" AutomationProperties.Name="減衰比 ζ"
+                                       SpinButtonPlacementMode="Compact"
                                        ValidationMode="InvalidInputOverwritten" />
                         </StackPanel>
                     </Grid>
@@ -296,16 +296,16 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="磁石の強さ" Style="{StaticResource SnapwellRowTitleStyle}" />
-                            <TextBlock Text="停止点へ吸い寄せる力。大きいほど強く引きます (0〜2)" Style="{StaticResource SnapwellRowDescriptionStyle}" />
+                            <TextBlock l:Loc.Uid="Feel_MagnetTitle" Style="{StaticResource SnapwellRowTitleStyle}" />
+                            <TextBlock l:Loc.Uid="Feel_MagnetDescription" Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
                         <StackPanel x:Name="MagnetStrengthPanel" Grid.Column="1" Orientation="Horizontal" Spacing="12"
                                     VerticalAlignment="Center">
-                            <Slider x:Name="MagnetStrengthSlider" Width="200" Minimum="0" Maximum="1000"
-                                    AutomationProperties.Name="磁石の強さ（スライダー）" />
-                            <NumberBox x:Name="MagnetStrengthBox" Width="130" Minimum="0" Maximum="2"
+                            <Slider l:Loc.Uid="Feel_MagnetStrengthSlider" x:Name="MagnetStrengthSlider" Width="200" Minimum="0" Maximum="1000"
+                                     />
+                            <NumberBox l:Loc.Uid="Feel_MagnetStrengthBox" x:Name="MagnetStrengthBox" Width="130" Minimum="0" Maximum="2"
                                        SmallChange="0.05" LargeChange="0.1"
-                                       SpinButtonPlacementMode="Compact" AutomationProperties.Name="磁石の強さ"
+                                       SpinButtonPlacementMode="Compact"
                                        ValidationMode="InvalidInputOverwritten" />
                         </StackPanel>
                     </Grid>
@@ -316,16 +316,16 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="吸着半径" Style="{StaticResource SnapwellRowTitleStyle}" />
-                            <TextBlock Text="強く吸い込まれる距離 (px)" Style="{StaticResource SnapwellRowDescriptionStyle}" />
+                            <TextBlock l:Loc.Uid="Feel_RadiusTitle" Style="{StaticResource SnapwellRowTitleStyle}" />
+                            <TextBlock l:Loc.Uid="Feel_RadiusDescription" Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
                         <StackPanel x:Name="SnapRadiusPanel" Grid.Column="1" Orientation="Horizontal" Spacing="12"
                                     VerticalAlignment="Center">
-                            <Slider x:Name="SnapRadiusSlider" Width="200" Minimum="0" Maximum="1000"
-                                    AutomationProperties.Name="吸着半径 (px)（スライダー）" />
-                            <NumberBox x:Name="SnapRadiusBox" Width="130" Minimum="8" Maximum="96"
+                            <Slider l:Loc.Uid="Feel_SnapRadiusSlider" x:Name="SnapRadiusSlider" Width="200" Minimum="0" Maximum="1000"
+                                     />
+                            <NumberBox l:Loc.Uid="Feel_SnapRadiusBox" x:Name="SnapRadiusBox" Width="130" Minimum="8" Maximum="96"
                                        SmallChange="1" LargeChange="8"
-                                       SpinButtonPlacementMode="Compact" AutomationProperties.Name="吸着半径 (px)"
+                                       SpinButtonPlacementMode="Compact"
                                        ValidationMode="InvalidInputOverwritten" />
                         </StackPanel>
                     </Grid>
@@ -336,7 +336,7 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="導かれる値" Style="{StaticResource SnapwellRowTitleStyle}" />
+                            <TextBlock l:Loc.Uid="Feel_DerivedTitle" Style="{StaticResource SnapwellRowTitleStyle}" />
                             <TextBlock Text="k = m(2πf)², c = 2ζ√(km)"
                                        Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
@@ -346,7 +346,7 @@
                 </StackPanel>
             </Border>
 
-            <TextBlock Text="アクセシビリティ" Style="{StaticResource SnapwellGroupTitleStyle}" />
+            <TextBlock l:Loc.Uid="Feel_AccessibilityTitle" Style="{StaticResource SnapwellGroupTitleStyle}" />
             <Border Style="{StaticResource SnapwellRowsBorderStyle}">
                 <Grid Style="{StaticResource SnapwellRowGridStyle}">
                     <Grid.ColumnDefinitions>
@@ -354,13 +354,13 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <StackPanel VerticalAlignment="Center">
-                        <TextBlock Text="動きを減らす" Style="{StaticResource SnapwellRowTitleStyle}" />
-                        <TextBlock Text="オンにすると、アニメーションせずに吸着先へすぐ移動します。Windows の「アニメーション効果」がオフのときも同じです"
+                        <TextBlock l:Loc.Uid="Feel_MotionTitle" Style="{StaticResource SnapwellRowTitleStyle}" />
+                        <TextBlock l:Loc.Uid="Feel_MotionDescription"
                                    Style="{StaticResource SnapwellRowDescriptionStyle}" />
                     </StackPanel>
-                    <ToggleSwitch x:Name="MotionSwitch" Grid.Column="1" OnContent="" OffContent="" MinWidth="0"
+                    <ToggleSwitch l:Loc.Uid="Feel_MotionSwitch" x:Name="MotionSwitch" Grid.Column="1" OnContent="" OffContent="" MinWidth="0"
                                   Style="{StaticResource SnapwellToggleSwitchStyle}"
-                                  VerticalAlignment="Center" AutomationProperties.Name="動きを減らす"
+                                  VerticalAlignment="Center"
                                   Toggled="Motion_Toggled" />
                 </Grid>
             </Border>
