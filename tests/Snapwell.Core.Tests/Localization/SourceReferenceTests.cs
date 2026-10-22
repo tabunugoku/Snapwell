@@ -10,12 +10,10 @@ public sealed class SourceReferenceTests
     [Fact]
     public void EverySourceReferenceExistsInJapaneseCatalog()
     {
-        var root = new DirectoryInfo(AppContext.BaseDirectory);
-        while (root is not null && !File.Exists(Path.Combine(root.FullName, "Snapwell.sln"))) { root = root.Parent; }
-        Assert.NotNull(root);
+        var root = SourceScan.RepositoryRoot();
         var keys = TextCatalog.Load(UiLanguage.Japanese).Keys.ToHashSet(StringComparer.Ordinal);
         var count = 0;
-        foreach (var path in Directory.EnumerateFiles(Path.Combine(root.FullName, "src"), "*",
+        foreach (var path in Directory.EnumerateFiles(Path.Combine(root, "src"), "*",
             SearchOption.AllDirectories).Where(path => path.EndsWith(".cs") || path.EndsWith(".xaml")))
         {
             var source = File.ReadAllText(path);

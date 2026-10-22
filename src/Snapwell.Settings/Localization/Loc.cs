@@ -47,6 +47,10 @@ public static class Loc
                 case ("Text", TextBlock text): text.Text = value; break;
                 case ("Content", Button button): button.Content = value; break;
                 case ("Content", ComboBoxItem item): item.Content = value; break;
+                case ("Content", RadioButton radio): radio.Content = value; break;
+                case ("Content", CheckBox check): check.Content = value; break;
+                case ("Content", ToolTip tip): tip.Content = value; break;
+                case ("Content", Expander expander): expander.Content = value; break;
                 case ("Content", NavigationViewItem { Content: Panel panel }):
                     // 既存の行のアイコンを保ち、内容のラベルだけを置き換える。
                     var label = panel.Children.OfType<TextBlock>().Single();
@@ -55,6 +59,12 @@ public static class Loc
                 case ("Content", NavigationViewItem navigation): navigation.Content = value; break;
                 case ("Header", ToggleSwitch toggle): toggle.Header = value; break;
                 case ("Header", ComboBox combo): combo.Header = value; break;
+                case ("Header", Slider slider): slider.Header = value; break;
+                case ("Header", TextBox box): box.Header = value; break;
+                case ("PlaceholderText", TextBox box): box.PlaceholderText = value; break;
+                case ("Header", NumberBox box): box.Header = value; break;
+                case ("PlaceholderText", NumberBox box): box.PlaceholderText = value; break;
+                case ("Header", Expander expander): expander.Header = value; break;
                 case ("PlaceholderText", ComboBox combo): combo.PlaceholderText = value; break;
                 case ("Title", InfoBar info): info.Title = value; break;
                 case ("Message", InfoBar info): info.Message = value; break;
