@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Snapwell film</title>
+<link rel="stylesheet" href="../../site/css/site.css">
+<link rel="stylesheet" href="film.css">
+<!-- 偽の時計: フレームの進行は render.mjs が __tick() で 1 コマずつ進める。feel より先に読み込む -->
+<script src="clock.js"></script>
+</head>
+<body>
+<div class="frame" id="frame">
+  <div class="title" id="title">
+    <svg width="132" height="132" viewBox="0 0 44 44" aria-hidden="true">
+      <rect x="1.5" y="1.5" width="41" height="41" rx="9" fill="none" stroke="currentColor" stroke-width="2.6"/>
+      <rect x="23" y="7" width="14" height="14" rx="3" fill="currentColor"/>
+      <path d="M8 34 C 14 34, 18 26, 26 18" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="3 3" opacity=".55"/>
+    </svg>
+    <p class="title-name">Snapwell</p>
+    <p class="title-line">Throw a window. It lands in place.</p>
+  </div>
+
+  <div class="left">
+    <div class="cap" id="c1"><p class="cap-h">Throw a window.</p><p class="cap-p">Let go, and it picks the nearest zone.</p></div>
+    <div class="cap" id="c2"><p class="cap-h">It lands in place.</p><p class="cap-p">A spring pulls it in. A magnet takes the last pixels.</p></div>
+    <div class="cap" id="c3"><p class="cap-h">Heavy or light. Your call.</p><p class="cap-p">The same throw, a different weight.</p></div>
+    <div class="cap" id="c4"><p class="cap-h">One key tidies everything.</p><p class="cap-p">Grid, row, column, or main and stack.</p>
+      <p class="keys" id="keys"><span class="key">Ctrl</span><span class="key">Alt</span><span class="key">A</span></p></div>
+    <dl class="readout film-readout" id="readout">
+      <dt>Feel</dt><dd id="r-feel">airy, magnetic</dd>
+      <dt>Release speed</dt><dd id="r-speed">—</dd>
+      <dt>Lands in</dt><dd id="r-zone">—</dd>
+    </dl>
+  </div>
+
+  <div class="stagebox" id="stagebox">
+    <div class="monitor" data-ui id="monitor">
+      <div class="workarea"><i class="cursor" id="cursor"><svg viewBox="0 0 20 24" width="22" height="26"><path d="M2 1 L2 18 L6.4 14 L9.6 21.5 L12.6 20.2 L9.4 12.8 L15.6 12.8 Z" fill="#111" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg></i></div>
+      <div class="taskbar"><i class="tb-app start"></i><i class="tb-app"></i><i class="tb-app"></i><i class="tb-app"></i><span class="clock">10:24<br>2026/10/22</span></div>
+    </div>
+  </div>
+
+  <div class="end" id="end">
+    <svg width="96" height="96" viewBox="0 0 44 44" aria-hidden="true">
+      <rect x="1.5" y="1.5" width="41" height="41" rx="9" fill="none" stroke="currentColor" stroke-width="2.6"/>
+      <rect x="23" y="7" width="14" height="14" rx="3" fill="currentColor"/>
+    </svg>
+    <p class="end-h">Snapwell 1.0</p>
+    <p class="end-p">A window manager for Windows 11. Native on x64 and ARM64.</p>
+    <p class="end-url">tabunugoku.github.io/Snapwell</p>
+  </div>
+</div>
+<script src="../../site/js/feel.js"></script>
+<script src="../../site/js/stage.js"></script>
+<script src="film.js"></script>
+</body>
+</html>
