@@ -215,11 +215,17 @@ main > section + section { margin-top: var(--section); }
 .caps svg { width: 9px; height: 9px; }
 .win-body { flex: 1; padding: 10px 12px; display: grid; gap: 7px; align-content: start; overflow: hidden; }
 .win-body b { height: 7px; border-radius: 4px; background: var(--skeleton); display: block; }
-.fx { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; z-index: 40; }
+.fx { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; z-index: 5; }
 .fx .zone { fill: var(--blue-bg); stroke: var(--blue-line); stroke-width: 1.5; stroke-dasharray: 6 5; }
 .fx .path { stroke: var(--blue-line); stroke-width: 1.5; stroke-dasharray: 4 4; fill: none; }
 .fx .dot { fill: var(--blue-tx); }
 .win.held { border-color: var(--blue-tx); }
+
+/* ---- film ---- */
+.film h2 { margin-bottom: 32px; }
+.film-frame { border-radius: var(--radius); overflow: hidden; background: var(--tile-2); aspect-ratio: 16 / 9; }
+.film-frame video { display: block; width: 100%; height: 100%; object-fit: cover; }
+.film-note { margin-top: 16px; max-width: 44em; }
 
 /* ---- features: sentences with switches ---- */
 .features { margin-inline: 0 !important; }
@@ -311,6 +317,7 @@ main > section + section { margin-top: var(--section); }
 .stage-card { background: var(--blue-bg); border-radius: var(--radius); padding: 20px; display: grid; gap: 14px; }
 .stage-card .monitor { aspect-ratio: 4 / 3.4; }
 .how-readout { margin: 0; padding: 0; grid-template-columns: auto 1fr; }
+.how-tabs { display: none; justify-self: start; }
 
 /* ---- FAQ ---- */
 .faq { display: grid; grid-template-columns: repeat(12, 1fr); column-gap: var(--gap); align-items: start; }
@@ -368,11 +375,12 @@ details p { padding: 0 24px 24px; max-width: 52ch; font-size: var(--fs-body); co
   .band { min-height: 132px; }
   .panel { grid-template-columns: 1fr; }
   .panel-demo { padding: 12px; }
-  .how-grid { display: flex; flex-direction: column; }
-  .how-stage { order: -1; }
-  .how-stage { position: sticky; top: 72px; z-index: 5; margin-inline: calc(var(--margin) * -1); padding-inline: var(--margin); background: var(--bg); padding-bottom: 12px; }
+  .how-grid { display: flex; flex-direction: column; align-items: stretch; }
+  .how-stage { order: -1; position: static; margin-bottom: 20px; }
+  .how-tabs { display: inline-grid; }
   .stage-card .monitor { aspect-ratio: 16 / 10; }
-  .step { min-height: 60svh; }
+  .step { display: none; min-height: 0; padding-bottom: 0; }
+  .step.on { display: flex; }
   .faq { display: block; }
   .faq h2 { margin-bottom: 24px; }
   details summary { min-height: 64px; }

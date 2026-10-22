@@ -1,0 +1,12 @@
+{
+  "name": "snapwell-film",
+  "private": true,
+  "description": "紹介動画のフレームを決定論的に書き出す (feel の物理モデルを偽の時計で進める)",
+  "type": "module",
+  "scripts": {
+    "render": "node render.mjs"
+  },
+  "devDependencies": {
+    "playwright-core": "1.64.1"
+  }
+}

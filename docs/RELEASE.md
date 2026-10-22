@@ -42,3 +42,4 @@
 - **非公開のリポジトリから公開するには、GitHub Pro 以上が要る**。無料のプランでは、リポジトリを公開にする必要がある（その場合は、先に LICENSE を決める）
 - ダウンロードのボタンは `releases/download/v1.0.0/Snapwell-1.0.0-win-<rid>.zip` を直接指す。v1.0.0 のリリースを公開するまでは 404 になる。公開は、ページと同じ日にそろえる
 - 動きは feel のランタイムで動かしている（`site/js/feel.js`、`THIRD_PARTY_NOTICES.md` に記載）。`transition` や `cubic-bezier` を足さない
+- 紹介動画（`site/video/`）は `tools/film/` で作る。feel のモデルを偽の時計で 1 コマずつ進めて撮る（実時間に依存しないので、毎回同じ映像になる）。作り直すときは `cd tools/film && npm install && node render.mjs`（ffmpeg と Chrome か Edge が要る）。できた `out/snapwell.mp4`・`snapwell.webm`・`poster.jpg` を `site/video/` に置く。実アプリの録画ではなく、モックアップ相当の画面なので、ページにもそう書いてある

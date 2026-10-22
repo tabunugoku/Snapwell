@@ -93,7 +93,7 @@
         }
         w.body.forces = forces;
         w.body.min = { x: 0, y: 0 };
-        w.body.max = { x: W - 40, y: H - 30 };
+        w.body.max = { x: W - w.bw.x, y: H - w.bh.x };
         if (w.zone >= rects.length) w.zone = rects.length - 1;
       }
     }
@@ -147,6 +147,8 @@
 
     place(w) {
       const b = w.body;
+      // Walls follow the window's own size: a window can't be thrown out of the work area.
+      b.max.x = this.W - w.bw.x; b.max.y = this.H - w.bh.x;
       const lift = Math.min(1, b.speed / 3000);
       w.el.style.width = `${w.bw.x.toFixed(1)}px`;
       w.el.style.height = `${w.bh.x.toFixed(1)}px`;
@@ -162,6 +164,22 @@
       w.body.x = r.x; w.body.y = r.y; w.body.vx = 0; w.body.vy = 0;
       w.bw.x = w.bw.target = r.w; w.bh.x = w.bh.target = r.h;
       this.place(w);
+    }
+
+    /** Put a window at any rectangle, in or out of a zone (the film scatters windows this way). */
+    jumpRect(w, r) {
+      w.body.x = r.x; w.body.y = r.y; w.body.vx = 0; w.body.vy = 0;
+      w.bw.x = w.bw.target = r.w; w.bh.x = w.bh.target = r.h;
+      this.place(w);
+    }
+
+    /** Send a window to a zone with the push that comes to rest there (no hand involved). */
+    arrangeTo(w, zone) {
+      const r = this.rects[zone];
+      w.zone = zone;
+      w.bw.to(r.w);
+      w.bh.to(r.h);
+      w.body.kickTo(this.field.stops[zone]);
     }
 
     zoneOf(stop) {

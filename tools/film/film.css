@@ -1,0 +1,26 @@
+/* 動画のフレーム (1920×1080)。見た目は site/css/site.css と同じ配色。 */
+html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); }
+.frame { position: relative; width: 1920px; height: 1080px; background: var(--bg); overflow: hidden; }
+
+.left { position: absolute; left: 120px; top: 0; width: 600px; height: 1080px; }
+.cap { position: absolute; left: 0; top: 330px; width: 600px; opacity: 0; }
+.cap-h { font-size: 76px; font-weight: 600; line-height: 1.06; letter-spacing: -0.03em; color: var(--ink); margin: 0; }
+.cap-p { font-size: 28px; line-height: 1.45; color: var(--soft); margin: 24px 0 0; }
+.keys { display: flex; gap: 12px; margin: 34px 0 0; }
+.key { display: grid; place-items: center; min-width: 76px; height: 64px; padding: 0 20px; border-radius: 10px; background: var(--tile); color: var(--ink); font-size: 26px; font-weight: 600; }
+.key.down { background: var(--ink); color: var(--ink-text); }
+.film-readout { position: absolute; left: 0; top: 790px; width: 420px; font-size: 22px; opacity: 0; grid-template-columns: auto 1fr; gap: 10px 24px; }
+.film-readout dd { font-size: 22px; }
+
+.stagebox { position: absolute; left: 760px; top: 202px; width: 1080px; height: 675px; opacity: 0; }
+.stagebox .monitor { position: absolute; left: 0; top: 0; width: 800px; aspect-ratio: auto; height: 500px; transform: scale(1.35); transform-origin: 0 0; border-radius: 10px; }
+.stagebox .workarea { inset: 0 0 32px 0; }
+.cursor { position: absolute; left: 0; top: 0; z-index: 300; pointer-events: none; opacity: 0; will-change: transform; }
+
+.title, .end { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: var(--ink); opacity: 0; }
+.title-name { font-size: 68px; font-weight: 600; letter-spacing: -0.03em; margin: 28px 0 0; }
+.title-line { font-size: 34px; color: var(--soft); margin: 14px 0 0; }
+.end { opacity: 0; }
+.end-h { font-size: 120px; font-weight: 600; letter-spacing: -0.035em; line-height: 1; margin: 36px 0 0; }
+.end-p { font-size: 32px; color: var(--soft); margin: 22px 0 0; }
+.end-url { font-size: 32px; font-weight: 600; margin: 46px 0 0; }
