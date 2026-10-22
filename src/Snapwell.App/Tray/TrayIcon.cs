@@ -70,6 +70,7 @@ internal sealed unsafe class TrayIcon(IAppLog log, ISettingsLauncher? settings =
             };
             if (PInvoke.RegisterClass(in windowClass) == 0)
             {
+                // i18n-keep: 画面に出さない開発者向けの例外・ログ。
                 throw new InvalidOperationException("トレイのウィンドウクラスを登録できない。");
             }
 
@@ -80,6 +81,7 @@ internal sealed unsafe class TrayIcon(IAppLog log, ISettingsLauncher? settings =
 
         if (_window.IsNull)
         {
+            // i18n-keep: 画面に出さない開発者向けの例外・ログ。
             throw new InvalidOperationException("トレイのウィンドウを作れない。");
         }
 
@@ -144,6 +146,7 @@ internal sealed unsafe class TrayIcon(IAppLog log, ISettingsLauncher? settings =
                 var result = PInvoke.GetMessage(out var message, default, 0, 0).Value;
                 if (result == -1)
                 {
+                    // i18n-keep: 画面に出さない開発者向けの例外・ログ。
                     throw new InvalidOperationException("トレイのメッセージ取得に失敗した。");
                 }
 
@@ -222,6 +225,7 @@ internal sealed unsafe class TrayIcon(IAppLog log, ISettingsLauncher? settings =
             data.uFlags = NOTIFY_ICON_DATA_FLAGS.NIF_ICON | NOTIFY_ICON_DATA_FLAGS.NIF_TIP;
             if (!PInvoke.Shell_NotifyIcon(NOTIFY_ICON_MESSAGE.NIM_MODIFY, in data))
             {
+                // i18n-keep: 画面に出さない開発者向けの例外・ログ。
                 log.Error(new InvalidOperationException("トレイのアイコンを更新できない。"));
             }
         }
@@ -237,6 +241,7 @@ internal sealed unsafe class TrayIcon(IAppLog log, ISettingsLauncher? settings =
         var data = IconData();
         if (!PInvoke.Shell_NotifyIcon(NOTIFY_ICON_MESSAGE.NIM_ADD, in data))
         {
+            // i18n-keep: 画面に出さない開発者向けの例外・ログ。
             log.Error(new InvalidOperationException("トレイのアイコンを追加できない。"));
         }
     }
@@ -275,6 +280,7 @@ internal sealed unsafe class TrayIcon(IAppLog log, ISettingsLauncher? settings =
     {
         if (!OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000))
         {
+            // i18n-keep: 画面に出さない開発者向けの例外・ログ。
             throw new PlatformNotSupportedException("トレイメニューには Windows 11 が必要。");
         }
 

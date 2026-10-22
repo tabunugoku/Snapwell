@@ -1,10 +1,12 @@
 using System.Collections.Concurrent;
 using System.Threading.Channels;
 using Snapwell.App.Lifecycle;
+using Snapwell.Core.Localization;
 using Snapwell.Core.Settings;
 
 namespace Snapwell.App.Tests.Lifecycle;
 
+[Collection("UI language")]
 public sealed class SettingsSyncServiceTests : IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), "Snapwell-sync-service-" + Guid.NewGuid());
@@ -21,6 +23,37 @@ public sealed class SettingsSyncServiceTests : IDisposable
         Directory.CreateDirectory(Path.GetDirectoryName(Local)!);
         Directory.CreateDirectory(Path.GetDirectoryName(Remote)!);
         _store.Value = On;
+    }
+
+    /// <summary>開始時の言語を結果へ閉じ込めず、通知する時点の言語で失敗理由を取得する。</summary>
+    [Fact]
+    public async Task FailureReasonUsesLanguageAtLoggingTime()
+    {
+        var previous = UiText.Current.Language;
+        using var entered = new ManualResetEventSlim();
+        using var release = new ManualResetEventSlim();
+        try
+        {
+            UiText.Use(UiLanguage.Japanese);
+            using var service = Create(() =>
+            {
+                entered.Set();
+                release.Wait();
+                throw new IOException("private path");
+            });
+            service.Configure(On);
+            Assert.True(entered.Wait(TimeSpan.FromSeconds(5)));
+            UiText.Use(UiLanguage.English);
+            release.Set();
+            var message = await _log.Next();
+            Assert.Contains("Couldn't access the sync folder or device settings.", message);
+            Assert.DoesNotContain("private path", message);
+        }
+        finally
+        {
+            release.Set();
+            UiText.Use(previous);
+        }
     }
 
     [Fact]

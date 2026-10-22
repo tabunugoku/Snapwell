@@ -1,0 +1,4 @@
+{
+  "Consent.StandardSnap.Body": "Turn off Snap windows in Windows Settings while Snapwell is active?\nSnapwell restores your previous settings when you turn it off, exit, or start it after a crash.\n\nChoose Yes to turn off Windows Snap, or No to leave it on.",
+  "Consent.StandardSnap.Title": "Snapwell — Change Windows settings"
+}

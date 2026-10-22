@@ -50,6 +50,7 @@ internal static class Program
         using var captureIdentity = WindowsIdentity.GetCurrent();
         // フック停止の待機には上限があるため、ハンドルは判定関数とともに入力スレッドの寿命まで保つ。
         var capture = new HotkeyCaptureMutex(HotkeyCaptureSession.MutexName(
+            // i18n-keep: 画面に出さない開発者向けの例外・ログ。
             captureIdentity.User?.Value ?? throw new InvalidOperationException("ユーザーの SID を取得できない。")));
         var matcher = new HotkeyMatcher(() => capture.IsCapturing);
         var hooks = new HookService(new HookThread(matcher), log);
@@ -119,6 +120,7 @@ internal static class Program
                 SettingsStores.Device(), log),
             setReplaceWinArrow: replace => Volatile.Write(ref replaceWinArrow, replace), osTag: osLanguageTag);
         UnhandledExceptionEventHandler unhandled = (_, args) => host.HandleUnhandledException(
+            // i18n-keep: 画面に出さない開発者向けの例外・ログ。
             args.ExceptionObject as Exception ?? new InvalidOperationException("未処理の例外。"));
         EventHandler<UnobservedTaskExceptionEventArgs> unobserved = (_, args) =>
         {

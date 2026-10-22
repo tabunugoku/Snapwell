@@ -8,7 +8,7 @@ namespace Snapwell.App.Lifecycle;
 /// <summary>常駐プロセスの起動順序と、全経路で共通の復元手順。</summary>
 internal sealed class AppHost
 {
-    private const string SnapRestoreFailureStatus = "Windows 標準のスナップを復元できませんでした。再起動時に再試行します";
+    private const string SnapRestoreFailureKey = "Status.SnapRestoreFailure";
 
     // 未処理の例外のハンドラーやセッションの終了を無限に止めないための上限。
     private static readonly TimeSpan _shutdownWait = TimeSpan.FromSeconds(2);
@@ -53,10 +53,11 @@ internal sealed class AppHost
     private int _shutdown;
     private int _shutdownThread;
     private bool _needsFinalRestore;
-    private string? _status;
-    private string? _reloadStatus;
-    private string? _deviceSaveStatus;
-    private string? _deviceReloadStatus;
+    // 翻訳済みの文字列を保持せず、表示時の言語で引き直す。
+    private string? _statusKey;
+    private string? _reloadStatusKey;
+    private string? _deviceSaveStatusKey;
+    private string? _deviceReloadStatusKey;
 
     internal AppHost(ISingleInstance instance, ISnapGuard guard, ISettingsStore<PortableSettings> portableStore,
         ISettingsStore<DeviceState> deviceStore, IHookService hooks, ITrayService tray, IConsentPrompt consent,
@@ -142,17 +143,17 @@ internal sealed class AppHost
             if (!device.IsReadOnly) { _sync?.Configure(_device); }
             if (!_startupRecoveryFailed && (portable.ResetToDefaults || device.ResetToDefaults))
             {
-                _status = "壊れた設定を退避し、既定値で起動しました";
+                _statusKey = "Status.SettingsReset";
             }
             else if (!_startupRecoveryFailed && (portable.IsReadOnly || device.IsReadOnly))
             {
                 if (device.IsReadOnly)
                 {
-                    _status = "新しい版の設定を保護しています";
+                    _statusKey = "Status.FutureSettings";
                 }
                 else
                 {
-                    _reloadStatus = "新しい版の設定を保護しています";
+                    _reloadStatusKey = "Status.FutureSettings";
                 }
             }
 
@@ -172,7 +173,7 @@ internal sealed class AppHost
             {
                 if (!_startupRecoveryFailed)
                 {
-                    _status = "入力フックを開始できません。Windows 標準のスナップを使用します";
+                    _statusKey = "Status.HookFailure";
                 }
 
                 if (_hooks.Failure is { } failure)
@@ -252,12 +253,13 @@ internal sealed class AppHost
                 {
                     if (reportUnreadable)
                     {
+                        // i18n-keep: 画面に出さない開発者向けの例外・ログ。
                         RetryDeviceReload(new IOException("端末状態を再読み込みできない。"), attempt, version);
                     }
                     return;
                 }
 
-                _deviceReloadStatus = null;
+                _deviceReloadStatusKey = null;
                 _deviceReadOnly = loaded.IsReadOnly;
                 ApplyLanguage(loaded.Value);
                 if (_deviceReadOnly)
@@ -291,9 +293,9 @@ internal sealed class AppHost
     private void RetryDeviceReload(Exception exception, int attempt, int version)
     {
         Log(exception);
-        _deviceReloadStatus = attempt < DeviceReloadRetryLimit
-            ? "端末状態を再読み込みできません。再試行しています"
-            : "端末状態を再読み込みできませんでした。次の変更で再試行します";
+        _deviceReloadStatusKey = attempt < DeviceReloadRetryLimit
+            ? "Status.DeviceReloadRetry"
+            : "Status.DeviceReloadFailure";
         _tray.Update(State());
         if (attempt < DeviceReloadRetryLimit)
         {
@@ -356,6 +358,7 @@ internal sealed class AppHost
                 // 初回起動では設定ファイルがまだない場合があるため、監視通知時だけ失敗を知らせる。
                 if (reportUnreadable)
                 {
+                    // i18n-keep: 画面に出さない開発者向けの例外・ログ。
                     ReportReloadFailure(new IOException("設定を再読み込みできない。次の変更で再試行する。"));
                 }
                 return;
@@ -363,7 +366,7 @@ internal sealed class AppHost
 
             if (loaded.IsReadOnly)
             {
-                _reloadStatus = "新しい版の設定を保護しています";
+                _reloadStatusKey = "Status.FutureSettings";
                 _tray.Update(State());
                 return;
             }
@@ -372,7 +375,7 @@ internal sealed class AppHost
             var differences = SettingsTransfer.GetDifferences(_portable, settings);
             if (differences.Count == 0)
             {
-                _reloadStatus = null;
+                _reloadStatusKey = null;
                 _tray.Update(State());
                 return;
             }
@@ -385,7 +388,7 @@ internal sealed class AppHost
                     _runtime!.TryUpdateWindowRules(settings.WindowRules))
                 {
                     _portable = settings;
-                    _reloadStatus = null;
+                    _reloadStatusKey = null;
                     _tray.Update(State());
                     return;
                 }
@@ -419,7 +422,7 @@ internal sealed class AppHost
             replacement.SetEnabled(_enabled && _hooksStarted);
             Volatile.Write(ref _runtime, replacement);
             _portable = settings;
-            _reloadStatus = null;
+            _reloadStatusKey = null;
             _tray.Update(State());
         }
     }
@@ -427,7 +430,7 @@ internal sealed class AppHost
     private void ReportReloadFailure(Exception exception)
     {
         Log(exception);
-        _reloadStatus = "設定を反映できませんでした。前の設定を使用しています";
+        _reloadStatusKey = "Status.ReloadFailure";
         _tray.Update(State());
     }
 
@@ -690,7 +693,7 @@ internal sealed class AppHost
                 // 復旧失敗後も停止は試みるが、未復旧の診断を優先する。
                 if (!_guard.Disable() && !_startupRecoveryFailed)
                 {
-                    _status = "Windows 標準のスナップの停止を確認できませんでした";
+                    _statusKey = "Status.SnapDisableUnconfirmed";
                 }
 
                 if (Volatile.Read(ref _shutdown) != 0)
@@ -703,7 +706,7 @@ internal sealed class AppHost
             {
                 if (!_startupRecoveryFailed)
                 {
-                    _status = "Windows 標準のスナップを停止できませんでした";
+                    _statusKey = "Status.SnapDisableFailure";
                 }
 
                 Log(exception);
@@ -721,9 +724,9 @@ internal sealed class AppHost
                 return;
             }
             _startupRecoveryFailed = false;
-            if (_status == SnapRestoreFailureStatus)
+            if (_statusKey == SnapRestoreFailureKey)
             {
-                _status = null;
+                _statusKey = null;
             }
         }
         catch (Exception exception)
@@ -734,16 +737,33 @@ internal sealed class AppHost
 
     private void ReportSnapRestoreFailure(Exception? exception = null)
     {
-        _status = SnapRestoreFailureStatus;
-        Log(new IOException(SnapRestoreFailureStatus, exception));
+        _statusKey = SnapRestoreFailureKey;
+        // i18n-keep: 画面に出さない開発者向けの例外・ログ。
+        Log(new IOException("Windows 標準のスナップを復元できませんでした。再起動時に再試行します", exception));
     }
 
     private TrayState State()
     {
-        var status = string.Join(" / ", new[] { _status, _reloadStatus, _deviceSaveStatus, _deviceReloadStatus }
-            .Where(value => value is not null));
+        var status = string.Join(" / ", new[] { _statusKey, _reloadStatusKey, _deviceSaveStatusKey, _deviceReloadStatusKey }
+            .Where(value => value is not null).Select(value => DisplayStatus(value!)));
         return new(_enabled, _device.DisableStandardSnap, status.Length == 0 ? null : status, _hooksStarted);
     }
+
+    // リテラルの参照にそろえ、カタログの参照検査でも状態のキーを網羅する。
+    private static string DisplayStatus(string key) => key switch
+    {
+        "Status.SnapRestoreFailure" => UiText.Current.Get("Status.SnapRestoreFailure"),
+        "Status.SettingsReset" => UiText.Current.Get("Status.SettingsReset"),
+        "Status.FutureSettings" => UiText.Current.Get("Status.FutureSettings"),
+        "Status.HookFailure" => UiText.Current.Get("Status.HookFailure"),
+        "Status.DeviceReloadRetry" => UiText.Current.Get("Status.DeviceReloadRetry"),
+        "Status.DeviceReloadFailure" => UiText.Current.Get("Status.DeviceReloadFailure"),
+        "Status.ReloadFailure" => UiText.Current.Get("Status.ReloadFailure"),
+        "Status.SnapDisableUnconfirmed" => UiText.Current.Get("Status.SnapDisableUnconfirmed"),
+        "Status.SnapDisableFailure" => UiText.Current.Get("Status.SnapDisableFailure"),
+        "Status.DeviceSaveFailure" => UiText.Current.Get("Status.DeviceSaveFailure"),
+        _ => throw new ArgumentOutOfRangeException(nameof(key)),
+    };
 
     private void ApplyDevice(DeviceState device)
     {
@@ -783,7 +803,7 @@ internal sealed class AppHost
             var device = _deviceReadOnly ? update(_device)
                 : DeviceStateChanges.Update(_deviceStore, current => update(WithPendingPause(current)));
             _pausePending = _deviceReadOnly && !device.Enabled;
-            _deviceSaveStatus = null;
+            _deviceSaveStatusKey = null;
             // 保存待ちの間に終了した場合は、復元済みの OS や Runtime を再び有効にしない。
             if (CanOperate())
             {
@@ -797,7 +817,7 @@ internal sealed class AppHost
                 _deviceReadOnly = true;
             }
             Log(exception);
-            _deviceSaveStatus = "端末状態を保存できませんでした。変更はこの起動中だけ有効です";
+            _deviceSaveStatusKey = "Status.DeviceSaveFailure";
         }
     }
 

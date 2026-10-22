@@ -21,6 +21,53 @@ namespace Snapwell.App.Tests.Lifecycle;
 [Collection("UI language")]
 public sealed class AppHostTests
 {
+    /// <summary>保持した状態は次の障害を待たず、端末の言語変更だけで再翻訳する。</summary>
+    [Theory]
+    [InlineData("reset", "壊れた設定を退避し、既定値で起動しました", "Damaged settings backed up; using defaults.")]
+    [InlineData("future", "新しい版の設定を保護しています", "Protecting settings from a newer version")]
+    [InlineData("hooks", "入力フックを開始できません。Windows 標準のスナップを使用します", "Couldn't start input hooks. Using Windows Snap.")]
+    [InlineData("restore", "Windows 標準のスナップを復元できませんでした。再起動時に再試行します", "Couldn't restore Windows Snap. Will retry on restart.")]
+    [InlineData("reload", "設定を反映できませんでした。前の設定を使用しています", "Couldn't apply settings. Using the previous settings.")]
+    [InlineData("save", "端末状態を保存できませんでした。変更はこの起動中だけ有効です", "Device settings unsaved; changes last until exit.")]
+    public void RetainedStatusChangesLanguageWithoutRepeatingFailure(string failure, string japanese, string english)
+    {
+        var previous = UiText.Current.Language;
+        try
+        {
+            using var fixture = new Fixture(new()
+            {
+                Language = "ja",
+                DisableStandardSnap = true,
+                StandardSnapConsentGiven = true
+            }, watchDevice: true);
+            fixture.Portable.ResetToDefaults = failure == "reset";
+            fixture.Portable.ReadOnly = failure == "future";
+            fixture.Hooks.Starts = failure != "hooks";
+            fixture.Guard.RecoverSucceeds = failure != "restore";
+            Assert.True(fixture.Host.Start());
+            if (failure == "reload")
+            {
+                fixture.Portable.ReloadResult = null;
+                fixture.Host.ReloadSettings();
+            }
+            if (failure == "save")
+            {
+                fixture.Device.SaveException = new IOException();
+                fixture.Host.ToggleStandardSnap();
+            }
+            Assert.Equal(japanese, fixture.Tray.State!.Status);
+            fixture.Device.ReloadResult = new(fixture.Device.Value with { Language = "en" });
+            var updates = fixture.Tray.Updates;
+            fixture.DeviceWatcher.Notify();
+            Assert.Equal(updates + 1, fixture.Tray.Updates);
+            Assert.Equal(english, fixture.Tray.State!.Status);
+            fixture.Device.ReloadResult = new(fixture.Device.Value with { Language = "ja" });
+            fixture.DeviceWatcher.Notify();
+            Assert.Equal(japanese, fixture.Tray.State!.Status);
+        }
+        finally { UiText.Use(previous); }
+    }
+
     /// <summary>端末状態の通知で言語を切り替え、トレイを一度だけ更新する。</summary>
     [Fact]
     public void DeviceLanguageChangeUpdatesCatalogAndTrayExactlyOnce()

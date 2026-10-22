@@ -19,6 +19,14 @@ internal sealed record TrayMenuSnapshot(TrayMenuLayout Layout, IReadOnlyList<Tra
         TrayIconKind.Paused => UiText.Current.Get("Tray.Status.Paused"),
         _ => UiText.Current.Get("Tray.Status.Active"),
     };
+
+    /// <summary>表示する時点の言語で、選択項目またはメニュー全体の読み上げ名を返す。</summary>
+    internal string AccessibleName(int selected) => selected == 0
+        ? Enabled ? UiText.Current.Get("Status.Accessibility.ToggleOn")
+            : UiText.Current.Get("Status.Accessibility.ToggleOff")
+        : selected > 0 ? UiText.Current.Format("Status.Accessibility.Item", ("name", Items[selected - 1].Name))
+        : Enabled ? UiText.Current.Plural("Status.Accessibility.MenuEnabled", MonitorCount)
+            : UiText.Current.Plural("Status.Accessibility.MenuDisabled", MonitorCount);
 }
 
 /// <summary>ネイティブの描画と入力を差し替える境界。</summary>
