@@ -19,6 +19,7 @@ internal static class IcoFile
             BinaryPrimitives.ReadUInt16LittleEndian(bytes) != 0 ||
             BinaryPrimitives.ReadUInt16LittleEndian(bytes[2..]) != 1)
         {
+            // i18n-keep: 画面に出さない開発者向けの例外・ログ。
             throw new InvalidDataException("アイコンのヘッダーが不正。");
         }
 
@@ -29,6 +30,7 @@ internal static class IcoFile
             var entry = HeaderLength + (i * EntryLength);
             if (bytes.Length < entry + EntryLength)
             {
+                // i18n-keep: 画面に出さない開発者向けの例外・ログ。
                 throw new InvalidDataException("アイコンのディレクトリが途中で切れている。");
             }
 
@@ -37,6 +39,7 @@ internal static class IcoFile
             var offset = BinaryPrimitives.ReadUInt32LittleEndian(bytes[(entry + 12)..]);
             if (offset > bytes.Length || length > bytes.Length - offset)
             {
+                // i18n-keep: 画面に出さない開発者向けの例外・ログ。
                 throw new InvalidDataException("アイコンの画像が範囲外。");
             }
 
