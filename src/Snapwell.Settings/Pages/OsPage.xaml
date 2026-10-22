@@ -21,7 +21,7 @@
                         <StackPanel VerticalAlignment="Center">
                             <TextBlock Text="ドラッグでのスナップ" Style="{StaticResource SnapwellRowTitleStyle}" />
                             <TextBlock
-                                Text="端へ持っていくと半分や 4 分の 1 に広がる標準の動きを、Snapwell の区画への吸着に置き換えます"
+                                Text="端へ持っていくと半分や 4&#160;分の&#160;1 に広がる標準の動きを、Snapwell の区画への吸着に置き換えます"
                                 Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">

@@ -137,9 +137,12 @@ public sealed partial class HotkeysPage : Page
         _flashBorders.Add(command, flash);
         rowHost.Children.Add(flash);
         var row = new Grid { Style = (Style)Resources["HotkeyRowStyle"] };
-        row.ColumnDefinitions.Add(new() { Width = new(2.1, GridUnitType.Star) });
+        // 3:4 は、最小幅のウィンドウでも既定のキー（Ctrl・Alt・Shift と 1 キー）が 1 行に収まり、既定の幅で最も長い
+        // 操作名が 1 行に収まる比。星の列に MinWidth を付けると、長い操作名の行だけ列がずれて右にはみ出したので使わない。
+        // 状態の列は最も長い「ほかのアプリが使用中」が収まる幅。列の幅は見出しの行（HotkeysPage.xaml）とそろえる。
         row.ColumnDefinitions.Add(new() { Width = new(3, GridUnitType.Star) });
-        row.ColumnDefinitions.Add(new() { Width = new(148) });
+        row.ColumnDefinitions.Add(new() { Width = new(4, GridUnitType.Star) });
+        row.ColumnDefinitions.Add(new() { Width = new(120) });
         row.ColumnDefinitions.Add(new() { Width = new(72) });
         row.Children.Add(new TextBlock
         {

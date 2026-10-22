@@ -205,7 +205,7 @@ public sealed partial class GeneralPage : Page
         AdminStartStatus.Text = !ProtectedLocation.IsLiteralTaskPath(_executable)
             ? "パスに % を含む場所では管理者起動を登録できません"
             : protectedLocation ? "" :
-                "ローカル固定ディスクの保護された場所（Program Files など）に配置してください。リンクは使えません";
+                "ローカル固定ディスクの保護された場所（Program Files など）に置いてください。リンクは使えません";
         if (_startup.HasPendingRunRestore)
         {
             AdminStartStatus.Text = "元の自動起動の設定を戻せていません。管理者起動をオンにしてからオフにすると再試行します。" +

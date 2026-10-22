@@ -92,7 +92,7 @@ public sealed partial class SetupWindow
     private void ShowStandardFeatures()
     {
         SetHeading("標準のスナップを止めますか",
-            "Windows のスナップと同時に動くと、ウィンドウの位置が取り合いになります。Snapwell が有効な間だけ、次の設定を変えます。");
+            "Windows のスナップと同時に動くと、位置が取り合いになります。Snapwell が有効な間だけ、次の設定を変えます。");
         var rows = Rows();
         AddRow(rows, "ドラッグでのスナップ", Text("オン → オフ", "SnapwellRowDescriptionStyle"));
         AddRow(rows, "スナップ レイアウト・スナップ バー", Text("オン → オフ", "SnapwellRowDescriptionStyle"));

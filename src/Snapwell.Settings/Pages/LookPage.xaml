@@ -7,7 +7,7 @@
     <Page.Resources>
         <Style x:Key="CornerCardStyle" TargetType="Button">
             <Setter Property="HorizontalAlignment" Value="Stretch" />
-            <Setter Property="VerticalAlignment" Value="Top" />
+            <Setter Property="VerticalAlignment" Value="Stretch" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
             <Setter Property="VerticalContentAlignment" Value="Top" />
             <Setter Property="Padding" Value="10" />
@@ -53,7 +53,7 @@
                                 <TextBlock Text="ウィンドウの角" Style="{StaticResource SnapwellRowTitleStyle}" />
                             </Grid>
                             <TextBlock
-                                Text="DWM の角の設定を使います。半径は Windows が決めます（約 8 px）"
+                                Text="DWM の角の設定を使います。半径は Windows が決めます（約&#160;8&#160;px）"
                                 Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
@@ -97,7 +97,7 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
-                <Grid Grid.Column="0" VerticalAlignment="Top">
+                <Grid Grid.Column="0" VerticalAlignment="Stretch">
                     <Button x:Name="CardDefault" Tag="0" Click="CornerCard_Click"
                             Style="{StaticResource CornerCardStyle}" AutomationProperties.Name="Windows の既定">
                         <StackPanel Spacing="6">
@@ -110,14 +110,14 @@
                             </Border>
                             <TextBlock Text="Windows の既定" FontWeight="SemiBold" FontSize="13" TextWrapping="Wrap"
                                        Foreground="{ThemeResource SnapwellTextBrush}" />
-                            <TextBlock Text="何も変えません。角の形は Windows とアプリ任せで、アプリによって丸だったり直角だったりします" FontSize="11.5" TextWrapping="Wrap"
+                            <TextBlock Text="何も変えません。角が丸か直角かは、Windows とアプリ次第です" FontSize="11.5" TextWrapping="Wrap"
                                        Foreground="{ThemeResource SnapwellMutedBrush}" />
                         </StackPanel>
                     </Button>
                     <Border x:Name="CardDefaultMark" CornerRadius="10" BorderThickness="1.5" IsHitTestVisible="False"
                             BorderBrush="{ThemeResource SnapwellInkBrush}" Visibility="Collapsed" />
                 </Grid>
-                <Grid Grid.Column="1" VerticalAlignment="Top">
+                <Grid Grid.Column="1" VerticalAlignment="Stretch">
                     <Button x:Name="CardRound" Tag="1" Click="CornerCard_Click"
                             Style="{StaticResource CornerCardStyle}" AutomationProperties.Name="角丸を強制する">
                         <StackPanel Spacing="6">
@@ -130,14 +130,14 @@
                             </Border>
                             <TextBlock Text="角丸を強制する" FontWeight="SemiBold" FontSize="13" TextWrapping="Wrap"
                                        Foreground="{ThemeResource SnapwellTextBrush}" />
-                            <TextBlock Text="通常のウィンドウを標準の丸（約 8 px）にそろえます" FontSize="11.5" TextWrapping="Wrap"
+                            <TextBlock Text="通常のウィンドウを標準の丸（約&#160;8&#160;px）にします" FontSize="11.5" TextWrapping="Wrap"
                                        Foreground="{ThemeResource SnapwellMutedBrush}" />
                         </StackPanel>
                     </Button>
                     <Border x:Name="CardRoundMark" CornerRadius="10" BorderThickness="1.5" IsHitTestVisible="False"
                             BorderBrush="{ThemeResource SnapwellInkBrush}" Visibility="Collapsed" />
                 </Grid>
-                <Grid Grid.Column="2" VerticalAlignment="Top">
+                <Grid Grid.Column="2" VerticalAlignment="Stretch">
                     <Button x:Name="CardSmall" Tag="2" Click="CornerCard_Click"
                             Style="{StaticResource CornerCardStyle}" AutomationProperties.Name="小さい角丸">
                         <StackPanel Spacing="6">
@@ -150,14 +150,14 @@
                             </Border>
                             <TextBlock Text="小さい角丸" FontWeight="SemiBold" FontSize="13" TextWrapping="Wrap"
                                        Foreground="{ThemeResource SnapwellTextBrush}" />
-                            <TextBlock Text="丸みを控えめにします（約 4 px）" FontSize="11.5" TextWrapping="Wrap"
+                            <TextBlock Text="丸みを控えめにします（約&#160;4&#160;px）" FontSize="11.5" TextWrapping="Wrap"
                                        Foreground="{ThemeResource SnapwellMutedBrush}" />
                         </StackPanel>
                     </Button>
                     <Border x:Name="CardSmallMark" CornerRadius="10" BorderThickness="1.5" IsHitTestVisible="False"
                             BorderBrush="{ThemeResource SnapwellInkBrush}" Visibility="Collapsed" />
                 </Grid>
-                <Grid Grid.Column="3" VerticalAlignment="Top">
+                <Grid Grid.Column="3" VerticalAlignment="Stretch">
                     <Button x:Name="CardNone" Tag="3" Click="CornerCard_Click"
                             Style="{StaticResource CornerCardStyle}" AutomationProperties.Name="角丸なし">
                         <StackPanel Spacing="6">
@@ -230,7 +230,7 @@
                 </StackPanel>
             </Border>
             <TextBlock Text="オーバーレイの見え方" Style="{StaticResource SnapwellGroupTitleStyle}" />
-            <TextBlock Text="ウィンドウをドラッグして、右上へ投げた場面の例です。上の「区画のプレビュー」と「オーバーレイ」のスイッチを切り替えると、表示がどう変わるかをここで確かめられます。"
+            <TextBlock Text="ウィンドウを右上へ投げた場面の例です。上の「区画のプレビュー」と「オーバーレイ」のスイッチで、表示がどう変わるかを確かめられます。"
                        Style="{StaticResource SnapwellHintTextStyle}" TextWrapping="Wrap" Margin="0,0,0,8" />
             <Border Width="400" Height="190" HorizontalAlignment="Left" CornerRadius="10" BorderThickness="1"
                     BorderBrush="{ThemeResource SnapwellBorderBrush}"
