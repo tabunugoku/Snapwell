@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Page
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:l="using:Snapwell.Settings.Localization"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:Snapwell.Settings.Controls"
     x:Class="Snapwell.Settings.Pages.LookPage">
@@ -35,8 +36,8 @@
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
         <StackPanel Padding="32,28,32,40" HorizontalAlignment="Stretch">
 
-            <TextBlock Text="外観" Style="{StaticResource SnapwellPageTitleStyle}" />
-            <TextBlock Text="ウィンドウの角の形と、Snapwell のオーバーレイの見た目です。" Style="{StaticResource SnapwellLeadTextStyle}" />
+            <TextBlock l:Loc.Uid="Look_Title" Style="{StaticResource SnapwellPageTitleStyle}" />
+            <TextBlock l:Loc.Uid="Look_Lead" Style="{StaticResource SnapwellLeadTextStyle}" />
             <Border Style="{StaticResource SnapwellRowsBorderStyle}">
                 <StackPanel>
                     <Grid Style="{StaticResource SnapwellRowGridStyle}">
@@ -50,22 +51,21 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="ウィンドウの角" Style="{StaticResource SnapwellRowTitleStyle}" />
+                                <TextBlock l:Loc.Uid="Look_CornersTitle" Style="{StaticResource SnapwellRowTitleStyle}" />
                             </Grid>
-                            <TextBlock
-                                Text="DWM の角の設定を使います。半径は Windows が決めます（約&#160;8&#160;px）"
+                            <TextBlock l:Loc.Uid="Look_CornersDescription"
                                 Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <ComboBox x:Name="CornerBox" SelectionChanged="Corner_SelectionChanged"
+                            <ComboBox l:Loc.Uid="Look_CornerBox" x:Name="CornerBox" SelectionChanged="Corner_SelectionChanged"
                                 Width="200"
                                 Style="{StaticResource DemoSelectStyle}"
                                 SelectedIndex="0"
-                                AutomationProperties.Name="ウィンドウの角">
-                                <ComboBoxItem Content="角丸を強制する" />
-                                <ComboBoxItem Content="小さい角丸" />
-                                <ComboBoxItem Content="角丸なし" />
-                                <ComboBoxItem Content="Windows の既定" />
+                                >
+                                <ComboBoxItem x:Name="CornerRoundItem" />
+                                <ComboBoxItem x:Name="CornerSmallItem" />
+                                <ComboBoxItem x:Name="CornerNoneItem" />
+                                <ComboBoxItem x:Name="CornerDefaultItem" />
                             </ComboBox>
                         </StackPanel>
                     </Grid>
@@ -76,19 +76,19 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="区画のプレビュー" Style="{StaticResource SnapwellRowTitleStyle}" />
-                            <TextBlock Text="ウィンドウを投げると、離した瞬間から着地するまで、吸着先の区画を青く塗ります。手動でリサイズするときは、ドラッグしている間ずっと、離したときにそろう区画を塗ります（「分割と間隔」で「手動でリサイズしたら区画にそろえる」をオンにしたとき）。オフにすると、どちらも何も表示しません"
+                            <TextBlock l:Loc.Uid="Look_ZonePreviewTitle" Style="{StaticResource SnapwellRowTitleStyle}" />
+                            <TextBlock l:Loc.Uid="Look_ZonePreviewDescription"
                                        Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
-                        <ToggleSwitch x:Name="ZonePreviewToggle" Grid.Column="1" OnContent="" OffContent="" MinWidth="0"
+                        <ToggleSwitch l:Loc.Uid="Look_ZonePreviewToggle" x:Name="ZonePreviewToggle" Grid.Column="1" OnContent="" OffContent="" MinWidth="0"
                                       Style="{StaticResource SnapwellToggleSwitchStyle}"
-                                      VerticalAlignment="Center" AutomationProperties.Name="区画のプレビュー"
+                                      VerticalAlignment="Center"
                                       Toggled="ZonePreview_Toggled" />
                     </Grid>
                 </StackPanel>
             </Border>
-            <TextBlock Text="ウィンドウの角の見え方" Style="{StaticResource SnapwellGroupTitleStyle}" />
-            <TextBlock Text="最大化中のウィンドウと枠のないウィンドウは変えません。枠のないウィンドウは、アプリごとのルールで個別に指定できます。"
+            <TextBlock l:Loc.Uid="Look_CornerExamplesTitle" Style="{StaticResource SnapwellGroupTitleStyle}" />
+            <TextBlock l:Loc.Uid="Look_CornerExamplesHint"
                        Style="{StaticResource SnapwellHintTextStyle}" TextWrapping="Wrap" Margin="0,0,0,8" />
             <Grid ColumnSpacing="10">
                 <Grid.ColumnDefinitions>
@@ -99,7 +99,7 @@
                 </Grid.ColumnDefinitions>
                 <Grid Grid.Column="0" VerticalAlignment="Stretch">
                     <Button x:Name="CardDefault" Tag="0" Click="CornerCard_Click"
-                            Style="{StaticResource CornerCardStyle}" AutomationProperties.Name="Windows の既定">
+                            Style="{StaticResource CornerCardStyle}" >
                         <StackPanel Spacing="6">
                             <Border Height="62" CornerRadius="8" BorderThickness="1.5"
                                     BorderBrush="{ThemeResource SnapwellBorderStrongBrush}"
@@ -108,9 +108,9 @@
                                         BorderBrush="{ThemeResource SnapwellBorderBrush}"
                                         Background="{ThemeResource SnapwellSurfaceBrush}" />
                             </Border>
-                            <TextBlock Text="Windows の既定" FontWeight="SemiBold" FontSize="13" TextWrapping="Wrap"
+                            <TextBlock x:Name="CornerDefaultLabel" FontWeight="SemiBold" FontSize="13" TextWrapping="Wrap"
                                        Foreground="{ThemeResource SnapwellTextBrush}" />
-                            <TextBlock Text="何も変えません。角が丸か直角かは、Windows とアプリ次第です" FontSize="11.5" TextWrapping="Wrap"
+                            <TextBlock l:Loc.Uid="Look_CornerDefaultDescription" FontSize="11.5" TextWrapping="Wrap"
                                        Foreground="{ThemeResource SnapwellMutedBrush}" />
                         </StackPanel>
                     </Button>
@@ -119,7 +119,7 @@
                 </Grid>
                 <Grid Grid.Column="1" VerticalAlignment="Stretch">
                     <Button x:Name="CardRound" Tag="1" Click="CornerCard_Click"
-                            Style="{StaticResource CornerCardStyle}" AutomationProperties.Name="角丸を強制する">
+                            Style="{StaticResource CornerCardStyle}" >
                         <StackPanel Spacing="6">
                             <Border Height="62" CornerRadius="8" BorderThickness="1.5"
                                     BorderBrush="{ThemeResource SnapwellBorderStrongBrush}"
@@ -128,9 +128,9 @@
                                         BorderBrush="{ThemeResource SnapwellBorderBrush}"
                                         Background="{ThemeResource SnapwellSurfaceBrush}" />
                             </Border>
-                            <TextBlock Text="角丸を強制する" FontWeight="SemiBold" FontSize="13" TextWrapping="Wrap"
+                            <TextBlock x:Name="CornerRoundLabel" FontWeight="SemiBold" FontSize="13" TextWrapping="Wrap"
                                        Foreground="{ThemeResource SnapwellTextBrush}" />
-                            <TextBlock Text="通常のウィンドウを標準の丸（約&#160;8&#160;px）にします" FontSize="11.5" TextWrapping="Wrap"
+                            <TextBlock l:Loc.Uid="Look_CornerRoundDescription" FontSize="11.5" TextWrapping="Wrap"
                                        Foreground="{ThemeResource SnapwellMutedBrush}" />
                         </StackPanel>
                     </Button>
@@ -139,7 +139,7 @@
                 </Grid>
                 <Grid Grid.Column="2" VerticalAlignment="Stretch">
                     <Button x:Name="CardSmall" Tag="2" Click="CornerCard_Click"
-                            Style="{StaticResource CornerCardStyle}" AutomationProperties.Name="小さい角丸">
+                            Style="{StaticResource CornerCardStyle}" >
                         <StackPanel Spacing="6">
                             <Border Height="62" CornerRadius="4" BorderThickness="1.5"
                                     BorderBrush="{ThemeResource SnapwellBorderStrongBrush}"
@@ -148,9 +148,9 @@
                                         BorderBrush="{ThemeResource SnapwellBorderBrush}"
                                         Background="{ThemeResource SnapwellSurfaceBrush}" />
                             </Border>
-                            <TextBlock Text="小さい角丸" FontWeight="SemiBold" FontSize="13" TextWrapping="Wrap"
+                            <TextBlock x:Name="CornerSmallLabel" FontWeight="SemiBold" FontSize="13" TextWrapping="Wrap"
                                        Foreground="{ThemeResource SnapwellTextBrush}" />
-                            <TextBlock Text="丸みを控えめにします（約&#160;4&#160;px）" FontSize="11.5" TextWrapping="Wrap"
+                            <TextBlock l:Loc.Uid="Look_CornerSmallDescription" FontSize="11.5" TextWrapping="Wrap"
                                        Foreground="{ThemeResource SnapwellMutedBrush}" />
                         </StackPanel>
                     </Button>
@@ -159,7 +159,7 @@
                 </Grid>
                 <Grid Grid.Column="3" VerticalAlignment="Stretch">
                     <Button x:Name="CardNone" Tag="3" Click="CornerCard_Click"
-                            Style="{StaticResource CornerCardStyle}" AutomationProperties.Name="角丸なし">
+                            Style="{StaticResource CornerCardStyle}" >
                         <StackPanel Spacing="6">
                             <Border Height="62" CornerRadius="0" BorderThickness="1.5"
                                     BorderBrush="{ThemeResource SnapwellBorderStrongBrush}"
@@ -168,9 +168,9 @@
                                         BorderBrush="{ThemeResource SnapwellBorderBrush}"
                                         Background="{ThemeResource SnapwellSurfaceBrush}" />
                             </Border>
-                            <TextBlock Text="角丸なし" FontWeight="SemiBold" FontSize="13" TextWrapping="Wrap"
+                            <TextBlock x:Name="CornerNoneLabel" FontWeight="SemiBold" FontSize="13" TextWrapping="Wrap"
                                        Foreground="{ThemeResource SnapwellTextBrush}" />
-                            <TextBlock Text="通常のウィンドウを直角にします" FontSize="11.5" TextWrapping="Wrap"
+                            <TextBlock l:Loc.Uid="Look_CornerNoneDescription" FontSize="11.5" TextWrapping="Wrap"
                                        Foreground="{ThemeResource SnapwellMutedBrush}" />
                         </StackPanel>
                     </Button>
@@ -178,7 +178,7 @@
                             BorderBrush="{ThemeResource SnapwellInkBrush}" Visibility="Collapsed" />
                 </Grid>
             </Grid>
-            <TextBlock Text="オーバーレイ" Style="{StaticResource SnapwellGroupTitleStyle}" />
+            <TextBlock l:Loc.Uid="Look_OverlayTitle" Style="{StaticResource SnapwellGroupTitleStyle}" />
             <Border Style="{StaticResource SnapwellRowsBorderStyle}">
                 <StackPanel>
                     <Grid Style="{StaticResource SnapwellRowGridStyle}">
@@ -192,16 +192,16 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="区画の線を表示する" Style="{StaticResource SnapwellRowTitleStyle}" />
+                                <TextBlock l:Loc.Uid="Look_ZoneLinesTitle" Style="{StaticResource SnapwellRowTitleStyle}" />
                             </Grid>
-                            <TextBlock Text="吸着先の区画の縁に点線の枠を付けます（区画のプレビューがオンのとき）。ランチャーの区画の線にも適用されます"
+                            <TextBlock l:Loc.Uid="Look_ZoneLinesDescription"
                                        Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <ToggleSwitch Toggled="Lines_Toggled"
+                            <ToggleSwitch l:Loc.Uid="Look_ZoneLinesToggle" Toggled="Lines_Toggled"
                                 Style="{StaticResource DemoSwitchStyle}"
                                 IsOn="True"
-                                x:Name="ZoneLinesToggle" AutomationProperties.Name="区画の線を表示する" />
+                                x:Name="ZoneLinesToggle" />
                         </StackPanel>
                     </Grid>
                     <Border Style="{StaticResource SnapwellRowDividerStyle}" />
@@ -216,26 +216,26 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="投げたときに予測の線を表示する" Style="{StaticResource SnapwellRowTitleStyle}" />
+                                <TextBlock l:Loc.Uid="Look_PredictionLineTitle" Style="{StaticResource SnapwellRowTitleStyle}" />
                             </Grid>
-                            <TextBlock Text="ウィンドウが止まると予測した位置までを、点線と丸印で示します（区画のプレビューがオンのとき）。慣れたらオフにできます" Style="{StaticResource SnapwellRowDescriptionStyle}" />
+                            <TextBlock l:Loc.Uid="Look_PredictionLineDescription" Style="{StaticResource SnapwellRowDescriptionStyle}" />
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <ToggleSwitch Toggled="Lines_Toggled"
+                            <ToggleSwitch l:Loc.Uid="Look_PredictionLineToggle" Toggled="Lines_Toggled"
                                 Style="{StaticResource DemoSwitchStyle}"
                                 IsOn="True"
-                                x:Name="PredictionLineToggle" AutomationProperties.Name="投げたときに予測の線を表示する" />
+                                x:Name="PredictionLineToggle" />
                         </StackPanel>
                     </Grid>
                 </StackPanel>
             </Border>
-            <TextBlock Text="オーバーレイの見え方" Style="{StaticResource SnapwellGroupTitleStyle}" />
-            <TextBlock Text="ウィンドウを右上へ投げた場面の例です。上の「区画のプレビュー」と「オーバーレイ」のスイッチで、表示がどう変わるかを確かめられます。"
+            <TextBlock l:Loc.Uid="Look_OverlayExampleTitle" Style="{StaticResource SnapwellGroupTitleStyle}" />
+            <TextBlock l:Loc.Uid="Look_OverlayExampleHint"
                        Style="{StaticResource SnapwellHintTextStyle}" TextWrapping="Wrap" Margin="0,0,0,8" />
-            <Border Width="400" Height="190" HorizontalAlignment="Left" CornerRadius="10" BorderThickness="1"
+            <Border l:Loc.Uid="Look_OverlayExampleName" Width="400" Height="190" HorizontalAlignment="Left" CornerRadius="10" BorderThickness="1"
                     BorderBrush="{ThemeResource SnapwellBorderBrush}"
                     Background="{ThemeResource SnapwellSurfaceBrush}"
-                    AutomationProperties.Name="オーバーレイの見え方の例">
+                    >
                 <Grid>
                     <Canvas Width="398" Height="188" Opacity="0.6">
                         <Rectangle Canvas.Left="99.5" Width="1" Height="188" Fill="{ThemeResource SnapwellBorderBrush}" />
