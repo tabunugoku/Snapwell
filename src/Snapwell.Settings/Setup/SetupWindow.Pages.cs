@@ -55,7 +55,10 @@ public sealed partial class SetupWindow
         {
             if (part.Placeholder is { } name)
             {
-                paragraph.Inlines.Add(new InlineUIContainer { Child = Keys(keycaps.First(item => item.Name == name).Keys) });
+                var keys = Keys(keycaps.First(item => item.Name == name).Keys);
+                // 図の下端が文字のベースラインに載るため、下へ送って周りの文字と上下の中央をそろえる。
+                keys.Margin = new Thickness(0, 0, 0, -6);
+                paragraph.Inlines.Add(new InlineUIContainer { Child = keys });
             }
             else { paragraph.Inlines.Add(new Run { Text = part.Text }); }
         }
