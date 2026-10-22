@@ -133,14 +133,7 @@ internal sealed class AppHost
 
             var portable = _portableStore.Load();
             _portable = SettingsTransfer.Normalize(portable.Value);
-            SettingsLoadResult<DeviceState> device;
-            try { device = _deviceStore.Load(); }
-            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or
-                System.Text.Json.JsonException or System.Security.SecurityException)
-            {
-                Log(exception);
-                device = new(new());
-            }
+            var device = _deviceStore.Load();
             _device = device.Value;
             _deviceReadOnly = device.IsReadOnly;
             ApplyLanguage(_device);
