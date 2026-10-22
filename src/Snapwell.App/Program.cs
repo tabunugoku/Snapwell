@@ -11,6 +11,7 @@ using Snapwell.Core.Geometry;
 using Snapwell.Core.Overlay;
 using Snapwell.Core.Settings;
 using Snapwell.Platform.Dwm;
+using Snapwell.Platform.Globalization;
 using Snapwell.Platform.Hooks;
 using Snapwell.Platform.Monitors;
 using Snapwell.Platform.Startup;
@@ -59,6 +60,7 @@ internal static class Program
         var mover = new WindowMover(inspector, position);
         CornerStyler? corners = null;
         var replaceWinArrow = false;
+        var osLanguageTag = OsLanguageSource.GetDisplayLanguageTag();
         var host = new AppHost(new UserInstanceMutex(),
             new SnapGuardService(new SnapSettingsGuard(new Win32SnapSystemSettings())),
             SettingsStores.Portable(), SettingsStores.Device(), hooks, tray, new WindowsConsentPrompt(),
@@ -115,7 +117,7 @@ internal static class Program
             sync: new SettingsSyncService(SettingsStores.PortablePath(),
                 Path.Combine(Path.GetDirectoryName(SettingsStores.DevicePath())!, "sync-backups"),
                 SettingsStores.Device(), log),
-            setReplaceWinArrow: replace => Volatile.Write(ref replaceWinArrow, replace));
+            setReplaceWinArrow: replace => Volatile.Write(ref replaceWinArrow, replace), osTag: osLanguageTag);
         UnhandledExceptionEventHandler unhandled = (_, args) => host.HandleUnhandledException(
             args.ExceptionObject as Exception ?? new InvalidOperationException("未処理の例外。"));
         EventHandler<UnobservedTaskExceptionEventArgs> unobserved = (_, args) =>

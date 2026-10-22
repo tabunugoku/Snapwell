@@ -1,4 +1,5 @@
 using Snapwell.Core.Geometry;
+using Snapwell.Core.Localization;
 
 namespace Snapwell.Core.Tray;
 
@@ -16,10 +17,10 @@ public static class TrayMenuModel
     {
         return Array.AsReadOnly<TrayMenuEntry>(
         [
-            new(TrayMenuCommand.Arrange, "現在のモニターを整列", enabled),
-            new(TrayMenuCommand.Launcher, "ランチャーを開く", enabled && launcherAvailable),
-            new(TrayMenuCommand.Settings, "設定を開く", true),
-            new(TrayMenuCommand.Exit, "終了（標準の動作に戻す）", true),
+            new(TrayMenuCommand.Arrange, UiText.Current.Get("Tray.Arrange"), enabled),
+            new(TrayMenuCommand.Launcher, UiText.Current.Get("Tray.Launcher"), enabled && launcherAvailable),
+            new(TrayMenuCommand.Settings, UiText.Current.Get("Tray.Settings"), true),
+            new(TrayMenuCommand.Exit, UiText.Current.Get("Tray.Exit"), true),
         ]);
     }
 
