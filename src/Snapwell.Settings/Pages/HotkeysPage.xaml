@@ -76,9 +76,9 @@
                 <StackPanel>
                     <Grid Padding="12,8" ColumnSpacing="16">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="2.1*" />
                             <ColumnDefinition Width="3*" />
-                            <ColumnDefinition Width="148" />
+                            <ColumnDefinition Width="4*" />
+                            <ColumnDefinition Width="120" />
                             <ColumnDefinition Width="72" />
                         </Grid.ColumnDefinitions>
                         <TextBlock Text="操作" Style="{StaticResource SnapwellHintTextStyle}" />
