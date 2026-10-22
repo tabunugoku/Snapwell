@@ -1,4 +1,6 @@
+using System.Globalization;
 using Microsoft.UI.Xaml.Controls;
+using Snapwell.Core.Localization;
 using Snapwell.Core.Settings;
 using Windows.Storage.Pickers;
 
@@ -66,7 +68,7 @@ public sealed partial class BackupPage
             RenderSync();
             if (loaded.IsReadOnly)
             {
-                ShowNotice("新しい版の端末状態のため、同期の選択を変更できません。", InfoBarSeverity.Warning);
+                ShowNotice(UiText.Current.Get("Backup.Error.FutureDevice"), InfoBarSeverity.Warning);
             }
         }
         catch (Exception)
@@ -74,7 +76,7 @@ public sealed partial class BackupPage
             if (!Active(generation) || version != _syncRefreshVersion) { return; }
             _syncDeviceReadOnly = true;
             RenderSync();
-            ShowNotice("端末の同期設定を読み取れません。アクセス権を確認してください。", InfoBarSeverity.Error);
+            ShowNotice(UiText.Current.Get("Backup.Error.LoadDevice"), InfoBarSeverity.Error);
         }
     }
 
@@ -83,16 +85,19 @@ public sealed partial class BackupPage
         _syncRefreshing = true;
         try
         {
-            SyncFolderText.Text = _syncDevice.SyncFolder ?? "未設定";
+            SyncFolderText.Text = _syncDevice.SyncFolder ?? UiText.Current.Get("Backup.NotSet");
             SyncToggle.IsOn = _syncDevice.SyncEnabled;
             var folderSet = !string.IsNullOrWhiteSpace(_syncDevice.SyncFolder);
             SyncFolderButton.IsEnabled = !_syncBusy && !_syncDeviceReadOnly;
             SyncToggle.IsEnabled = !_syncBusy && !_syncDeviceReadOnly && folderSet;
             SyncNowButton.IsEnabled = !_syncBusy && !_syncDeviceReadOnly && folderSet &&
                 !_syncSession.IsReadOnly && !_syncSession.IsTransferInProgress;
-            var timestamp = _syncDevice.LastSyncUtc?.ToLocalTime().ToString("yyyy/MM/dd HH:mm");
-            LastSyncText.Text = timestamp is null ? _syncResult?.ToDisplayText() ?? "まだ同期していません"
-                : timestamp + " · " + (_syncResult?.ToDisplayText() ?? "同期済み");
+            var timestamp = _syncDevice.LastSyncUtc?.ToLocalTime()
+                .ToString("yyyy/MM/dd HH:mm", CultureInfo.InvariantCulture);
+            LastSyncText.Text = timestamp is null
+                ? _syncResult?.ToDisplayText() ?? UiText.Current.Get("Backup.NotSynced")
+                : UiText.Current.Format("Backup.SyncWithTimestamp", ("timestamp", timestamp),
+                    ("status", _syncResult?.ToDisplayText() ?? UiText.Current.Get("Backup.Synced")));
         }
         finally { _syncRefreshing = false; }
     }
@@ -108,7 +113,7 @@ public sealed partial class BackupPage
         }
         else if (_syncSession.IsReadOnly)
         {
-            ShowNotice("新しい版の設定は同期できません。Snapwell を更新してください。", InfoBarSeverity.Warning);
+            ShowNotice(UiText.Current.Get("Backup.Error.FutureSettings"), InfoBarSeverity.Warning);
         }
     }
 
@@ -138,7 +143,10 @@ public sealed partial class BackupPage
         }
         catch (Exception)
         {
-            if (Active(generation)) { ShowNotice("同期フォルダーを選べませんでした。", InfoBarSeverity.Error); }
+            if (Active(generation))
+            {
+                ShowNotice(UiText.Current.Get("Backup.Error.ChooseFolder"), InfoBarSeverity.Error);
+            }
         }
     }
 
@@ -160,7 +168,7 @@ public sealed partial class BackupPage
         {
             if (Active(generation))
             {
-                ShowNotice("同期の選択を保存できませんでした。アクセス権を確認してください。", InfoBarSeverity.Error);
+                ShowNotice(UiText.Current.Get("Backup.Error.SaveChoice"), InfoBarSeverity.Error);
             }
         }
         finally
@@ -205,7 +213,7 @@ public sealed partial class BackupPage
         {
             if (Active(generation))
             {
-                _syncResult = new(SettingsSyncKind.Failed, "ファイルを読み書きできません。接続とアクセス権を確認してください。");
+                _syncResult = new(SettingsSyncKind.Failed, UiText.Current.Get("Backup.SyncReason.FileAccess"));
                 ShowNotice(_syncResult.ToDisplayText(), InfoBarSeverity.Error);
             }
         }

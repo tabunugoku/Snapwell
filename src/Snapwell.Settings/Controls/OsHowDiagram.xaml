@@ -2,9 +2,12 @@
 <UserControl
     x:Class="Snapwell.Settings.Controls.OsHowDiagram"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:l="using:Snapwell.Settings.Localization"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <UserControl.Resources>
-        <Style x:Key="DiagramText" TargetType="TextBlock" BasedOn="{StaticResource SnapwellHintTextStyle}" />
+        <Style x:Key="DiagramText" TargetType="TextBlock" BasedOn="{StaticResource SnapwellHintTextStyle}">
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
         <Style x:Key="DiagramHeading" TargetType="TextBlock" BasedOn="{StaticResource DiagramText}">
             <Setter Property="FontSize" Value="12" />
             <Setter Property="FontWeight" Value="SemiBold" />
@@ -113,10 +116,9 @@
         </Style>
     </UserControl.Resources>
     <StackPanel Padding="16,4,16,12">
-        <Button x:Name="Disclosure" Click="Disclosure_Click" HorizontalAlignment="Stretch"
-                HorizontalContentAlignment="Left" Padding="0,2,0,0" MinWidth="0" MinHeight="0"
-                UseSystemFocusVisuals="True"
-                AutomationProperties.Name="Windows の標準との違いを図で見る">
+        <Button l:Loc.Uid="OsDiagram_Disclosure" x:Name="Disclosure" Click="Disclosure_Click"
+                HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="0,2,0,0" MinWidth="0"
+                MinHeight="0" UseSystemFocusVisuals="True">
             <Button.Template>
                 <ControlTemplate TargetType="Button">
                     <Border Background="Transparent">
@@ -131,8 +133,7 @@
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
                 <TextBlock x:Name="DisclosureGlyph" Text="▸" Style="{StaticResource DiagramText}" />
-                <TextBlock Grid.Column="1" Text="Windows の標準との違いを図で見る"
-                           Style="{StaticResource DiagramText}" />
+                <TextBlock l:Loc.Uid="OsDiagram_DisclosureText" Grid.Column="1" Style="{StaticResource DiagramText}" />
             </Grid>
         </Button>
         <Grid x:Name="Comparison" Visibility="Collapsed" Margin="0,10,0,0" RowSpacing="12"
@@ -154,7 +155,7 @@
                 </Grid.RowDefinitions>
                 <Border x:Name="BeforeCard" Style="{StaticResource DiagramCard}">
                     <StackPanel>
-                        <TextBlock x:Name="BeforeHeading" Text="Windows の標準"
+                        <TextBlock l:Loc.Uid="OsDiagram_BeforeHeading" x:Name="BeforeHeading"
                                    Style="{StaticResource DiagramHeading}" />
                         <ContentControl x:Name="BeforeDrawing" HorizontalContentAlignment="Stretch"
                                         IsTabStop="False" />
@@ -163,10 +164,10 @@
                 </Border>
                 <TextBlock x:Name="Arrow" Grid.Column="1" Text="→" FontSize="16"
                            VerticalAlignment="Center" HorizontalAlignment="Center"
-                           Style="{StaticResource DiagramText}" />
+ Style="{StaticResource DiagramText}" />
                 <Border x:Name="AfterCard" Grid.Column="2" Style="{StaticResource DiagramAfterCard}">
                     <StackPanel>
-                        <TextBlock Text="Snapwell が有効な間" Style="{StaticResource DiagramHeading}" />
+                        <TextBlock l:Loc.Uid="OsDiagram_AfterHeading" Style="{StaticResource DiagramHeading}" />
                         <ContentControl x:Name="AfterDrawing" HorizontalContentAlignment="Stretch"
                                         IsTabStop="False" />
                         <TextBlock x:Name="AfterText" Style="{StaticResource DiagramText}" />

@@ -1,4 +1,5 @@
 using Snapwell.Core.Layout;
+using Snapwell.Core.Localization;
 
 namespace Snapwell.Core.Commands;
 
@@ -82,40 +83,40 @@ public static class HotkeyCatalog
         return parts;
     }
 
-    /// <summary>既知の操作は日本語、追加された操作は列挙の名前を返す。広げる・縮めるは区画数と固定する位置を反映する。</summary>
+    /// <summary>既知の操作は現在の言語、追加された操作は列挙の名前を返す。広げる・縮めるは区画数と固定する位置を反映する。</summary>
     public static string GetDisplayName(WindowCommand command, int resizeStep = 1,
         ResizeAnchor anchor = ResizeAnchor.TopLeft) => command switch
         {
-            WindowCommand.LeftHalf => "左半分",
-            WindowCommand.RightHalf => "右半分",
-            WindowCommand.TopHalf => "上半分",
-            WindowCommand.BottomHalf => "下半分",
-            WindowCommand.TopLeftQuarter => "左上の四分割",
-            WindowCommand.TopRightQuarter => "右上の四分割",
-            WindowCommand.BottomLeftQuarter => "左下の四分割",
-            WindowCommand.BottomRightQuarter => "右下の四分割",
-            WindowCommand.Maximize => "最大化",
-            WindowCommand.CenterWindow => "中央に配置",
-            WindowCommand.CenterWindowKeepSize => "中央に配置（サイズ維持）",
+            WindowCommand.LeftHalf => UiText.Current.Get("Hotkey.Command.LeftHalf"),
+            WindowCommand.RightHalf => UiText.Current.Get("Hotkey.Command.RightHalf"),
+            WindowCommand.TopHalf => UiText.Current.Get("Hotkey.Command.TopHalf"),
+            WindowCommand.BottomHalf => UiText.Current.Get("Hotkey.Command.BottomHalf"),
+            WindowCommand.TopLeftQuarter => UiText.Current.Get("Hotkey.Command.TopLeftQuarter"),
+            WindowCommand.TopRightQuarter => UiText.Current.Get("Hotkey.Command.TopRightQuarter"),
+            WindowCommand.BottomLeftQuarter => UiText.Current.Get("Hotkey.Command.BottomLeftQuarter"),
+            WindowCommand.BottomRightQuarter => UiText.Current.Get("Hotkey.Command.BottomRightQuarter"),
+            WindowCommand.Maximize => UiText.Current.Get("Hotkey.Command.Maximize"),
+            WindowCommand.CenterWindow => UiText.Current.Get("Hotkey.Command.CenterWindow"),
+            WindowCommand.CenterWindowKeepSize => UiText.Current.Get("Hotkey.Command.CenterWindowKeepSize"),
             WindowCommand.GrowRight or WindowCommand.GrowDown or WindowCommand.ShrinkLeft or WindowCommand.ShrinkUp =>
                 GetResizeName(command, Step(resizeStep), anchor),
-            WindowCommand.MoveCellLeft => "左へ 1 区画移動",
-            WindowCommand.MoveCellRight => "右へ 1 区画移動",
-            WindowCommand.MoveCellUp => "上へ 1 区画移動",
-            WindowCommand.MoveCellDown => "下へ 1 区画移動",
-            WindowCommand.NextMonitor => "次のモニターへ",
-            WindowCommand.PreviousMonitor => "前のモニターへ",
-            WindowCommand.ToggleEnabled => "一時停止・再開",
-            WindowCommand.OpenLauncher => "ランチャーを開く",
-            WindowCommand.ArrangeGrid => "現在のモニターを整列（グリッド）",
-            WindowCommand.ArrangeColumns => "現在のモニターを横一列に整列",
-            WindowCommand.ArrangeRows => "現在のモニターを縦一列に整列",
-            WindowCommand.ArrangeMainAndStack => "現在のモニターをメインとスタックで整列",
-            WindowCommand.ArrangeAllMonitors => "全モニターを整列（グリッド）",
-            WindowCommand.SnapAdjacentLeft => "左の隣へ寄せる",
-            WindowCommand.SnapAdjacentRight => "右の隣へ寄せる",
-            WindowCommand.SnapAdjacentUp => "上の隣へ寄せる",
-            WindowCommand.SnapAdjacentDown => "下の隣へ寄せる",
+            WindowCommand.MoveCellLeft => UiText.Current.Get("Hotkey.Command.MoveCellLeft"),
+            WindowCommand.MoveCellRight => UiText.Current.Get("Hotkey.Command.MoveCellRight"),
+            WindowCommand.MoveCellUp => UiText.Current.Get("Hotkey.Command.MoveCellUp"),
+            WindowCommand.MoveCellDown => UiText.Current.Get("Hotkey.Command.MoveCellDown"),
+            WindowCommand.NextMonitor => UiText.Current.Get("Hotkey.Command.NextMonitor"),
+            WindowCommand.PreviousMonitor => UiText.Current.Get("Hotkey.Command.PreviousMonitor"),
+            WindowCommand.ToggleEnabled => UiText.Current.Get("Hotkey.Command.ToggleEnabled"),
+            WindowCommand.OpenLauncher => UiText.Current.Get("Hotkey.Command.OpenLauncher"),
+            WindowCommand.ArrangeGrid => UiText.Current.Get("Hotkey.Command.ArrangeGrid"),
+            WindowCommand.ArrangeColumns => UiText.Current.Get("Hotkey.Command.ArrangeColumns"),
+            WindowCommand.ArrangeRows => UiText.Current.Get("Hotkey.Command.ArrangeRows"),
+            WindowCommand.ArrangeMainAndStack => UiText.Current.Get("Hotkey.Command.ArrangeMainAndStack"),
+            WindowCommand.ArrangeAllMonitors => UiText.Current.Get("Hotkey.Command.ArrangeAllMonitors"),
+            WindowCommand.SnapAdjacentLeft => UiText.Current.Get("Hotkey.Command.SnapAdjacentLeft"),
+            WindowCommand.SnapAdjacentRight => UiText.Current.Get("Hotkey.Command.SnapAdjacentRight"),
+            WindowCommand.SnapAdjacentUp => UiText.Current.Get("Hotkey.Command.SnapAdjacentUp"),
+            WindowCommand.SnapAdjacentDown => UiText.Current.Get("Hotkey.Command.SnapAdjacentDown"),
             _ => command.ToString(),
         };
 
@@ -126,18 +127,25 @@ public static class HotkeyCatalog
     private static string GetResizeName(WindowCommand command, int step, ResizeAnchor anchor) =>
         (anchor, command) switch
         {
-            (ResizeAnchor.Center, WindowCommand.GrowRight) => $"幅を左右へ {step} 区画広げる",
-            (ResizeAnchor.Center, WindowCommand.GrowDown) => $"高さを上下へ {step} 区画広げる",
-            (ResizeAnchor.Center, WindowCommand.ShrinkLeft) => $"幅を左右から {step} 区画縮める",
-            (ResizeAnchor.Center, _) => $"高さを上下から {step} 区画縮める",
-            (ResizeAnchor.NearEdge, WindowCommand.GrowRight) => $"幅を {step} 区画広げる",
-            (ResizeAnchor.NearEdge, WindowCommand.GrowDown) => $"高さを {step} 区画広げる",
-            (ResizeAnchor.NearEdge, WindowCommand.ShrinkLeft) => $"幅を {step} 区画縮める",
-            (ResizeAnchor.NearEdge, _) => $"高さを {step} 区画縮める",
-            (_, WindowCommand.GrowRight) => $"右へ {step} 区画広げる",
-            (_, WindowCommand.GrowDown) => $"下へ {step} 区画広げる",
-            (_, WindowCommand.ShrinkLeft) => $"左へ {step} 区画縮める",
-            _ => $"上へ {step} 区画縮める",
+            (ResizeAnchor.Center, WindowCommand.GrowRight) =>
+                UiText.Current.Plural("Hotkey.Command.GrowRight.Center", step, ("step", step)),
+            (ResizeAnchor.Center, WindowCommand.GrowDown) =>
+                UiText.Current.Plural("Hotkey.Command.GrowDown.Center", step, ("step", step)),
+            (ResizeAnchor.Center, WindowCommand.ShrinkLeft) =>
+                UiText.Current.Plural("Hotkey.Command.ShrinkLeft.Center", step, ("step", step)),
+            (ResizeAnchor.Center, _) => UiText.Current.Plural("Hotkey.Command.ShrinkUp.Center", step, ("step", step)),
+            (ResizeAnchor.NearEdge, WindowCommand.GrowRight) =>
+                UiText.Current.Plural("Hotkey.Command.GrowRight.NearEdge", step, ("step", step)),
+            (ResizeAnchor.NearEdge, WindowCommand.GrowDown) =>
+                UiText.Current.Plural("Hotkey.Command.GrowDown.NearEdge", step, ("step", step)),
+            (ResizeAnchor.NearEdge, WindowCommand.ShrinkLeft) =>
+                UiText.Current.Plural("Hotkey.Command.ShrinkLeft.NearEdge", step, ("step", step)),
+            (ResizeAnchor.NearEdge, _) =>
+                UiText.Current.Plural("Hotkey.Command.ShrinkUp.NearEdge", step, ("step", step)),
+            (_, WindowCommand.GrowRight) => UiText.Current.Plural("Hotkey.Command.GrowRight", step, ("step", step)),
+            (_, WindowCommand.GrowDown) => UiText.Current.Plural("Hotkey.Command.GrowDown", step, ("step", step)),
+            (_, WindowCommand.ShrinkLeft) => UiText.Current.Plural("Hotkey.Command.ShrinkLeft", step, ("step", step)),
+            _ => UiText.Current.Plural("Hotkey.Command.ShrinkUp", step, ("step", step)),
         };
 
     // 設定画面の表示順。列挙の値は保存形式なので変えず、並びはここだけで決める。
@@ -162,9 +170,6 @@ public static class HotkeyCatalog
         [WindowCommand.OpenLauncher, WindowCommand.ToggleEnabled],
     ];
 
-    private static readonly string[] _groupNames =
-        ["配置", "広げる・縮める", "区画の移動", "モニター", "整列", "隣へ寄せる", "そのほか"];
-
     private static readonly Dictionary<WindowCommand, int> _orders = _groups
         .SelectMany(group => group)
         .Select((command, index) => (command, index))
@@ -174,7 +179,16 @@ public static class HotkeyCatalog
     public static string GetGroup(WindowCommand command)
     {
         var index = Array.FindIndex(_groups, group => group.Contains(command));
-        return _groupNames[index < 0 ? _groupNames.Length - 1 : index];
+        return index switch
+        {
+            0 => UiText.Current.Get("Hotkey.Group.Placement"),
+            1 => UiText.Current.Get("Hotkey.Group.Resize"),
+            2 => UiText.Current.Get("Hotkey.Group.Move"),
+            3 => UiText.Current.Get("Hotkey.Group.Monitor"),
+            4 => UiText.Current.Get("Hotkey.Group.Arrange"),
+            5 => UiText.Current.Get("Hotkey.Group.Adjacent"),
+            _ => UiText.Current.Get("Hotkey.Group.Misc"),
+        };
     }
 
     /// <summary>グループ順、グループ内の並びでの位置を返す。一覧に無い値は最後にする。</summary>

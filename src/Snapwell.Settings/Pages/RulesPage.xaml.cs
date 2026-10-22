@@ -2,6 +2,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using Snapwell.Core.Localization;
 using Snapwell.Core.Rules;
 using Snapwell.Settings.Dialogs;
 
@@ -31,7 +32,7 @@ public sealed partial class RulesPage : Page
     private void Page_Unloaded(object sender, RoutedEventArgs e) => _session.Changed -= Session_Changed;
     private void Session_Changed(object? sender, EventArgs e) => IsEnabled = !_session.IsReadOnly;
 
-    private void Refresh(int? focusIndex = null, string focusAction = "編集")
+    private void Refresh(int? focusIndex = null, string focusAction = "Edit")
     {
         RuleRows.Children.Clear();
         _controls.Clear();
@@ -44,7 +45,7 @@ public sealed partial class RulesPage : Page
         if (focusIndex is { } target && rules.Length > 0 &&
             _controls.TryGetValue((Math.Clamp(target, 0, rules.Length - 1), focusAction), out var control))
         {
-            if (!control.IsEnabled) { control = _controls[(Math.Clamp(target, 0, rules.Length - 1), "編集")]; }
+            if (!control.IsEnabled) { control = _controls[(Math.Clamp(target, 0, rules.Length - 1), "Edit")]; }
             control.Focus(FocusState.Programmatic);
         }
         else if (focusIndex is not null) { AddButton.Focus(FocusState.Programmatic); }
@@ -64,8 +65,8 @@ public sealed partial class RulesPage : Page
             IsOn = rule.Enabled,
             IsEnabled = !_session.IsReadOnly,
         };
-        AutomationProperties.SetName(toggle, "有効");
-        _controls[(index, "有効")] = toggle;
+        AutomationProperties.SetName(toggle, UiText.Current.Get("Rules.Enabled"));
+        _controls[(index, "Enabled")] = toggle;
         row.Children.Add(toggle);
         var conditions = new StackPanel { Spacing = 2 };
         var lines = WindowRuleListEditor.ConditionLines(rule);
@@ -86,7 +87,8 @@ public sealed partial class RulesPage : Page
             Style = (Style)Resources["RuleConditionStyle"],
             IsEnabled = !_session.IsReadOnly,
         };
-        AutomationProperties.SetName(condition, "ルールを編集: " + string.Join("、", lines));
+        AutomationProperties.SetName(condition, UiText.Current.Format("Rules.EditAction",
+            ("conditions", string.Join(UiText.Current.Get("Rules.ListSeparator"), lines))));
         condition.Click += async (_, _) => await EditAsync(index);
         Grid.SetColumn(condition, 1);
         row.Children.Add(condition);
@@ -125,12 +127,12 @@ public sealed partial class RulesPage : Page
             HorizontalAlignment = HorizontalAlignment.Right,
             VerticalAlignment = VerticalAlignment.Center,
         };
-        actions.Children.Add(ActionButton("✎", "編集", index, true, async () => await EditAsync(index)));
-        actions.Children.Add(ActionButton("↑", "上へ", index, index > 0,
-            () => SetRules(WindowRuleListEditor.MoveUp(_session.Current.WindowRules, index), index - 1, "上へ")));
-        actions.Children.Add(ActionButton("↓", "下へ", index, index < _session.Current.WindowRules.Length - 1,
-            () => SetRules(WindowRuleListEditor.MoveDown(_session.Current.WindowRules, index), index + 1, "下へ")));
-        actions.Children.Add(ActionButton("✕", "削除", index, true,
+        actions.Children.Add(ActionButton("✎", "Edit", index, true, async () => await EditAsync(index)));
+        actions.Children.Add(ActionButton("↑", "Up", index, index > 0,
+            () => SetRules(WindowRuleListEditor.MoveUp(_session.Current.WindowRules, index), index - 1, "Up")));
+        actions.Children.Add(ActionButton("↓", "Down", index, index < _session.Current.WindowRules.Length - 1,
+            () => SetRules(WindowRuleListEditor.MoveDown(_session.Current.WindowRules, index), index + 1, "Down")));
+        actions.Children.Add(ActionButton("✕", "Delete", index, true,
             () => SetRules(WindowRuleListEditor.Remove(_session.Current.WindowRules, index), index)));
         Grid.SetColumn(actions, 4);
         row.Children.Add(actions);
@@ -140,7 +142,12 @@ public sealed partial class RulesPage : Page
     private static Border CreateTag(string text, string color) => new()
     {
         Style = AppStyle($"SnapwellTag{color}Style"),
-        Child = new TextBlock { Text = text, Style = AppStyle($"SnapwellTag{color}TextStyle") },
+        Child = new TextBlock
+        {
+            Text = text,
+            TextWrapping = TextWrapping.Wrap,
+            Style = AppStyle($"SnapwellTag{color}TextStyle"),
+        },
     };
 
     private Button ActionButton(string text, string name, int index, bool enabled, Action action)
@@ -161,14 +168,21 @@ public sealed partial class RulesPage : Page
             FontSize = 14,
             VerticalAlignment = VerticalAlignment.Center,
         };
-        AutomationProperties.SetName(button, name);
-        ToolTipService.SetToolTip(button, name);
+        var label = name switch
+        {
+            "Edit" => UiText.Current.Get("Rules.Action.Edit"),
+            "Up" => UiText.Current.Get("Rules.Action.Up"),
+            "Down" => UiText.Current.Get("Rules.Action.Down"),
+            _ => UiText.Current.Get("Rules.Action.Delete"),
+        };
+        AutomationProperties.SetName(button, label);
+        ToolTipService.SetToolTip(button, label);
         button.Click += (_, _) => action();
         _controls[(index, name)] = button;
         return button;
     }
 
-    private void SetRules(WindowRule[] rules, int? focusIndex = null, string focusAction = "編集")
+    private void SetRules(WindowRule[] rules, int? focusIndex = null, string focusAction = "Edit")
     {
         if (_session.IsReadOnly) { return; }
         _session.Update(_session.Current with { WindowRules = rules });

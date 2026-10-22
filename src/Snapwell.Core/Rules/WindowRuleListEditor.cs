@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using Snapwell.Core.Localization;
 
 namespace Snapwell.Core.Rules;
 
@@ -10,7 +11,8 @@ public static class WindowRuleListEditor
     {
         if (rules.Count >= WindowRuleValidator.MaxRules)
         {
-            throw new InvalidOperationException($"ルールは {WindowRuleValidator.MaxRules} 件までです。");
+            // i18n-keep: 呼び出し側では画面に出さない上限超過の例外
+            throw new InvalidOperationException($"ルールは {WindowRuleValidator.MaxRules} 件までしか追加できない。");
         }
         return [.. rules, rule];
     }
@@ -58,11 +60,11 @@ public static class WindowRuleListEditor
             Corner = corner,
         }) switch
         {
-            WindowRuleError.NoCondition => "条件を 1 つ以上入力してください。",
+            WindowRuleError.NoCondition => UiText.Current.Get("Rules.Error.NoCondition"),
             WindowRuleError.NoEffect =>
-                "「配置の扱い」と「ウィンドウの角」の少なくとも一方は、「全体設定に従う」以外にしてください。",
-            WindowRuleError.InvalidTitlePattern => "タイトルの正規表現が正しくありません。",
-            WindowRuleError.TooLong => "条件はそれぞれ 260 文字以内にしてください。",
+                UiText.Current.Get("Rules.Error.NoEffect"),
+            WindowRuleError.InvalidTitlePattern => UiText.Current.Get("Rules.Error.InvalidTitlePattern"),
+            WindowRuleError.TooLong => UiText.Current.Get("Rules.Error.TooLong"),
             _ => null,
         };
 
@@ -81,11 +83,12 @@ public static class WindowRuleListEditor
     /// <summary>一致件数と最大五つのタイトルを表示する。</summary>
     public static string MatchSummary(IReadOnlyList<OpenWindowInfo> matches)
     {
-        var summary = $"いま一致するウィンドウ: {matches.Count} 件";
+        var summary = UiText.Current.Plural("Rules.Match.Count", matches.Count);
         if (matches.Count == 0) { return summary; }
         var names = matches.Take(5).Select(window => window.Title).ToList();
-        if (matches.Count > 5) { names.Add($"ほか {matches.Count - 5} 件"); }
-        return summary + $"（{string.Join("、", names)}）";
+        if (matches.Count > 5) { names.Add(UiText.Current.Plural("Rules.Match.More", matches.Count - 5)); }
+        return UiText.Current.Format("Rules.Match.WithTitles", ("summary", summary),
+            ("names", string.Join(UiText.Current.Get("Rules.ListSeparator"), names)));
     }
 
     /// <summary>先頭の条件を主行にし、残りを説明つきの副行にする。</summary>
@@ -95,11 +98,13 @@ public static class WindowRuleListEditor
         if (!string.IsNullOrWhiteSpace(rule.ProcessName)) { lines.Add(rule.ProcessName); }
         if (!string.IsNullOrWhiteSpace(rule.ClassName))
         {
-            lines.Add(lines.Count == 0 ? rule.ClassName : $"ウィンドウ クラス {rule.ClassName}");
+            lines.Add(lines.Count == 0 ? rule.ClassName
+                : UiText.Current.Format("Rules.Condition.Class", ("name", rule.ClassName)));
         }
         if (!string.IsNullOrEmpty(rule.TitlePattern))
         {
-            lines.Add(lines.Count == 0 ? rule.TitlePattern : $"タイトル {rule.TitlePattern}");
+            lines.Add(lines.Count == 0 ? rule.TitlePattern
+                : UiText.Current.Format("Rules.Condition.Title", ("pattern", rule.TitlePattern)));
         }
         return [.. lines];
     }
@@ -107,19 +112,19 @@ public static class WindowRuleListEditor
     /// <summary>配置のタグに表示する文言を返す。</summary>
     public static string PlacementLabel(PlacementRule placement) => placement switch
     {
-        PlacementRule.Exclude => "対象外",
-        PlacementRule.PositionOnly => "位置だけ",
-        PlacementRule.ForceTarget => "強制的に対象",
+        PlacementRule.Exclude => UiText.Current.Get("Rules.Placement.Exclude"),
+        PlacementRule.PositionOnly => UiText.Current.Get("Rules.Placement.PositionOnly"),
+        PlacementRule.ForceTarget => UiText.Current.Get("Rules.Placement.ForceTarget"),
         _ => "—",
     };
 
     /// <summary>角のタグに表示する文言を返す。</summary>
     public static string CornerLabel(CornerRule corner) => corner switch
     {
-        CornerRule.SystemDefault => "Windows の既定",
-        CornerRule.Round => "角丸を強制する",
-        CornerRule.RoundSmall => "小さい角丸",
-        CornerRule.DoNotRound => "角丸なし",
+        CornerRule.SystemDefault => UiText.Current.Get("Corner.SystemDefault"),
+        CornerRule.Round => UiText.Current.Get("Corner.Round"),
+        CornerRule.RoundSmall => UiText.Current.Get("Corner.RoundSmall"),
+        CornerRule.DoNotRound => UiText.Current.Get("Corner.DoNotRound"),
         _ => "—",
     };
 

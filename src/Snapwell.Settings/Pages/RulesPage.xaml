@@ -2,6 +2,7 @@
 <Page
     x:Class="Snapwell.Settings.Pages.RulesPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:l="using:Snapwell.Settings.Localization"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <Page.Resources>
         <Style x:Key="RuleRowStyle" TargetType="Grid" BasedOn="{StaticResource SnapwellRowGridStyle}">
@@ -21,10 +22,8 @@
     </Page.Resources>
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
         <StackPanel Padding="32,28,32,40">
-            <TextBlock Text="アプリごとのルール" Style="{StaticResource SnapwellPageTitleStyle}" />
-            <TextBlock
-                Text="特定のアプリのウィンドウについて、対象から外す・位置だけを動かす・ウィンドウの角を変える、といった例外を決められます。上のルールから順に調べ、「配置」と「角」はそれぞれ、指定のある最初のルールを使います。"
-                Style="{StaticResource SnapwellLeadTextStyle}" />
+            <TextBlock l:Loc.Uid="Rules_Title" Style="{StaticResource SnapwellPageTitleStyle}" />
+            <TextBlock l:Loc.Uid="Rules_Lead" Style="{StaticResource SnapwellLeadTextStyle}" />
             <Border Style="{StaticResource SnapwellRowsBorderStyle}">
                 <StackPanel>
                     <Grid Padding="12,8" ColumnSpacing="12">
@@ -35,37 +34,34 @@
                             <ColumnDefinition Width="132" />
                             <ColumnDefinition Width="124" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="有効" Style="{StaticResource SnapwellHintTextStyle}" />
-                        <TextBlock Grid.Column="1" Text="条件" Style="{StaticResource SnapwellHintTextStyle}" />
-                        <TextBlock Grid.Column="2" Text="配置" Style="{StaticResource SnapwellHintTextStyle}" />
-                        <TextBlock Grid.Column="3" Text="角" Style="{StaticResource SnapwellHintTextStyle}" />
+                        <TextBlock l:Loc.Uid="Rules_EnabledColumn" Style="{StaticResource SnapwellHintTextStyle}" />
+                        <TextBlock l:Loc.Uid="Rules_ConditionColumn" Grid.Column="1"
+                                   Style="{StaticResource SnapwellHintTextStyle}" />
+                        <TextBlock l:Loc.Uid="Rules_PlacementColumn" Grid.Column="2"
+                                   Style="{StaticResource SnapwellHintTextStyle}" />
+                        <TextBlock l:Loc.Uid="Rules_CornerColumn" Grid.Column="3"
+                                   Style="{StaticResource SnapwellHintTextStyle}" />
                     </Grid>
                     <StackPanel x:Name="RuleRows" />
-                    <TextBlock x:Name="EmptyHint" Margin="12,10" Style="{StaticResource SnapwellHintTextStyle}"
-                               Text="ルールはまだありません。「ルールを追加」から作れます。" />
+                    <TextBlock l:Loc.Uid="Rules_EmptyHint" x:Name="EmptyHint" Margin="12,10"
+                               Style="{StaticResource SnapwellHintTextStyle}" />
                 </StackPanel>
             </Border>
             <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,12,0,0">
-                <Button x:Name="AddButton" Content="ルールを追加" AutomationProperties.Name="ルールを追加"
+                <Button l:Loc.Uid="Rules_AddButton" x:Name="AddButton"
                         Style="{StaticResource SnapwellActionButtonStyle}" Click="Add_Click" />
-                <Button x:Name="PickButton" Content="ウィンドウを選んで追加"
-                        AutomationProperties.Name="ウィンドウを選んで追加"
+                <Button l:Loc.Uid="Rules_PickButton" x:Name="PickButton"
                         Style="{StaticResource SnapwellActionButtonStyle}" Click="Pick_Click" />
             </StackPanel>
-            <TextBlock x:Name="LimitHint" Margin="0,8,0,0" Visibility="Collapsed"
-                       Text="ルールは 200 件までです。追加するには、先にルールを削除してください。"
+            <TextBlock l:Loc.Uid="Rules_LimitHint" x:Name="LimitHint" Margin="0,8,0,0" Visibility="Collapsed"
                        Style="{StaticResource SnapwellHintTextStyle}" />
-            <Expander Header="Snapwell が最初から対象外にしているもの" IsExpanded="False"
-                      AutomationProperties.Name="Snapwell が最初から対象外にしているもの"
-                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Margin="0,14,0,0">
+            <Expander l:Loc.Uid="Rules_Exclusions" IsExpanded="False" HorizontalAlignment="Stretch"
+                      HorizontalContentAlignment="Left" Margin="0,14,0,0">
                 <StackPanel Spacing="6">
-                    <TextBlock Style="{StaticResource SnapwellHintTextStyle}"
-                               Text="次のウィンドウは、ルールでは変えられません（「強制的に対象」にしても対象になりません）。" />
-                    <TextBlock Style="{StaticResource SnapwellHintTextStyle}"
-                               Text="• 表示されていない・最小化されている・別の仮想デスクトップにあるなど、システムに隠された（クローク中の）ウィンドウ" />
-                    <TextBlock Style="{StaticResource SnapwellHintTextStyle}" Text="• Snapwell 自身のウィンドウ、子ウィンドウ" />
-                    <TextBlock Style="{StaticResource SnapwellHintTextStyle}"
-                               Text="• デスクトップ、タスクバー、スタート メニューなどのシェル、通知領域の隠れたアイコンの一覧" />
+                    <TextBlock l:Loc.Uid="Rules_ExclusionHint" Style="{StaticResource SnapwellHintTextStyle}" />
+                    <TextBlock l:Loc.Uid="Rules_HiddenExclusion" Style="{StaticResource SnapwellHintTextStyle}" />
+                    <TextBlock l:Loc.Uid="Rules_OwnExclusion" Style="{StaticResource SnapwellHintTextStyle}" />
+                    <TextBlock l:Loc.Uid="Rules_ShellExclusion" Style="{StaticResource SnapwellHintTextStyle}" />
                 </StackPanel>
             </Expander>
         </StackPanel>
