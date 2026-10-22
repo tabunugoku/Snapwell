@@ -14,9 +14,9 @@ public sealed class SettingsLocalizationSourceTests
         return Path.Combine(root.FullName, "src", "Snapwell.Settings");
     }
 
-    /// <summary>自動を先頭に 5 つの選択肢を持ち、操作を保存するイベントへ接続する。</summary>
+    /// <summary>自動を先頭に 3 つの選択肢を持ち (中国語は中断中)、操作を保存するイベントへ接続する。</summary>
     [Fact]
-    public void LanguagePickerOffersFiveEnabledChoicesInTwoHundredPixelWidth()
+    public void LanguagePickerOffersThreeEnabledChoicesInTwoHundredPixelWidth()
     {
         var document = XDocument.Load(Path.Combine(SettingsDirectory(), "Pages", "GeneralPage.xaml"));
         XNamespace xaml = "http://schemas.microsoft.com/winfx/2006/xaml";
@@ -24,7 +24,7 @@ public sealed class SettingsLocalizationSourceTests
         Assert.NotEqual("False", (string?)picker.Attribute("IsEnabled"));
         Assert.Equal("200", (string?)picker.Attribute("Width"));
         Assert.Equal("Language_SelectionChanged", (string?)picker.Attribute("SelectionChanged"));
-        Assert.Equal(new[] { "auto", "ja", "en", "zh-Hans", "zh-Hant" },
+        Assert.Equal(new[] { "auto", "ja", "en" },
             picker.Elements().Select(element => (string?)element.Attribute("Tag")));
     }
 

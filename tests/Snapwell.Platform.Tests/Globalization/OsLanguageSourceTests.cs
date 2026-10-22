@@ -16,7 +16,7 @@ public sealed class OsLanguageSourceTests
     public void KnownLocaleIdsProduceTagsAndExpectedLanguages(uint localeId, string tag, UiLanguage language)
     {
         Assert.Equal(tag, OsLanguageSource.ConvertLocaleId(localeId));
-        Assert.Equal(language, UiLanguageResolver.Resolve("auto", tag));
+        Assert.Equal(language, UiLanguageResolver.Resolve("auto", tag, chineseAvailable: true));
     }
 
     /// <summary>存在しない LCID の失敗を自動判定へ渡せる。</summary>
