@@ -111,7 +111,7 @@ public sealed partial class SetupWindow
             // 既定の余白は文字を上に寄せるため、枠と文字の上下の中央をそろえる。
             VerticalContentAlignment = VerticalAlignment.Center,
             Padding = new Thickness(8, 0, 0, 0),
-            Content = Text("変更前の値を保存し、Snapwell を無効にしたとき・終了したとき・異常終了のあとに元へ戻すことを理解しました。",
+            Content = Text("変更前の値を保存し、Snapwell を無効にしたとき・終了したとき・異常終了のあとに起動したときに元へ戻すことを理解しました。",
                 "SetupConsentTextStyle"),
         };
         checkbox.Checked += (_, _) => _consent = true;
