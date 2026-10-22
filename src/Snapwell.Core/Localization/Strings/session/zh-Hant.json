@@ -1,0 +1,15 @@
+{
+  "Session.Load.Future": "這些設定來自較新的版本，無法在此儲存。請更新 Snapwell。",
+  "Session.Load.Defaults": "設定檔已損毀，正在顯示預設值。",
+  "Session.Load.Failed": "無法讀取設定檔。請檢查檔案位置和存取權限，然後重新開啟設定。",
+  "Session.Save.ReadOnly": "這些設定為唯讀，無法儲存。",
+  "Session.Save.Busy": "正在同步，請稍後再儲存。",
+  "Session.Save.Saved": "已儲存。如果 Snapwell 正在執行，變更會立即生效。",
+  "Session.Save.Future": "設定已變為較新的版本，無法儲存。請更新 Snapwell 並重新開啟設定。",
+  "Session.Save.InvalidRules": "部分應用程式規則無法儲存。請在「應用程式規則」中修正條件或刪除規則。",
+  "Session.Save.Failed": "無法儲存。請檢查檔案位置和存取權限，然後重新儲存。",
+  "Session.Sync.Future": "這些設定來自較新的版本，無法同步。請更新 Snapwell。",
+  "Session.Sync.KeepEdits": "已從同步目標匯入設定。儲存尚未儲存的變更會覆寫匯入的內容。",
+  "Session.Sync.Imported": "已從同步目標匯入設定。",
+  "Session.Sync.ReloadFailed": "無法重新載入匯入的設定。請重新開啟設定。"
+}
