@@ -1123,15 +1123,15 @@ table.list tr:last-child td { border-bottom: 0; }
             <h3>外観</h3>
             <p class="lead">ウィンドウの角の形と、Snapwell のオーバーレイの見た目です。</p>
             <div class="rows">
-              <div class="row"><div><div class="t">ウィンドウの角</div><div class="d">DWM の角の設定を使います。半径は Windows が決めます（約 8 px）</div></div><div class="ctl"><select class="input" style="width: 200px" id="cornerSel"><option value="8">角丸を強制する</option><option value="4">小さい角丸</option><option value="0">角丸なし</option><option value="win" selected>Windows の既定</option></select></div></div>
+              <div class="row"><div><div class="t">ウィンドウの角</div><div class="d">DWM の角の設定を使います。半径は Windows が決めます（約&nbsp;8&nbsp;px）</div></div><div class="ctl"><select class="input" style="width: 200px" id="cornerSel"><option value="8">角丸を強制する</option><option value="4">小さい角丸</option><option value="0">角丸なし</option><option value="win" selected>Windows の既定</option></select></div></div>
               <div class="row"><div><div class="t">区画のプレビュー</div><div class="d">ウィンドウを投げると、離した瞬間から着地するまで、吸着先の区画を青く塗ります。手動でリサイズするときは、ドラッグしている間ずっと、離したときにそろう区画を塗ります（「分割と間隔」で「手動でリサイズしたら区画にそろえる」をオンにしたとき）。オフにすると、どちらも何も表示しません</div></div><div class="ctl"><label class="switch"><input type="checkbox" checked id="tgPrev" aria-label="区画のプレビュー"><span></span></label></div></div>
             </div>
             <div class="group-title">ウィンドウの角の見え方</div>
             <p class="hint" style="margin: 0 0 8px">最大化中のウィンドウと枠のないウィンドウは変えません。枠のないウィンドウは、アプリごとのルールで個別に指定できます。</p>
             <div class="corner-cards" id="cornerCards">
-              <button type="button" class="ccard" data-v="win"><span class="cwin" style="border-radius: 8px"><i></i></span><b>Windows の既定</b><span>何も変えません。角の形は Windows とアプリ任せで、アプリによって丸だったり直角だったりします</span></button>
-              <button type="button" class="ccard" data-v="8"><span class="cwin" style="border-radius: 8px"><i></i></span><b>角丸を強制する</b><span>通常のウィンドウを標準の丸（約 8 px）にそろえます</span></button>
-              <button type="button" class="ccard" data-v="4"><span class="cwin" style="border-radius: 4px"><i></i></span><b>小さい角丸</b><span>丸みを控えめにします（約 4 px）</span></button>
+              <button type="button" class="ccard" data-v="win"><span class="cwin" style="border-radius: 8px"><i></i></span><b>Windows の既定</b><span>何も変えません。角が丸か直角かは、Windows とアプリ次第です</span></button>
+              <button type="button" class="ccard" data-v="8"><span class="cwin" style="border-radius: 8px"><i></i></span><b>角丸を強制する</b><span>通常のウィンドウを標準の丸（約&nbsp;8&nbsp;px）にします</span></button>
+              <button type="button" class="ccard" data-v="4"><span class="cwin" style="border-radius: 4px"><i></i></span><b>小さい角丸</b><span>丸みを控えめにします（約&nbsp;4&nbsp;px）</span></button>
               <button type="button" class="ccard" data-v="0"><span class="cwin" style="border-radius: 0"><i></i></span><b>角丸なし</b><span>通常のウィンドウを直角にします</span></button>
             </div>
             <div class="group-title">オーバーレイ</div>
@@ -1140,7 +1140,7 @@ table.list tr:last-child td { border-bottom: 0; }
               <div class="row"><div><div class="t">投げたときに予測の線を表示する</div><div class="d">ウィンドウが止まると予測した位置までを、点線と丸印で示します（区画のプレビューがオンのとき）。慣れたらオフにできます</div></div><div class="ctl"><label class="switch"><input type="checkbox" checked id="tgPred" aria-label="投げたときに予測の線を表示する"><span></span></label></div></div>
             </div>
             <div class="group-title">オーバーレイの見え方</div>
-            <p class="hint" style="margin: 0 0 8px">ウィンドウをドラッグして、右上へ投げた場面の例です。上の「区画のプレビュー」と「オーバーレイ」のスイッチを切り替えると、表示がどう変わるかをここで確かめられます。</p>
+            <p class="hint" style="margin: 0 0 8px">ウィンドウを右上へ投げた場面の例です。上の「区画のプレビュー」と「オーバーレイ」のスイッチで、表示がどう変わるかを確かめられます。</p>
             <div class="ov-stage" id="ovStage" aria-label="オーバーレイの見え方の例">
               <div class="ov-cells"></div>
               <div class="ov-fill" id="ovFill"></div>
