@@ -73,6 +73,7 @@ internal sealed unsafe class TrayIconSet : IDisposable
 
         if (icon.IsNull)
         {
+            // i18n-keep: 画面に出さない開発者向けの例外・ログ。
             throw new InvalidOperationException($"トレイのアイコンを作れない: {name} ({size}px)");
         }
 
@@ -93,6 +94,7 @@ internal sealed unsafe class TrayIconSet : IDisposable
     private static byte[] ReadResource(string name)
     {
         using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(name)
+            // i18n-keep: 画面に出さない開発者向けの例外・ログ。
             ?? throw new InvalidOperationException($"埋め込みのアイコンが無い: {name}");
         using var memory = new MemoryStream();
         stream.CopyTo(memory);

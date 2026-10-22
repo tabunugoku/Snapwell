@@ -1,3 +1,4 @@
+using Snapwell.Core.Localization;
 using Snapwell.Core.Settings;
 
 namespace Snapwell.App.Lifecycle;
@@ -36,6 +37,7 @@ internal sealed class SettingsSyncService : ISettingsSyncService
         _createWatcher = createWatcher ?? (path =>
         {
             // SettingsWatcher は保存先を作るので、未接続の同期フォルダーには適用しない。
+            // i18n-keep: 画面に出さない開発者向けの例外・ログ。
             if (!Directory.Exists(Path.GetDirectoryName(path))) { throw new IOException("同期フォルダーがない。"); }
             return new SettingsWatcher(path, time);
         });
@@ -120,6 +122,7 @@ internal sealed class SettingsSyncService : ISettingsSyncService
                 version = _version;
             }
             SettingsSyncResult? result = null;
+            var serviceFailed = false;
             try
             {
                 ResetWatcher(version);
@@ -133,14 +136,18 @@ internal sealed class SettingsSyncService : ISettingsSyncService
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or
                 FutureSettingsVersionException or ArgumentException or InvalidOperationException)
             {
-                result = new(SettingsSyncKind.Failed, "同期フォルダーまたは端末状態を読み書きできません。");
+                result = new(SettingsSyncKind.Failed);
+                serviceFailed = true;
             }
             if (result is null) { continue; }
             lock (_gate)
             {
                 if (_disposed || version != _version) { continue; }
                 // 既存のログ境界には例外の入口だけがある。パスを含む元の例外は渡さない。
-                try { _log.Error(new InvalidOperationException("設定同期: " + result.ToDisplayText())); }
+                var displayResult = serviceFailed
+                    ? result with { Message = UiText.Current.Get("Status.SyncAccessFailure") } : result;
+                // i18n-keep: 画面に出さない開発者向けの例外・ログ。
+                try { _log.Error(new InvalidOperationException("設定同期: " + displayResult.ToDisplayText())); }
                 catch (Exception) { }
                 if (result.Retryable && !_retryUsed && !_pending)
                 {

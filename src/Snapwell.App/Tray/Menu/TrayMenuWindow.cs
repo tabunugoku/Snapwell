@@ -57,6 +57,7 @@ internal sealed unsafe class TrayMenuWindow : ITrayMenuView, ITrayMenuPresentati
             if (PInvoke.RegisterClass(in windowClass) == 0 && Marshal.GetLastWin32Error() != 1410)
             {
                 _current = null;
+                // i18n-keep: 画面に出さない開発者向けの例外・ログ。
                 throw new Win32Exception(Marshal.GetLastWin32Error(), "メニューのクラスを登録できない。");
             }
 
@@ -68,6 +69,7 @@ internal sealed unsafe class TrayMenuWindow : ITrayMenuView, ITrayMenuPresentati
         if (_window.IsNull)
         {
             _current = null;
+            // i18n-keep: 画面に出さない開発者向けの例外・ログ。
             throw new Win32Exception(Marshal.GetLastWin32Error(), "メニューを作れない。");
         }
     }
@@ -88,9 +90,7 @@ internal sealed unsafe class TrayMenuWindow : ITrayMenuView, ITrayMenuPresentati
         _toggle.Show(snapshot.Enabled);
 
         // HWND の標準アクセシビリティプロキシへ選択名を渡す。個別の UIA peer は持たない。
-        var name = selected == 0 ? $"Snapwell、有効スイッチ、{(snapshot.Enabled ? "オン" : "オフ")}" :
-            selected > 0 ? $"Snapwell、{snapshot.Items[selected - 1].Name}" :
-            $"Snapwell メニュー、{(snapshot.Enabled ? "有効" : "無効")}、モニター構成: {snapshot.MonitorCount} 画面";
+        var name = snapshot.AccessibleName(selected);
         _presentation.Show(snapshot.Layout.Bounds, Render(), name, keyboard);
     }
 
@@ -158,6 +158,7 @@ internal sealed unsafe class TrayMenuWindow : ITrayMenuView, ITrayMenuPresentati
             bitmap = PInvoke.CreateDIBSection(memory, &info, DIB_USAGE.DIB_RGB_COLORS, &bits, default(HANDLE), 0);
             if (screen.IsNull || memory.IsNull || bitmap.IsNull || bits is null)
             {
+                // i18n-keep: 画面に出さない開発者向けの例外・ログ。
                 throw new InvalidOperationException("メニューの DIB を作れない。");
             }
 
@@ -175,6 +176,7 @@ internal sealed unsafe class TrayMenuWindow : ITrayMenuView, ITrayMenuPresentati
             if (!PInvoke.UpdateLayeredWindow(_window, screen, destination, size, memory,
                 source, default, blend, UPDATE_LAYERED_WINDOW_FLAGS.ULW_ALPHA))
             {
+                // i18n-keep: 画面に出さない開発者向けの例外・ログ。
                 throw new Win32Exception(Marshal.GetLastWin32Error(), "メニューを描画できない。");
             }
         }

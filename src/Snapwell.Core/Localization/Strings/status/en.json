@@ -1,0 +1,22 @@
+{
+  "Status.SyncAccessFailure": "Couldn't access the sync folder or device settings.",
+  "Status.SnapRestoreFailure": "Couldn't restore Windows Snap. Will retry on restart.",
+  "Status.SettingsReset": "Damaged settings were backed up. Started with defaults.",
+  "Status.FutureSettings": "Protecting settings from a newer version",
+  "Status.HookFailure": "Couldn't start input hooks. Using Windows Snap.",
+  "Status.DeviceReloadRetry": "Couldn't reload device settings. Retrying.",
+  "Status.DeviceReloadFailure": "Couldn't reload device settings. Will retry on the next change.",
+  "Status.ReloadFailure": "Couldn't apply settings. Using the previous settings.",
+  "Status.SnapDisableUnconfirmed": "Couldn't confirm that Windows Snap is off.",
+  "Status.SnapDisableFailure": "Couldn't turn off Windows Snap.",
+  "Status.DeviceSaveFailure": "Couldn't save device settings. Changes apply only until Snapwell exits.",
+  "Status.SettingsMissing": "Can't find Snapwell.Settings.exe. Place it in the same folder as Snapwell.",
+  "Status.SettingsLaunchFailure": "Couldn't open settings.",
+  "Status.Accessibility.ToggleOn": "Snapwell, enable switch, on",
+  "Status.Accessibility.ToggleOff": "Snapwell, enable switch, off",
+  "Status.Accessibility.Item": "Snapwell, {name}",
+  "Status.Accessibility.MenuEnabled.One": "Snapwell menu, active, {count} monitor",
+  "Status.Accessibility.MenuEnabled.Other": "Snapwell menu, active, {count} monitors",
+  "Status.Accessibility.MenuDisabled.One": "Snapwell menu, inactive, {count} monitor",
+  "Status.Accessibility.MenuDisabled.Other": "Snapwell menu, inactive, {count} monitors"
+}
