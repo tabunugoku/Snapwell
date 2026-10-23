@@ -21,6 +21,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Snapwell.App.Tests", "tests
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Snapwell.Settings", "src\Snapwell.Settings\Snapwell.Settings.csproj", "{258F19B5-E3C1-4DA1-AC5A-14E4BE30C4FC}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{ECF767D6-121F-48A4-A912-D9E8DAC95C5D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ManifestTool", "tools\ManifestTool\ManifestTool.csproj", "{951AD66E-4D69-42EF-8B74-23526EAAEE85}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -55,6 +59,10 @@ Global
 		{258F19B5-E3C1-4DA1-AC5A-14E4BE30C4FC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{258F19B5-E3C1-4DA1-AC5A-14E4BE30C4FC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{258F19B5-E3C1-4DA1-AC5A-14E4BE30C4FC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{951AD66E-4D69-42EF-8B74-23526EAAEE85}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{951AD66E-4D69-42EF-8B74-23526EAAEE85}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{951AD66E-4D69-42EF-8B74-23526EAAEE85}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{951AD66E-4D69-42EF-8B74-23526EAAEE85}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -67,5 +75,6 @@ Global
 		{F801BDB4-95F7-4FF8-8BF7-36B460FD3FF9} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{1CC984A4-4196-4286-BDE4-2D5E6684B4E4} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{258F19B5-E3C1-4DA1-AC5A-14E4BE30C4FC} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{951AD66E-4D69-42EF-8B74-23526EAAEE85} = {ECF767D6-121F-48A4-A912-D9E8DAC95C5D}
 	EndGlobalSection
 EndGlobal
