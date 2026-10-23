@@ -76,6 +76,9 @@ jobs:
     needs: package
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
+    # 署名鍵は environment の secret に置く。承認者と対象のタグを environment 側で制限し、
+    # 未承認のタグの実行に鍵を渡さない (docs/RELEASE.md)
+    environment: release
     permissions:
       contents: write
     steps:
@@ -98,7 +101,6 @@ jobs:
             --dist dist --summary release/summary.json --out dist/latest.json
 
       - name: Sign update manifest
-        id: signature
         shell: bash
         env:
           UPDATE_SIGNING_KEY: ${{ secrets.UPDATE_SIGNING_KEY }}
@@ -107,17 +109,25 @@ jobs:
             echo "::error::UPDATE_SIGNING_KEY が未設定"
             exit 1
           fi
+          # アプリに埋め込む公開鍵 (リポジトリの release/update-public-key.txt) と、秘密鍵から導いた公開鍵が
+          # 一致しなければ失敗させる。別の有効な鍵への差し替えや誤設定を、配布の前に止める
+          if [ ! -s release/update-public-key.txt ]; then
+            echo "::error::release/update-public-key.txt が無い"
+            exit 1
+          fi
           public_key=$(dotnet run --project tools/ManifestTool -c Release --no-build --no-restore -- sign \
             --key-env UPDATE_SIGNING_KEY --in dist/latest.json --out dist/latest.json.sig)
-          echo "public_key=$public_key" >> "$GITHUB_OUTPUT"
+          if [ "$public_key" != "$(tr -d '[:space:]' < release/update-public-key.txt)" ]; then
+            echo "::error::UPDATE_SIGNING_KEY が release/update-public-key.txt の公開鍵と一致しない"
+            rm -f dist/latest.json.sig
+            exit 1
+          fi
 
       - name: Verify update manifest
         shell: bash
-        env:
-          UPDATE_PUBLIC_KEY: ${{ steps.signature.outputs.public_key }}
         run: |
           dotnet run --project tools/ManifestTool -c Release --no-build --no-restore -- verify \
-            --public "$UPDATE_PUBLIC_KEY" --in dist/latest.json --sig dist/latest.json.sig
+            --public release/update-public-key.txt --in dist/latest.json --sig dist/latest.json.sig
 
       # 下書きで作る。内容を確かめてから、手で公開する
       - name: Create draft release

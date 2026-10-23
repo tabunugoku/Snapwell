@@ -24,11 +24,11 @@
 dotnet run --project tools/ManifestTool -- keygen --private "$env:TEMP/update-private.txt" --public "$env:TEMP/update-public.txt"
 ```
 
-秘密鍵ファイルの内容（PKCS#8 DER の Base64）を GitHub リポジトリの Settings → Secrets and variables → Actions の secret `UPDATE_SIGNING_KEY` に登録し、手元の秘密鍵ファイルを消す。秘密鍵をリポジトリやログ、成果物に入れない。公開鍵（SPKI DER の Base64）は次のアプリ側の作業で exe に埋め込み、その後は手元の公開鍵ファイルも消す。実際の鍵ファイルはどちらもコミットしない。
+秘密鍵ファイルの内容（PKCS#8 DER の Base64）を、GitHub の Settings → Environments → `release` の environment secret `UPDATE_SIGNING_KEY` に登録し、手元の秘密鍵ファイルを消す。秘密鍵をリポジトリやログ、成果物に入れない。environment `release` には、Required reviewers（承認者。メンテナー自身）と、Deployment branches and tags を `v*` のタグだけに制限する設定を付ける。タグを打っただけでは release ジョブが始まらず、承認するまで鍵が渡らない。公開鍵（SPKI DER の Base64）は `release/update-public-key.txt` にコミットする（公開してよい。アプリがこのファイルを埋め込む）。実際の秘密鍵ファイルはコミットしない。
 
 秘密鍵を失うと、同じ公開鍵で検証できる署名を作れなくなる。新しい鍵に切り替えても古いアプリは新しい公開鍵を持たないため、更新の案内が止まる。利用者には新しい公開鍵を含む版を手動で再インストールしてもらう必要がある。鍵を変更する場合も同様になる。
 
-Actions では秘密鍵を署名の手順だけに渡す。未登録なら処理を失敗させ、署名なしの `latest.json` は添付しない。署名の手順は秘密鍵から導いた公開鍵だけを次の手順に渡し、添付前にもう一度検証する。手元でも `sign --key-env <環境変数名> --in <latest.json> --out <latest.json.sig>` と `verify --public <公開鍵ファイルかBase64> --in <latest.json> --sig <latest.json.sig>` を使える。`sign` の標準出力は導いた公開鍵の Base64 だけになる。生成時刻を固定して試すときは `generate` に `--published-at 2026-10-23T00:00:00Z` を渡す。
+Actions では秘密鍵を署名の手順だけに渡す。未登録なら処理を失敗させ、署名なしの `latest.json` は添付しない。署名の手順は、秘密鍵から導いた公開鍵が `release/update-public-key.txt` と一致しなければ失敗し、添付前にその公開鍵ファイルでもう一度検証する（別の有効な鍵への差し替えや誤設定を、配布の前に止める）。手元でも `sign --key-env <環境変数名> --in <latest.json> --out <latest.json.sig>` と `verify --public <公開鍵ファイルかBase64> --in <latest.json> --sig <latest.json.sig>` を使える。`sign` の標準出力は導いた公開鍵の Base64 だけになる。生成時刻を固定して試すときは `generate` に `--published-at 2026-10-23T00:00:00Z` を渡す。
 
 確認先は `https://github.com/tabunugoku/Snapwell/releases/latest/download/latest.json`（署名は同じ場所の `latest.json.sig`）とする。公開済みの最新の正式版にだけ転送され、下書きのうちは確認先に出ない。`v1.0.0-rc.1` のようなタグも生成・署名できるが、公開時に GitHub の **pre-release** として指定すること。GitHub の latest は prerelease を除外するため、この確認先には出ない。リポジトリが非公開の場合、匿名では取得できない（`docs/DESIGN.md` §17.1）。
 
