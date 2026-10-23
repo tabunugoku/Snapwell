@@ -204,6 +204,125 @@ public sealed class WindowTests
     public void PlacementFlagsPreserveZOrderAndActivationAndOptionallySkipSize(bool positionOnly, uint expected) =>
         Assert.Equal(expected, (uint)Win32WindowPositionApi.GetPlacementFlags(positionOnly));
 
+    /// <summary>通常ウィンドウの非同期要求も同期要求と同じ枠で補正し、復元しない。</summary>
+    [Theory]
+    [InlineData(-100, -200, 30, 40)]
+    [InlineData(2000, 300, 1200, 900)]
+    public void AsyncBoundsUseSameInsetsAsSynchronousBoundsWithoutRestore(int x, int y, int w, int h)
+    {
+        var inspector = new FakeInspector { Current = CreateWindow() };
+        var api = new FakePositionApi(inspector);
+        var mover = new WindowMover(inspector, api);
+        var requested = new PixelRect(x, y, w, h);
+        Assert.True(mover.CanRequestVisualBounds(1));
+        Assert.True(mover.RequestVisualBounds(1, requested));
+        Assert.Equal(1, api.AsyncCalls);
+        Assert.Equal(new PixelRect(x - 7, y, w + 14, h + 7), api.LastBounds);
+        var corrected = api.LastBounds;
+        mover.SetVisualBounds(1, requested);
+        Assert.Equal(corrected, api.LastBounds);
+        Assert.True(mover.RequestVisualBounds(1, requested));
+        Assert.Equal(0, api.RestoreCount);
+        Assert.Equal(2, api.AsyncCalls);
+        Assert.Equal(0x4014u, (uint)Win32WindowPositionApi.GetAsyncPlacementFlags());
+    }
+
+    /// <summary>非同期の失敗を伝え、最大化や調査失敗なら復元せず送らない。</summary>
+    [Fact]
+    public void AsyncFailureIsReportedWithoutSynchronousRetry()
+    {
+        var inspector = new FakeInspector { Current = CreateWindow() };
+        var api = new FakePositionApi(inspector) { Success = false };
+        var mover = new WindowMover(inspector, api);
+        Assert.False(mover.RequestVisualBounds(1, new(1, 2, 3, 4)));
+        Assert.Equal(1, api.AsyncCalls);
+        inspector.Current = CreateWindow() with { IsMaximized = true };
+        Assert.False(mover.CanRequestVisualBounds(1));
+        Assert.False(mover.RequestVisualBounds(1, default));
+        inspector.Current = null;
+        Assert.False(mover.CanRequestVisualBounds(1));
+        Assert.False(mover.RequestVisualBounds(1, default));
+        Assert.Equal(1, api.AsyncCalls);
+        Assert.Equal(0, api.SyncCalls);
+        Assert.Equal(0, api.RestoreCount);
+    }
+
+    /// <summary>復元が返らない対象でも、非同期の判定と要求は復元を呼ばずに返る。</summary>
+    [Fact]
+    public async Task MaximizedAsyncRequestNeverEntersBlockingRestore()
+    {
+        using var release = new ManualResetEventSlim();
+        var inspector = new FakeInspector { Current = CreateWindow() with { IsMaximized = true } };
+        var api = new FakePositionApi(inspector) { OnRestore = () => release.Wait() };
+        var mover = new WindowMover(inspector, api);
+        var request = Task.Run(() =>
+        {
+            Assert.False(mover.CanRequestVisualBounds(1));
+            return mover.RequestVisualBounds(1, new(10, 20, 300, 400));
+        });
+        try
+        {
+            Assert.False(await request.WaitAsync(TimeSpan.FromSeconds(5)));
+            Assert.Equal(0, api.RestoreCount);
+            Assert.Equal(0, api.AsyncCalls);
+            Assert.Equal(0, api.SyncCalls);
+        }
+        finally
+        {
+            release.Set();
+            await request;
+        }
+    }
+
+    /// <summary>調査前に無効になった要求は、調査もネイティブ操作もしない。</summary>
+    [Fact]
+    public void InvalidAsyncRequestSkipsInspection()
+    {
+        var inspector = new FakeInspector { OnInspect = () => Assert.Fail("調査に入った。") };
+        var api = new FakePositionApi(inspector);
+        Assert.False(new WindowMover(inspector, api).RequestVisualBounds(1, default, () => false));
+        Assert.Equal(0, api.RestoreCount);
+        Assert.Equal(0, api.AsyncCalls);
+    }
+
+    /// <summary>調査待ち中に無効になった要求は、調査後に非同期送信しない。</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task AsyncRequestRechecksValidityAfterBlockedInspection(bool staysCurrent)
+    {
+        using var entered = new ManualResetEventSlim();
+        using var release = new ManualResetEventSlim();
+        var current = 1;
+        var inspector = new FakeInspector
+        {
+            Current = CreateWindow(),
+            OnInspect = () =>
+            {
+                entered.Set();
+                Assert.True(release.Wait(5000));
+            },
+        };
+        var api = new FakePositionApi(inspector);
+        var mover = new WindowMover(inspector, api);
+        var send = Task.Run(() => mover.RequestVisualBounds(1, new(10, 20, 300, 400),
+            () => Volatile.Read(ref current) != 0));
+        try
+        {
+            Assert.True(entered.Wait(5000));
+            Volatile.Write(ref current, staysCurrent ? 1 : 0);
+        }
+        finally
+        {
+            release.Set();
+        }
+
+        Assert.Equal(staysCurrent, await send);
+        Assert.Equal(staysCurrent ? 1 : 0, api.AsyncCalls);
+        Assert.Equal(0, api.SyncCalls);
+        Assert.Equal(0, api.RestoreCount);
+    }
+
     private static WindowSnapshot CreateWindow() => new(1, "Example", "Test", 42,
         Resizable | Caption, 0, new PixelRect(93, 100, 814, 607), new PixelRect(100, 100, 800, 600),
         new FrameInsets(7, 0, 7, 7), false, true, false, false);
@@ -213,9 +332,11 @@ public sealed class WindowTests
         internal WindowSnapshot? Current { get; set; }
         internal nint FailedHandle { get; set; }
         internal bool ThrowOnFailure { get; set; }
+        internal Action? OnInspect { get; init; }
 
         public bool TryInspect(nint handle, [NotNullWhen(true)] out WindowSnapshot? snapshot)
         {
+            OnInspect?.Invoke();
             if (handle == FailedHandle && ThrowOnFailure)
             {
                 throw new InvalidOperationException("closed");
@@ -237,6 +358,8 @@ public sealed class WindowTests
         internal IReadOnlyList<NativeWindowPlacement> Batch { get; private set; } = [];
         internal bool Success { get; set; } = true;
         internal int BatchCalls { get; private set; }
+        internal int AsyncCalls { get; private set; }
+        internal int SyncCalls { get; private set; }
         internal Action? OnRestore { get; init; }
 
         public bool Restore(nint handle)
@@ -249,8 +372,17 @@ public sealed class WindowTests
 
         public bool SetBounds(nint handle, PixelRect bounds, bool positionOnly)
         {
+            SyncCalls++;
             LastBounds = bounds;
             PositionOnly = positionOnly;
+            return Success;
+        }
+
+        /// <summary>非同期で一度に渡された矩形を記録する。</summary>
+        public bool SetBoundsAsync(nint handle, PixelRect bounds)
+        {
+            AsyncCalls++;
+            LastBounds = bounds;
             return Success;
         }
 

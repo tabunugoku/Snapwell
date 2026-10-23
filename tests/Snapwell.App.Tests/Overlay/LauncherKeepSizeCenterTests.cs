@@ -53,7 +53,7 @@ public sealed class LauncherKeepSizeCenterTests
 
         var request = Assert.Single(motion.Requests);
         Assert.Equal(expected, request.Target);
-        Assert.False(request.Resize);
+        Assert.Equal(SizeMode.None, request.SizeMode);
         Assert.False(launcher.IsOpen);
 
         using var frames = new ControlledFrames();
@@ -88,6 +88,9 @@ public sealed class LauncherKeepSizeCenterTests
     private sealed class UnusedPosition : IWindowPositionApi
     {
         public bool Restore(nint handle) => throw new NotSupportedException();
+        /// <summary>既存の同期経路では非同期送信を許さない。</summary>
+        public bool SetBoundsAsync(nint handle, PixelRect bounds) => throw new NotSupportedException();
+
         public bool SetBounds(nint handle, PixelRect bounds, bool positionOnly) => throw new NotSupportedException();
         public bool ApplyBatch(IReadOnlyList<NativeWindowPlacement> placements, bool positionOnly) =>
             throw new NotSupportedException();

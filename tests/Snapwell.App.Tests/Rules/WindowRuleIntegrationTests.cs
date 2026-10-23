@@ -2,6 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using Snapwell.App.Dragging;
 using Snapwell.App.Hotkeys;
 using Snapwell.App.Lifecycle;
+using Snapwell.App.Motion;
 using Snapwell.App.Overlay;
 using Snapwell.App.Tests.Motion;
 using Snapwell.App.Tests.Overlay;
@@ -133,7 +134,7 @@ public sealed class WindowRuleIntegrationTests
             VisualBounds = new(100, 100, 650, 400),
         };
         fixture.Resize.Handle(new MoveSizeEnded(1, 100), true);
-        Assert.True(Assert.Single(fixture.Motion.Requests).Resize);
+        Assert.Equal(SizeMode.Land, Assert.Single(fixture.Motion.Requests).SizeMode);
         Assert.Equal(1, fixture.Names.Calls);
     }
 
@@ -225,7 +226,7 @@ public sealed class WindowRuleIntegrationTests
             }
 
             var request = Assert.Single(Motion.Requests);
-            Assert.Equal(placement == PlacementRule.ForceTarget, request.Resize);
+            Assert.Equal(placement == PlacementRule.ForceTarget ? SizeMode.Land : SizeMode.None, request.SizeMode);
             if (placement == PlacementRule.PositionOnly)
             {
                 Assert.Equal(Inspector.Window.VisualBounds.Width, request.Target.Width);
@@ -262,6 +263,9 @@ public sealed class WindowRuleIntegrationTests
     private sealed class Position : IWindowPositionApi
     {
         public bool Restore(nint handle) => true;
+        /// <summary>既存の同期経路では非同期送信を許さない。</summary>
+        public bool SetBoundsAsync(nint handle, PixelRect bounds) => throw new NotSupportedException();
+
         public bool SetBounds(nint handle, PixelRect bounds, bool positionOnly) => true;
         public bool ApplyBatch(IReadOnlyList<NativeWindowPlacement> placements, bool positionOnly) => true;
     }

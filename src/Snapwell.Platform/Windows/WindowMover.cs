@@ -18,6 +18,12 @@ public interface IWindowMover
     /// <summary>サイズを適用して実際の見た目の矩形を返し、失敗時は null を返す。</summary>
     PixelRect? SetVisualBounds(nint handle, PixelRect visualBounds);
 
+    /// <summary>復元せずに見た目の矩形を取得でき、非同期要求の対象にできるかを返す。</summary>
+    bool CanRequestVisualBounds(nint handle);
+
+    /// <summary>準備後も有効な要求だけ位置とサイズを非同期で送り、送信の成否を返す。</summary>
+    bool RequestVisualBounds(nint handle, PixelRect visualBounds, Func<bool>? isCurrent = null);
+
     /// <summary>現在の見た目の矩形を返し、調査に失敗したときは null を返す。</summary>
     PixelRect? GetVisualBounds(nint handle);
 
@@ -34,6 +40,9 @@ public interface IWindowPositionApi
 
     /// <summary>ウィンドウ矩形で同期移動し、位置だけの場合は寸法を無視する。</summary>
     bool SetBounds(nint handle, PixelRect bounds, bool positionOnly);
+
+    /// <summary>ウィンドウ矩形の位置とサイズを一つの非同期要求で送る。</summary>
+    bool SetBoundsAsync(nint handle, PixelRect bounds);
 
     /// <summary>ウィンドウ矩形の一覧を一括で適用する。</summary>
     bool ApplyBatch(IReadOnlyList<NativeWindowPlacement> placements, bool positionOnly);
@@ -69,6 +78,17 @@ public sealed class WindowMover(IWindowInspector inspector, IWindowPositionApi a
     /// <summary>バッチによるサイズ適用後も、最小・最大サイズを反映した実矩形を読み直す。</summary>
     public PixelRect? GetVisualBounds(nint handle) =>
         inspector.TryInspect(handle, out var window) ? window.VisualBounds : null;
+
+    /// <summary>最大化された対象は同期の復元が必要なため、非同期要求から除く。</summary>
+    public bool CanRequestVisualBounds(nint handle) =>
+        TryInspectForRequest(handle, out _);
+
+    /// <summary>通常状態の枠で補正し、位置とサイズを同時に非同期で送る。</summary>
+    public bool RequestVisualBounds(nint handle, PixelRect visualBounds, Func<bool>? isCurrent = null) =>
+        (isCurrent is null || isCurrent()) &&
+        TryInspectForRequest(handle, out var window) &&
+        (isCurrent is null || isCurrent()) &&
+        api.SetBoundsAsync(handle, window.Insets.ToWindowBounds(visualBounds));
 
     /// <summary>調査できた対象だけ、通常状態の枠で補正してまとめて適用する。</summary>
     public bool ApplyBatch(IReadOnlyList<WindowPlacement> placements, bool positionOnly,
@@ -110,6 +130,9 @@ public sealed class WindowMover(IWindowInspector inspector, IWindowPositionApi a
         failedHandles = failed;
         return corrected.Count == 0 || api.ApplyBatch(corrected, positionOnly);
     }
+
+    private bool TryInspectForRequest(nint handle, [NotNullWhen(true)] out WindowSnapshot? window) =>
+        inspector.TryInspect(handle, out window) && !window.IsMaximized;
 
     private bool TryPrepare(nint handle, [NotNullWhen(true)] out WindowSnapshot? window)
     {

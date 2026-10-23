@@ -61,9 +61,14 @@ internal sealed class FakeInspector : IWindowInspector
         new(100, 100, 400, 300), new(100, 100, 400, 300), default, false, true, false, false);
     internal nint Foreground = 1;
     internal bool Exists = true;
+    internal Action? OnInspect;
+    internal Func<nint, WindowSnapshot?>? InspectResult;
     public bool TryInspect(nint handle, [NotNullWhen(true)] out WindowSnapshot? snapshot)
     {
-        snapshot = Exists && handle == Window.Handle ? Window : null;
+        OnInspect?.Invoke();
+        snapshot = InspectResult is null
+            ? Exists && handle == Window.Handle ? Window : null
+            : InspectResult(handle);
         return snapshot is not null;
     }
 
@@ -81,6 +86,7 @@ internal sealed class FakeMover : IWindowMover
 {
     internal ConcurrentQueue<(nint Handle, int X, int Y)> Moves { get; } = new();
     internal ConcurrentQueue<(nint Handle, PixelRect Bounds)> Bounds { get; } = new();
+    internal ConcurrentQueue<(nint Handle, PixelRect Bounds)> AsyncBounds { get; } = new();
     internal ConcurrentQueue<(WindowPlacement[] Placements, bool PositionOnly)> Batches { get; } = new();
     internal ConcurrentQueue<nint> Reads { get; } = new();
     internal ConcurrentQueue<string> Calls { get; } = new();
@@ -90,15 +96,49 @@ internal sealed class FakeMover : IWindowMover
     internal IReadOnlyList<nint> FailedBatchHandles = [];
     internal Action? OnBatch;
     internal Func<nint, PixelRect?>? GetBoundsResult;
+    internal Func<nint, bool>? CanRequestResult;
     internal nint FailingHandle;
     internal nint ThrowingHandle;
     internal ManualResetEventSlim? Block;
     internal ManualResetEventSlim Entered { get; } = new(false);
     internal Func<PixelRect, PixelRect?>? SetBoundsResult;
+    internal Action? OnAsyncPrepare;
+    internal Action<nint, PixelRect>? OnAsyncSent;
+    internal Action<nint>? OnSync;
+    internal bool RejectAsync;
+
+    /// <summary>復元が必要な対象を送信せずに除外する判定を差し替える。</summary>
+    public bool CanRequestVisualBounds(nint handle) => CanRequestResult?.Invoke(handle) ?? true;
+
+    /// <summary>反映は自動で行わず、送信した矩形だけを記録する。</summary>
+    public bool RequestVisualBounds(nint handle, PixelRect visualBounds, Func<bool>? isCurrent = null)
+    {
+        OnAsyncPrepare?.Invoke();
+        if (isCurrent is not null && !isCurrent())
+        {
+            return false;
+        }
+
+        if (RejectAsync)
+        {
+            return false;
+        }
+
+        Calls.Enqueue($"async:{handle}");
+        AsyncBounds.Enqueue((handle, visualBounds));
+        OnAsyncSent?.Invoke(handle, visualBounds);
+        if (handle == ThrowingHandle)
+        {
+            throw new InvalidOperationException("closed");
+        }
+
+        return handle != FailingHandle;
+    }
     public bool MoveVisual(nint handle, int x, int y)
     {
         Calls.Enqueue($"move:{handle}");
         Moves.Enqueue((handle, x, y));
+        OnSync?.Invoke(handle);
         Entered.Set();
         Block?.Wait();
         if (handle == ThrowingHandle)
@@ -113,6 +153,7 @@ internal sealed class FakeMover : IWindowMover
     {
         Calls.Enqueue($"bounds:{handle}");
         Bounds.Enqueue((handle, visualBounds));
+        OnSync?.Invoke(handle);
         return SetBoundsResult is null ? visualBounds : SetBoundsResult(visualBounds);
     }
 
@@ -136,6 +177,7 @@ internal sealed class FakeMover : IWindowMover
         failedHandles = FailedBatchHandles;
         foreach (var placement in placements)
         {
+            OnSync?.Invoke(placement.Handle);
             _visualBounds[placement.Handle] = placement.VisualBounds;
         }
 
@@ -145,7 +187,7 @@ internal sealed class FakeMover : IWindowMover
 
 internal sealed class FakePreference(bool reduceMotion = false) : IMotionPreference
 {
-    public bool ReduceMotion => reduceMotion;
+    public bool ReduceMotion { get; set; } = reduceMotion;
 }
 
 internal sealed class ControlledFrames : IClock, IFramePacer, IDisposable

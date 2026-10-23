@@ -127,7 +127,8 @@ internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSou
                     {
                         var walls = areas.First(area => area.Id == snap.MonitorId).WorkArea;
                         motion.Request(new(end.Handle, current.VisualBounds, snap.Target, walls,
-                            options.ToFeelPreset(), velocity, snap.Resized, snap.Stops, snap.ClickRadius));
+                            options.ToFeelPreset(), velocity, snap.Resized ? SizeMode.Land : SizeMode.None,
+                            snap.Stops, snap.ClickRadius));
                         HoldPreview(end.Handle, snap, current.VisualBounds, areas, options.ShowZonePreview);
                     }
                     else

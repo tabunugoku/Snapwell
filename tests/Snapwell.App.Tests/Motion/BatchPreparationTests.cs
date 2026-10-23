@@ -91,7 +91,7 @@ public sealed class BatchPreparationTests
     }
 
     private static MotionRequest Request(nint handle) => new(handle, new(100, 100, 400, 300),
-        new(8, 8, 600, 400), new(0, 0, 1920, 1040), FeelPreset.Airy, new(-1000, -200), true);
+        new(8, 8, 600, 400), new(0, 0, 1920, 1040), FeelPreset.Airy, new(-1000, -200), SizeMode.Land);
 
     private static void WaitUntil(Func<bool> condition) => Assert.True(SpinWait.SpinUntil(condition, 5000));
 
@@ -133,6 +133,9 @@ public sealed class BatchPreparationTests
 
             return true;
         }
+
+        /// <summary>既存の同期経路では非同期送信を許さない。</summary>
+        public bool SetBoundsAsync(nint handle, PixelRect bounds) => throw new NotSupportedException();
 
         public bool SetBounds(nint handle, PixelRect bounds, bool positionOnly)
         {

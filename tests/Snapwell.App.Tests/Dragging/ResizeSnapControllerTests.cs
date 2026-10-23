@@ -2,6 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using Snapwell.App.Dragging;
 using Snapwell.App.Hotkeys;
 using Snapwell.App.Lifecycle;
+using Snapwell.App.Motion;
 using Snapwell.App.Overlay;
 using Snapwell.App.Tests.Motion;
 using Snapwell.Core.Commands;
@@ -255,7 +256,7 @@ public sealed class ResizeSnapControllerTests
         if (expected)
         {
             var request = Assert.Single(fixture.Motion.Requests);
-            Assert.True(request.Resize);
+            Assert.Equal(SizeMode.Land, request.SizeMode);
             Assert.True(request.Target.X >= 1920);
             Assert.Equal(1, fixture.Constraints.MinimumCalls);
         }
@@ -323,7 +324,7 @@ public sealed class ResizeSnapControllerTests
         fixture.Resize(new(100, 100, 650, 400));
         fixture.Controller.Handle(new MoveSizeEnded(1, 100), true);
         var request = Assert.Single(fixture.Motion.Requests);
-        Assert.True(request.Resize);
+        Assert.Equal(SizeMode.Land, request.SizeMode);
         Assert.True(request.Target.Width >= 700);
         Assert.True(request.Target.Height >= 450);
         Assert.Equal(fixture.Options.ToFeelPreset(), request.Feel);
@@ -785,6 +786,9 @@ public sealed class ResizeSnapControllerTests
     private sealed class NoPosition : IWindowPositionApi
     {
         public bool Restore(nint handle) => throw new NotSupportedException();
+        /// <summary>既存の同期経路では非同期送信を許さない。</summary>
+        public bool SetBoundsAsync(nint handle, PixelRect bounds) => throw new NotSupportedException();
+
         public bool SetBounds(nint handle, PixelRect bounds, bool positionOnly) => throw new NotSupportedException();
         public bool ApplyBatch(IReadOnlyList<NativeWindowPlacement> placements, bool positionOnly) =>
             throw new NotSupportedException();
