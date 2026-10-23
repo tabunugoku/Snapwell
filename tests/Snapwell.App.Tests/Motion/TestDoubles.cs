@@ -105,6 +105,7 @@ internal sealed class FakeMover : IWindowMover
     internal Action? OnAsyncPrepare;
     internal Action<nint, PixelRect>? OnAsyncSent;
     internal Action<nint>? OnSync;
+    internal bool RejectAsync;
 
     /// <summary>復元が必要な対象を送信せずに除外する判定を差し替える。</summary>
     public bool CanRequestVisualBounds(nint handle) => CanRequestResult?.Invoke(handle) ?? true;
@@ -114,6 +115,11 @@ internal sealed class FakeMover : IWindowMover
     {
         OnAsyncPrepare?.Invoke();
         if (isCurrent is not null && !isCurrent())
+        {
+            return false;
+        }
+
+        if (RejectAsync)
         {
             return false;
         }

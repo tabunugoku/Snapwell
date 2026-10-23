@@ -39,6 +39,27 @@ public sealed class LiveResizeTests
         Assert.Equal(1, checks);
     }
 
+    /// <summary>事前の判定のあとに最大化されて送れなかったときも、Entry を外さず Land へ後退して着地する。</summary>
+    [Fact]
+    public void MaximizedAfterPreCheckRejectsSendAndDegradesToLand()
+    {
+        using var rig = new Rig();
+        rig.Mover.CanRequestResult = _ => !rig.Mover.RejectAsync;
+        rig.Mover.OnAsyncPrepare = () => rig.Mover.RejectAsync = true;
+        rig.Engine.Request(Request());
+        rig.Tick(16);
+        Assert.True(rig.Engine.IsMoving(1));
+        Assert.Empty(rig.Mover.AsyncBounds);
+        for (var frame = 0; frame < 600 && rig.Engine.IsMoving(1); frame++)
+        {
+            rig.Tick(16);
+        }
+
+        Assert.False(rig.Engine.IsMoving(1));
+        Assert.NotEmpty(rig.Mover.Moves);
+        Assert.Equal(Request().Target, Assert.Single(rig.Mover.Bounds).Bounds);
+    }
+
     /// <summary>途中の最大化も送信前に判定し、未反映要求がなくなってから Land へ後退する。</summary>
     [Fact]
     public void MaximizedDuringAnimationWaitsForPendingRequestThenDegrades()

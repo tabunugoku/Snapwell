@@ -414,6 +414,21 @@ internal sealed class MotionEngine : IMotionEngine
             }
 
             var applied = _mover.RequestVisualBounds(application.Handle, application.Bounds, IsAsyncCurrent);
+            if (!applied && !application.Final && IsAsyncCurrent() &&
+                !_mover.CanRequestVisualBounds(application.Handle))
+            {
+                // 事前の判定のあとに最大化されて送れなかった。Entry を外さず Land に後退する(未送信なので待つ要求は無い)。
+                lock (_gate)
+                {
+                    if (!_disposed && IsCurrent(application))
+                    {
+                        Degrade(application.Entry);
+                    }
+                }
+
+                return;
+            }
+
             if (applied && !application.Final)
             {
                 lock (_gate)
