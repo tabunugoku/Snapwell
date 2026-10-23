@@ -79,15 +79,51 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
       - uses: actions/download-artifact@v8
         with:
           path: dist
           merge-multiple: true
+
+      - name: Generate update manifest
+        shell: bash
+        run: |
+          dotnet run --project tools/ManifestTool -c Release -- generate \
+            --version "${GITHUB_REF_NAME#v}" --tag "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
+            --dist dist --summary release/summary.json --out dist/latest.json
+
+      - name: Sign update manifest
+        id: signature
+        shell: bash
+        env:
+          UPDATE_SIGNING_KEY: ${{ secrets.UPDATE_SIGNING_KEY }}
+        run: |
+          if [ -z "$UPDATE_SIGNING_KEY" ]; then
+            echo "::error::UPDATE_SIGNING_KEY が未設定"
+            exit 1
+          fi
+          public_key=$(dotnet run --project tools/ManifestTool -c Release --no-build --no-restore -- sign \
+            --key-env UPDATE_SIGNING_KEY --in dist/latest.json --out dist/latest.json.sig)
+          echo "public_key=$public_key" >> "$GITHUB_OUTPUT"
+
+      - name: Verify update manifest
+        shell: bash
+        env:
+          UPDATE_PUBLIC_KEY: ${{ steps.signature.outputs.public_key }}
+        run: |
+          dotnet run --project tools/ManifestTool -c Release --no-build --no-restore -- verify \
+            --public "$UPDATE_PUBLIC_KEY" --in dist/latest.json --sig dist/latest.json.sig
 
       # 下書きで作る。内容を確かめてから、手で公開する
       - name: Create draft release
         env:
           GH_TOKEN: ${{ github.token }}
         run: >
-          gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY"
+          gh release create "$GITHUB_REF_NAME" dist/*.zip dist/*.zip.sha256 dist/latest.json dist/latest.json.sig
+          --repo "$GITHUB_REPOSITORY"
           --draft --generate-notes --title "Snapwell $GITHUB_REF_NAME"

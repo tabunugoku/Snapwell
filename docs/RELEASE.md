@@ -8,9 +8,29 @@
 ## 出す手順
 1. `docs/MANUAL_TEST.md` の「実機未確認」を見て、出す版で確かめ終えるものを確かめる（ARM64 はこの PC、x64 は Prism または実機）
 2. main が CI で緑であることを確かめる
-3. タグを打って push する: `git tag v0.1.0 && git push origin v0.1.0`
+3. `release/summary.json` の日本語・英語の要約を今回の変更点に書き換える。必要なら `minimumSupported` にサポートする最も古い版を入れる（指定しないときは `null`）。変更をコミットしてから、タグを打って push する: `git tag v0.1.0 && git push origin v0.1.0`
 4. Actions の `Release` が終わると、下書きのリリースができる。zip を展開して起動を確かめ、リリースノートを直して公開する
 5. 試すだけのときは、Actions の `Release` を `workflow_dispatch`（version を入力）で実行する。リリースは作らず、アーティファクトに zip が出る
+
+## 更新の確認用ファイル
+
+タグによるリリースでは、両 RID の zip と `.sha256` に加えて `latest.json` と `latest.json.sig` を下書きに添付する。`latest.json` は版、UTC の生成時刻、日英の要約、リリースノートの URL、両 RID のダウンロード URL・SHA256・バイト数、任意の `minimumSupported` を含む。`release/summary.json` の文言は雛形なので、リリースのたびに書き換えてからタグを打つ。
+
+署名は JSON のバイト列そのものに対する ECDSA P-256・SHA-256 で、`latest.json.sig` は IEEE P1363 の 64 バイトを Base64 の 1 行にしたものとする。署名後に JSON の空白や改行も変更しない。この署名は更新情報用であり、exe のコード署名は別途必要になる。
+
+初回だけ、リポジトリの外の一時フォルダーで鍵を作る。以下は PowerShell の例で、既存の鍵ファイルは上書きしない。
+
+```powershell
+dotnet run --project tools/ManifestTool -- keygen --private "$env:TEMP/update-private.txt" --public "$env:TEMP/update-public.txt"
+```
+
+秘密鍵ファイルの内容（PKCS#8 DER の Base64）を GitHub リポジトリの Settings → Secrets and variables → Actions の secret `UPDATE_SIGNING_KEY` に登録し、手元の秘密鍵ファイルを消す。秘密鍵をリポジトリやログ、成果物に入れない。公開鍵（SPKI DER の Base64）は次のアプリ側の作業で exe に埋め込み、その後は手元の公開鍵ファイルも消す。実際の鍵ファイルはどちらもコミットしない。
+
+秘密鍵を失うと、同じ公開鍵で検証できる署名を作れなくなる。新しい鍵に切り替えても古いアプリは新しい公開鍵を持たないため、更新の案内が止まる。利用者には新しい公開鍵を含む版を手動で再インストールしてもらう必要がある。鍵を変更する場合も同様になる。
+
+Actions では秘密鍵を署名の手順だけに渡す。未登録なら処理を失敗させ、署名なしの `latest.json` は添付しない。署名の手順は秘密鍵から導いた公開鍵だけを次の手順に渡し、添付前にもう一度検証する。手元でも `sign --key-env <環境変数名> --in <latest.json> --out <latest.json.sig>` と `verify --public <公開鍵ファイルかBase64> --in <latest.json> --sig <latest.json.sig>` を使える。`sign` の標準出力は導いた公開鍵の Base64 だけになる。生成時刻を固定して試すときは `generate` に `--published-at 2026-10-23T00:00:00Z` を渡す。
+
+確認先は `https://github.com/tabunugoku/Snapwell/releases/latest/download/latest.json`（署名は同じ場所の `latest.json.sig`）とする。公開済みの最新の正式版にだけ転送され、下書きのうちは確認先に出ない。`v1.0.0-rc.1` のようなタグも生成・署名できるが、公開時に GitHub の **pre-release** として指定すること。GitHub の latest は prerelease を除外するため、この確認先には出ない。リポジトリが非公開の場合、匿名では取得できない（`docs/DESIGN.md` §17.1）。
 
 ## 1.0.0 のブロッカー（実機で確かめる項目）
 `docs/MANUAL_TEST.md` は全件（約 380）を 1.0.0 の条件にしない。次の項目を確かめ終えてから出す。確かめたら MANUAL_TEST の該当の項目を `[x]` にする。OS の設定を変える項目は、同意を得てから行い、終わったら戻す。
