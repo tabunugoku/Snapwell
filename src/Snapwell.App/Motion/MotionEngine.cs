@@ -13,6 +13,7 @@ internal sealed class MotionEngine : IMotionEngine
         internal WindowBody Body = body;
         internal SizeMode SizeMode = sizeMode;
         internal AsyncResizeGate? ResizeGate = sizeMode == SizeMode.Live ? new() : null;
+        internal PixelRect BeforeResize;
         internal double LastFrame = now;
         internal long Version;
     }
@@ -185,7 +186,9 @@ internal sealed class MotionEngine : IMotionEngine
                 }
 
                 // 削減時は合成フレームを待たず、一度だけ最終矩形を適用する。
-                applications = [.. _entries.Select(pair => new Application(pair.Key, pair.Value, ApplyKind.Bounds,
+                applications = [.. _entries.Select(pair => new Application(pair.Key, pair.Value,
+                    pair.Value.ResizeGate is { } gate && (gate.HasPendingRequest || gate.IsUnresponsive)
+                        ? ApplyKind.Async : ApplyKind.Bounds,
                     pair.Value.Body.Target.ToPixelRect(), pair.Value.Body.Walls.ToPixelRect(),
                     pair.Value.Version, true))];
             }
@@ -215,7 +218,8 @@ internal sealed class MotionEngine : IMotionEngine
         Application[] live;
         lock (_gate)
         {
-            live = _disposed ? [] : [.. _entries.Where(pair => pair.Value.SizeMode == SizeMode.Live)
+            live = _disposed ? [] : [.. _entries.Where(pair => pair.Value.SizeMode == SizeMode.Live ||
+                    pair.Value.ResizeGate is { } gate && (gate.HasPendingRequest || gate.IsUnresponsive))
                 .Select(pair => new Application(pair.Key, pair.Value, ApplyKind.Async, default, default,
                     pair.Value.Version, false))];
         }
@@ -253,7 +257,8 @@ internal sealed class MotionEngine : IMotionEngine
             var settled = Simulator.Advance(entry.Body, Math.Max(0, now - entry.LastFrame));
             entry.LastFrame = now;
             var state = entry.Body.State.ToPixelRect();
-            if (!settled && entry.SizeMode == SizeMode.Live)
+            if (entry.SizeMode == SizeMode.Live ||
+                entry.ResizeGate is { } waiting && (waiting.HasPendingRequest || waiting.IsUnresponsive))
             {
                 // 読み取り中の目標変更には次のフレームで追従し、古い観測では送らない。
                 if (!observations.TryGetValue(handle, out var observation) || !IsCurrent(observation.Application))
@@ -261,22 +266,35 @@ internal sealed class MotionEngine : IMotionEngine
                     continue;
                 }
 
-                if (observation.Bounds is { } current)
+                var gate = entry.ResizeGate!;
+                // 調査できない間も期限を進める。未反映の要求を残して同期経路へ移らない。
+                gate.Observe(now, observation.Bounds ?? entry.BeforeResize);
+                if (gate.IsUnresponsive)
                 {
-                    entry.ResizeGate!.Observe(now, current);
-                    if (!entry.ResizeGate.IsDegraded)
-                    {
-                        if (entry.ResizeGate.CanSend(now))
-                        {
-                            applications.Add(new(handle, entry, ApplyKind.Async, state,
-                                entry.Body.Walls.ToPixelRect(), entry.Version, false));
-                        }
+                    applications.Add(new(handle, entry, ApplyKind.Async, entry.Body.Target.ToPixelRect(),
+                        entry.Body.Walls.ToPixelRect(), entry.Version, true));
+                    continue;
+                }
 
+                // 静止・Land への切り替え後も、反映か時間切れまで何も送らない。
+                if (gate.HasPendingRequest)
+                {
+                    continue;
+                }
+
+                if (entry.SizeMode == SizeMode.Live)
+                {
+                    if (gate.IsDegraded || observation.Bounds is null)
+                    {
+                        Degrade(entry);
+                    }
+                    else if (!settled)
+                    {
+                        applications.Add(new(handle, entry, ApplyKind.Async, state,
+                            entry.Body.Walls.ToPixelRect(), entry.Version, false));
                         continue;
                     }
                 }
-
-                Degrade(entry);
             }
 
             // 最小サイズなどで返った実矩形が異なっても、再適用を繰り返さない。
@@ -344,25 +362,50 @@ internal sealed class MotionEngine : IMotionEngine
 
         try
         {
-            var before = _mover.GetVisualBounds(application.Handle);
-            lock (_gate)
+            PixelRect? before = null;
+            if (!application.Final)
             {
-                // 調査中の取り消し・終了・差し替えを反映し、ゲートだけをロック内で進める。
-                if (_disposed || !IsCurrent(application))
+                before = _mover.GetVisualBounds(application.Handle);
+                lock (_gate)
                 {
-                    return;
-                }
+                    if (_disposed || !IsCurrent(application))
+                    {
+                        return;
+                    }
 
-                if (before is null)
-                {
-                    Degrade(application.Entry);
-                    return;
+                    if (before is null)
+                    {
+                        Degrade(application.Entry);
+                        return;
+                    }
                 }
-
-                application.Entry.ResizeGate!.Sent(_clock.Seconds, before.Value);
             }
 
-            Complete(application, _mover.RequestVisualBounds(application.Handle, application.Bounds));
+            bool IsAsyncCurrent()
+            {
+                lock (_gate)
+                {
+                    return !_disposed && IsCurrent(application);
+                }
+            }
+
+            var applied = _mover.RequestVisualBounds(application.Handle, application.Bounds, IsAsyncCurrent);
+            if (applied && !application.Final)
+            {
+                lock (_gate)
+                {
+                    // 送信後の目標変更でも OS 側には要求が残る。同じ Entry は反映待ちを引き継ぐ。
+                    // 準備中に無効になって送らなかった場合は、待機状態を作らない。
+                    if (!_disposed && _entries.TryGetValue(application.Handle, out var entry) &&
+                        ReferenceEquals(entry, application.Entry))
+                    {
+                        entry.BeforeResize = before!.Value;
+                        entry.ResizeGate!.Sent(_clock.Seconds, before.Value);
+                    }
+                }
+            }
+
+            Complete(application, applied);
         }
         catch (Exception)
         {

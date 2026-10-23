@@ -1,6 +1,7 @@
 using Snapwell.App.Motion;
 using Snapwell.Core.Geometry;
 using Snapwell.Core.Physics;
+using Snapwell.Platform.Windows;
 
 namespace Snapwell.App.Tests.Motion;
 
@@ -54,7 +55,7 @@ public sealed class LiveResizeTests
         {
             if (!rig.Mover.AsyncBounds.IsEmpty)
             {
-                rig.Actual = rig.Mover.AsyncBounds.Last().Bounds;
+                rig.Actual = new(-400, -300, 401 + frame, 300);
             }
 
             rig.Tick(16);
@@ -73,32 +74,39 @@ public sealed class LiveResizeTests
         Assert.Equal(count, rig.Mover.AsyncBounds.Count);
     }
 
-    /// <summary>時間切れで再送し、三回続くと位置の動きを保って着地時変更へ後退する。</summary>
+    /// <summary>百四十ミリ秒後に反映する対象には、期限後に最終目標だけを送り、以降は送らない。</summary>
     [Fact]
-    public void ThreeTimeoutsFallBackToPositionMotionAndSingleLandingResize()
+    public void TimeoutSendsOnlyFinalAsyncTargetAndNeverRetriesDelayedRequests()
     {
         using var rig = new Rig();
+        var pending = new Queue<(double SentAt, PixelRect Bounds)>();
+        rig.Mover.OnAsyncSent = (_, bounds) => pending.Enqueue((rig.Frames.Seconds, bounds));
+        rig.Mover.GetBoundsResult = _ =>
+        {
+            while (pending.TryPeek(out var sent) && rig.Frames.Seconds - sent.SentAt >= 0.14)
+            {
+                rig.Actual = pending.Dequeue().Bounds;
+            }
+
+            return rig.Actual;
+        };
         rig.Engine.Request(Request());
         rig.Tick(1);
         rig.Tick(99);
         Assert.Single(rig.Mover.AsyncBounds);
         rig.Tick(2);
         Assert.Equal(2, rig.Mover.AsyncBounds.Count);
-        rig.Tick(101);
-        Assert.Equal(3, rig.Mover.AsyncBounds.Count);
-        rig.Tick(101);
-        Assert.Equal(3, rig.Mover.AsyncBounds.Count);
-        Assert.Single(rig.Mover.Moves);
-        Assert.True(rig.Engine.IsMoving(1));
-        Assert.Empty(rig.Mover.Bounds);
-        for (var frame = 0; frame < 600 && rig.Engine.IsMoving(1); frame++)
-        {
-            rig.Tick(16);
-        }
-
         Assert.False(rig.Engine.IsMoving(1));
-        Assert.Equal(3, rig.Mover.AsyncBounds.Count);
-        Assert.Equal(Request().Target, Assert.Single(rig.Mover.Bounds).Bounds);
+        Assert.Equal(Request().Target, rig.Mover.AsyncBounds.Last().Bounds);
+        Assert.Equal(2, pending.Count);
+        rig.Frames.Advance(40);
+        Assert.Equal(rig.Mover.AsyncBounds.First().Bounds, rig.Mover.GetVisualBounds(1));
+        rig.Frames.Advance(1000);
+        rig.Engine.Dispose();
+        Assert.Equal(2, rig.Mover.AsyncBounds.Count);
+        Assert.Empty(rig.Mover.Moves);
+        Assert.Empty(rig.Mover.Bounds);
+        Assert.Empty(rig.Mover.Batches);
     }
 
     /// <summary>遅い反映が三回続くと後退し、速い反映が挟まると連続が切れる。</summary>
@@ -131,9 +139,13 @@ public sealed class LiveResizeTests
         var body = new WindowBody(RectD.FromPixelRect(request.Current), RectD.FromPixelRect(request.Target),
             RectD.FromPixelRect(request.Walls), request.Feel, request.Velocity, animateSize: true);
         rig.Engine.Request(request);
-        foreach (var elapsed in new[] { 1, 101, 101, 101 })
+        foreach (var elapsed in new[] { 16, 51, 51, 51 })
         {
             Simulator.Advance(body, elapsed / 1000.0);
+            if (!rig.Mover.AsyncBounds.IsEmpty)
+            {
+                rig.Actual = rig.Mover.AsyncBounds.Last().Bounds;
+            }
             rig.Tick(elapsed);
         }
 
@@ -360,6 +372,364 @@ public sealed class LiveResizeTests
         Assert.Equal(((nint)1, -500, -400), Assert.Single(rig.Mover.Moves));
     }
 
+    /// <summary>遅い反映による後退でも、最後の未反映要求が解決するまで同期操作を始めない。</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SlowFallbackWaitsForPendingReflectionOrTimeout(bool timeout)
+    {
+        using var rig = new Rig();
+        rig.Engine.Request(Request());
+        rig.Tick(16);
+        rig.ReflectAfter(51);
+        rig.ReflectAfter(51);
+        rig.Tick(49);
+        Assert.Equal(3, rig.Mover.AsyncBounds.Count);
+        Assert.Empty(rig.Mover.Moves);
+        Assert.Empty(rig.Mover.Bounds);
+        Assert.Empty(rig.Mover.Batches);
+        if (timeout)
+        {
+            rig.Tick(52);
+            Assert.False(rig.Engine.IsMoving(1));
+            Assert.Equal(Request().Target, rig.Mover.AsyncBounds.Last().Bounds);
+            Assert.Equal(4, rig.Mover.AsyncBounds.Count);
+            Assert.Empty(rig.Mover.Moves);
+        }
+        else
+        {
+            rig.ReflectAfter(2);
+            Assert.Equal(3, rig.Mover.AsyncBounds.Count);
+            Assert.Single(rig.Mover.Moves);
+            Assert.True(rig.Engine.IsMoving(1));
+        }
+    }
+
+    /// <summary>要求中に Land を選び直しても、古い非同期要求の反映より前に同期移動しない。</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SwitchingToLandKeepsPendingGateUntilReflectionOrTimeout(bool timeout)
+    {
+        using var rig = new Rig();
+        rig.Engine.Request(Request());
+        rig.Tick(16);
+        rig.Engine.Request(Request() with { SizeMode = SizeMode.Land });
+        rig.Tick(16);
+        Assert.Empty(rig.Mover.Moves);
+        Assert.Empty(rig.Mover.Bounds);
+        Assert.Empty(rig.Mover.Batches);
+        if (timeout)
+        {
+            rig.Tick(85);
+            Assert.False(rig.Engine.IsMoving(1));
+            Assert.Equal(Request().Target, rig.Mover.AsyncBounds.Last().Bounds);
+            Assert.Equal(2, rig.Mover.AsyncBounds.Count);
+            Assert.Empty(rig.Mover.Moves);
+        }
+        else
+        {
+            rig.ReflectAfter(16);
+            Assert.Single(rig.Mover.Moves);
+            Assert.Single(rig.Mover.AsyncBounds);
+        }
+    }
+
+    /// <summary>静止しても未反映なら確定を待ち、反映後だけ同期で一回確定する。</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SettledLiveWaitsForPendingReflectionOrTimeout(bool timeout)
+    {
+        using var rig = new Rig();
+        ReachSettledWithPendingRequest(rig);
+        var sentCount = rig.Mover.AsyncBounds.Count;
+        Assert.True(rig.Engine.IsMoving(1));
+        Assert.Empty(rig.Mover.Bounds);
+        Assert.Empty(rig.Mover.Moves);
+        Assert.Empty(rig.Mover.Batches);
+        if (timeout)
+        {
+            rig.Tick(101);
+            Assert.Equal(sentCount + 1, rig.Mover.AsyncBounds.Count);
+            Assert.Equal(Request().Target, rig.Mover.AsyncBounds.Last().Bounds);
+            Assert.Empty(rig.Mover.Bounds);
+        }
+        else
+        {
+            rig.Actual = new(-400, -300, 2000, 300);
+            rig.Tick(16);
+            Assert.Equal(sentCount, rig.Mover.AsyncBounds.Count);
+            Assert.Equal(Request().Target, Assert.Single(rig.Mover.Bounds).Bounds);
+        }
+
+        Assert.False(rig.Engine.IsMoving(1));
+    }
+
+    /// <summary>途中でモーション削減を選ぶと、未反映の Live は目標だけを非同期で送って外れる。</summary>
+    [Fact]
+    public void EnablingReducedMotionWithPendingLiveSendsOnlyFinalAsyncTarget()
+    {
+        using var rig = new Rig();
+        rig.Engine.Request(Request());
+        rig.Tick(16);
+        rig.Preference.ReduceMotion = true;
+        rig.Tick(16);
+        WaitUntil(() => !rig.Engine.IsMoving(1));
+        Assert.Equal(2, rig.Mover.AsyncBounds.Count);
+        Assert.Equal(Request().Target, rig.Mover.AsyncBounds.Last().Bounds);
+        Assert.Empty(rig.Mover.Bounds);
+        Assert.Empty(rig.Mover.Moves);
+        Assert.Empty(rig.Mover.Batches);
+    }
+
+    /// <summary>応答しない Live の同期 API が返らなくても、正常な Land のフレームは進む。</summary>
+    [Fact]
+    public void UnresponsiveLiveNeverEntersBlockingSyncCallAndLandKeepsMoving()
+    {
+        using var rig = new Rig();
+        using var release = new ManualResetEventSlim();
+        using var entered = new ManualResetEventSlim();
+        rig.Mover.OnSync = handle =>
+        {
+            if (handle == 1)
+            {
+                entered.Set();
+                release.Wait();
+            }
+        };
+        try
+        {
+            rig.Engine.Request(Request());
+            rig.Engine.Request(Request() with { Handle = 2, SizeMode = SizeMode.Land });
+            rig.Tick(16);
+            rig.Tick(101);
+            WaitUntil(() => rig.Frames.WaitCalls >= 3);
+            Assert.False(rig.Engine.IsMoving(1));
+            var count = rig.Mover.Moves.Count;
+            var waits = rig.Frames.WaitCalls;
+            rig.Frames.Advance(16);
+            WaitUntil(() => rig.Frames.WaitCalls > waits);
+            Assert.True(rig.Mover.Moves.Count > count);
+            Assert.All(rig.Mover.Moves, move => Assert.Equal((nint)2, move.Handle));
+            Assert.False(entered.IsSet);
+            Assert.Empty(rig.Mover.Bounds);
+            Assert.Empty(rig.Mover.Batches);
+            Assert.Equal(Request().Target, rig.Mover.AsyncBounds.Last().Bounds);
+            Assert.Equal(2, rig.Mover.AsyncBounds.Count);
+        }
+        finally
+        {
+            release.Set();
+            rig.Engine.Dispose();
+        }
+    }
+
+    /// <summary>同期の準備を待つ間も取り消し・終了・差し替えが進み、古い送信を止める。</summary>
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(4)]
+    public void InvalidationDuringAsyncPreparationPreventsStaleSend(int operation)
+    {
+        using var rig = new Rig();
+        using var entered = new ManualResetEventSlim();
+        using var release = new ManualResetEventSlim();
+        var preparationFinished = 0;
+        rig.Mover.OnAsyncPrepare = () =>
+        {
+            entered.Set();
+            Assert.True(release.Wait(5000));
+            Volatile.Write(ref preparationFinished, 1);
+        };
+        rig.Engine.Request(Request());
+        WaitUntil(() => rig.Frames.WaitCalls == 1);
+        rig.Frames.Advance(16);
+        try
+        {
+            Assert.True(entered.Wait(5000));
+            switch (operation)
+            {
+                case 0:
+                    rig.Engine.Cancel(1);
+                    break;
+                case 1:
+                    rig.Engine.CancelAll();
+                    break;
+                case 2:
+                    rig.Engine.Dispose();
+                    break;
+                case 3:
+                    rig.Engine.Request(Request() with { Target = new(500, 400, 900, 700) });
+                    break;
+                case 4:
+                    rig.Engine.Cancel(1);
+                    rig.Engine.Request(Request());
+                    break;
+            }
+        }
+        finally
+        {
+            release.Set();
+        }
+
+        WaitUntil(() => Volatile.Read(ref preparationFinished) != 0);
+        if (operation >= 3)
+        {
+            WaitUntil(() => rig.Frames.WaitCalls == 2);
+            Assert.Empty(rig.Mover.AsyncBounds);
+            rig.Mover.OnAsyncPrepare = null;
+            rig.Tick(16);
+            Assert.Single(rig.Mover.AsyncBounds);
+            Assert.True(rig.Engine.IsMoving(1));
+        }
+        else
+        {
+            rig.Engine.Dispose();
+            Assert.Empty(rig.Mover.AsyncBounds);
+            Assert.False(rig.Engine.IsMoving(1));
+        }
+    }
+
+    /// <summary>WindowMover の復元中に無効化された Entry と Version は、ネイティブ送信へ進まない。</summary>
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    public void InvalidationDuringNativeRestorePreventsStaleNativeSend(int operation)
+    {
+        using var frames = new PreciseFrames();
+        using var entered = new ManualResetEventSlim();
+        using var release = new ManualResetEventSlim();
+        var inspector = new FakeInspector();
+        inspector.Window = inspector.Window with { IsMaximized = true };
+        var api = new BlockingRestoreApi(inspector, entered, release);
+        using var engine = new MotionEngine(frames, frames, new WindowMover(inspector, api), new FakePreference());
+        engine.Request(Request());
+        WaitUntil(() => frames.WaitCalls == 1);
+        frames.Advance(16);
+        try
+        {
+            Assert.True(entered.Wait(5000));
+            switch (operation)
+            {
+                case 0:
+                    engine.Cancel(1);
+                    break;
+                case 1:
+                    engine.Dispose();
+                    break;
+                case 2:
+                    engine.Request(Request() with { Target = new(500, 400, 900, 700) });
+                    break;
+                case 3:
+                    engine.Cancel(1);
+                    engine.Request(Request());
+                    break;
+            }
+        }
+        finally
+        {
+            release.Set();
+        }
+
+        WaitUntil(() => api.RestoreFinished);
+        if (operation >= 2)
+        {
+            WaitUntil(() => frames.WaitCalls == 2);
+            Assert.Equal(0, api.AsyncCalls);
+            frames.Advance(16);
+            WaitUntil(() => frames.WaitCalls == 3);
+            Assert.Equal(1, api.AsyncCalls);
+            Assert.True(engine.IsMoving(1));
+        }
+        else
+        {
+            engine.Dispose();
+            Assert.Equal(0, api.AsyncCalls);
+            Assert.False(engine.IsMoving(1));
+        }
+    }
+
+    /// <summary>ネイティブ送信後に同じ Entry の目標が変わっても、その要求の反映待ちは引き継ぐ。</summary>
+    [Fact]
+    public void RetargetAfterNativeSendKeepsPendingRequest()
+    {
+        using var rig = new Rig();
+        rig.Mover.OnAsyncSent = (_, _) =>
+            rig.Engine.Request(Request() with { Target = new(500, 400, 900, 700) });
+        rig.Engine.Request(Request());
+        rig.Tick(16);
+        rig.Mover.OnAsyncSent = null;
+        rig.Tick(16);
+        Assert.Single(rig.Mover.AsyncBounds);
+        rig.ReflectAfter(16);
+        Assert.Equal(2, rig.Mover.AsyncBounds.Count);
+        Assert.Empty(rig.Mover.Moves);
+    }
+
+    /// <summary>読み取り不能でも未反映要求があれば同期経路へ移らず、時間切れを待つ。</summary>
+    [Fact]
+    public void MissingBoundsWhilePendingWaitsAndThenFinishesAsynchronously()
+    {
+        using var rig = new Rig();
+        rig.Engine.Request(Request());
+        rig.Tick(16);
+        rig.Mover.GetBoundsResult = _ => null;
+        rig.Tick(16);
+        Assert.Single(rig.Mover.AsyncBounds);
+        Assert.Empty(rig.Mover.Moves);
+        rig.Tick(85);
+        Assert.False(rig.Engine.IsMoving(1));
+        Assert.Equal(2, rig.Mover.AsyncBounds.Count);
+        Assert.Equal(Request().Target, rig.Mover.AsyncBounds.Last().Bounds);
+        Assert.Empty(rig.Mover.Moves);
+        Assert.Empty(rig.Mover.Bounds);
+    }
+
+    /// <summary>期限と同時に矩形が変わっても、反映として次の中間矩形を送らない。</summary>
+    [Fact]
+    public void ReflectionAtTimeoutStillSendsFinalTargetAndRemovesEntry()
+    {
+        using var rig = new Rig();
+        rig.Engine.Request(Request());
+        rig.Tick(1);
+        rig.Actual = rig.Mover.AsyncBounds.Last().Bounds;
+        rig.Tick(100);
+        Assert.False(rig.Engine.IsMoving(1));
+        Assert.Equal(2, rig.Mover.AsyncBounds.Count);
+        Assert.Equal(Request().Target, rig.Mover.AsyncBounds.Last().Bounds);
+        Assert.Empty(rig.Mover.Bounds);
+        Assert.Empty(rig.Mover.Moves);
+    }
+
+    private static void ReachSettledWithPendingRequest(Rig rig)
+    {
+        var request = Request();
+        var body = new WindowBody(RectD.FromPixelRect(request.Current), RectD.FromPixelRect(request.Target),
+            RectD.FromPixelRect(request.Walls), request.Feel, request.Velocity, animateSize: true);
+        rig.Engine.Request(request);
+        for (var frame = 0; frame < 600; frame++)
+        {
+            var settled = Simulator.Advance(body, 0.016);
+            if (!settled && !rig.Mover.AsyncBounds.IsEmpty)
+            {
+                rig.Actual = new(-400, -300, 401 + frame, 300);
+            }
+
+            rig.Tick(16);
+            if (settled)
+            {
+                return;
+            }
+        }
+
+        Assert.Fail("物体が静止しなかった。");
+    }
+
     private static MotionRequest Request() => new(1, new(-400, -300, 400, 300),
         new(300, 200, 800, 600), new(-1920, -1080, 3840, 2160), FeelPreset.Airy,
         new(200, 100), SizeMode.Live);
@@ -371,12 +741,14 @@ public sealed class LiveResizeTests
         internal readonly PreciseFrames Frames = new();
         internal readonly FakeMover Mover = new();
         internal readonly MotionEngine Engine;
+        internal readonly FakePreference Preference;
         internal PixelRect Actual = Request().Current;
 
         internal Rig(bool reduceMotion = false)
         {
             Mover.GetBoundsResult = _ => Actual;
-            Engine = new(Frames, Frames, Mover, new FakePreference(reduceMotion));
+            Preference = new(reduceMotion);
+            Engine = new(Frames, Frames, Mover, Preference);
         }
 
         internal void Tick(int milliseconds)
@@ -399,6 +771,40 @@ public sealed class LiveResizeTests
             Engine.Dispose();
             Frames.Dispose();
         }
+    }
+
+    private sealed class BlockingRestoreApi(FakeInspector inspector, ManualResetEventSlim entered,
+        ManualResetEventSlim release) : IWindowPositionApi
+    {
+        private int _asyncCalls;
+        private int _restoreFinished;
+        internal int AsyncCalls => Volatile.Read(ref _asyncCalls);
+        internal bool RestoreFinished => Volatile.Read(ref _restoreFinished) != 0;
+
+        /// <summary>復元中に別スレッドから要求を無効化できるよう、明示的な解除まで待つ。</summary>
+        public bool Restore(nint handle)
+        {
+            entered.Set();
+            Assert.True(release.Wait(5000));
+            inspector.Window = inspector.Window with { IsMaximized = false };
+            Volatile.Write(ref _restoreFinished, 1);
+            return true;
+        }
+
+        /// <summary>復元後に実際に送られた要求だけを数える。</summary>
+        public bool SetBoundsAsync(nint handle, PixelRect bounds)
+        {
+            Interlocked.Increment(ref _asyncCalls);
+            return true;
+        }
+
+        /// <summary>復元競合の試験で同期適用へ入ったら失敗させる。</summary>
+        public bool SetBounds(nint handle, PixelRect bounds, bool positionOnly) =>
+            throw new InvalidOperationException("同期適用に入った。");
+
+        /// <summary>復元競合の試験で同期バッチへ入ったら失敗させる。</summary>
+        public bool ApplyBatch(IReadOnlyList<NativeWindowPlacement> placements, bool positionOnly) =>
+            throw new InvalidOperationException("同期バッチに入った。");
     }
 
     private sealed class PreciseFrames : IClock, IFramePacer, IDisposable

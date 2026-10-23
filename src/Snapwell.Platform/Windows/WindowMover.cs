@@ -18,8 +18,8 @@ public interface IWindowMover
     /// <summary>サイズを適用して実際の見た目の矩形を返し、失敗時は null を返す。</summary>
     PixelRect? SetVisualBounds(nint handle, PixelRect visualBounds);
 
-    /// <summary>位置とサイズを一つの非同期要求で送り、送信の成否を返す。</summary>
-    bool RequestVisualBounds(nint handle, PixelRect visualBounds);
+    /// <summary>準備後も有効な要求だけ位置とサイズを非同期で送り、送信の成否を返す。</summary>
+    bool RequestVisualBounds(nint handle, PixelRect visualBounds, Func<bool>? isCurrent = null);
 
     /// <summary>現在の見た目の矩形を返し、調査に失敗したときは null を返す。</summary>
     PixelRect? GetVisualBounds(nint handle);
@@ -77,8 +77,10 @@ public sealed class WindowMover(IWindowInspector inspector, IWindowPositionApi a
         inspector.TryInspect(handle, out var window) ? window.VisualBounds : null;
 
     /// <summary>通常状態の枠で補正し、位置とサイズを同時に非同期で送る。</summary>
-    public bool RequestVisualBounds(nint handle, PixelRect visualBounds) =>
+    public bool RequestVisualBounds(nint handle, PixelRect visualBounds, Func<bool>? isCurrent = null) =>
+        (isCurrent is null || isCurrent()) &&
         TryPrepare(handle, out var window) &&
+        (isCurrent is null || isCurrent()) &&
         api.SetBoundsAsync(handle, window.Insets.ToWindowBounds(visualBounds));
 
     /// <summary>調査できた対象だけ、通常状態の枠で補正してまとめて適用する。</summary>

@@ -96,12 +96,22 @@ internal sealed class FakeMover : IWindowMover
     internal ManualResetEventSlim? Block;
     internal ManualResetEventSlim Entered { get; } = new(false);
     internal Func<PixelRect, PixelRect?>? SetBoundsResult;
+    internal Action? OnAsyncPrepare;
+    internal Action<nint, PixelRect>? OnAsyncSent;
+    internal Action<nint>? OnSync;
 
     /// <summary>反映は自動で行わず、送信した矩形だけを記録する。</summary>
-    public bool RequestVisualBounds(nint handle, PixelRect visualBounds)
+    public bool RequestVisualBounds(nint handle, PixelRect visualBounds, Func<bool>? isCurrent = null)
     {
+        OnAsyncPrepare?.Invoke();
+        if (isCurrent is not null && !isCurrent())
+        {
+            return false;
+        }
+
         Calls.Enqueue($"async:{handle}");
         AsyncBounds.Enqueue((handle, visualBounds));
+        OnAsyncSent?.Invoke(handle, visualBounds);
         if (handle == ThrowingHandle)
         {
             throw new InvalidOperationException("closed");
@@ -113,6 +123,7 @@ internal sealed class FakeMover : IWindowMover
     {
         Calls.Enqueue($"move:{handle}");
         Moves.Enqueue((handle, x, y));
+        OnSync?.Invoke(handle);
         Entered.Set();
         Block?.Wait();
         if (handle == ThrowingHandle)
@@ -127,6 +138,7 @@ internal sealed class FakeMover : IWindowMover
     {
         Calls.Enqueue($"bounds:{handle}");
         Bounds.Enqueue((handle, visualBounds));
+        OnSync?.Invoke(handle);
         return SetBoundsResult is null ? visualBounds : SetBoundsResult(visualBounds);
     }
 
@@ -150,6 +162,7 @@ internal sealed class FakeMover : IWindowMover
         failedHandles = FailedBatchHandles;
         foreach (var placement in placements)
         {
+            OnSync?.Invoke(placement.Handle);
             _visualBounds[placement.Handle] = placement.VisualBounds;
         }
 
@@ -159,7 +172,7 @@ internal sealed class FakeMover : IWindowMover
 
 internal sealed class FakePreference(bool reduceMotion = false) : IMotionPreference
 {
-    public bool ReduceMotion => reduceMotion;
+    public bool ReduceMotion { get; set; } = reduceMotion;
 }
 
 internal sealed class ControlledFrames : IClock, IFramePacer, IDisposable

@@ -243,6 +243,42 @@ public sealed class WindowTests
         Assert.Equal(0, api.SyncCalls);
     }
 
+    /// <summary>同期の復元待ち中に無効になった要求は、復元後に非同期送信しない。</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task AsyncRequestRechecksValidityAfterBlockedRestore(bool staysCurrent)
+    {
+        using var entered = new ManualResetEventSlim();
+        using var release = new ManualResetEventSlim();
+        var inspector = new FakeInspector { Current = CreateWindow() with { IsMaximized = true } };
+        var current = 1;
+        var api = new FakePositionApi(inspector)
+        {
+            OnRestore = () =>
+            {
+                entered.Set();
+                Assert.True(release.Wait(5000));
+            },
+        };
+        var mover = new WindowMover(inspector, api);
+        var send = Task.Run(() => mover.RequestVisualBounds(1, new(10, 20, 300, 400),
+            () => Volatile.Read(ref current) != 0));
+        try
+        {
+            Assert.True(entered.Wait(5000));
+            Volatile.Write(ref current, staysCurrent ? 1 : 0);
+        }
+        finally
+        {
+            release.Set();
+        }
+
+        Assert.Equal(staysCurrent, await send);
+        Assert.Equal(staysCurrent ? 1 : 0, api.AsyncCalls);
+        Assert.Equal(0, api.SyncCalls);
+    }
+
     private static WindowSnapshot CreateWindow() => new(1, "Example", "Test", 42,
         Resizable | Caption, 0, new PixelRect(93, 100, 814, 607), new PixelRect(100, 100, 800, 600),
         new FrameInsets(7, 0, 7, 7), false, true, false, false);
