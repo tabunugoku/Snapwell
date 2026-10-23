@@ -14,7 +14,8 @@ public sealed class FeelPageSourceTests
         var xaml = File.ReadAllText(Path.Combine(root, "src/Snapwell.Settings/Pages/FeelPage.xaml"));
         Assert.Contains("ResizeTimingBox.SelectedIndex = value.ResizeTiming", source);
         Assert.Contains("SelectionChanged=\"ResizeTiming_SelectionChanged\"", xaml);
-        Assert.Contains("ResizeTimingBox.SelectedIndex == 1 ? SizeChangeTiming.WhileMoving : SizeChangeTiming.OnLand", source);
+        Assert.Contains(
+            "ResizeTimingBox.SelectedIndex == 1 ? SizeChangeTiming.WhileMoving : SizeChangeTiming.OnLand", source);
         Assert.Contains("_session.Update(_session.Current with { ResizeTiming = timing });", source);
         Assert.DoesNotContain("ResizeTimingBox.IsEnabled", source);
     }
