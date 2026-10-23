@@ -316,10 +316,14 @@ public sealed class ResizeSnapControllerTests
         Assert.Empty(fixture.Motion.Requests);
     }
 
-    [Fact]
-    public void SizeChangeRequestsExistingMotionEngineWithMinimumSize()
+    /// <summary>手動リサイズの区画補正はタイミングの選択にかかわらず着地時に行う。</summary>
+    [Theory]
+    [InlineData(SizeChangeTiming.OnLand)]
+    [InlineData(SizeChangeTiming.WhileMoving)]
+    public void SizeChangeRequestsExistingMotionEngineWithMinimumSize(SizeChangeTiming timing)
     {
         var fixture = new Fixture();
+        fixture.Options.ResizeTiming = timing;
         fixture.Controller.Handle(new MoveSizeStarted(1), true);
         fixture.Resize(new(100, 100, 650, 400));
         fixture.Controller.Handle(new MoveSizeEnded(1, 100), true);

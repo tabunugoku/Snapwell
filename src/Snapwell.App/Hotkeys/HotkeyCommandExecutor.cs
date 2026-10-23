@@ -1,3 +1,4 @@
+using Snapwell.App.Dragging;
 using Snapwell.App.Motion;
 using Snapwell.Core.Commands;
 using Snapwell.Core.Geometry;
@@ -350,7 +351,7 @@ internal sealed class HotkeyCommandExecutor(IWindowInspector inspector, IMonitor
         }
 
         motion.Request(new(window.Handle, window.VisualBounds, bounds, walls, options.ToFeelPreset(),
-            SizeMode: bounds.Width != window.VisualBounds.Width || bounds.Height != window.VisualBounds.Height
-                ? SizeMode.Land : SizeMode.None));
+            SizeMode: DragSnapController.SizeModeFor(options,
+                bounds.Width != window.VisualBounds.Width || bounds.Height != window.VisualBounds.Height)));
     }
 }

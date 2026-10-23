@@ -127,7 +127,7 @@ internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSou
                     {
                         var walls = areas.First(area => area.Id == snap.MonitorId).WorkArea;
                         motion.Request(new(end.Handle, current.VisualBounds, snap.Target, walls,
-                            options.ToFeelPreset(), velocity, snap.Resized ? SizeMode.Land : SizeMode.None,
+                            options.ToFeelPreset(), velocity, SizeModeFor(options, snap.Resized),
                             snap.Stops, snap.ClickRadius));
                         HoldPreview(end.Handle, snap, current.VisualBounds, areas, options.ShowZonePreview);
                     }
@@ -149,6 +149,11 @@ internal sealed class DragSnapController(IWindowInspector inspector, IMonitorSou
             }
         }
     }
+
+    /// <summary>移動に伴うサイズ変更だけに設定を適用する。</summary>
+    internal static SizeMode SizeModeFor(PortableSettings options, bool resized) => !resized
+        ? SizeMode.None
+        : options.ResizeTiming == SizeChangeTiming.WhileMoving ? SizeMode.Live : SizeMode.Land;
 
     // 線の終点は慣性だけで進む位置（SnapResult.PredictedPosition）ではなく、着地する区画のタイトルバー。
     // 慣性の距離は速度 × m/c で、既定の感触では 1000 px/s でも 20〜80 px しかなく、線が極端に短くなる。
