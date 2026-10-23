@@ -341,6 +341,8 @@ static class Spikes
         Exception? moveError = null;
         using var stop = new CancellationTokenSource();
         using var begin = new ManualResetEventSlim();
+        // SPIKE_NO_MOVER を設定すると位置だけの並行呼び出しを止め、反映の判定を汚さずに更新の速さだけを測る
+        var useMover = Environment.GetEnvironmentVariable("SPIKE_NO_MOVER") is null;
         var mover = new Thread(() =>
         {
             try
@@ -379,7 +381,11 @@ static class Spikes
         var before = default(RECT);
         var sentAt = 0L;
         var clock = new Stopwatch();
-        mover.Start();
+        if (useMover)
+        {
+            mover.Start();
+        }
+
         try
         {
             clock.Start();
@@ -420,7 +426,7 @@ static class Spikes
             stop.Cancel();
             // 同期の Win32 呼び出しはキャンセルできない。戻らなければ例外でプロセスを終了し、
             // バックグラウンドスレッドも終了させる。同期呼び出しを無期限に Join しない。
-            if (!mover.Join(500))
+            if (useMover && !mover.Join(500))
             {
                 throw new TimeoutException("位置だけの同期 SetWindowPos が停止しないため測定を終了する");
             }
