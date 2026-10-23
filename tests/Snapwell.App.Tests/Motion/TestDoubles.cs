@@ -61,9 +61,14 @@ internal sealed class FakeInspector : IWindowInspector
         new(100, 100, 400, 300), new(100, 100, 400, 300), default, false, true, false, false);
     internal nint Foreground = 1;
     internal bool Exists = true;
+    internal Action? OnInspect;
+    internal Func<nint, WindowSnapshot?>? InspectResult;
     public bool TryInspect(nint handle, [NotNullWhen(true)] out WindowSnapshot? snapshot)
     {
-        snapshot = Exists && handle == Window.Handle ? Window : null;
+        OnInspect?.Invoke();
+        snapshot = InspectResult is null
+            ? Exists && handle == Window.Handle ? Window : null
+            : InspectResult(handle);
         return snapshot is not null;
     }
 
@@ -91,6 +96,7 @@ internal sealed class FakeMover : IWindowMover
     internal IReadOnlyList<nint> FailedBatchHandles = [];
     internal Action? OnBatch;
     internal Func<nint, PixelRect?>? GetBoundsResult;
+    internal Func<nint, bool>? CanRequestResult;
     internal nint FailingHandle;
     internal nint ThrowingHandle;
     internal ManualResetEventSlim? Block;
@@ -99,6 +105,9 @@ internal sealed class FakeMover : IWindowMover
     internal Action? OnAsyncPrepare;
     internal Action<nint, PixelRect>? OnAsyncSent;
     internal Action<nint>? OnSync;
+
+    /// <summary>復元が必要な対象を送信せずに除外する判定を差し替える。</summary>
+    public bool CanRequestVisualBounds(nint handle) => CanRequestResult?.Invoke(handle) ?? true;
 
     /// <summary>反映は自動で行わず、送信した矩形だけを記録する。</summary>
     public bool RequestVisualBounds(nint handle, PixelRect visualBounds, Func<bool>? isCurrent = null)

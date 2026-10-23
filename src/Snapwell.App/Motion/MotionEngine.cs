@@ -362,6 +362,30 @@ internal sealed class MotionEngine : IMotionEngine
 
         try
         {
+            if (!_mover.CanRequestVisualBounds(application.Handle))
+            {
+                lock (_gate)
+                {
+                    if (_disposed || !IsCurrent(application))
+                    {
+                        return;
+                    }
+
+                    if (application.Final)
+                    {
+                        // 時間切れなどの最終要求は、古い要求が残り得るため同期経路へ移さない。
+                        _entries.Remove(application.Handle);
+                    }
+                    else
+                    {
+                        // まだ要求を送っていないので、反映を待たず次のフレームから Land で進める。
+                        Degrade(application.Entry);
+                    }
+                }
+
+                return;
+            }
+
             PixelRect? before = null;
             if (!application.Final)
             {

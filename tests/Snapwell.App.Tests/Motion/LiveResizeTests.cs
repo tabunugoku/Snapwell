@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Snapwell.App.Motion;
 using Snapwell.Core.Geometry;
 using Snapwell.Core.Physics;
@@ -8,6 +9,88 @@ namespace Snapwell.App.Tests.Motion;
 /// <summary>反映待ちの非同期送信と着地時変更への後退を検証する。</summary>
 public sealed class LiveResizeTests
 {
+    /// <summary>復元が必要なら最初の送信をせず後退し、位置の移動と着地時の確定を行う。</summary>
+    [Fact]
+    public void MaximizedWindowDegradesBeforeFirstRequestAndFinishesThroughLand()
+    {
+        using var rig = new Rig();
+        var checks = 0;
+        rig.Mover.CanRequestResult = _ =>
+        {
+            checks++;
+            return false;
+        };
+        rig.Engine.Request(Request());
+        rig.Tick(16);
+        Assert.Equal(1, checks);
+        Assert.Empty(rig.Mover.AsyncBounds);
+        Assert.Empty(rig.Mover.Moves);
+        Assert.Empty(rig.Mover.Bounds);
+        rig.Tick(16);
+        Assert.Single(rig.Mover.Moves);
+        for (var frame = 0; frame < 600 && rig.Engine.IsMoving(1); frame++)
+        {
+            rig.Tick(16);
+        }
+
+        Assert.False(rig.Engine.IsMoving(1));
+        Assert.Empty(rig.Mover.AsyncBounds);
+        Assert.Equal(Request().Target, Assert.Single(rig.Mover.Bounds).Bounds);
+        Assert.Equal(1, checks);
+    }
+
+    /// <summary>途中の最大化も送信前に判定し、未反映要求がなくなってから Land へ後退する。</summary>
+    [Fact]
+    public void MaximizedDuringAnimationWaitsForPendingRequestThenDegrades()
+    {
+        using var rig = new Rig();
+        rig.Engine.Request(Request());
+        rig.Tick(16);
+        Assert.Single(rig.Mover.AsyncBounds);
+        rig.Mover.CanRequestResult = _ => false;
+        rig.Tick(16);
+        Assert.Empty(rig.Mover.Moves);
+        Assert.Single(rig.Mover.AsyncBounds);
+        rig.ReflectAfter(16);
+        Assert.Empty(rig.Mover.Moves);
+        Assert.Single(rig.Mover.AsyncBounds);
+        rig.Tick(16);
+        Assert.Single(rig.Mover.Moves);
+        Assert.Empty(rig.Mover.Bounds);
+        Assert.Single(rig.Mover.AsyncBounds);
+    }
+
+    /// <summary>期限時に最大化されていたら追加要求を送らず終了し、同期経路へは移さない。</summary>
+    [Fact]
+    public void MaximizedAtTimeoutDoesNotSendOrEnterSynchronousFallback()
+    {
+        using var rig = new Rig();
+        rig.Engine.Request(Request());
+        rig.Tick(16);
+        rig.Mover.CanRequestResult = _ => false;
+        rig.Tick(101);
+        Assert.False(rig.Engine.IsMoving(1));
+        Assert.Single(rig.Mover.AsyncBounds);
+        Assert.Empty(rig.Mover.Moves);
+        Assert.Empty(rig.Mover.Bounds);
+        Assert.Empty(rig.Mover.Batches);
+    }
+
+    /// <summary>反映待ちの基準は送信直前に読んだ矩形を使い、フレーム冒頭の矩形を使わない。</summary>
+    [Fact]
+    public void GateUsesPreSendBoundsInsteadOfEarlierObservation()
+    {
+        using var rig = new Rig();
+        var reads = 0;
+        var beforeSend = new PixelRect(-400, -300, 450, 300);
+        rig.Mover.GetBoundsResult = _ => ++reads == 1 ? rig.Actual : beforeSend;
+        rig.Engine.Request(Request());
+        rig.Tick(16);
+        rig.Tick(16);
+        Assert.Single(rig.Mover.AsyncBounds);
+        Assert.Empty(rig.Mover.Moves);
+    }
+
     /// <summary>未反映なら送信を止め、寸法だけの変化でも次の矩形を送る。</summary>
     [Fact]
     public void PendingRequestBlocksNextSendUntilVisualBoundsChange()
@@ -593,19 +676,30 @@ public sealed class LiveResizeTests
         }
     }
 
-    /// <summary>WindowMover の復元中に無効化された Entry と Version は、ネイティブ送信へ進まない。</summary>
+    /// <summary>WindowMover の調査中に無効化された Entry と Version は、ネイティブ送信へ進まない。</summary>
     [Theory]
     [InlineData(0)]
     [InlineData(1)]
     [InlineData(2)]
     [InlineData(3)]
-    public void InvalidationDuringNativeRestorePreventsStaleNativeSend(int operation)
+    public void InvalidationDuringNativeInspectionPreventsStaleNativeSend(int operation)
     {
         using var frames = new PreciseFrames();
         using var entered = new ManualResetEventSlim();
         using var release = new ManualResetEventSlim();
         var inspector = new FakeInspector();
-        inspector.Window = inspector.Window with { IsMaximized = true };
+        var inspections = 0;
+        var inspectionFinished = 0;
+        inspector.OnInspect = () =>
+        {
+            // 観測・送信可否・基準矩形の読み取りを通し、要求内部の再調査だけを待たせる。
+            if (++inspections == 4)
+            {
+                entered.Set();
+                Assert.True(release.Wait(5000));
+                Volatile.Write(ref inspectionFinished, 1);
+            }
+        };
         var api = new BlockingRestoreApi(inspector, entered, release);
         using var engine = new MotionEngine(frames, frames, new WindowMover(inspector, api), new FakePreference());
         engine.Request(Request());
@@ -636,7 +730,7 @@ public sealed class LiveResizeTests
             release.Set();
         }
 
-        WaitUntil(() => api.RestoreFinished);
+        WaitUntil(() => Volatile.Read(ref inspectionFinished) != 0);
         if (operation >= 2)
         {
             WaitUntil(() => frames.WaitCalls == 2);
@@ -651,6 +745,41 @@ public sealed class LiveResizeTests
             engine.Dispose();
             Assert.Equal(0, api.AsyncCalls);
             Assert.False(engine.IsMoving(1));
+        }
+    }
+
+    /// <summary>返らない復元を持つ最大化対象を Live から除き、同じフレームの通常対象は送信する。</summary>
+    [Fact]
+    public void MaximizedLiveSkipsBlockingRestoreAndOtherWindowProgresses()
+    {
+        using var frames = new PreciseFrames();
+        using var entered = new ManualResetEventSlim();
+        using var release = new ManualResetEventSlim();
+        var inspector = new FakeInspector();
+        inspector.InspectResult = handle => inspector.Window with { Handle = handle, IsMaximized = handle == 1 };
+        var api = new BlockingRestoreApi(inspector, entered, release);
+        using var engine = new MotionEngine(frames, frames, new WindowMover(inspector, api), new FakePreference());
+        engine.Request(Request());
+        engine.Request(Request() with { Handle = 2 });
+        WaitUntil(() => frames.WaitCalls == 1);
+        frames.Advance(16);
+        try
+        {
+            WaitUntil(() => frames.WaitCalls == 2);
+            Assert.Equal((nint)2, Assert.Single(api.AsyncHandles));
+            Assert.False(entered.IsSet);
+            Assert.True(engine.IsMoving(1));
+            // 次のフレームからは従来の同期 Land になるため、ここではその対象を取り消す。
+            engine.Cancel(1);
+            frames.Advance(101);
+            WaitUntil(() => !engine.IsMoving(2));
+            Assert.Equal(2, api.AsyncCalls);
+            Assert.False(entered.IsSet);
+        }
+        finally
+        {
+            release.Set();
+            engine.Dispose();
         }
     }
 
@@ -777,32 +906,31 @@ public sealed class LiveResizeTests
         ManualResetEventSlim release) : IWindowPositionApi
     {
         private int _asyncCalls;
-        private int _restoreFinished;
         internal int AsyncCalls => Volatile.Read(ref _asyncCalls);
-        internal bool RestoreFinished => Volatile.Read(ref _restoreFinished) != 0;
+        internal ConcurrentQueue<nint> AsyncHandles { get; } = new();
 
-        /// <summary>復元中に別スレッドから要求を無効化できるよう、明示的な解除まで待つ。</summary>
+        /// <summary>応答しない復元を再現し、失敗時の後始末で解除されるまで待つ。</summary>
         public bool Restore(nint handle)
         {
             entered.Set();
-            Assert.True(release.Wait(5000));
+            release.Wait();
             inspector.Window = inspector.Window with { IsMaximized = false };
-            Volatile.Write(ref _restoreFinished, 1);
             return true;
         }
 
-        /// <summary>復元後に実際に送られた要求だけを数える。</summary>
+        /// <summary>実際に送られた要求だけを記録する。</summary>
         public bool SetBoundsAsync(nint handle, PixelRect bounds)
         {
+            AsyncHandles.Enqueue(handle);
             Interlocked.Increment(ref _asyncCalls);
             return true;
         }
 
-        /// <summary>復元競合の試験で同期適用へ入ったら失敗させる。</summary>
+        /// <summary>非同期経路の試験で同期適用へ入ったら失敗させる。</summary>
         public bool SetBounds(nint handle, PixelRect bounds, bool positionOnly) =>
             throw new InvalidOperationException("同期適用に入った。");
 
-        /// <summary>復元競合の試験で同期バッチへ入ったら失敗させる。</summary>
+        /// <summary>非同期経路の試験で同期バッチへ入ったら失敗させる。</summary>
         public bool ApplyBatch(IReadOnlyList<NativeWindowPlacement> placements, bool positionOnly) =>
             throw new InvalidOperationException("同期バッチに入った。");
     }
