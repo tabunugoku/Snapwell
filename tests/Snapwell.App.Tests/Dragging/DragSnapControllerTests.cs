@@ -1,4 +1,5 @@
 using Snapwell.App.Dragging;
+using Snapwell.App.Motion;
 using Snapwell.App.Overlay;
 using Snapwell.App.Tests.Motion;
 using Snapwell.Core.Geometry;
@@ -204,7 +205,7 @@ public sealed class DragSnapControllerTests
         Assert.Equal(new nint[] { 1 }, calls);
         var request = Assert.Single(fixture.Motion.Requests);
         Assert.Equal(expected, request.Target);
-        Assert.False(request.Resize);
+        Assert.Equal(SizeMode.None, request.SizeMode);
     }
 
     /// <summary>ドラッグ中は何も出さず、離すと吸着先を着地が終わるまで出し続ける。</summary>
@@ -266,7 +267,7 @@ public sealed class DragSnapControllerTests
         Assert.Empty(fixture.Motion.Requests);
         fixture.Controller.Handle(new MoveSizeEnded(2, 40));
         var request = Assert.Single(fixture.Motion.Requests);
-        Assert.True(request.Resize);
+        Assert.Equal(SizeMode.Land, request.SizeMode);
         Assert.Equal(new nint[] { 1, 2 }, calls);
     }
 

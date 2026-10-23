@@ -81,6 +81,7 @@ internal sealed class FakeMover : IWindowMover
 {
     internal ConcurrentQueue<(nint Handle, int X, int Y)> Moves { get; } = new();
     internal ConcurrentQueue<(nint Handle, PixelRect Bounds)> Bounds { get; } = new();
+    internal ConcurrentQueue<(nint Handle, PixelRect Bounds)> AsyncBounds { get; } = new();
     internal ConcurrentQueue<(WindowPlacement[] Placements, bool PositionOnly)> Batches { get; } = new();
     internal ConcurrentQueue<nint> Reads { get; } = new();
     internal ConcurrentQueue<string> Calls { get; } = new();
@@ -95,6 +96,19 @@ internal sealed class FakeMover : IWindowMover
     internal ManualResetEventSlim? Block;
     internal ManualResetEventSlim Entered { get; } = new(false);
     internal Func<PixelRect, PixelRect?>? SetBoundsResult;
+
+    /// <summary>反映は自動で行わず、送信した矩形だけを記録する。</summary>
+    public bool RequestVisualBounds(nint handle, PixelRect visualBounds)
+    {
+        Calls.Enqueue($"async:{handle}");
+        AsyncBounds.Enqueue((handle, visualBounds));
+        if (handle == ThrowingHandle)
+        {
+            throw new InvalidOperationException("closed");
+        }
+
+        return handle != FailingHandle;
+    }
     public bool MoveVisual(nint handle, int x, int y)
     {
         Calls.Enqueue($"move:{handle}");

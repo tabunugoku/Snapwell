@@ -331,7 +331,7 @@ public sealed class MotionBatchTests
     }
 
     private static MotionRequest Request(nint handle) => new(handle, new(100, 100, 400, 300),
-        new(8, 8, 600, 400), new(0, 0, 1920, 1040), FeelPreset.Airy, new(-1000, -200), true);
+        new(8, 8, 600, 400), new(0, 0, 1920, 1040), FeelPreset.Airy, new(-1000, -200), SizeMode.Land);
 
     private static MotionRequest SettledRequest(nint handle) => Request(handle) with
     {

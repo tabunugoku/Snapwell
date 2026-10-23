@@ -46,7 +46,7 @@ public sealed class HotkeyTests
         fixture.Executor.Place(1, new(100, 100, 800, 600), new(0, 0, 1920, 1040));
         var request = Assert.Single(fixture.Motion.Requests);
         Assert.Equal(new PixelRect(300, 250, 400, 300), request.Target);
-        Assert.False(request.Resize);
+        Assert.Equal(SizeMode.None, request.SizeMode);
     }
 
     /// <summary>ランチャーの対象は最大化を解除してから、選んだ矩形へ移動する。</summary>
@@ -95,7 +95,7 @@ public sealed class HotkeyTests
         Assert.Equal(new PixelRect(expectedX, expectedY, 400, 300), request.Target);
         Assert.Equal(fixture.Inspector.Window.VisualBounds, request.Current);
         Assert.Equal(new PixelRect(0, 0, 1920, 1040), request.Walls);
-        Assert.False(request.Resize);
+        Assert.Equal(SizeMode.None, request.SizeMode);
     }
 
     /// <summary>隣の取得関数が省略されても各方向の作業領域端へ動く。</summary>
@@ -111,7 +111,7 @@ public sealed class HotkeyTests
         var request = Assert.Single(fixture.Motion.Requests);
         Assert.Equal(new PixelRect(x, y, 400, 300), request.Target);
         Assert.Equal(new PixelRect(0, 0, 1920, 1040), request.Walls);
-        Assert.False(request.Resize);
+        Assert.Equal(SizeMode.None, request.SizeMode);
     }
 
     /// <summary>隣接吸着の壁は画面外の直交軸も保ち、現在・目標・作業領域を最小の範囲で含む。</summary>
@@ -137,7 +137,7 @@ public sealed class HotkeyTests
         Assert.True(request.Walls.Contains(current));
         Assert.True(request.Walls.Contains(request.Target));
         Assert.True(request.Walls.Contains(new PixelRect(0, 0, 1920, 1040)));
-        Assert.False(request.Resize);
+        Assert.Equal(SizeMode.None, request.SizeMode);
     }
 
     /// <summary>サイズ固定の前面ウィンドウも隣へ位置だけ動かす。</summary>
@@ -149,7 +149,7 @@ public sealed class HotkeyTests
         fixture.Executor.Handle(new((int)WindowCommand.SnapAdjacentRight));
         var request = Assert.Single(fixture.Motion.Requests);
         Assert.Equal(new PixelRect(292, 100, 400, 300), request.Target);
-        Assert.False(request.Resize);
+        Assert.Equal(SizeMode.None, request.SizeMode);
     }
 
     /// <summary>一時停止中は隣を取得せず、移動も要求しない。</summary>
@@ -182,7 +182,7 @@ public sealed class HotkeyTests
         var request = Assert.Single(fixture.Requests);
         Assert.Equal(new PixelRect(100, 100, 400, 300), request.Current);
         Assert.Equal(new PixelRect(292, 100, 400, 300), request.Target);
-        Assert.False(request.Resize);
+        Assert.Equal(SizeMode.None, request.SizeMode);
         Assert.Equal(1, fixture.RestoreCalls);
     }
 
@@ -207,7 +207,7 @@ public sealed class HotkeyTests
         var request = Assert.Single(fixture.Motion.Requests);
         Assert.Equal(new PixelRect(8, 8, 948, 1024), request.Target);
         Assert.Equal(default, request.Velocity);
-        Assert.True(request.Resize);
+        Assert.Equal(SizeMode.Land, request.SizeMode);
         Assert.Equal((nint)1, request.Handle);
     }
 
@@ -386,6 +386,9 @@ public sealed class HotkeyTests
         public bool IsMoving(nint handle) => false;
         public void Cancel(nint handle) { }
         public void CancelAll() { }
+        /// <summary>既存の同期経路では非同期送信を許さない。</summary>
+        public bool SetBoundsAsync(nint handle, PixelRect bounds) => throw new NotSupportedException();
+
         public bool SetBounds(nint handle, PixelRect bounds, bool positionOnly) => throw new NotSupportedException();
         public bool ApplyBatch(IReadOnlyList<NativeWindowPlacement> placements, bool positionOnly) =>
             throw new NotSupportedException();
@@ -437,6 +440,9 @@ public sealed class HotkeyTests
             inspector.Window = inspector.Window with { IsMaximized = false };
             return true;
         }
+
+        /// <summary>既存の同期経路では非同期送信を許さない。</summary>
+        public bool SetBoundsAsync(nint handle, PixelRect bounds) => throw new NotSupportedException();
 
         public bool SetBounds(nint handle, PixelRect bounds, bool positionOnly) => throw new NotSupportedException();
         public bool ApplyBatch(IReadOnlyList<NativeWindowPlacement> placements, bool positionOnly) =>

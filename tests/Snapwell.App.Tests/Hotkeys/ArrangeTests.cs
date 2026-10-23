@@ -50,7 +50,7 @@ public sealed class ArrangeTests
         for (var i = 0; i < 3; i++)
         {
             Assert.Equal(expectedTargets[i], fixture.Motion.Requests[i].Target);
-            Assert.True(fixture.Motion.Requests[i].Resize);
+            Assert.Equal(SizeMode.Land, fixture.Motion.Requests[i].SizeMode);
         }
     }
 
@@ -88,11 +88,11 @@ public sealed class ArrangeTests
             ArrangeLayout.Columns, new(0, 0, 1920, 1040), new(8, 8), 2)!;
         Assert.Equal(2, fixture.Motion.Requests.Count);
         Assert.Equal(targets[0], fixture.Motion.Requests[0].Target);
-        Assert.True(fixture.Motion.Requests[0].Resize);
+        Assert.Equal(SizeMode.Land, fixture.Motion.Requests[0].SizeMode);
 
         var fixedRequest = fixture.Motion.Requests[1];
         Assert.Equal((nint)2, fixedRequest.Handle);
-        Assert.False(fixedRequest.Resize);
+        Assert.Equal(SizeMode.None, fixedRequest.SizeMode);
         Assert.Equal(300, fixedRequest.Target.Width);
         Assert.Equal(200, fixedRequest.Target.Height);
         var cell = targets[1];
@@ -310,7 +310,7 @@ public sealed class ArrangeTests
 
         var request = Assert.Single(fixture.Motion.Requests);
         Assert.Equal((nint)1, request.Handle);
-        Assert.False(request.Resize);
+        Assert.Equal(SizeMode.None, request.SizeMode);
         Assert.Equal(300, request.Target.Width);
         Assert.Equal(200, request.Target.Height);
         Assert.True(fixture.Monitors.Items[1].WorkArea.Contains(request.Target));
@@ -450,6 +450,9 @@ public sealed class ArrangeTests
             OnRestore?.Invoke(handle);
             return true;
         }
+        /// <summary>既存の同期経路では非同期送信を許さない。</summary>
+        public bool SetBoundsAsync(nint handle, PixelRect bounds) => throw new NotSupportedException();
+
         public bool SetBounds(nint handle, PixelRect bounds, bool positionOnly) => true;
         public bool ApplyBatch(IReadOnlyList<NativeWindowPlacement> placements, bool positionOnly) => true;
     }

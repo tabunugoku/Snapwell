@@ -114,7 +114,7 @@ internal sealed class ResizeSnapController(IWindowInspector inspector, IMonitorS
             }
 
             motion.Request(new(end.Handle, window.VisualBounds, plan.Target, plan.Walls,
-                options.ToFeelPreset(), Resize: true));
+                options.ToFeelPreset(), SizeMode: SizeMode.Land));
             if (options.ShowZonePreview && ShowPreview(plan.Target))
             {
                 _holdWindow = window;

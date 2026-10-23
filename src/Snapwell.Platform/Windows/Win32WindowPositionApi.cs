@@ -5,7 +5,7 @@ using Windows.Win32.UI.WindowsAndMessaging;
 
 namespace Snapwell.Platform.Windows;
 
-/// <summary>フォーカスと Z 順序を維持する同期の Win32 移動。</summary>
+/// <summary>フォーカスと Z 順序を維持する同期・非同期の Win32 移動。</summary>
 public sealed class Win32WindowPositionApi : IWindowPositionApi
 {
     private const SET_WINDOW_POS_FLAGS PlacementFlags =
@@ -27,6 +27,14 @@ public sealed class Win32WindowPositionApi : IWindowPositionApi
 
     internal static SET_WINDOW_POS_FLAGS GetPlacementFlags(bool positionOnly) =>
         PlacementFlags | (positionOnly ? SET_WINDOW_POS_FLAGS.SWP_NOSIZE : 0);
+
+    /// <summary>位置とサイズを一度の SetWindowPos で送り、相手の反映を待たない。</summary>
+    public bool SetBoundsAsync(nint handle, PixelRect bounds) =>
+        PInvoke.SetWindowPos(new HWND(handle), default, bounds.X, bounds.Y, bounds.Width, bounds.Height,
+            GetAsyncPlacementFlags());
+
+    internal static SET_WINDOW_POS_FLAGS GetAsyncPlacementFlags() =>
+        PlacementFlags | SET_WINDOW_POS_FLAGS.SWP_ASYNCWINDOWPOS;
 
     /// <summary>DeferWindowPos が失敗した場合は無効になったバッチを使わない。</summary>
     public bool ApplyBatch(IReadOnlyList<NativeWindowPlacement> placements, bool positionOnly)

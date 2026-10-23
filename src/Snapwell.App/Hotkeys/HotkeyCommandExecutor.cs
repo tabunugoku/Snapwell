@@ -350,6 +350,7 @@ internal sealed class HotkeyCommandExecutor(IWindowInspector inspector, IMonitor
         }
 
         motion.Request(new(window.Handle, window.VisualBounds, bounds, walls, options.ToFeelPreset(),
-            Resize: bounds.Width != window.VisualBounds.Width || bounds.Height != window.VisualBounds.Height));
+            SizeMode: bounds.Width != window.VisualBounds.Width || bounds.Height != window.VisualBounds.Height
+                ? SizeMode.Land : SizeMode.None));
     }
 }

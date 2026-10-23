@@ -1,4 +1,5 @@
 using Snapwell.Core.Geometry;
+using Snapwell.Core.Motion;
 using Snapwell.Core.Physics;
 using Snapwell.Platform.Windows;
 
@@ -7,10 +8,11 @@ namespace Snapwell.App.Motion;
 /// <summary>全ウィンドウの物理演算を一つの専用スレッドで進め、適用はロックの外で行う。</summary>
 internal sealed class MotionEngine : IMotionEngine
 {
-    private sealed class Entry(WindowBody body, bool resize, double now)
+    private sealed class Entry(WindowBody body, SizeMode sizeMode, double now)
     {
         internal WindowBody Body = body;
-        internal bool Resize = resize;
+        internal SizeMode SizeMode = sizeMode;
+        internal AsyncResizeGate? ResizeGate = sizeMode == SizeMode.Live ? new() : null;
         internal double LastFrame = now;
         internal long Version;
     }
@@ -48,15 +50,21 @@ internal sealed class MotionEngine : IMotionEngine
             var walls = RectD.FromPixelRect(request.Walls);
             if (_entries.TryGetValue(request.Handle, out var entry))
             {
+                var mode = request.SizeMode == SizeMode.Live && entry.ResizeGate?.IsDegraded == true
+                    ? SizeMode.Land : request.SizeMode;
                 entry.Body.Retarget(target);
                 if (entry.Body.Walls != walls || entry.Body.Feel != request.Feel || request.Stops is not null ||
-                    entry.Body.Stops is not null)
+                    entry.Body.Stops is not null || (entry.SizeMode == SizeMode.Live) != (mode == SizeMode.Live))
                 {
                     entry.Body = new(entry.Body.State, target, walls, request.Feel, velocity: entry.Body.Velocity,
-                        stops: request.Stops, clickRadius: request.ClickRadius);
+                        stops: request.Stops, clickRadius: request.ClickRadius, animateSize: mode == SizeMode.Live);
                 }
 
-                entry.Resize = request.Resize;
+                entry.SizeMode = mode;
+                if (mode == SizeMode.Live)
+                {
+                    entry.ResizeGate ??= new();
+                }
                 // 同じ Entry を再利用する要求も、適用待ちのフレームと区別する。
                 entry.Version++;
             }
@@ -64,7 +72,8 @@ internal sealed class MotionEngine : IMotionEngine
             {
                 _entries[request.Handle] = new(new(RectD.FromPixelRect(request.Current), target, walls,
                     request.Feel, velocity: request.Velocity, stops: request.Stops,
-                    clickRadius: request.ClickRadius), request.Resize, _clock.Seconds);
+                    clickRadius: request.ClickRadius, animateSize: request.SizeMode == SizeMode.Live),
+                    request.SizeMode, _clock.Seconds);
             }
 
             Monitor.PulseAll(_gate);
@@ -185,6 +194,7 @@ internal sealed class MotionEngine : IMotionEngine
         if (!reduceMotion)
         {
             _pacer.Wait(_stop.Token);
+            var observations = ReadLiveBounds();
             lock (_gate)
             {
                 if (_disposed)
@@ -192,7 +202,7 @@ internal sealed class MotionEngine : IMotionEngine
                     return false;
                 }
 
-                applications = PlanFrame(_clock.Seconds);
+                applications = PlanFrame(_clock.Seconds, observations);
             }
         }
 
@@ -200,27 +210,109 @@ internal sealed class MotionEngine : IMotionEngine
         return true;
     }
 
-    private Application[] PlanFrame(double now)
+    private Dictionary<nint, Observation> ReadLiveBounds()
     {
-        var applications = new Application[_entries.Count];
-        var index = 0;
+        Application[] live;
+        lock (_gate)
+        {
+            live = _disposed ? [] : [.. _entries.Where(pair => pair.Value.SizeMode == SizeMode.Live)
+                .Select(pair => new Application(pair.Key, pair.Value, ApplyKind.Async, default, default,
+                    pair.Value.Version, false))];
+        }
+
+        var observations = new Dictionary<nint, Observation>();
+        foreach (var application in live)
+        {
+            lock (_gate)
+            {
+                if (_disposed || !IsCurrent(application))
+                {
+                    continue;
+                }
+            }
+
+            try
+            {
+                observations.Add(application.Handle, new(application,
+                    _mover.GetVisualBounds(application.Handle)));
+            }
+            catch (Exception)
+            {
+                Complete(application, false);
+            }
+        }
+
+        return observations;
+    }
+
+    private Application[] PlanFrame(double now, Dictionary<nint, Observation> observations)
+    {
+        var applications = new List<Application>(_entries.Count);
         foreach (var (handle, entry) in _entries)
         {
             var settled = Simulator.Advance(entry.Body, Math.Max(0, now - entry.LastFrame));
             entry.LastFrame = now;
             var state = entry.Body.State.ToPixelRect();
+            if (!settled && entry.SizeMode == SizeMode.Live)
+            {
+                // 読み取り中の目標変更には次のフレームで追従し、古い観測では送らない。
+                if (!observations.TryGetValue(handle, out var observation) || !IsCurrent(observation.Application))
+                {
+                    continue;
+                }
+
+                if (observation.Bounds is { } current)
+                {
+                    entry.ResizeGate!.Observe(now, current);
+                    if (!entry.ResizeGate.IsDegraded)
+                    {
+                        if (entry.ResizeGate.CanSend(now))
+                        {
+                            applications.Add(new(handle, entry, ApplyKind.Async, state,
+                                entry.Body.Walls.ToPixelRect(), entry.Version, false));
+                        }
+
+                        continue;
+                    }
+                }
+
+                Degrade(entry);
+            }
+
             // 最小サイズなどで返った実矩形が異なっても、再適用を繰り返さない。
-            applications[index++] = settled && entry.Resize
+            applications.Add(settled && entry.SizeMode != SizeMode.None
                 ? new(handle, entry, ApplyKind.Bounds, entry.Body.Target.ToPixelRect(),
                     entry.Body.Walls.ToPixelRect(), entry.Version, true)
-                : new(handle, entry, ApplyKind.Position, state, entry.Body.Walls.ToPixelRect(), entry.Version, settled);
+                : new(handle, entry, ApplyKind.Position, state, entry.Body.Walls.ToPixelRect(), entry.Version, settled));
         }
 
-        return applications;
+        return [.. applications];
+    }
+
+    private static void Degrade(Entry entry)
+    {
+        var body = entry.Body;
+        entry.Body = new(body.State, body.Target, body.Walls, body.Feel, body.Velocity,
+            body.Stops, body.ClickRadius, animateSize: false);
+        entry.SizeMode = SizeMode.Land;
     }
 
     private void ApplyFrame(Application[] applications, bool reduceMotion)
     {
+        // Live は個別に送り、残りの対象は Live の並び位置によらず従来どおりまとめる。
+        if (applications.Any(application => application.Kind == ApplyKind.Async))
+        {
+            foreach (var application in applications)
+            {
+                if (application.Kind == ApplyKind.Async)
+                {
+                    ApplyAsync(application);
+                }
+            }
+
+            applications = [.. applications.Where(application => application.Kind != ApplyKind.Async)];
+        }
+
         for (var index = 0; index < applications.Length;)
         {
             if (!reduceMotion && applications[index].Kind == ApplyKind.Bounds)
@@ -237,6 +329,44 @@ internal sealed class MotionEngine : IMotionEngine
             }
 
             ApplyBatch(applications.AsSpan(start, index - start));
+        }
+    }
+
+    private void ApplyAsync(Application application)
+    {
+        lock (_gate)
+        {
+            if (_disposed || !IsCurrent(application))
+            {
+                return;
+            }
+        }
+
+        try
+        {
+            var before = _mover.GetVisualBounds(application.Handle);
+            lock (_gate)
+            {
+                // 調査中の取り消し・終了・差し替えを反映し、ゲートだけをロック内で進める。
+                if (_disposed || !IsCurrent(application))
+                {
+                    return;
+                }
+
+                if (before is null)
+                {
+                    Degrade(application.Entry);
+                    return;
+                }
+
+                application.Entry.ResizeGate!.Sent(_clock.Seconds, before.Value);
+            }
+
+            Complete(application, _mover.RequestVisualBounds(application.Handle, application.Bounds));
+        }
+        catch (Exception)
+        {
+            Complete(application, false);
         }
     }
 
@@ -415,7 +545,10 @@ internal sealed class MotionEngine : IMotionEngine
     {
         Position,
         Bounds,
+        Async,
     }
+
+    private readonly record struct Observation(Application Application, PixelRect? Bounds);
 
     private readonly record struct Application(nint Handle, Entry Entry, ApplyKind Kind, PixelRect Bounds,
         PixelRect Walls, long Version, bool Final);

@@ -1419,6 +1419,9 @@ public sealed class AppHostTests
     private sealed class NoPosition : IWindowPositionApi
     {
         public bool Restore(nint handle) => true;
+        /// <summary>既存の同期経路では非同期送信を許さない。</summary>
+        public bool SetBoundsAsync(nint handle, PixelRect bounds) => throw new NotSupportedException();
+
         public bool SetBounds(nint handle, PixelRect bounds, bool positionOnly) => true;
         public bool ApplyBatch(IReadOnlyList<NativeWindowPlacement> placements, bool positionOnly) => true;
     }

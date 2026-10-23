@@ -1,4 +1,5 @@
 using Snapwell.App.Hotkeys;
+using Snapwell.App.Motion;
 using Snapwell.App.Tests.Motion;
 using Snapwell.Core.Commands;
 using Snapwell.Core.Geometry;
@@ -32,7 +33,7 @@ public sealed class CenterWindowHotkeyTests
         fixture.Executor.Handle(new((int)WindowCommand.CenterWindow));
         var request = Assert.Single(fixture.Motion.Requests);
         Assert.Equal(new PixelRect(486, 137, 948, 766), request.Target);
-        Assert.True(request.Resize);
+        Assert.Equal(SizeMode.Land, request.SizeMode);
         Assert.Equal((nint)1, request.Handle);
     }
 
@@ -45,7 +46,7 @@ public sealed class CenterWindowHotkeyTests
         fixture.Executor.Handle(new((int)WindowCommand.CenterWindow));
         var request = Assert.Single(fixture.Motion.Requests);
         Assert.Equal(new PixelRect(760, 370, 400, 300), request.Target);
-        Assert.False(request.Resize);
+        Assert.Equal(SizeMode.None, request.SizeMode);
     }
 
     /// <summary>区画で中央の範囲を表せないグリッドでは、移動を要求しない。</summary>
@@ -73,7 +74,7 @@ public sealed class CenterWindowHotkeyTests
         var request = Assert.Single(fixture.Motion.Requests);
         Assert.Equal(new PixelRect(760, 370, 400, 300), request.Target);
         Assert.Equal(fixture.Inspector.Window.VisualBounds, request.Current);
-        Assert.False(request.Resize);
+        Assert.Equal(SizeMode.None, request.SizeMode);
     }
 
     /// <summary>サイズ維持の中央は、区画で表せないグリッドでも動く。</summary>
@@ -111,6 +112,9 @@ public sealed class CenterWindowHotkeyTests
     private sealed class UnusedPosition : IWindowPositionApi
     {
         public bool Restore(nint handle) => throw new NotSupportedException();
+        /// <summary>既存の同期経路では非同期送信を許さない。</summary>
+        public bool SetBoundsAsync(nint handle, PixelRect bounds) => throw new NotSupportedException();
+
         public bool SetBounds(nint handle, PixelRect bounds, bool positionOnly) => throw new NotSupportedException();
         public bool ApplyBatch(IReadOnlyList<NativeWindowPlacement> placements, bool positionOnly) =>
             throw new NotSupportedException();
