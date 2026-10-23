@@ -21,10 +21,17 @@ public enum WindowCornerPreference
     RoundSmall = 3,
 }
 
+/// <summary>移動に伴うサイズ変更のタイミング。</summary>
+public enum SizeChangeTiming
+{
+    OnLand = 0,
+    WhileMoving = 1,
+}
+
 /// <summary>他の端末にも持ち運べる設定。</summary>
 public sealed record PortableSettings
 {
-    public const int CurrentSchemaVersion = 12;
+    public const int CurrentSchemaVersion = 13;
 
     /// <summary>吸着半径の既定値。論理ピクセル。DESIGN.md §5.1 の feel の値。</summary>
     public const double DefaultSnapRadius = 28;
@@ -47,6 +54,8 @@ public sealed record PortableSettings
     public double Gap { get; set; } = 8;
     public double Edge { get; set; } = 8;
     public bool ReduceMotion { get; set; }
+    /// <summary>移動に伴うサイズ変更を適用するタイミング。</summary>
+    public SizeChangeTiming ResizeTiming { get; set; } = SizeChangeTiming.OnLand;
     public bool ShowZonePreview { get; set; } = true;
     /// <summary>他のアプリに適用する角の設定。</summary>
     [JsonConverter(typeof(WindowCornerPreferenceJsonConverter))]
@@ -162,6 +171,7 @@ public sealed record PortableSettings
                 }).ToArray(),
             Feel = Feel is not null && FeelPreset.ByName(Feel) is not null ? Feel : defaults.Feel,
             SnapMode = Enum.IsDefined(SnapMode) ? SnapMode : defaults.SnapMode,
+            ResizeTiming = Enum.IsDefined(ResizeTiming) ? ResizeTiming : defaults.ResizeTiming,
             Grid = new(Grid?.Columns is >= 1 and <= 64 ? Grid.Columns : 8,
                 Grid?.Rows is >= 1 and <= 64 ? Grid.Rows : 8),
             Gap = double.IsFinite(Gap) && Gap is >= 0 and <= 200 ? Gap : defaults.Gap,

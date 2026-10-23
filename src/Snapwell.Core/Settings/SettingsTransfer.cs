@@ -14,7 +14,7 @@ public enum SettingsField
     Grid, Gap, Edge, Feel, SnapMode, ReduceMotion, ShowZonePreview,
     MagnetStrength, SnapRadius, Hotkey, ResizeStep, ResizeAnchor,
     CornerPreference, ShowZoneLines, ShowPredictionLine, SnapAfterResize, MonitorGrids, LauncherPresets,
-    MoveFixedSizeWindows, MovePopupWindows, WindowRules,
+    MoveFixedSizeWindows, MovePopupWindows, WindowRules, ResizeTiming,
 }
 
 /// <summary>ホットキーはコマンドごと、それ以外は項目ごとに識別する。</summary>
@@ -208,6 +208,7 @@ public static class SettingsTransfer
                 },
                 SettingsField.SnapMode => value with { SnapMode = imported.SnapMode },
                 SettingsField.ReduceMotion => value with { ReduceMotion = imported.ReduceMotion },
+                SettingsField.ResizeTiming => value with { ResizeTiming = imported.ResizeTiming },
                 SettingsField.ShowZonePreview => value with { ShowZonePreview = imported.ShowZonePreview },
                 SettingsField.MagnetStrength => value with { MagnetStrength = imported.MagnetStrength },
                 SettingsField.SnapRadius => value with { SnapRadius = imported.SnapRadius },
@@ -270,6 +271,8 @@ public static class SettingsTransfer
         Add(SettingsField.SnapMode, UiText.Current.Get("Transfer.Diff.SnapMode"), current.SnapMode, imported.SnapMode, ModeName);
         Add(SettingsField.ReduceMotion, UiText.Current.Get("Transfer.Diff.ReduceMotion"),
             current.ReduceMotion, imported.ReduceMotion, OnOff);
+        Add(SettingsField.ResizeTiming, UiText.Current.Get("Transfer.Diff.ResizeTiming"),
+            current.ResizeTiming, imported.ResizeTiming, TimingName);
         Add(SettingsField.ShowZonePreview, UiText.Current.Get("Transfer.Diff.ShowZonePreview"),
             current.ShowZonePreview, imported.ShowZonePreview, OnOff);
         Add(SettingsField.MagnetStrength, UiText.Current.Get("Transfer.Diff.MagnetStrength"),
@@ -307,6 +310,9 @@ public static class SettingsTransfer
 
     private static string OnOff(bool value) => value
         ? UiText.Current.Get("Transfer.Value.On") : UiText.Current.Get("Transfer.Value.Off");
+
+    private static string TimingName(SizeChangeTiming value) => value == SizeChangeTiming.WhileMoving
+        ? UiText.Current.Get("Transfer.Timing.WhileMoving") : UiText.Current.Get("Transfer.Timing.OnLand");
 
     private static string CornerName(WindowCornerPreference value) => value switch
     {

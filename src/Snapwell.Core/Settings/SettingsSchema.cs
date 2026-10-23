@@ -13,6 +13,10 @@ internal static class SettingsSchema
     internal static PortableSettings Migrate(PortableSettings value, double sourceVersion)
     {
         var normalized = value.Normalize();
+        if (sourceVersion < 13)
+        {
+            normalized.ResizeTiming = SizeChangeTiming.OnLand;
+        }
         if (sourceVersion < 12)
         {
             normalized.WindowRules = [];
