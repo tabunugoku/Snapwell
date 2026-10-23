@@ -1,4 +1,4 @@
-// 技術検証 (DESIGN §15) 用のコンソール。検証のために自分で起動したメモ帳だけを操作し、最後に閉じる。
+// 技術検証 (DESIGN §15) 用のコンソール。検証のために自分で起動したウィンドウだけを操作し、最後に閉じる。
 // OS の設定は読むだけで、変えない。
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -32,6 +32,24 @@ if (cmd is "thumb")
     using var target = Target.Launch();
     Spikes.Thumbnail(target.Hwnd);
 }
+if (cmd is "asyncresize")
+{
+    try
+    {
+        var exe = args.Length > 1 ? args[1] : "notepad.exe";
+        var className = args.Length > 2 ? args[2] : "Notepad";
+        using var target = Target.Launch(exe: exe, arguments: args.Skip(3), className: className);
+        Report.Line("\n## 非同期サイズ変更の対象");
+        Report.Line($"exe={exe} class={className} dpi={GetDpiForWindow(target.Hwnd)}");
+        Spikes.AsyncResize(target.Hwnd);
+    }
+    catch (Exception exception)
+    {
+        // finally と Dispose を通してから終了し、停止不能なバックグラウンドスレッドも終了させる。
+        Report.Line($"測定失敗: {exception.GetType().Name}: {exception.Message}");
+        Environment.ExitCode = 1;
+    }
+}
 
 static class Report
 {
@@ -39,20 +57,27 @@ static class Report
     public static string Hr(int hr) => hr == 0 ? "S_OK" : $"0x{hr:X8}";
 }
 
-/// <summary>検証のために起動したメモ帳。Dispose で閉じる</summary>
+/// <summary>検証のために起動したウィンドウ。Dispose で閉じる</summary>
 sealed class Target : IDisposable
 {
     public nint Hwnd { get; private init; }
     private RECT _original;
 
-    public static Target Launch()
+    /// <summary>指定したアプリを起動し、起動前に無かったクラス一致のウィンドウを待つ</summary>
+    public static Target Launch(string exe = "notepad.exe", IEnumerable<string>? arguments = null,
+        string className = "Notepad")
     {
-        var before = new HashSet<nint>(TopLevel("Notepad"));
-        Process.Start(new ProcessStartInfo("notepad.exe") { UseShellExecute = true });
+        var before = new HashSet<nint>(TopLevel(className));
+        var start = new ProcessStartInfo(exe) { UseShellExecute = true };
+        foreach (var argument in arguments ?? [])
+        {
+            start.ArgumentList.Add(argument);
+        }
+        using var process = Process.Start(start);
         for (var i = 0; i < 100; i++)
         {
             Thread.Sleep(100);
-            var added = TopLevel("Notepad").FirstOrDefault(h => !before.Contains(h));
+            var added = TopLevel(className).FirstOrDefault(h => !before.Contains(h));
             if (added != 0)
             {
                 Thread.Sleep(800);
@@ -61,7 +86,7 @@ sealed class Target : IDisposable
                 return new Target { Hwnd = added, _original = r };
             }
         }
-        throw new InvalidOperationException("メモ帳のウィンドウが見つからない");
+        throw new InvalidOperationException($"ウィンドウが見つからない: exe={exe} class={className}");
     }
 
     static IEnumerable<nint> TopLevel(string cls)
@@ -240,6 +265,248 @@ static class Spikes
         SetWindowPos(hwnd, 0, 0, 0, w0, h0, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
     }
 
+    /// <summary>非同期のサイズ変更の反映時間と、反映待ちで送れる更新の速さを測る</summary>
+    public static void AsyncResize(nint hwnd)
+    {
+        var original = ReadRect(hwnd);
+        try
+        {
+            ShowWindow(hwnd, SW_RESTORE);
+            var start = ReadRect(hwnd);
+            Report.Line("\n## 非同期サイズ変更の反映時間 (120 回)");
+            Report.Line("判定=送信前から矩形が変化 polling=ビジーポーリング timeout=100 ms 時間の単位=ms");
+            var calls = new List<double>();
+            var reflected = new List<double>();
+            var timeouts = 0;
+            var matched = 0;
+            var rounded = 0;
+            for (var i = 0; i < 120; i++)
+            {
+                var before = ReadRect(hwnd);
+                var sign = i % 2 == 0 ? 1 : -1;
+                var goal = ResizeGoal(start, sign, sign, sign);
+                EnsureChange(ref goal, before, start);
+                var sentAt = Stopwatch.GetTimestamp();
+                SendResize(hwnd, goal);
+                calls.Add(Stopwatch.GetElapsedTime(sentAt).TotalMilliseconds);
+                if (WaitForChange(hwnd, before, sentAt, out var now, out var elapsed))
+                {
+                    reflected.Add(elapsed);
+                    if (SameRect(now, goal))
+                    {
+                        matched++;
+                    }
+                    else
+                    {
+                        rounded++;
+                    }
+                }
+                else
+                {
+                    timeouts++;
+                }
+            }
+            Report.Line($"送信の呼び出し: {AsyncStats(calls)}");
+            Report.Line($"反映まで (時間切れを除く): {AsyncStats(reflected)}");
+            Report.Line($"目標と一致={matched} 目標と不一致={rounded} 時間切れ={timeouts}");
+            MeasureResizeRate(hwnd, start);
+        }
+        finally
+        {
+            // 応答しない相手を同期の復元で待たない。閉じる処理は Target.Dispose が行う。
+            try
+            {
+                SendResize(hwnd, original);
+                var clock = Stopwatch.StartNew();
+                var now = ReadRect(hwnd);
+                while (!SameRect(now, original) && clock.Elapsed.TotalMilliseconds < 100)
+                {
+                    Thread.SpinWait(64);
+                    now = ReadRect(hwnd);
+                }
+                Report.Line($"元の矩形への復元要求: 一致={SameRect(now, original)} rect={now}");
+            }
+            catch (Exception exception)
+            {
+                Report.Line($"元の矩形への復元失敗: {exception.GetType().Name}: {exception.Message}");
+            }
+        }
+    }
+
+    static void MeasureResizeRate(nint hwnd, RECT start)
+    {
+        Report.Line("\n## A′ の更新の速さ (3 秒間、位置だけの同期呼び出しを並行)");
+        var latencies = new List<double>();
+        var moveTimes = new List<double>();
+        Exception? moveError = null;
+        using var stop = new CancellationTokenSource();
+        using var begin = new ManualResetEventSlim();
+        // SPIKE_NO_MOVER を設定すると位置だけの並行呼び出しを止め、反映の判定を汚さずに更新の速さだけを測る
+        var useMover = Environment.GetEnvironmentVariable("SPIKE_NO_MOVER") is null;
+        var mover = new Thread(() =>
+        {
+            try
+            {
+                begin.Wait(stop.Token);
+                while (!stop.IsCancellationRequested)
+                {
+                    // 位置だけの変更で反映判定を汚さないよう、直前の位置を再指定する。
+                    // 読み取りから送信までに非同期要求が反映すると、古い位置に戻る競合は残る。
+                    var now = ReadRect(hwnd);
+                    var sentAt = Stopwatch.GetTimestamp();
+                    if (!SetWindowPos(hwnd, 0, now.Left, now.Top, 0, 0,
+                        SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE))
+                    {
+                        throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error(), "SetWindowPos");
+                    }
+                    moveTimes.Add(Stopwatch.GetElapsedTime(sentAt).TotalMilliseconds);
+                    var remaining = Math.Max(0, 10 - Stopwatch.GetElapsedTime(sentAt).TotalMilliseconds);
+                    if (stop.Token.WaitHandle.WaitOne((int)Math.Ceiling(remaining)))
+                    {
+                        break;
+                    }
+                }
+            }
+            catch (OperationCanceledException) when (stop.IsCancellationRequested)
+            {
+            }
+            catch (Exception exception)
+            {
+                moveError = exception;
+            }
+        }) { IsBackground = true, Name = "spike-position-only" };
+        var sent = 0;
+        var timeouts = 0;
+        var pending = false;
+        var before = default(RECT);
+        var sentAt = 0L;
+        var clock = new Stopwatch();
+        if (useMover)
+        {
+            mover.Start();
+        }
+
+        try
+        {
+            clock.Start();
+            begin.Set();
+            while (clock.Elapsed.TotalSeconds < 3 || pending)
+            {
+                if (pending)
+                {
+                    var now = ReadRect(hwnd);
+                    var elapsed = Stopwatch.GetElapsedTime(sentAt).TotalMilliseconds;
+                    if (elapsed >= 100)
+                    {
+                        timeouts++;
+                        pending = false;
+                    }
+                    else if (!SameRect(before, now))
+                    {
+                        latencies.Add(elapsed);
+                        pending = false;
+                    }
+                }
+                else if (clock.Elapsed.TotalSeconds < 3)
+                {
+                    before = ReadRect(hwnd);
+                    var phase = clock.Elapsed.TotalSeconds * Math.PI * 2;
+                    var goal = ResizeGoal(start, Math.Sin(phase), Math.Sin(phase * 0.7), Math.Sin(phase * 0.9));
+                    EnsureChange(ref goal, before, start);
+                    sentAt = Stopwatch.GetTimestamp();
+                    SendResize(hwnd, goal);
+                    pending = true;
+                    sent++;
+                }
+                Thread.SpinWait(64);
+            }
+        }
+        finally
+        {
+            stop.Cancel();
+            // 同期の Win32 呼び出しはキャンセルできない。戻らなければ例外でプロセスを終了し、
+            // バックグラウンドスレッドも終了させる。同期呼び出しを無期限に Join しない。
+            if (useMover && !mover.Join(500))
+            {
+                throw new TimeoutException("位置だけの同期 SetWindowPos が停止しないため測定を終了する");
+            }
+        }
+        if (moveError is not null)
+        {
+            throw new InvalidOperationException("位置だけの測定に失敗した", moveError);
+        }
+        Report.Line($"送信={sent} 更新の速さ={sent / 3.0:F2} Hz 時間切れ={timeouts} 反映済み={latencies.Count}");
+        Report.Line($"反映まで (時間切れを除く): {AsyncStats(latencies)}");
+        Report.Line("\n## 位置だけの同期 SetWindowPos の待ち時間 (10 ms 周期、超過時は直後に次を送る)");
+        Report.Line($"呼び出し={moveTimes.Count}: {AsyncStats(moveTimes)}");
+        Report.Line("位置の再指定との競合で、位置だけの変化を反映と数える可能性がある (実機未確認)");
+    }
+
+    static RECT ReadRect(nint hwnd)
+    {
+        if (!GetWindowRect(hwnd, out var rect))
+        {
+            throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error(), "GetWindowRect");
+        }
+        return rect;
+    }
+
+    static bool SameRect(RECT left, RECT right) => left.Left == right.Left && left.Top == right.Top &&
+        left.Right == right.Right && left.Bottom == right.Bottom;
+
+    static RECT ResizeGoal(RECT start, double x, double width, double height)
+    {
+        var left = start.Left + (int)(200 * x);
+        return new RECT
+        {
+            Left = left,
+            Top = start.Top,
+            Right = left + Math.Max(1, start.Right - start.Left + (int)(160 * width)),
+            Bottom = start.Top + Math.Max(1, start.Bottom - start.Top + (int)(100 * height)),
+        };
+    }
+
+    static void EnsureChange(ref RECT goal, RECT before, RECT start)
+    {
+        if (SameRect(goal, before))
+        {
+            // サイン波を整数に丸めた結果が同じなら、範囲内で x を 1 px だけ変える。
+            var delta = goal.Left < start.Left + 200 ? 1 : -1;
+            goal.Left += delta;
+            goal.Right += delta;
+        }
+    }
+
+    static void SendResize(nint hwnd, RECT goal)
+    {
+        if (!SetWindowPos(hwnd, 0, goal.Left, goal.Top, goal.Right - goal.Left, goal.Bottom - goal.Top,
+            SWP_NOZORDER | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS))
+        {
+            throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error(), "SetWindowPos(ASYNCWINDOWPOS)");
+        }
+    }
+
+    static bool WaitForChange(nint hwnd, RECT before, long sentAt, out RECT now, out double elapsed)
+    {
+        do
+        {
+            now = ReadRect(hwnd);
+            elapsed = Stopwatch.GetElapsedTime(sentAt).TotalMilliseconds;
+            if (elapsed >= 100)
+            {
+                return false;
+            }
+            if (!SameRect(before, now))
+            {
+                return true;
+            }
+            // Sleep(1) のタイマー粒度に依存せず、1 ms 以下の間隔で観測する。
+            Thread.SpinWait(64);
+        } while (true);
+    }
+
+    static string AsyncStats(List<double> values) => values.Count == 0 ? "反映の標本なし" : Stats(values);
+
     static string Stats(List<double> v)
     {
         var s = v.OrderBy(x => x).ToList();
@@ -359,6 +626,7 @@ static class Native
     public const uint GA_ROOT = 2;
     public const uint SWP_NOSIZE = 0x0001, SWP_NOMOVE = 0x0002, SWP_NOZORDER = 0x0004, SWP_NOACTIVATE = 0x0010;
     public const uint SWP_ASYNCWINDOWPOS = 0x4000;
+    public const int SW_RESTORE = 9;
     public const int GWL_EXSTYLE = -20;
     public const nint WS_EX_LAYERED = 0x00080000;
     public const uint WS_EX_TOPMOST = 0x00000008, WS_EX_TOOLWINDOW = 0x00000080;
@@ -423,13 +691,15 @@ static class Native
     [DllImport("user32.dll")] public static extern bool EnumWindows(EnumWindowsProc cb, nint lParam);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetClassName(nint h, StringBuilder sb, int max);
     [DllImport("user32.dll")] public static extern bool IsWindowVisible(nint h);
-    [DllImport("user32.dll")] public static extern bool GetWindowRect(nint h, out RECT r);
+    [DllImport("user32.dll", SetLastError = true)] public static extern bool GetWindowRect(nint h, out RECT r);
     [DllImport("user32.dll")] public static extern bool PostMessage(nint h, uint msg, nint w, nint l);
     [DllImport("user32.dll")] public static extern nint SendMessageTimeout(nint h, uint msg, nint w, nint l, uint flags, uint timeout, out nint result);
     [DllImport("user32.dll")] public static extern nint WindowFromPoint(POINT p);
     [DllImport("user32.dll")] public static extern nint GetAncestor(nint h, uint flags);
     [DllImport("user32.dll")] public static extern uint GetDpiForWindow(nint h);
-    [DllImport("user32.dll")] public static extern bool SetWindowPos(nint h, nint after, int x, int y, int cx, int cy, uint flags);
+    [DllImport("user32.dll", SetLastError = true)] public static extern bool SetWindowPos(nint h, nint after, int x, int y, int cx, int cy, uint flags);
+    /// <summary>測定前に最大化や最小化を解除する</summary>
+    [DllImport("user32.dll")] public static extern bool ShowWindow(nint h, int command);
     [DllImport("user32.dll", SetLastError = true)] public static extern nint GetWindowLongPtr(nint h, int index);
     [DllImport("user32.dll", SetLastError = true)] public static extern nint SetWindowLongPtr(nint h, int index, nint value);
     [DllImport("user32.dll", SetLastError = true)] public static extern bool SetLayeredWindowAttributes(nint h, uint key, byte alpha, uint flags);
