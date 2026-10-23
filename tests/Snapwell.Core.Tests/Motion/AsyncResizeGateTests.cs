@@ -35,22 +35,30 @@ public sealed class AsyncResizeGateTests
         Assert.Equal(GateObservation.Pending, gate.Observe(0.0999, _before));
         Assert.False(gate.CanSend(0.0999));
         Assert.Equal(GateObservation.TimedOut, gate.Observe(0.1, _before));
-        Assert.True(gate.CanSend(0.1));
+        Assert.False(gate.CanSend(0.1));
+        Assert.True(gate.IsUnresponsive);
+        Assert.False(gate.HasPendingRequest);
+        Assert.False(gate.IsDegraded);
+        Assert.Equal(GateObservation.NoRequest, gate.Observe(0.14, _changed));
+        Assert.False(gate.CanSend(0.14));
+        Assert.False(gate.IsDegraded);
+        Assert.Throws<InvalidOperationException>(() => gate.Sent(0.14, _changed));
+        gate.Reset();
+        Assert.True(gate.CanSend(0.14));
+        Assert.False(gate.IsUnresponsive);
     }
 
-    /// <summary>遅い反映または時間切れが三回続くと後退する。</summary>
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void ThreeConsecutiveSlowReflectionsOrTimeoutsDegrade(bool timeout)
+    /// <summary>遅い反映が三回続くと後退する。</summary>
+    [Fact]
+    public void ThreeConsecutiveSlowReflectionsDegrade()
     {
         var gate = new AsyncResizeGate();
         for (var i = 0; i < 3; i++)
         {
             gate.Sent(0, _before);
-            Assert.Equal(timeout ? GateObservation.TimedOut : GateObservation.Reflected,
-                gate.Observe(timeout ? 0.1 : 0.051, timeout ? _before : _changed));
+            Assert.Equal(GateObservation.Reflected, gate.Observe(0.051, _changed));
             Assert.Equal(i == 2, gate.IsDegraded);
+            Assert.False(gate.IsUnresponsive);
         }
     }
 
@@ -69,21 +77,26 @@ public sealed class AsyncResizeGateTests
         Assert.False(gate.IsDegraded);
     }
 
-    /// <summary>時間切れも遅い反映と同じ連続回数に加える。</summary>
-    [Fact]
-    public void TimeoutAddsOneToMixedSlowStreakAndResetClearsStickyDegradation()
+    /// <summary>時間切れは後退の状態を変えず、Reset が両方の状態を消す。</summary>
+    [Theory]
+    [InlineData(2, false)]
+    [InlineData(3, true)]
+    public void TimeoutPreservesDegradationAndResetClearsBothStates(int slowCount, bool degraded)
     {
         var gate = new AsyncResizeGate();
-        Reflect(gate, 0.051);
+        for (var i = 0; i < slowCount; i++)
+        {
+            Reflect(gate, 0.051);
+        }
         gate.Sent(0, _before);
         gate.Observe(0.1, _before);
-        Assert.False(gate.IsDegraded);
-        Reflect(gate, 0.051);
-        Reflect(gate, 0.01);
-        Assert.True(gate.IsDegraded);
-        gate.Sent(0, _before);
+        Assert.Equal(degraded, gate.IsDegraded);
+        Assert.True(gate.IsUnresponsive);
+        Assert.Equal(GateObservation.NoRequest, gate.Observe(0.14, _changed));
+        Assert.Equal(degraded, gate.IsDegraded);
         gate.Reset();
         Assert.False(gate.IsDegraded);
+        Assert.False(gate.IsUnresponsive);
         Assert.True(gate.CanSend(0));
         Assert.Equal(GateObservation.NoRequest, gate.Observe(0, _changed));
     }
@@ -129,14 +142,17 @@ public sealed class AsyncResizeGateTests
         Assert.False(gate.CanSend(0));
     }
 
-    /// <summary>指定した時間と連続回数を使い、矩形の変化を時間切れより優先する。</summary>
-    [Fact]
-    public void CustomThresholdsAndReflectionPriorityAreRespected()
+    /// <summary>指定した期限以降では、同じ観測の矩形の変化より時間切れを優先する。</summary>
+    [Theory]
+    [InlineData(0.02)]
+    [InlineData(0.14)]
+    public void TimeoutTakesPriorityOverReflection(double elapsed)
     {
         var gate = new AsyncResizeGate(TimeSpan.FromMilliseconds(20), TimeSpan.FromMilliseconds(5), 1);
         gate.Sent(0, _before);
-        Assert.Equal(GateObservation.Reflected, gate.Observe(0.02, _changed));
-        Assert.True(gate.IsDegraded);
+        Assert.Equal(GateObservation.TimedOut, gate.Observe(elapsed, _changed));
+        Assert.True(gate.IsUnresponsive);
+        Assert.False(gate.IsDegraded);
     }
 
     private static void Reflect(AsyncResizeGate gate, double elapsed)

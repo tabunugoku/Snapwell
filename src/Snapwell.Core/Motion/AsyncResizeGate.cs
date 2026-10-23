@@ -48,18 +48,24 @@ public sealed class AsyncResizeGate
     /// <summary>このアニメーションで着地時のサイズ変更へ後退すべきか。</summary>
     public bool IsDegraded { get; private set; }
 
+    /// <summary>時間切れで応答なしと判断したか。Reset まで解除しない。</summary>
+    public bool IsUnresponsive { get; private set; }
+
+    /// <summary>送信済みの要求の反映を待っているか。</summary>
+    public bool HasPendingRequest => _pending;
+
     /// <summary>未反映の要求がなく、次を送れるか。</summary>
     public bool CanSend(double now)
     {
         ValidateTime(now);
-        return !_pending;
+        return !_pending && !IsUnresponsive;
     }
 
     /// <summary>送信時刻と送信直前の矩形を記録する。</summary>
     public void Sent(double now, PixelRect before)
     {
         ValidateTime(now);
-        if (_pending)
+        if (_pending || IsUnresponsive)
         {
             throw new InvalidOperationException("未反映の要求がある。");
         }
@@ -79,14 +85,22 @@ public sealed class AsyncResizeGate
         }
 
         var elapsed = Math.Max(0, now - _sentAt);
+        // OS 側には要求が残り得るため、期限後の変化を新しい反映として扱わず、再送も許さない。
+        if (elapsed >= _timeout)
+        {
+            _pending = false;
+            IsUnresponsive = true;
+            return GateObservation.TimedOut;
+        }
+
         var reflected = current != _before;
-        if (!reflected && elapsed < _timeout)
+        if (!reflected)
         {
             return GateObservation.Pending;
         }
 
         _pending = false;
-        if (!reflected || elapsed > _slowThreshold)
+        if (elapsed > _slowThreshold)
         {
             // 後退後は数を増やさず、長時間動いても桁あふれしない。
             if (_slowCount < _degradeCount)
@@ -100,7 +114,7 @@ public sealed class AsyncResizeGate
             _slowCount = 0;
         }
 
-        return reflected ? GateObservation.Reflected : GateObservation.TimedOut;
+        return GateObservation.Reflected;
     }
 
     /// <summary>未反映の要求と後退の履歴をすべて消す。</summary>
@@ -111,6 +125,7 @@ public sealed class AsyncResizeGate
         _before = default;
         _slowCount = 0;
         IsDegraded = false;
+        IsUnresponsive = false;
     }
 
     private static void ValidateTime(double now)
