@@ -38,10 +38,15 @@ public static class UpdateCheckPolicy
     }
 
     /// <summary>起動待ちと確認間隔を満たすか、時計が巻き戻った場合に確認する。</summary>
-    public static bool IsDue(DateTimeOffset now, DateTimeOffset? lastCheck, DateTimeOffset startedAt, bool enabled)
+    /// <param name="now">今の時刻。</param>
+    /// <param name="lastCheck">前回の確認時刻。まだ確認していなければ null。</param>
+    /// <param name="uptime">起動してからの経過。壁時計の補正に左右されないよう、単調な時計で数える。</param>
+    /// <param name="enabled">更新の確認が有効か。</param>
+    public static bool IsDue(DateTimeOffset now, DateTimeOffset? lastCheck, TimeSpan uptime, bool enabled)
     {
+        // 起動待ちを壁時計の差で測ると、起動後に時計を前へ補正したとき、巻き戻りの判定へ届かず確認が止まる。
         // 加算せず差を取ることで DateTimeOffset の上下限でも桁あふれを避ける。
-        if (!enabled || now - startedAt < StartupDelay) { return false; }
+        if (!enabled || uptime < StartupDelay) { return false; }
         return lastCheck is null || lastCheck.Value > now || now - lastCheck.Value >= CheckInterval;
     }
 }

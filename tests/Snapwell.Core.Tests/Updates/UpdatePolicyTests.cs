@@ -64,10 +64,10 @@ public sealed class UpdatePolicyTests
     [Theory]
     [InlineData(179, false)]
     [InlineData(180, true)]
-    public void InitialCheckWaitsThreeMinutes(int elapsedSeconds, bool expected)
+    public void InitialCheckWaitsThreeMinutes(int uptimeSeconds, bool expected)
     {
-        var start = DateTimeOffset.Parse("2026-10-23T00:00:00Z");
-        Assert.Equal(expected, UpdateCheckPolicy.IsDue(start.AddSeconds(elapsedSeconds), null, start, true));
+        var now = DateTimeOffset.Parse("2026-10-23T00:00:00Z");
+        Assert.Equal(expected, UpdateCheckPolicy.IsDue(now, null, TimeSpan.FromSeconds(uptimeSeconds), true));
     }
 
     /// <summary>前回から二十四時間たつか時計が巻き戻った場合に確認する。</summary>
@@ -78,7 +78,19 @@ public sealed class UpdatePolicyTests
     public void RepeatedCheckUsesIntervalAndHandlesClockRollback(int elapsedMinutes, bool expected)
     {
         var last = DateTimeOffset.Parse("2026-10-23T00:00:00Z");
-        Assert.Equal(expected, UpdateCheckPolicy.IsDue(last.AddMinutes(elapsedMinutes), last, last.AddDays(-1), true));
+        Assert.Equal(expected, UpdateCheckPolicy.IsDue(last.AddMinutes(elapsedMinutes), last,
+            TimeSpan.FromHours(1), true));
+    }
+
+    /// <summary>起動後に時計を前日へ補正しても、稼働三分後には確認できる。</summary>
+    [Fact]
+    public void ClockCorrectedBeforeStartupDoesNotSuppressCheckAfterUptime()
+    {
+        var last = DateTimeOffset.Parse("2026-10-23T00:00:00Z");
+        var corrected = last.AddDays(-1);
+        Assert.False(UpdateCheckPolicy.IsDue(corrected, last, TimeSpan.FromSeconds(179), true));
+        Assert.True(UpdateCheckPolicy.IsDue(corrected, last, TimeSpan.FromSeconds(180), true));
+        Assert.True(UpdateCheckPolicy.IsDue(corrected, null, TimeSpan.FromSeconds(180), true));
     }
 
     /// <summary>確認が無効なら、初回・間隔経過・時計の巻き戻しでも確認しない。</summary>
@@ -88,23 +100,21 @@ public sealed class UpdatePolicyTests
         var now = DateTimeOffset.MaxValue;
         foreach (var last in new DateTimeOffset?[] { null, DateTimeOffset.MinValue, now })
         {
-            Assert.False(UpdateCheckPolicy.IsDue(now, last, DateTimeOffset.MinValue, false));
+            Assert.False(UpdateCheckPolicy.IsDue(now, last, TimeSpan.MaxValue, false));
         }
-        Assert.False(UpdateCheckPolicy.IsDue(now.AddDays(-1), now, DateTimeOffset.MinValue, false));
+        Assert.False(UpdateCheckPolicy.IsDue(now.AddDays(-1), now, TimeSpan.MaxValue, false));
     }
 
-    /// <summary>日時の上下限や起動前の時刻でも加算の桁あふれを起こさない。</summary>
+    /// <summary>日時の上下限でも加算の桁あふれを起こさない。</summary>
     [Fact]
-    public void DateTimeExtremesAndStartupGateDoNotOverflow()
+    public void DateTimeExtremesDoNotOverflow()
     {
         Assert.True(UpdateCheckPolicy.IsDue(DateTimeOffset.MaxValue, DateTimeOffset.MinValue,
-            DateTimeOffset.MinValue, true));
-        Assert.False(UpdateCheckPolicy.IsDue(DateTimeOffset.MinValue, DateTimeOffset.MaxValue,
-            DateTimeOffset.MaxValue, true));
-        Assert.False(UpdateCheckPolicy.IsDue(DateTimeOffset.MaxValue, null, DateTimeOffset.MaxValue, true));
-        var start = DateTimeOffset.MaxValue.AddMinutes(-3);
-        Assert.False(UpdateCheckPolicy.IsDue(start.AddSeconds(179), DateTimeOffset.MaxValue, start, true));
-        Assert.True(UpdateCheckPolicy.IsDue(DateTimeOffset.MaxValue, null, start, true));
+            TimeSpan.MaxValue, true));
+        Assert.True(UpdateCheckPolicy.IsDue(DateTimeOffset.MinValue, DateTimeOffset.MaxValue,
+            TimeSpan.MaxValue, true));
+        Assert.True(UpdateCheckPolicy.IsDue(DateTimeOffset.MaxValue, null, TimeSpan.MaxValue, true));
+        Assert.False(UpdateCheckPolicy.IsDue(DateTimeOffset.MaxValue, null, TimeSpan.Zero, true));
     }
 
     private static ReleaseVersion Version(string text)
