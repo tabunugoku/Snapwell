@@ -60,7 +60,8 @@ public sealed class HotkeyCaptureMutexTests
         var thread = new Thread(() => abandoned.WaitOne());
         thread.Start();
         Assert.True(thread.Join(TimeSpan.FromSeconds(10)));
-        Assert.False(monitor.IsCapturing);
+        // 放棄が他のハンドルから見えるまでに遅れる場合があるため、見えるまで待つ（CI で稀に落ちた）。
+        Assert.True(SpinWait.SpinUntil(() => !monitor.IsCapturing, TimeSpan.FromSeconds(10)));
         Assert.False(monitor.IsCapturing);
     }
 }
