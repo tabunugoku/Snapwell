@@ -5,6 +5,7 @@ namespace Snapwell.Core.Physics;
 /// <summary>
 /// 一枚のウィンドウの位置とサイズを運ぶ物体。feel の Body2D の移植で、位置は RK4・刻み 1/240 秒で進める。
 /// 停止点を渡すと feel の磁石場（目標のばねなし）、渡さないと feel の to(p) と同じ目標へのばねで動く。
+/// animateSize のときだけ、サイズも目標へのばねで進める（行き過ぎない減衰。DESIGN §5.5）。
 /// </summary>
 public sealed class WindowBody
 {
@@ -18,6 +19,9 @@ public sealed class WindowBody
     private const double MaximumStep = 1.0 / 240;
 
     private Vec2[]? _stops;
+    private readonly bool _animateSize;
+    private Vec2 _minimumSize;
+    private Vec2 _maximumSize;
 
     /// <summary>現在の矩形・目標・壁と初速度から物体を作る。</summary>
     /// <param name="current">現在の矩形。</param>
@@ -27,8 +31,10 @@ public sealed class WindowBody
     /// <param name="velocity">位置の初速度。</param>
     /// <param name="stops">磁石場の停止点（左上の座標）。null なら目標へのばねで動く。</param>
     /// <param name="clickRadius">磁石場の吸着半径。物理ピクセル。</param>
+    /// <param name="animateSize">サイズも目標へのばねで動かすか。</param>
     public WindowBody(RectD current, RectD target, RectD walls, FeelPreset feel,
-        Vec2 velocity = default, IReadOnlyList<Vec2>? stops = null, double clickRadius = DefaultClickRadius)
+        Vec2 velocity = default, IReadOnlyList<Vec2>? stops = null, double clickRadius = DefaultClickRadius,
+        bool animateSize = false)
     {
         ArgumentNullException.ThrowIfNull(feel);
         if (!double.IsFinite(clickRadius) || clickRadius <= 0)
@@ -41,8 +47,10 @@ public sealed class WindowBody
             throw new ArgumentException("停止点は一つ以上必要。", nameof(stops));
         }
 
-        State = current;
-        Target = target;
+        _animateSize = animateSize;
+        State = animateSize ? NormalizeSize(current) : current;
+        Target = animateSize ? NormalizeSize(target) : target;
+        ResetSizeRange();
         Walls = walls;
         Feel = feel;
         Velocity = velocity;
@@ -55,6 +63,9 @@ public sealed class WindowBody
 
     /// <summary>位置の速度。単位は px/s。</summary>
     public Vec2 Velocity { get; private set; }
+
+    /// <summary>幅と高さの速度。単位は px/s。</summary>
+    public Vec2 SizeVelocity { get; private set; }
 
     /// <summary>吸着先の位置とサイズ。</summary>
     public RectD Target { get; private set; }
@@ -77,7 +88,9 @@ public sealed class WindowBody
         get
         {
             var rest = Rest(State.X, State.Y);
-            return Velocity.Length < RestSpeed && (rest - new Vec2(State.X, State.Y)).Length < RestDistance;
+            return Velocity.Length < RestSpeed && (rest - new Vec2(State.X, State.Y)).Length < RestDistance
+                && (!_animateSize || (Math.Abs(State.W - Target.W) < 0.5 && Math.Abs(State.H - Target.H) < 0.5
+                    && SizeVelocity.Length < RestSpeed));
         }
     }
 
@@ -112,6 +125,7 @@ public sealed class WindowBody
         State = new(rest.X, rest.Y, Target.W, Target.H);
         Target = State;
         Velocity = default;
+        SizeVelocity = default;
     }
 
     /// <summary>モーション削減のため直ちに目標を確定する。</summary>
@@ -124,7 +138,8 @@ public sealed class WindowBody
     /// <summary>現在の状態と速度を保ったまま吸着先を変える。</summary>
     public void Retarget(RectD target)
     {
-        Target = target;
+        Target = _animateSize ? NormalizeSize(target) : target;
+        ResetSizeRange();
         if (_stops is not null)
         {
             _stops = [new(target.X, target.Y)];
@@ -134,7 +149,12 @@ public sealed class WindowBody
     /// <summary>現在の速度のまま磁石場が止める停止点（左上）を返す。上限は既定で 6 秒。</summary>
     public Vec2 PredictRest(double horizonSeconds = 6)
     {
-        var ghost = new WindowBody(State, Target, Walls, Feel, Velocity, _stops, ClickRadius);
+        var ghost = new WindowBody(State, Target, Walls, Feel, Velocity, _stops, ClickRadius, _animateSize)
+        {
+            SizeVelocity = SizeVelocity,
+            _minimumSize = _minimumSize,
+            _maximumSize = _maximumSize,
+        };
         for (var t = 0.0; t < horizonSeconds; t += 1.0 / 60)
         {
             ghost.Step(1.0 / 60);
@@ -188,7 +208,57 @@ public sealed class WindowBody
         var position = p + (v + v2 * 2 + v3 * 2 + v4) * (h / 6);
         Velocity = v + (a1 + a2 * 2 + a3 * 2 + a4) * (h / 6);
 
+        if (_animateSize)
+        {
+            size = StepSize(size, h);
+        }
+
         State = new(position.X, position.Y, size.X, size.Y);
+    }
+
+    private Vec2 StepSize(Vec2 size, double h)
+    {
+        // サイズは不足減衰を避け、位置とは独立に同じ RK4 の刻みで積分する。
+        var damping = Math.Max(Feel.Damping, 2 * Math.Sqrt(Feel.Stiffness * Feel.Mass));
+        var target = new Vec2(Target.W, Target.H);
+        Vec2 Acceleration(Vec2 value, Vec2 velocity) =>
+            ((target - value) * Feel.Stiffness - velocity * damping) * (1 / Feel.Mass);
+
+        var v = SizeVelocity;
+        var a1 = Acceleration(size, v);
+        var v2 = v + a1 * (h / 2);
+        var a2 = Acceleration(size + v * (h / 2), v2);
+        var v3 = v + a2 * (h / 2);
+        var a3 = Acceleration(size + v2 * (h / 2), v3);
+        var v4 = v + a3 * h;
+        var a4 = Acceleration(size + v3 * h, v4);
+        var next = size + (v + v2 * 2 + v3 * 2 + v4) * (h / 6);
+        var velocity = v + (a1 + a2 * 2 + a3 * 2 + a4) * (h / 6);
+        var width = ClampSizeAxis(next.X, velocity.X, _minimumSize.X, _maximumSize.X);
+        var height = ClampSizeAxis(next.Y, velocity.Y, _minimumSize.Y, _maximumSize.Y);
+        SizeVelocity = new(width.Velocity, height.Velocity);
+        return new(width.Size, height.Size);
+    }
+
+    private static (double Size, double Velocity) ClampSizeAxis(double size, double velocity,
+        double minimum, double maximum)
+    {
+        size = Math.Clamp(size, minimum, maximum);
+        // 端で外へ向く速度も消し、目標変更時の慣性や丸め誤差による行き過ぎを止める。
+        if ((size <= minimum && velocity < 0) || (size >= maximum && velocity > 0))
+        {
+            velocity = 0;
+        }
+
+        return (size, velocity);
+    }
+
+    private static RectD NormalizeSize(RectD rect) => new(rect.X, rect.Y, Math.Max(1, rect.W), Math.Max(1, rect.H));
+
+    private void ResetSizeRange()
+    {
+        _minimumSize = new(Math.Min(State.W, Target.W), Math.Min(State.H, Target.H));
+        _maximumSize = new(Math.Max(State.W, Target.W), Math.Max(State.H, Target.H));
     }
 
     private Vec2 Force(Vec2 position, Vec2 velocity, (double MinX, double MaxX, double MinY, double MaxY) bounds)
