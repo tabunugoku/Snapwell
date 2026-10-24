@@ -21,7 +21,7 @@ public sealed class WinArrowDeviceStateTests : IDisposable
         Assert.False(loaded.Value.ReplaceWinArrow);
         Assert.False(loaded.Value.Enabled);
         Assert.True(loaded.Value.DisableStandardSnap);
-        Assert.Equal(4, loaded.Value.SchemaVersion);
+        Assert.Equal(5, loaded.Value.SchemaVersion);
     }
 
     /// <summary>別のストアが変更した標準スナップや同期の選択を保持する。</summary>

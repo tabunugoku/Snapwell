@@ -194,7 +194,7 @@ public static class SettingsStores
         var existingUser = File.Exists(devicePath) || File.Exists(portablePath);
         return new(devicePath, SettingsJsonContext.Default.DeviceState,
             () => new() { SetupCompleted = existingUser },
-            value => value with { SchemaVersion = DeviceState.CurrentSchemaVersion },
+            value => DeviceState.Migrate(value, DeviceState.CurrentSchemaVersion),
             DeviceState.CurrentSchemaVersion, DeviceState.Migrate);
     }
 

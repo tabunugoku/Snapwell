@@ -25,7 +25,7 @@ public sealed class LanguageDeviceStateTests : IDisposable
             LastSyncedHash = "hash",
         }, loaded.Value);
         Assert.Equal("auto", loaded.Value.Language);
-        Assert.Equal(4, loaded.Value.SchemaVersion);
+        Assert.Equal(5, loaded.Value.SchemaVersion);
     }
 
     /// <summary>旧版に紛れ込んだ言語は使わない。</summary>
@@ -58,11 +58,11 @@ public sealed class LanguageDeviceStateTests : IDisposable
         Assert.Equal(expected, loaded.Value.Language);
     }
 
-    /// <summary>版 5 は読み取り専用で、言語の変更でも上書きしない。</summary>
+    /// <summary>版 6 は読み取り専用で、言語の変更でも上書きしない。</summary>
     [Fact]
-    public void VersionFiveRemainsReadOnlyAndUnchanged()
+    public void VersionSixRemainsReadOnlyAndUnchanged()
     {
-        const string json = """{"SchemaVersion":5,"Language":"future"}""";
+        const string json = """{"SchemaVersion":6,"Language":"future"}""";
         Write(json);
         var store = SettingsStores.Device(DevicePath);
         Assert.True(store.Load().IsReadOnly);
