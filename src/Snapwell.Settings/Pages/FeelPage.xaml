@@ -358,7 +358,8 @@
                         <TextBlock l:Loc.Uid="Feel_MotionDescription"
                                    Style="{StaticResource SnapwellRowDescriptionStyle}" />
                     </StackPanel>
-                    <ToggleSwitch l:Loc.Uid="Feel_MotionSwitch" x:Name="MotionSwitch" Grid.Column="1" OnContent="" OffContent="" MinWidth="0"
+                    <ToggleSwitch l:Loc.Uid="Feel_MotionSwitch" x:Name="MotionSwitch" Grid.Column="1"
+                                  OnContent="" OffContent="" MinWidth="0"
                                   Style="{StaticResource SnapwellToggleSwitchStyle}"
                                   VerticalAlignment="Center"
                                   Toggled="Motion_Toggled" />
