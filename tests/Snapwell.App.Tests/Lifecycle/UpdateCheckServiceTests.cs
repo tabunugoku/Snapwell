@@ -1,5 +1,6 @@
 using System.Text;
 using Snapwell.App.Lifecycle;
+using Snapwell.App.Tray;
 using Snapwell.Core.Settings;
 using Snapwell.Core.Updates;
 using Snapwell.Platform.Updates;
@@ -9,6 +10,146 @@ namespace Snapwell.App.Tests.Lifecycle;
 /// <summary>時計と署名付きデータを偽にして常駐の更新確認を検証する。</summary>
 public sealed class UpdateCheckServiceTests
 {
+    /// <summary>保存後にサービスとトレイを作り直しても、通信せず案内を復元し吹き出しを繰り返さない。</summary>
+    [Theory]
+    [InlineData(1, true)]
+    [InlineData(1, false)]
+    [InlineData(25, true)]
+    [InlineData(25, false)]
+    public async Task RestartRestoresOfferOfflineIndependentlyOfCheckInterval(int hours, bool enabled)
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "Snapwell-update-restart-" + Guid.NewGuid());
+        Directory.CreateDirectory(directory);
+        try
+        {
+            var path = Path.Combine(directory, "device.json");
+            var fixture = new Fixture();
+            var store = SettingsStores.Device(path);
+            store.Save(new() { UpdateCheckEnabled = enabled });
+            var balloon = new Balloon();
+            UpdateOffer? trayOffer = null;
+            var tray = new TrayUpdateNotifier(store, balloon, offer => trayOffer = offer, fixture.Log);
+            using (var first = fixture.Create(store: store, notifier: tray))
+            {
+                Assert.Equal(UpdateCheckOutcome.Available, (await first.CheckNowAsync(default)).Outcome);
+            }
+            Assert.NotNull(trayOffer);
+            Assert.Equal(1, balloon.Calls);
+            var lastCheck = store.Load().Value.LastUpdateCheckUtc;
+
+            var restartedStore = SettingsStores.Device(path);
+            trayOffer = null;
+            var restartedTray = new TrayUpdateNotifier(restartedStore, balloon,
+                offer => trayOffer = offer, fixture.Log);
+            fixture.Fetcher.Result = new(Failure: UpdateFetchFailure.NetworkError, Diagnostic: "Offline.");
+            fixture.Clock.Now += TimeSpan.FromHours(hours);
+            using var restarted = fixture.Create(store: restartedStore, notifier: restartedTray);
+            restarted.Start();
+            await fixture.Clock.Delayed.Task.WaitAsync(TimeSpan.FromSeconds(10));
+
+            Assert.NotNull(trayOffer);
+            Assert.Equal("1.2.0", trayOffer.Manifest.Version.ToString());
+            Assert.EndsWith("arm64.zip", trayOffer.Asset.Url.ToString());
+            Assert.True(trayOffer.RequiresUpdate);
+            Assert.Equal(1, fixture.Fetcher.Calls);
+            Assert.Equal(1, balloon.Calls);
+            fixture.Clock.Advance(UpdateCheckPolicy.StartupDelay);
+            var result = await restarted.RunScheduledCheckAsync();
+            Assert.Equal(enabled && hours >= 24 ? UpdateCheckOutcome.Failed : (UpdateCheckOutcome?)null,
+                result?.Outcome);
+            Assert.NotNull(trayOffer);
+            Assert.Equal(lastCheck, restartedStore.Load().Value.LastUpdateCheckUtc);
+        }
+        finally { Directory.Delete(directory, true); }
+    }
+
+    /// <summary>保存された案内も、現在の版、スキップ、配布の前提を起動時に再評価する。</summary>
+    [Theory]
+    [InlineData("1.2.0", null, false, false, false)]
+    [InlineData("1.3.0", null, false, false, false)]
+    [InlineData("1.0.0", "1.2.0", false, false, false)]
+    [InlineData("0.0.0", null, false, false, false)]
+    [InlineData("1.0.0", null, true, false, false)]
+    [InlineData("1.0.0", null, false, true, false)]
+    [InlineData("1.1.0", null, false, false, true)]
+    [InlineData("1.0.0", "1.1.0", false, false, true)]
+    public async Task RestartReevaluatesInstalledAndSkippedVersions(string current, string? skipped,
+        bool packaged, bool noKey, bool available)
+    {
+        var fixture = new Fixture();
+        using (var first = fixture.Create()) { await first.CheckNowAsync(default); }
+        fixture.Notifier.Offers.Clear();
+        fixture.Store.Value = fixture.Store.Value with { SkippedVersion = skipped };
+        var saved = fixture.Store.Value;
+        using var restarted = fixture.Create(current, packaged, noKey);
+        restarted.Start();
+        await fixture.Clock.Delayed.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        if (available)
+        {
+            var offer = Assert.Single(fixture.Notifier.Offers);
+            Assert.Equal(current == "1.0.0", offer.RequiresUpdate);
+        }
+        else { Assert.Empty(fixture.Notifier.Offers); }
+        Assert.Equal(saved, fixture.Store.Value);
+        Assert.Equal(1, fixture.Fetcher.Calls);
+    }
+
+    /// <summary>キャッシュは毎回検証し、破損やリプレイを理由に通信の周期を早めない。</summary>
+    [Theory]
+    [InlineData("manifest")]
+    [InlineData("signature")]
+    [InlineData("missingSignature")]
+    [InlineData("parse")]
+    [InlineData("replay")]
+    [InlineData("key")]
+    public async Task RestartRejectsUntrustedCacheWithoutBypassingNetworkPolicy(string failure)
+    {
+        var fixture = new Fixture();
+        fixture.Store.Value = new() { UpdateCheckEnabled = true };
+        using (var first = fixture.Create()) { await first.CheckNowAsync(default); }
+        fixture.Notifier.Offers.Clear();
+        var saved = fixture.Store.Value;
+        switch (failure)
+        {
+            case "manifest":
+                fixture.Store.Value = saved with { CachedUpdateManifest = Encoding.UTF8.GetBytes(Fixture.Json("9.0.0")) };
+                break;
+            case "signature":
+                fixture.Store.Value = saved with { CachedUpdateSignature = [0] };
+                break;
+            case "missingSignature":
+                fixture.Store.Value = saved with { CachedUpdateSignature = null };
+                break;
+            case "parse":
+                var broken = Encoding.UTF8.GetBytes("broken");
+                fixture.Store.Value = saved with
+                {
+                    CachedUpdateManifest = broken,
+                    CachedUpdateSignature = ManifestSignature.Sign(broken, fixture.Keys.Private),
+                };
+                break;
+            case "replay":
+                fixture.Store.Value = saved with { HighestSeenVersion = "1.3.0" };
+                break;
+            case "key":
+                var otherKeys = ManifestSignature.GenerateKeyPair();
+                fixture.Store.Value = saved with
+                {
+                    CachedUpdateSignature = ManifestSignature.Sign(saved.CachedUpdateManifest!, otherKeys.PrivateKeyPkcs8Base64),
+                };
+                break;
+        }
+        var beforeRestart = fixture.Store.Value;
+        using var restarted = fixture.Create();
+        restarted.Start();
+        await fixture.Clock.Delayed.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        fixture.Clock.Advance(UpdateCheckPolicy.StartupDelay);
+        Assert.Null(await restarted.RunScheduledCheckAsync());
+        Assert.Empty(fixture.Notifier.Offers);
+        Assert.Equal(1, fixture.Fetcher.Calls);
+        Assert.Equal(beforeRestart, fixture.Store.Value);
+    }
+
     /// <summary>無効中と起動待ちには取得せず、設定の変更を再起動なしで読む。</summary>
     [Fact]
     public async Task DisabledAndStartupDelaySuppressNetwork()
@@ -199,9 +340,10 @@ public sealed class UpdateCheckServiceTests
             var bytes = Encoding.UTF8.GetBytes(json);
             Fetcher.Result = new(bytes, ManifestSignature.Sign(bytes, Keys.Private));
         }
-        internal UpdateCheckService Create(string current = "1.0.0", bool packaged = false, bool noKey = false) =>
-            new(Fetcher, Store, current, noKey ? null : Keys.Public, Clock, new Package(packaged),
-                UpdateOsArchitecture.Arm64, Notifier, Log);
+        internal UpdateCheckService Create(string current = "1.0.0", bool packaged = false, bool noKey = false,
+            ISettingsStore<DeviceState>? store = null, IUpdateNotifier? notifier = null) =>
+            new(Fetcher, store ?? Store, current, noKey ? null : Keys.Public, Clock, new Package(packaged),
+                UpdateOsArchitecture.Arm64, notifier ?? Notifier, Log);
         internal static string Json(string version) => $$$$"""
             {"version":"{{{{version}}}}","publishedAt":"2026-10-23T00:00:00Z",
             "releaseNotesUrl":"https://example.com/notes","minimumSupported":"1.1.0",
@@ -258,6 +400,12 @@ public sealed class UpdateCheckServiceTests
     {
         internal List<UpdateOffer> Offers = [];
         public void Notify(UpdateOffer offer) => Offers.Add(offer);
+    }
+
+    private sealed class Balloon : ITrayBalloon
+    {
+        internal int Calls;
+        public bool Show(string title, string message) { Calls++; return true; }
     }
 
     private sealed class Log : IAppLog

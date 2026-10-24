@@ -20,9 +20,38 @@ public sealed class UpdateDeviceStateTests
             Assert.Equal(5, value.SchemaVersion);
             Assert.False(value.UpdateCheckEnabled);
             Assert.Null(value.LastUpdateCheckUtc);
+            Assert.Null(value.CachedUpdateManifest);
+            Assert.Null(value.CachedUpdateSignature);
             Assert.Null(value.HighestSeenVersion);
             Assert.Null(value.SkippedVersion);
             Assert.Null(value.LastNotifiedVersion);
+        });
+    }
+
+    /// <summary>元のバイト列を変えずに保存し、旧版やキャッシュのない端末では未保存として扱う。</summary>
+    [Fact]
+    public void SignedManifestCacheRoundTripsAndMigrates()
+    {
+        WithStore((store, path) =>
+        {
+            byte[] manifest = [0xef, 0xbb, 0xbf, 0x7b, 0x0d, 0x0a, 0x7d];
+            byte[] signature = [65, 66, 67, 0x0a];
+            store.Save(new() { CachedUpdateManifest = manifest, CachedUpdateSignature = signature });
+            var value = SettingsStores.Device(path).Load().Value;
+            Assert.Equal(manifest, value.CachedUpdateManifest);
+            Assert.Equal(signature, value.CachedUpdateSignature);
+            var migrated = DeviceState.Migrate(value, 4);
+            Assert.Null(migrated.CachedUpdateManifest);
+            Assert.Null(migrated.CachedUpdateSignature);
+            // 未保存は空文字列ではなく書かない (読み戻すと空のバイト列になり、null と区別できなくなる)。
+            store.Save(new());
+            Assert.DoesNotContain("CachedUpdate", File.ReadAllText(path));
+            Assert.Null(store.Load().Value.CachedUpdateManifest);
+            File.WriteAllText(path, """{"SchemaVersion":5,"UpdateCheckEnabled":true}""");
+            value = store.Load().Value;
+            Assert.True(value.UpdateCheckEnabled);
+            Assert.Null(value.CachedUpdateManifest);
+            Assert.Null(value.CachedUpdateSignature);
         });
     }
 

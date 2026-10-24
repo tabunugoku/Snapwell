@@ -110,6 +110,7 @@ internal sealed class UpdateCheckService : IDisposable
     {
         try
         {
+            RestoreCachedOffer();
             await _clock.DelayAsync(UpdateCheckPolicy.StartupDelay, _stop.Token).ConfigureAwait(false);
             while (!_stop.IsCancellationRequested)
             {
@@ -118,6 +119,42 @@ internal sealed class UpdateCheckService : IDisposable
             }
         }
         catch (OperationCanceledException) when (_stop.IsCancellationRequested) { }
+        catch (Exception exception) { Log(exception); }
+    }
+
+    private void RestoreCachedOffer()
+    {
+        if (_current is null || _current.IsDevelopmentBuild || _package.IsPackaged || _publicKey is null) { return; }
+        try
+        {
+            // ローカルの案内の復元は通信せず、自動確認の同意と待ち時間から独立させる。
+            var loaded = ReadState();
+            if (loaded.IsReadOnly || loaded.Value.CachedUpdateManifest is not { } bytes
+                || loaded.Value.CachedUpdateSignature is not { } signature) { return; }
+            if (signature.Length > 1024 || !ManifestSignature.Verify(bytes, signature, _publicKey))
+            {
+                throw new InvalidOperationException("Cached manifest signature verification failed.");
+            }
+            var parsed = UpdateManifestParser.Parse(bytes);
+            if (parsed.Manifest is not { } manifest)
+            {
+                throw new InvalidOperationException(parsed.Error ?? "Invalid cached manifest.");
+            }
+            ReleaseVersion.TryParse(loaded.Value.HighestSeenVersion, out var highest);
+            if (!UpdateReplayGuard.Accept(manifest, highest))
+            {
+                throw new InvalidOperationException("Cached manifest replay was rejected.");
+            }
+            ReleaseVersion.TryParse(loaded.Value.SkippedVersion, out var skipped);
+            var evaluation = UpdateCheckPolicy.Evaluate(_current, manifest, skipped);
+            if (evaluation.Status != UpdateCheckStatus.Available) { return; }
+            var asset = UpdateAssetSelector.Select(_architecture, manifest);
+            if (asset is null) { return; }
+            _stop.Token.ThrowIfCancellationRequested();
+            _notifier.Notify(new(manifest, asset, evaluation.RequiresUpdate));
+        }
+        catch (OperationCanceledException) when (_stop.IsCancellationRequested) { }
+        // キャッシュの破損は通信を早める理由にはせず、通常の周期で再取得する。
         catch (Exception exception) { Log(exception); }
     }
 
@@ -207,7 +244,13 @@ internal sealed class UpdateCheckService : IDisposable
             {
                 ReleaseVersion.TryParse(current.HighestSeenVersion, out var highest);
                 replay = !UpdateReplayGuard.Accept(manifest, highest);
-                return replay ? current : current with { HighestSeenVersion = manifest.Version.ToString() };
+                // 最高受理版と署名付きの元データを一緒に保存し、再起動時にも再検証できるようにする。
+                return replay ? current : current with
+                {
+                    HighestSeenVersion = manifest.Version.ToString(),
+                    CachedUpdateManifest = fetched.Manifest,
+                    CachedUpdateSignature = fetched.Signature,
+                };
             });
             if (replay) { return Failure("Manifest replay was rejected."); }
             ReleaseVersion.TryParse(state.SkippedVersion, out var skipped);
