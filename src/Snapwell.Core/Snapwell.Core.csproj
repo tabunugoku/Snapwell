@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="../../release/update-public-key.txt" LogicalName="Snapwell.UpdatePublicKey" Condition="Exists('$(MSBuildThisFileDirectory)../../release/update-public-key.txt')" />
     <InternalsVisibleTo Include="Snapwell.Core.Tests" />
     <EmbeddedResource Include="Localization/Strings/**/*.json">
       <LogicalName>i18n/$([System.String]::Copy('%(RecursiveDir)').Replace('\', '/'))%(Filename)%(Extension)</LogicalName>
