@@ -67,7 +67,7 @@ public sealed class UpdatePolicyTests
     public void InitialCheckWaitsThreeMinutes(int uptimeSeconds, bool expected)
     {
         var now = DateTimeOffset.Parse("2026-10-23T00:00:00Z");
-        Assert.Equal(expected, UpdateCheckPolicy.IsDue(now, null, TimeSpan.FromSeconds(uptimeSeconds), true));
+        Assert.Equal(expected, UpdateCheckPolicy.IsDue(now, null, TimeSpan.FromSeconds(uptimeSeconds)));
     }
 
     /// <summary>前回から二十四時間たつか時計が巻き戻った場合に確認する。</summary>
@@ -79,7 +79,7 @@ public sealed class UpdatePolicyTests
     {
         var last = DateTimeOffset.Parse("2026-10-23T00:00:00Z");
         Assert.Equal(expected, UpdateCheckPolicy.IsDue(last.AddMinutes(elapsedMinutes), last,
-            TimeSpan.FromHours(1), true));
+            TimeSpan.FromHours(1)));
     }
 
     /// <summary>起動後に時計を前日へ補正しても、稼働三分後には確認できる。</summary>
@@ -88,21 +88,9 @@ public sealed class UpdatePolicyTests
     {
         var last = DateTimeOffset.Parse("2026-10-23T00:00:00Z");
         var corrected = last.AddDays(-1);
-        Assert.False(UpdateCheckPolicy.IsDue(corrected, last, TimeSpan.FromSeconds(179), true));
-        Assert.True(UpdateCheckPolicy.IsDue(corrected, last, TimeSpan.FromSeconds(180), true));
-        Assert.True(UpdateCheckPolicy.IsDue(corrected, null, TimeSpan.FromSeconds(180), true));
-    }
-
-    /// <summary>確認が無効なら、初回・間隔経過・時計の巻き戻しでも確認しない。</summary>
-    [Fact]
-    public void DisabledChecksAreNeverDue()
-    {
-        var now = DateTimeOffset.MaxValue;
-        foreach (var last in new DateTimeOffset?[] { null, DateTimeOffset.MinValue, now })
-        {
-            Assert.False(UpdateCheckPolicy.IsDue(now, last, TimeSpan.MaxValue, false));
-        }
-        Assert.False(UpdateCheckPolicy.IsDue(now.AddDays(-1), now, TimeSpan.MaxValue, false));
+        Assert.False(UpdateCheckPolicy.IsDue(corrected, last, TimeSpan.FromSeconds(179)));
+        Assert.True(UpdateCheckPolicy.IsDue(corrected, last, TimeSpan.FromSeconds(180)));
+        Assert.True(UpdateCheckPolicy.IsDue(corrected, null, TimeSpan.FromSeconds(180)));
     }
 
     /// <summary>日時の上下限でも加算の桁あふれを起こさない。</summary>
@@ -110,11 +98,11 @@ public sealed class UpdatePolicyTests
     public void DateTimeExtremesDoNotOverflow()
     {
         Assert.True(UpdateCheckPolicy.IsDue(DateTimeOffset.MaxValue, DateTimeOffset.MinValue,
-            TimeSpan.MaxValue, true));
+            TimeSpan.MaxValue));
         Assert.True(UpdateCheckPolicy.IsDue(DateTimeOffset.MinValue, DateTimeOffset.MaxValue,
-            TimeSpan.MaxValue, true));
-        Assert.True(UpdateCheckPolicy.IsDue(DateTimeOffset.MaxValue, null, TimeSpan.MaxValue, true));
-        Assert.False(UpdateCheckPolicy.IsDue(DateTimeOffset.MaxValue, null, TimeSpan.Zero, true));
+            TimeSpan.MaxValue));
+        Assert.True(UpdateCheckPolicy.IsDue(DateTimeOffset.MaxValue, null, TimeSpan.MaxValue));
+        Assert.False(UpdateCheckPolicy.IsDue(DateTimeOffset.MaxValue, null, TimeSpan.Zero));
     }
 
     private static ReleaseVersion Version(string text)

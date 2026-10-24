@@ -44,7 +44,7 @@ internal sealed class TrayMenuAnchor(HWND owner) : ITrayMenuAnchor
 internal static class TrayMenuPlacement
 {
     internal static (TrayMenuLayout Layout, int MonitorCount) Read(ITrayMenuAnchor anchor,
-        IMonitorSource monitors, bool hasStatus)
+        IMonitorSource monitors, bool hasStatus, int itemCount)
     {
         var rectangle = anchor.Read();
         var screens = monitors.GetMonitors();
@@ -53,7 +53,8 @@ internal static class TrayMenuPlacement
             // i18n-keep: 画面に出さない開発者向けの例外・ログ。
             throw new InvalidOperationException("モニターがない。");
         var edge = TrayMenuLayout.DetectEdge(monitor.Bounds, monitor.WorkArea, rectangle);
-        return (TrayMenuLayout.Create(rectangle, monitor.WorkArea, edge, monitor.DpiX / 96.0, hasStatus), screens.Count);
+        return (TrayMenuLayout.Create(rectangle, monitor.WorkArea, edge, monitor.DpiX / 96.0,
+            hasStatus, itemCount), screens.Count);
     }
 
     private static double Distance(PixelRect bounds, Vec2 point)

@@ -39,6 +39,7 @@ internal sealed class AppHost
     private readonly CancellationTokenSource _deliveryStop = new();
     private readonly ManualResetEventSlim _shutdownDone = new(false);
     private IAppRuntime? _runtime;
+    private UpdateCheckService? _updates;
     // 通常の編集は設定画面が行い、同期による取り込みだけは本体も保存する。
     private PortableSettings _portable = new();
     private DeviceState _device = new();
@@ -185,6 +186,8 @@ internal sealed class AppHost
             _runtime.SetEnabled(_enabled && _hooksStarted);
             DisableIfRequested();
             _tray.Show(State());
+            _updates = UpdateCheckService.CreateDefault(_deviceStore, _tray, _log);
+            _updates.Start();
             if (_deviceWatcher is not null)
             {
                 Cleanup(() =>
@@ -593,6 +596,7 @@ internal sealed class AppHost
         {
             RestoreOsSettings();
         }
+        Cleanup(() => _updates?.Dispose());
         Cleanup(() => _sync?.Dispose());
 
         var locked = false;

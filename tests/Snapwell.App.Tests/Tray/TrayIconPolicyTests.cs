@@ -12,7 +12,7 @@ public sealed class TrayIconPolicyTests
     [InlineData(false)]
     public void ConnectedLauncherUsesCurrentAvailability(bool enabled)
     {
-        var items = TrayIconPolicy.MenuItems(new(enabled, false, LauncherAvailable: true));
+        var items = TrayMenuModel.Create(enabled, launcherAvailable: true);
         Assert.Equal(enabled, items.Single(item => item.Command == TrayMenuCommand.Launcher).Enabled);
     }
 
@@ -22,7 +22,7 @@ public sealed class TrayIconPolicyTests
     [InlineData(false)]
     public void CustomMenuUsesMockupOrderAndCurrentAvailability(bool enabled)
     {
-        var items = TrayIconPolicy.MenuItems(new(enabled, true, "状態"));
+        var items = TrayMenuModel.Create(enabled);
         Assert.Equal([TrayMenuCommand.Arrange, TrayMenuCommand.Launcher,
             TrayMenuCommand.Settings, TrayMenuCommand.Exit], items.Select(item => item.Command));
         Assert.Equal("現在のモニターを整列", items[0].Name);

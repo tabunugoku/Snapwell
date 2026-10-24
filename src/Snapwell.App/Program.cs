@@ -54,7 +54,8 @@ internal static class Program
             captureIdentity.User?.Value ?? throw new InvalidOperationException("ユーザーの SID を取得できない。")));
         var matcher = new HotkeyMatcher(() => capture.IsCapturing);
         var hooks = new HookService(new HookThread(matcher), log);
-        var tray = new TrayIcon(log);
+        var deviceStore = SettingsStores.Device();
+        var tray = new TrayIcon(log, deviceStore);
         var inspector = new Win32WindowInspector();
         var monitors = new Win32MonitorSource();
         var position = new Win32WindowPositionApi();
@@ -64,7 +65,7 @@ internal static class Program
         var osLanguageTag = OsLanguageSource.GetDisplayLanguageTag();
         var host = new AppHost(new UserInstanceMutex(),
             new SnapGuardService(new SnapSettingsGuard(new Win32SnapSystemSettings())),
-            SettingsStores.Portable(), SettingsStores.Device(), hooks, tray, new WindowsConsentPrompt(),
+            SettingsStores.Portable(), deviceStore, hooks, tray, new WindowsConsentPrompt(),
             log, () => corners?.RestoreAll(), (settings, enabled, toggle) =>
             {
                 // 単一起動の所有権を得た後だけ、前回の退避ファイルを読む。
@@ -117,7 +118,7 @@ internal static class Program
             () => new SettingsLauncher(log).Open("--setup"), new SettingsWatcher(SettingsStores.DevicePath()),
             sync: new SettingsSyncService(SettingsStores.PortablePath(),
                 Path.Combine(Path.GetDirectoryName(SettingsStores.DevicePath())!, "sync-backups"),
-                SettingsStores.Device(), log),
+                deviceStore, log),
             setReplaceWinArrow: replace => Volatile.Write(ref replaceWinArrow, replace), osTag: osLanguageTag);
         UnhandledExceptionEventHandler unhandled = (_, args) => host.HandleUnhandledException(
             // i18n-keep: 画面に出さない開発者向けの例外・ログ。

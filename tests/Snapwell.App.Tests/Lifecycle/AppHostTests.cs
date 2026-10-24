@@ -211,7 +211,7 @@ public sealed class AppHostTests
         Assert.True(fixture.Host.Start());
         var state = fixture.Tray.State!;
         Assert.Equal(hooksStarted, state.LauncherAvailable);
-        var items = TrayIconPolicy.MenuItems(state);
+        var items = TrayMenuModel.Create(state.Enabled, state.LauncherAvailable);
         Assert.Equal(hooksStarted && enabled, items.Single(item => item.Command == TrayMenuCommand.Launcher).Enabled);
         Assert.Equal(4, items.Count);
         Assert.DoesNotContain(items, item => item.Command == TrayMenuCommand.Toggle);

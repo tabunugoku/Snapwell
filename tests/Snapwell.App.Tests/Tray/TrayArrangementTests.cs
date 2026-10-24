@@ -1,5 +1,6 @@
 using Snapwell.App.Lifecycle;
 using Snapwell.App.Tray;
+using Snapwell.Core.Settings;
 using Snapwell.Core.Tray;
 
 namespace Snapwell.App.Tests.Tray;
@@ -11,7 +12,7 @@ public sealed class TrayArrangementTests
     [Fact]
     public void LauncherSelectionRechecksAvailabilityPauseAndRemoval()
     {
-        var tray = new TrayIcon(new NoLog());
+        var tray = new TrayIcon(new NoLog(), SettingsStores.Device());
         var calls = new List<nint>();
         tray.LauncherRequested += (target, _) => calls.Add(target);
         tray.SelectMenuItem(7);
@@ -36,7 +37,7 @@ public sealed class TrayArrangementTests
     [Fact]
     public void LauncherSelectionIncludesCurrentTickCount()
     {
-        var tray = new TrayIcon(new NoLog());
+        var tray = new TrayIcon(new NoLog(), SettingsStores.Device());
         tray.Update(new(true, false, LauncherAvailable: true));
         var calls = new List<uint>();
         tray.LauncherRequested += (_, timeMs) => calls.Add(timeMs);
@@ -53,7 +54,7 @@ public sealed class TrayArrangementTests
     [Fact]
     public void SelectingArrangementRaisesExactlyOneEvent()
     {
-        var tray = new TrayIcon(new NoLog());
+        var tray = new TrayIcon(new NoLog(), SettingsStores.Device());
         var calls = 0;
         tray.ArrangeRequested += () => calls++;
 
@@ -66,7 +67,7 @@ public sealed class TrayArrangementTests
     [Fact]
     public void SelectionRechecksPauseAndRemovalAfterMenuWasOpened()
     {
-        var tray = new TrayIcon(new NoLog());
+        var tray = new TrayIcon(new NoLog(), SettingsStores.Device());
         var calls = 0;
         tray.ArrangeRequested += () => calls++;
         tray.Update(new(false, false));

@@ -65,8 +65,16 @@ internal sealed class TrayMenuController(ITrayMenuView view, Action<uint> comman
             return;
         }
 
+        var selectedCommand = _snapshot is { } current ? TrayMenuModel.CommandAt(current.Items, _selected) : null;
         _snapshot = _snapshot is { } previous
             ? snapshot with { Layout = snapshot.Layout.WithScrollOffset(previous.Layout.ScrollOffset) } : snapshot;
+        if (selectedCommand is { } selected && selected != TrayMenuCommand.Toggle)
+        {
+            // 更新項目の追加で選択中の操作が別の操作へずれないよう、番号ではなくコマンドを保つ。
+            _selected = Enumerable.Range(0, snapshot.Items.Count)
+                .Where(index => snapshot.Items[index].Command == selected)
+                .Select(index => index + 1).DefaultIfEmpty(-1).First();
+        }
         if (TrayMenuModel.CommandAt(snapshot.Items, _selected) is null)
         {
             _selected = _keyboard ? TrayMenuModel.Move(snapshot.Items, _selected, 1) : -1;

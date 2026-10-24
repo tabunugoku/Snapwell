@@ -4,7 +4,7 @@ using Snapwell.Core.Localization;
 namespace Snapwell.Core.Tray;
 
 /// <summary>既存のトレイのコマンド番号に対応する操作。</summary>
-public enum TrayMenuCommand : uint { Toggle = 1, Exit = 4, Settings = 5, Arrange = 6, Launcher = 7 }
+public enum TrayMenuCommand : uint { Toggle = 1, Exit = 4, Settings = 5, Arrange = 6, Launcher = 7, Update = 8 }
 
 /// <summary>メニュー項目の名前と選択可否。</summary>
 public sealed record TrayMenuEntry(TrayMenuCommand Command, string Name, bool Enabled);
@@ -12,16 +12,23 @@ public sealed record TrayMenuEntry(TrayMenuCommand Command, string Name, bool En
 /// <summary>Win32 に依存しないトレイメニューの項目と入力の判断。</summary>
 public static class TrayMenuModel
 {
-    /// <summary>マウスで使う四項目を現在の操作可否とともに返す。</summary>
-    public static IReadOnlyList<TrayMenuEntry> Create(bool enabled, bool launcherAvailable = false)
+    /// <summary>通常の四項目と、案内する版がある場合だけ先頭の更新項目を返す。</summary>
+    public static IReadOnlyList<TrayMenuEntry> Create(bool enabled, bool launcherAvailable = false,
+        string? updateVersion = null)
     {
-        return Array.AsReadOnly<TrayMenuEntry>(
+        List<TrayMenuEntry> items =
         [
             new(TrayMenuCommand.Arrange, UiText.Current.Get("Tray.Arrange"), enabled),
             new(TrayMenuCommand.Launcher, UiText.Current.Get("Tray.Launcher"), enabled && launcherAvailable),
             new(TrayMenuCommand.Settings, UiText.Current.Get("Tray.Settings"), true),
             new(TrayMenuCommand.Exit, UiText.Current.Get("Tray.Exit"), true),
-        ]);
+        ];
+        if (updateVersion is not null)
+        {
+            items.Insert(0, new(TrayMenuCommand.Update,
+                UiText.Current.Format("Tray.UpdateAvailable", ("version", updateVersion)), true));
+        }
+        return items.AsReadOnly();
     }
 
     /// <summary>無効な項目を飛ばして循環する。先頭の 0 はヘッダーのスイッチ。</summary>

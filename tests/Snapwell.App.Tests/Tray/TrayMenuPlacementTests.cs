@@ -16,7 +16,7 @@ public sealed class TrayMenuPlacementTests
             new(-2560, -300, 2560, 1368), 144, 144, false);
         var anchor = new FakeAnchor(new(-60, 1080, 30, 30));
         var monitors = new FakeMonitors([primary, secondary]);
-        var result = TrayMenuPlacement.Read(anchor, monitors, false);
+        var result = TrayMenuPlacement.Read(anchor, monitors, false, 4);
         Assert.Equal(2, result.MonitorCount);
         Assert.Equal(1.5, result.Layout.Scale);
         Assert.True(secondary.WorkArea.Contains(result.Layout.Bounds));
@@ -31,7 +31,7 @@ public sealed class TrayMenuPlacementTests
     {
         var monitor = new MonitorInfo("one", new(-1920, 0, 1920, 1080),
             new(-1920, 0, 1920, 1032), 192, 192, true);
-        var result = TrayMenuPlacement.Read(new FakeAnchor(new(20, 1100, 1, 1)), new FakeMonitors([monitor]), true);
+        var result = TrayMenuPlacement.Read(new FakeAnchor(new(20, 1100, 1, 1)), new FakeMonitors([monitor]), true, 4);
         Assert.Equal(2, result.Layout.Scale);
         Assert.True(monitor.WorkArea.Contains(result.Layout.Bounds));
         // 状態案内まで 113、四行 128、グループ間 9、下余白 8 論理 px。
@@ -45,7 +45,7 @@ public sealed class TrayMenuPlacementTests
     [Fact]
     public void MissingMonitorIsReportedToCaller() =>
         Assert.Throws<InvalidOperationException>(() =>
-            TrayMenuPlacement.Read(new FakeAnchor(new(0, 0, 1, 1)), new FakeMonitors([]), false));
+            TrayMenuPlacement.Read(new FakeAnchor(new(0, 0, 1, 1)), new FakeMonitors([]), false, 4));
 
     private sealed class FakeAnchor(PixelRect rectangle) : ITrayMenuAnchor
     {

@@ -49,6 +49,7 @@
   "Language.ChineseSimplified": "简体中文",
   "Language.ChineseTraditional": "繁體中文",
   "Language.ChangedNotice": "設定画面を開き直すと、この画面の言語が切り替わります。トレイのメニューは次に開いたときから切り替わります。",
+  "Tray.UpdateAvailable": "新しい版 {version} があります",
   "Tray.Arrange": "現在のモニターを整列",
   "Tray.Launcher": "ランチャーを開く",
   "Tray.Settings": "設定を開く",
