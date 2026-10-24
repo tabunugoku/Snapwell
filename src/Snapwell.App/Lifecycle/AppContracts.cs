@@ -77,8 +77,10 @@ internal sealed record TrayState(bool Enabled, bool DisableStandardSnap, string?
     bool LauncherAvailable = false);
 
 /// <summary>メインスレッドのトレイとメッセージループ。</summary>
-internal interface ITrayService
+internal interface ITrayService : IUpdateNotifier
 {
+    /// <summary>更新通知を扱わないテスト用トレイでは何もしない。</summary>
+    void IUpdateNotifier.Notify(UpdateOffer offer) { }
     event Action? ToggleRequested;
     event Action? StandardSnapRequested;
     event Action? RestoreRequested;
