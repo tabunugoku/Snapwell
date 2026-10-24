@@ -49,6 +49,7 @@
   "Language.ChineseSimplified": "简体中文",
   "Language.ChineseTraditional": "繁體中文",
   "Language.ChangedNotice": "Reopen settings to change this screen's language. The tray menu changes the next time you open it.",
+  "Tray.UpdateAvailable": "Version {version} is available",
   "Tray.Arrange": "Arrange this monitor",
   "Tray.Launcher": "Open launcher",
   "Tray.Settings": "Open settings",

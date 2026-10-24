@@ -38,9 +38,10 @@ public sealed class TrayMenuLayout
     private readonly PixelRect _workArea;
     private readonly bool _hasStatus;
     private readonly double _statusTagTextWidth;
+    private readonly int _itemCount;
 
     private TrayMenuLayout(PixelRect panel, PixelRect workArea, double scale, bool hasStatus,
-        bool compact, int scrollOffset = 0, double statusTagTextWidth = 0)
+        bool compact, int scrollOffset = 0, double statusTagTextWidth = 0, int itemCount = 4)
     {
         Panel = panel;
         Scale = scale;
@@ -48,6 +49,7 @@ public sealed class TrayMenuLayout
         _workArea = workArea;
         _hasStatus = hasStatus;
         _statusTagTextWidth = statusTagTextWidth;
+        _itemCount = itemCount;
         // 三回のぼかしの半径と、下向き 8 px の影を含める。
         var padding = Px(52);
         var left = Math.Max(workArea.X, panel.X - padding);
@@ -63,7 +65,7 @@ public sealed class TrayMenuLayout
         var viewportTop = Math.Min(panel.Bottom, panel.Y + Px(start));
         ItemsViewport = new(panel.X, viewportTop, panel.Width,
             Math.Max(0, panel.Bottom - Px(compact ? 4 : 8) - viewportTop));
-        MaxScrollOffset = Math.Max(0, Px(start + 128 + groupGap) - Px(start) - ItemsViewport.Height);
+        MaxScrollOffset = Math.Max(0, Px(start + 32 * itemCount + groupGap) - Px(start) - ItemsViewport.Height);
         ScrollOffset = Math.Clamp(scrollOffset, 0, MaxScrollOffset);
         PixelRect Row(int y)
         {
@@ -71,12 +73,9 @@ public sealed class TrayMenuLayout
             return new(row.X, row.Y - ScrollOffset, Math.Max(0, Math.Min(row.Right, panel.Right) - row.X),
                 row.Height);
         }
-        Rows = Array.AsReadOnly<PixelRect>(
-        [
-            Row(start), Row(start + 32),
-            Row(start + 64 + groupGap), Row(start + 96 + groupGap),
-        ]);
-        var groupSeparator = Rect(13, start + 64 + (compact ? 0 : 4), 294, 1);
+        Rows = Array.AsReadOnly(Enumerable.Range(0, itemCount)
+            .Select(index => Row(start + 32 * index + (index >= itemCount - 2 ? groupGap : 0))).ToArray());
+        var groupSeparator = Rect(13, start + 32 * (itemCount - 2) + (compact ? 0 : 4), 294, 1);
         Separators = Array.AsReadOnly<PixelRect>(
             [Rect(7, 51, 306, 1), Rect(13, start - 5, 294, 1),
                 new(groupSeparator.X, groupSeparator.Y - ScrollOffset, groupSeparator.Width, groupSeparator.Height)]);
@@ -84,7 +83,7 @@ public sealed class TrayMenuLayout
 
     /// <summary>ヘッダーを固定し、項目のスクロール位置だけを更新する。</summary>
     public TrayMenuLayout WithScrollOffset(int offset) =>
-        new(Panel, _workArea, Scale, _hasStatus, IsCompact, offset, _statusTagTextWidth);
+        new(Panel, _workArea, Scale, _hasStatus, IsCompact, offset, _statusTagTextWidth, _itemCount);
 
     /// <summary>実測した論理 px の文言幅に左右 8 px の余白を足し、タグの右端を固定する。</summary>
     public TrayMenuLayout WithStatusTagTextWidth(double textWidth)
@@ -93,7 +92,7 @@ public sealed class TrayMenuLayout
         {
             throw new ArgumentOutOfRangeException(nameof(textWidth));
         }
-        return new(Panel, _workArea, Scale, _hasStatus, IsCompact, ScrollOffset, textWidth);
+        return new(Panel, _workArea, Scale, _hasStatus, IsCompact, ScrollOffset, textWidth, _itemCount);
     }
 
     /// <summary>キーボードで選んだ項目全体を表示する。</summary>
@@ -147,17 +146,19 @@ public sealed class TrayMenuLayout
 
     /// <summary>アイコン側から開き、本体を作業領域の内側へ収める。</summary>
     public static TrayMenuLayout Create(PixelRect anchor, PixelRect workArea, TrayTaskbarEdge edge,
-        double scale, bool hasStatus = false)
+        double scale, bool hasStatus = false, int itemCount = 4)
     {
+        if (itemCount < 4) { throw new ArgumentOutOfRangeException(nameof(itemCount)); }
         if (!double.IsFinite(scale) || scale <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(scale));
         }
 
         var width = Math.Min(workArea.Width, (int)Math.Round(320 * scale));
-        var height = (int)Math.Round((hasStatus ? 258 : 234) * scale);
+        var extraHeight = (itemCount - 4) * 32;
+        var height = (int)Math.Round(((hasStatus ? 258 : 234) + extraHeight) * scale);
         var compact = height > workArea.Height;
-        if (compact) { height = (int)Math.Round((hasStatus ? 216 : 192) * scale); }
+        if (compact) { height = (int)Math.Round(((hasStatus ? 216 : 192) + extraHeight) * scale); }
         height = Math.Min(height, workArea.Height);
 
         var gap = (int)Math.Round(8 * scale);
@@ -172,6 +173,6 @@ public sealed class TrayMenuLayout
 
         x = Math.Clamp(x, workArea.X, workArea.Right - width);
         y = Math.Clamp(y, workArea.Y, workArea.Bottom - height);
-        return new(new(x, y, width, height), workArea, scale, hasStatus, compact);
+        return new(new(x, y, width, height), workArea, scale, hasStatus, compact, itemCount: itemCount);
     }
 }

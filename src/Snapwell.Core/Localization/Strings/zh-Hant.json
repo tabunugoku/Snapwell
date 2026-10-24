@@ -49,6 +49,7 @@
   "Language.ChineseSimplified": "简体中文",
   "Language.ChineseTraditional": "繁體中文",
   "Language.ChangedNotice": "重新開啟設定後，此畫面將切換語言。系統匣選單將在下次開啟時切換。",
+  "Tray.UpdateAvailable": "有新版本 {version} 可用",
   "Tray.Arrange": "排列目前的顯示器",
   "Tray.Launcher": "開啟啟動器",
   "Tray.Settings": "開啟設定",

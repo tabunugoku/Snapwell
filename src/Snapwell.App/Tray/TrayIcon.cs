@@ -4,6 +4,8 @@ using System.Runtime.InteropServices;
 using Snapwell.App.Lifecycle;
 using Snapwell.App.Overlay;
 using Snapwell.App.Tray.Menu;
+using Snapwell.Core.Settings;
+using Snapwell.Core.Tray;
 using Snapwell.Platform.Monitors;
 using Windows.Win32;
 using Windows.Win32.Foundation;
@@ -13,7 +15,7 @@ using Windows.Win32.UI.WindowsAndMessaging;
 namespace Snapwell.App.Tray;
 
 /// <summary>TaskbarCreated を受信できる、隠したトップレベルウィンドウのトレイ。</summary>
-internal sealed unsafe class TrayIcon(IAppLog log, ISettingsLauncher? settings = null) : ITrayService
+internal sealed unsafe class TrayIcon(IAppLog log, ISettingsLauncher? settings = null) : ITrayService, ITrayBalloon
 {
     private const uint CallbackMessage = 0x8001;
     private const uint InvokeMessage = 0x8002;
@@ -44,6 +46,40 @@ internal sealed unsafe class TrayIcon(IAppLog log, ISettingsLauncher? settings =
     private string _shownTip = "";
     private TrayMenuController? _menu;
     private nint _launcherTarget;
+    private UpdateOffer? _updateOffer;
+    private TrayUpdateNotifier? _updateNotifier;
+    private readonly ReleaseNotesLauncher _releaseNotes = new(log);
+
+    /// <summary>確認サービスからの案内をトレイのスレッドへ配送する。</summary>
+    public void Notify(UpdateOffer offer) => Post(() =>
+    {
+        _updateNotifier ??= new(SettingsStores.Device(), this, value =>
+        {
+            _updateOffer = value;
+            RefreshMenu();
+        }, log);
+        _updateNotifier.Notify(offer);
+    });
+
+    /// <summary>情報の吹き出しを Shell に要求する。実際の表示は OS の通知設定に従うため実機未確認。</summary>
+    bool ITrayBalloon.Show(string title, string message)
+    {
+        lock (_gate)
+        {
+            if (_removed || _window.IsNull) { return false; }
+            var data = new NOTIFYICONDATAW
+            {
+                cbSize = (uint)sizeof(NOTIFYICONDATAW),
+                hWnd = _window,
+                uID = IconId,
+                uFlags = NOTIFY_ICON_DATA_FLAGS.NIF_INFO,
+                dwInfoFlags = NOTIFY_ICON_INFOTIP_FLAGS.NIIF_INFO,
+            };
+            title.AsSpan(0, Math.Min(title.Length, data.szInfoTitle.Length - 1)).CopyTo(data.szInfoTitle.AsSpan());
+            message.AsSpan(0, Math.Min(message.Length, data.szInfo.Length - 1)).CopyTo(data.szInfo.AsSpan());
+            return PInvoke.Shell_NotifyIcon(NOTIFY_ICON_MESSAGE.NIM_MODIFY, in data);
+        }
+    }
 
     public event Action? ToggleRequested;
     public event Action? StandardSnapRequested;
@@ -285,9 +321,11 @@ internal sealed unsafe class TrayIcon(IAppLog log, ISettingsLauncher? settings =
         }
 
         var state = Volatile.Read(ref _state);
+        var items = TrayMenuModel.Create(state.Enabled, state.LauncherAvailable,
+            _updateOffer?.Manifest.Version.ToString());
         var placement = TrayMenuPlacement.Read(new TrayMenuAnchor(_window), new Win32MonitorSource(),
-            state.Status is not null);
-        return new(placement.Layout, TrayIconPolicy.MenuItems(state), state.Enabled, state.Status,
+            state.Status is not null, items.Count);
+        return new(placement.Layout, items, state.Enabled, state.Status,
             placement.MonitorCount, OverlayThemeSource.Read());
     }
 
@@ -336,6 +374,7 @@ internal sealed unsafe class TrayIcon(IAppLog log, ISettingsLauncher? settings =
             case 3: RestoreRequested?.Invoke(); break;
             case 4: ExitRequested?.Invoke(); break;
             case 5: _settings.Open(); break;
+            case 8 when _updateOffer is { } offer: _releaseNotes.Open(offer.Manifest.ReleaseNotesUrl); break;
             case 6 when Volatile.Read(ref _state).Enabled: ArrangeRequested?.Invoke(); break;
             case 7 when Volatile.Read(ref _state) is { Enabled: true, LauncherAvailable: true }:
                 LauncherRequested?.Invoke(_launcherTarget, unchecked((uint)Environment.TickCount));
