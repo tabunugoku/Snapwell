@@ -44,7 +44,7 @@ internal sealed class TrayMenuAnchor(HWND owner) : ITrayMenuAnchor
 internal static class TrayMenuPlacement
 {
     internal static (TrayMenuLayout Layout, int MonitorCount) Read(ITrayMenuAnchor anchor,
-        IMonitorSource monitors, bool hasStatus, int itemCount = 4)
+        IMonitorSource monitors, bool hasStatus, int itemCount)
     {
         var rectangle = anchor.Read();
         var screens = monitors.GetMonitors();

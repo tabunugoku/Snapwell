@@ -15,7 +15,7 @@ using Windows.Win32.UI.WindowsAndMessaging;
 namespace Snapwell.App.Tray;
 
 /// <summary>TaskbarCreated を受信できる、隠したトップレベルウィンドウのトレイ。</summary>
-internal sealed unsafe class TrayIcon(IAppLog log, ISettingsLauncher? settings = null) : ITrayService, ITrayBalloon
+internal sealed unsafe class TrayIcon(IAppLog log, ISettingsStore<DeviceState> device, ISettingsLauncher? settings = null) : ITrayService, ITrayBalloon
 {
     private const uint CallbackMessage = 0x8001;
     private const uint InvokeMessage = 0x8002;
@@ -53,7 +53,7 @@ internal sealed unsafe class TrayIcon(IAppLog log, ISettingsLauncher? settings =
     /// <summary>確認サービスからの案内をトレイのスレッドへ配送する。</summary>
     public void Notify(UpdateOffer offer) => Post(() =>
     {
-        _updateNotifier ??= new(SettingsStores.Device(), this, value =>
+        _updateNotifier ??= new(device, this, value =>
         {
             _updateOffer = value;
             RefreshMenu();

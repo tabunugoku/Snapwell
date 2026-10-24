@@ -20,7 +20,7 @@ public sealed class StatusAccessibilityTests
             UiText.Use(UiLanguage.Japanese);
             var layout = TrayMenuLayout.Create(new(1100, 800, 24, 24), new(0, 0, 1200, 900),
                 TrayTaskbarEdge.Bottom, 1, false);
-            var snapshot = new TrayMenuSnapshot(layout, TrayIconPolicy.MenuItems(new(true, false, null)),
+            var snapshot = new TrayMenuSnapshot(layout, TrayMenuModel.Create(true),
                 true, null, 1, OverlayTheme.Light);
             Assert.Equal("Snapwell、有効スイッチ、オン", snapshot.AccessibleName(0));
             Assert.Equal("Snapwell、現在のモニターを整列", snapshot.AccessibleName(1));

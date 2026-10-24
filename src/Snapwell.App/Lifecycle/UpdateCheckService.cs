@@ -123,6 +123,8 @@ internal sealed class UpdateCheckService : IDisposable
 
     internal async Task<UpdateCheckResponse?> RunScheduledCheckAsync()
     {
+        // 確認できない配布では、周期の確認を始めない。CheckNowAsync の結果は変わらない。
+        if (_current is null || _current.IsDevelopmentBuild || _package.IsPackaged || _publicKey is null) { return null; }
         Task<UpdateCheckResponse> pending;
         lock (_gate)
         {
@@ -137,9 +139,9 @@ internal sealed class UpdateCheckService : IDisposable
                 // 失敗は単調な一時間で再試行し、成功後は時計が巻き戻っても一日に一度とする。
                 var due = _retryPending || (_lastSuccess is { } success
                     ? now - success >= UpdateCheckPolicy.CheckInterval
-                    : UpdateCheckPolicy.IsDue(_clock.UtcNow, loaded.Value.LastUpdateCheckUtc, now, true));
+                    : UpdateCheckPolicy.IsDue(_clock.UtcNow, loaded.Value.LastUpdateCheckUtc, now));
                 if (!due) { return null; }
-                pending = BeginCheck(_stop.Token);
+                pending = BeginCheck();
             }
             catch (Exception exception)
             {
@@ -162,7 +164,7 @@ internal sealed class UpdateCheckService : IDisposable
             {
                 return new(UpdateCheckOutcome.Failed, Reason: "Update check was cancelled.");
             }
-            pending = _inFlight is { IsCompleted: false } ? _inFlight : BeginCheck(cancellationToken);
+            pending = _inFlight is { IsCompleted: false } ? _inFlight : BeginCheck();
         }
         try { return await pending.WaitAsync(cancellationToken).ConfigureAwait(false); }
         catch (OperationCanceledException)
@@ -171,10 +173,11 @@ internal sealed class UpdateCheckService : IDisposable
         }
     }
 
-    private Task<UpdateCheckResponse> BeginCheck(CancellationToken cancellationToken)
+    // 共有する確認は、最初の呼び出し元の取り消しに左右されない。待つ側だけが WaitAsync で抜ける。
+    private Task<UpdateCheckResponse> BeginCheck()
     {
         _lastAttempt = _clock.Uptime;
-        _inFlight = Task.Run(() => CheckCoreAsync(cancellationToken));
+        _inFlight = Task.Run(() => CheckCoreAsync(_stop.Token));
         return _inFlight;
     }
 
