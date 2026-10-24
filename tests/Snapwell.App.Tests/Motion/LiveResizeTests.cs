@@ -9,6 +9,121 @@ namespace Snapwell.App.Tests.Motion;
 /// <summary>反映待ちの非同期送信と着地時変更への後退を検証する。</summary>
 public sealed class LiveResizeTests
 {
+    /// <summary>正確な反映や最小幅による同一矩形でも、右下への着地を作業領域内で終える。</summary>
+    [Theory]
+    [InlineData(0)]
+    [InlineData(700)]
+    public void ExactReflectionsAndMinimumWidthFinishInsideWorkArea(int minimumWidth)
+    {
+        using var rig = new Rig();
+        var request = Request() with
+        {
+            Current = new(100, 100, 800, 600),
+            Target = new(1420, 740, 500, 300),
+            Walls = new(0, 0, 1920, 1040),
+            Velocity = default,
+        };
+        rig.Actual = request.Current;
+        PixelRect Constrain(PixelRect bounds) =>
+            new(bounds.X, bounds.Y, Math.Max(bounds.Width, minimumWidth), bounds.Height);
+        rig.Mover.OnAsyncSent = (_, bounds) => rig.Actual = Constrain(bounds);
+        rig.Mover.SetBoundsResult = bounds => rig.Actual = Constrain(bounds);
+        rig.Mover.OnSync = _ =>
+        {
+            if (!rig.Mover.Moves.IsEmpty)
+            {
+                var move = rig.Mover.Moves.Last();
+                rig.Actual = new(move.X, move.Y, rig.Actual.Width, rig.Actual.Height);
+            }
+        };
+        rig.Engine.Request(request);
+        for (var frame = 0; frame < 600 && rig.Engine.IsMoving(1); frame++)
+        {
+            rig.Tick(16);
+        }
+
+        Assert.False(rig.Engine.IsMoving(1));
+        Assert.True(request.Walls.Contains(rig.Actual), $"作業領域外に着地した: {rig.Actual}");
+        Assert.Equal(Math.Max(request.Target.Width, minimumWidth), rig.Actual.Width);
+        Assert.Equal(request.Walls.Right, rig.Actual.Right);
+        Assert.Equal(request.Walls.Bottom, rig.Actual.Bottom);
+        if (minimumWidth == 0)
+        {
+            Assert.Single(rig.Mover.Bounds);
+        }
+    }
+
+    /// <summary>最終要求でも実矩形が変わらない場合を含め、観測後の補正を非同期で一回だけ送る。</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void TimedOutLiveObservesMinimumSizeBeforeAsyncCorrection(bool unchanged)
+    {
+        using var rig = new Rig();
+        var request = Request() with
+        {
+            Current = unchanged ? new(1420, 740, 700, 300) : new(100, 100, 800, 600),
+            Target = new(1420, 740, 500, 300),
+            Walls = new(0, 0, 1920, 1040),
+            Velocity = default,
+        };
+        rig.Actual = request.Current;
+        rig.Engine.Request(request);
+        rig.Tick(16);
+        Assert.Single(rig.Mover.AsyncBounds);
+        rig.Tick(101);
+        Assert.Equal(request.Target, rig.Mover.AsyncBounds.Last().Bounds);
+        Assert.True(rig.Engine.IsMoving(1));
+        rig.Actual = new(request.Target.X, request.Target.Y, 700, request.Target.Height);
+        rig.Mover.OnAsyncSent = (_, bounds) => rig.Actual = bounds;
+        rig.Tick(16);
+        Assert.Equal(unchanged, rig.Engine.IsMoving(1));
+        if (unchanged)
+        {
+            Assert.Equal(2, rig.Mover.AsyncBounds.Count);
+            rig.Tick(85);
+        }
+
+        Assert.False(rig.Engine.IsMoving(1));
+        Assert.Equal(new PixelRect(1220, 740, 700, 300), rig.Actual);
+        Assert.True(request.Walls.Contains(rig.Actual));
+        Assert.Equal(3, rig.Mover.AsyncBounds.Count);
+        Assert.Empty(rig.Mover.Bounds);
+        Assert.Empty(rig.Mover.Moves);
+        Assert.Empty(rig.Mover.Batches);
+    }
+
+    /// <summary>最終要求の観測中の取り消しや目標変更で、古い壁への補正を送らない。</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void InvalidationDuringLandingObservationSkipsStaleCorrection(bool retarget)
+    {
+        using var rig = new Rig();
+        rig.Engine.Request(Request());
+        rig.Tick(16);
+        rig.Tick(101);
+        rig.Mover.GetBoundsResult = _ =>
+        {
+            if (retarget)
+            {
+                rig.Engine.Request(Request() with { Target = new(20, 20, 800, 600) });
+            }
+            else
+            {
+                rig.Engine.Cancel(1);
+            }
+
+            return new(1800, 900, 700, 600);
+        };
+        rig.Tick(101);
+        rig.Engine.CancelAll();
+        rig.Engine.Dispose();
+        Assert.Equal(2, rig.Mover.AsyncBounds.Count);
+        Assert.Empty(rig.Mover.Moves);
+        Assert.Empty(rig.Mover.Bounds);
+    }
+
     /// <summary>復元が必要なら最初の送信をせず後退し、位置の移動と着地時の確定を行う。</summary>
     [Fact]
     public void MaximizedWindowDegradesBeforeFirstRequestAndFinishesThroughLand()
@@ -178,7 +293,7 @@ public sealed class LiveResizeTests
         Assert.Equal(count, rig.Mover.AsyncBounds.Count);
     }
 
-    /// <summary>百四十ミリ秒後に反映する対象には、期限後に最終目標だけを送り、以降は送らない。</summary>
+    /// <summary>遅れて届く中間矩形で完了せず、最終要求を観測しても中間矩形を再送しない。</summary>
     [Fact]
     public void TimeoutSendsOnlyFinalAsyncTargetAndNeverRetriesDelayedRequests()
     {
@@ -195,17 +310,20 @@ public sealed class LiveResizeTests
             return rig.Actual;
         };
         rig.Engine.Request(Request());
-        rig.Tick(1);
+        rig.Tick(16);
         rig.Tick(99);
         Assert.Single(rig.Mover.AsyncBounds);
         rig.Tick(2);
         Assert.Equal(2, rig.Mover.AsyncBounds.Count);
-        Assert.False(rig.Engine.IsMoving(1));
+        Assert.True(rig.Engine.IsMoving(1));
         Assert.Equal(Request().Target, rig.Mover.AsyncBounds.Last().Bounds);
         Assert.Equal(2, pending.Count);
-        rig.Frames.Advance(40);
+        rig.Tick(40);
+        Assert.True(rig.Engine.IsMoving(1));
         Assert.Equal(rig.Mover.AsyncBounds.First().Bounds, rig.Mover.GetVisualBounds(1));
-        rig.Frames.Advance(1000);
+        rig.Tick(101);
+        Assert.False(rig.Engine.IsMoving(1));
+        Assert.Equal(Request().Target, rig.Actual);
         rig.Engine.Dispose();
         Assert.Equal(2, rig.Mover.AsyncBounds.Count);
         Assert.Empty(rig.Mover.Moves);
@@ -495,6 +613,8 @@ public sealed class LiveResizeTests
         if (timeout)
         {
             rig.Tick(52);
+            Assert.True(rig.Engine.IsMoving(1));
+            rig.Tick(101);
             Assert.False(rig.Engine.IsMoving(1));
             Assert.Equal(Request().Target, rig.Mover.AsyncBounds.Last().Bounds);
             Assert.Equal(4, rig.Mover.AsyncBounds.Count);
@@ -526,6 +646,8 @@ public sealed class LiveResizeTests
         if (timeout)
         {
             rig.Tick(85);
+            Assert.True(rig.Engine.IsMoving(1));
+            rig.Tick(101);
             Assert.False(rig.Engine.IsMoving(1));
             Assert.Equal(Request().Target, rig.Mover.AsyncBounds.Last().Bounds);
             Assert.Equal(2, rig.Mover.AsyncBounds.Count);
@@ -558,6 +680,8 @@ public sealed class LiveResizeTests
             Assert.Equal(sentCount + 1, rig.Mover.AsyncBounds.Count);
             Assert.Equal(Request().Target, rig.Mover.AsyncBounds.Last().Bounds);
             Assert.Empty(rig.Mover.Bounds);
+            Assert.True(rig.Engine.IsMoving(1));
+            rig.Tick(101);
         }
         else
         {
@@ -570,7 +694,7 @@ public sealed class LiveResizeTests
         Assert.False(rig.Engine.IsMoving(1));
     }
 
-    /// <summary>途中でモーション削減を選ぶと、未反映の Live は目標だけを非同期で送って外れる。</summary>
+    /// <summary>途中でモーション削減を選んでも最終要求の観測を待ち、同期 API を使わない。</summary>
     [Fact]
     public void EnablingReducedMotionWithPendingLiveSendsOnlyFinalAsyncTarget()
     {
@@ -579,6 +703,8 @@ public sealed class LiveResizeTests
         rig.Tick(16);
         rig.Preference.ReduceMotion = true;
         rig.Tick(16);
+        WaitUntil(() => rig.Mover.AsyncBounds.Count == 2);
+        rig.Tick(101);
         WaitUntil(() => !rig.Engine.IsMoving(1));
         Assert.Equal(2, rig.Mover.AsyncBounds.Count);
         Assert.Equal(Request().Target, rig.Mover.AsyncBounds.Last().Bounds);
@@ -609,6 +735,8 @@ public sealed class LiveResizeTests
             rig.Tick(16);
             rig.Tick(101);
             WaitUntil(() => rig.Frames.WaitCalls >= 3);
+            Assert.True(rig.Engine.IsMoving(1));
+            rig.Tick(101);
             Assert.False(rig.Engine.IsMoving(1));
             var count = rig.Mover.Moves.Count;
             var waits = rig.Frames.WaitCalls;
@@ -793,6 +921,9 @@ public sealed class LiveResizeTests
             // 次のフレームからは従来の同期 Land になるため、ここではその対象を取り消す。
             engine.Cancel(1);
             frames.Advance(101);
+            WaitUntil(() => frames.WaitCalls == 3);
+            Assert.True(engine.IsMoving(2));
+            frames.Advance(101);
             WaitUntil(() => !engine.IsMoving(2));
             Assert.Equal(2, api.AsyncCalls);
             Assert.False(entered.IsSet);
@@ -833,6 +964,8 @@ public sealed class LiveResizeTests
         Assert.Single(rig.Mover.AsyncBounds);
         Assert.Empty(rig.Mover.Moves);
         rig.Tick(85);
+        Assert.True(rig.Engine.IsMoving(1));
+        rig.Tick(101);
         Assert.False(rig.Engine.IsMoving(1));
         Assert.Equal(2, rig.Mover.AsyncBounds.Count);
         Assert.Equal(Request().Target, rig.Mover.AsyncBounds.Last().Bounds);
@@ -840,15 +973,17 @@ public sealed class LiveResizeTests
         Assert.Empty(rig.Mover.Bounds);
     }
 
-    /// <summary>期限と同時に矩形が変わっても、反映として次の中間矩形を送らない。</summary>
+    /// <summary>期限と同時の反映でも中間矩形を再送せず、最終要求の反映を待つ。</summary>
     [Fact]
     public void ReflectionAtTimeoutStillSendsFinalTargetAndRemovesEntry()
     {
         using var rig = new Rig();
         rig.Engine.Request(Request());
-        rig.Tick(1);
+        rig.Tick(16);
         rig.Actual = rig.Mover.AsyncBounds.Last().Bounds;
         rig.Tick(100);
+        Assert.True(rig.Engine.IsMoving(1));
+        rig.ReflectAfter(16);
         Assert.False(rig.Engine.IsMoving(1));
         Assert.Equal(2, rig.Mover.AsyncBounds.Count);
         Assert.Equal(Request().Target, rig.Mover.AsyncBounds.Last().Bounds);
