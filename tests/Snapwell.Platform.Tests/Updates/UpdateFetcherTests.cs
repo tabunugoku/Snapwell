@@ -7,6 +7,20 @@ namespace Snapwell.Platform.Tests.Updates;
 /// <summary>実際に通信せず、取得の上限と送信内容を検証する。</summary>
 public sealed class UpdateFetcherTests
 {
+    /// <summary>ビルドのメタデータ (+ 以降の SHA) は User-Agent に含めない。</summary>
+    [Fact]
+    public async Task UserAgentOmitsBuildMetadata()
+    {
+        string? userAgent = null;
+        using var fetcher = new UpdateFetcher("1.2.3+353f59a", new Handler((request, _) =>
+        {
+            userAgent = request.Headers.UserAgent.ToString();
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
+        }));
+        await fetcher.FetchAsync(CancellationToken.None);
+        Assert.Equal("Snapwell/1.2.3", userAgent);
+    }
+
     /// <summary>二つの GET と User-Agent だけを使い、認証と Cookie は送らない。</summary>
     [Fact]
     public async Task FetchesBothFilesWithAnonymousGet()

@@ -30,7 +30,8 @@ public sealed class UpdateFetcher : IUpdateFetcher, IDisposable
     /// <summary>版と任意のテスト用ハンドラーを指定し、ハンドラーの所有権を受け取る。</summary>
     public UpdateFetcher(string version, HttpMessageHandler? handler = null)
     {
-        _userAgent = "Snapwell/" + version;
+        // User-Agent には版だけを入れる。ビルドのメタデータ (+ 以降のコミットの SHA) は含めない。
+        _userAgent = "Snapwell/" + version.Split('+')[0];
         _client = new(handler ?? new HttpClientHandler
         {
             AllowAutoRedirect = false,
