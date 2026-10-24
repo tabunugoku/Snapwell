@@ -80,7 +80,7 @@ public sealed class CenterHotkeyMigrationTests : IDisposable
     [Fact]
     public void VersionElevenIsCurrentAndWritable()
     {
-        Assert.Equal(12, PortableSettings.CurrentSchemaVersion);
+        Assert.Equal(13, PortableSettings.CurrentSchemaVersion);
         File.WriteAllText(SettingsPath, """{"SchemaVersion":11}""");
         Assert.False(SettingsStores.Portable(SettingsPath).Load().IsReadOnly);
     }

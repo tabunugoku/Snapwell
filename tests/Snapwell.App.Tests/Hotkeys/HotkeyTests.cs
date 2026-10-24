@@ -13,6 +13,25 @@ namespace Snapwell.App.Tests.Hotkeys;
 
 public sealed class HotkeyTests
 {
+    /// <summary>ホットキーの移動はサイズが変わる場合だけ現在のタイミングに従う。</summary>
+    [Theory]
+    [InlineData(SizeChangeTiming.OnLand, WindowCommand.LeftHalf, true)]
+    [InlineData(SizeChangeTiming.WhileMoving, WindowCommand.LeftHalf, true)]
+    [InlineData(SizeChangeTiming.OnLand, WindowCommand.SnapAdjacentLeft, false)]
+    [InlineData(SizeChangeTiming.WhileMoving, WindowCommand.SnapAdjacentLeft, false)]
+    public void MovementUsesResizeTiming(SizeChangeTiming timing, WindowCommand command, bool resized)
+    {
+        var fixture = new Fixture();
+        fixture.Settings.ResizeTiming = timing;
+        fixture.Executor.Handle(new((int)command));
+        var request = Assert.Single(fixture.Motion.Requests);
+        Assert.Equal(resized, request.Current.Width != request.Target.Width ||
+            request.Current.Height != request.Target.Height);
+        var expected = !resized ? SizeMode.None
+            : timing == SizeChangeTiming.WhileMoving ? SizeMode.Live : SizeMode.Land;
+        Assert.Equal(expected, request.SizeMode);
+    }
+
     /// <summary>開くキーが矢印に割り当てられていても、表示中の選択操作を優先する。</summary>
     [Fact]
     public void LauncherInputKeepsPriorityOverReopenBinding()
@@ -419,6 +438,7 @@ public sealed class HotkeyTests
         internal FakeInspector Inspector { get; } = new();
         internal FakeMotion Motion { get; } = new();
         internal FakePosition Position { get; }
+        internal PortableSettings Settings { get; } = new();
         internal bool Enabled = true;
         internal int Toggles;
         internal HotkeyCommandExecutor Executor { get; }
@@ -426,7 +446,7 @@ public sealed class HotkeyTests
         internal Fixture(Func<nint, IReadOnlyList<PixelRect>>? neighbors = null)
         {
             Position = new(Inspector);
-            Executor = new(Inspector, new FakeMonitors(), Motion, Position, () => new(),
+            Executor = new(Inspector, new FakeMonitors(), Motion, Position, () => Settings,
                 () => Enabled, () => Toggles++, 999, neighbors: neighbors);
         }
     }

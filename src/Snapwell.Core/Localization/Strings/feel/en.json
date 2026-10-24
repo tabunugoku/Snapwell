@@ -48,6 +48,11 @@
   "Feel_MotionTitle.Text": "Reduce motion",
   "Feel_MotionDescription.Text": "Move straight to the snap target without animation. Also applies when Windows Animation effects are off.",
   "Feel_MotionSwitch.AutomationName": "Reduce motion",
+  "Feel_ResizeTimingTitle.Text": "Size change timing",
+  "Feel_ResizeTimingDescription.Text": "Changing size while moving may cause rendering glitches in some windows.",
+  "Feel_ResizeTimingBox.AutomationName": "Size change timing",
+  "Feel_ResizeTimingOnLand.Content": "Change on landing",
+  "Feel_ResizeTimingWhileMoving.Content": "Change while moving",
   "Feel.State.Custom": "Custom (from {feel})",
   "Feel.State.Preset": "Preset: {feel}"
 }

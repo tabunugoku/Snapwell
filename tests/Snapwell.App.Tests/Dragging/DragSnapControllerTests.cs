@@ -10,6 +10,34 @@ namespace Snapwell.App.Tests.Dragging;
 
 public sealed class DragSnapControllerTests
 {
+    /// <summary>移動時のサイズ変更だけがタイミングの選択に従う。</summary>
+    [Theory]
+    [InlineData(SizeChangeTiming.OnLand, true, (int)SizeMode.Land)]
+    [InlineData(SizeChangeTiming.WhileMoving, true, (int)SizeMode.Live)]
+    [InlineData(SizeChangeTiming.OnLand, false, (int)SizeMode.None)]
+    [InlineData(SizeChangeTiming.WhileMoving, false, (int)SizeMode.None)]
+    public void SizeModeFollowsTimingOnlyWhenResized(SizeChangeTiming timing, bool resized, int expected)
+    {
+        Assert.Equal((SizeMode)expected, DragSnapController.SizeModeFor(new() { ResizeTiming = timing }, resized));
+    }
+
+    /// <summary>離した時点の設定を次の投げの移動要求へ渡す。</summary>
+    [Theory]
+    [InlineData(SizeChangeTiming.OnLand)]
+    [InlineData(SizeChangeTiming.WhileMoving)]
+    public void ThrowUsesCurrentResizeTiming(SizeChangeTiming timing)
+    {
+        var fixture = new Fixture();
+        fixture.Controller.Handle(new MoveSizeStarted(1));
+        fixture.Settings.ResizeTiming = timing;
+        fixture.Controller.Handle(new MouseMoved(0, 0, 0));
+        fixture.Controller.Handle(new MouseMoved(100, 0, 40));
+        fixture.Controller.Handle(new MoveSizeEnded(1, 40));
+        var request = Assert.Single(fixture.Motion.Requests);
+        Assert.True(request.Current.Width != request.Target.Width || request.Current.Height != request.Target.Height);
+        Assert.Equal(timing == SizeChangeTiming.WhileMoving ? SizeMode.Live : SizeMode.Land, request.SizeMode);
+    }
+
     [Theory]
     [InlineData(100u, 0u)]
     [InlineData(95u, 0u)]

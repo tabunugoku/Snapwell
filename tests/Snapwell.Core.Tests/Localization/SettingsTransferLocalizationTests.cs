@@ -174,6 +174,7 @@ public sealed class SettingsTransferLocalizationTests : IDisposable
             Mass = 2,
             SnapMode = SnapMode.Corners,
             ReduceMotion = true,
+            ResizeTiming = SizeChangeTiming.WhileMoving,
             ShowZonePreview = false,
             MagnetStrength = 1.2,
             SnapRadius = 40,

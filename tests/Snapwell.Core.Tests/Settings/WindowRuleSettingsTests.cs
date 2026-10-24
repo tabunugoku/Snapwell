@@ -26,7 +26,7 @@ public sealed class WindowRuleSettingsTests : IDisposable
         Assert.False(loaded.ResetToDefaults);
         Assert.False(loaded.IsReadOnly);
         Assert.Empty(loaded.Value.WindowRules);
-        Assert.Equal(12, loaded.Value.SchemaVersion);
+        Assert.Equal(PortableSettings.CurrentSchemaVersion, loaded.Value.SchemaVersion);
         Assert.Equal(17, loaded.Value.Gap);
         var imported = SettingsTransfer.Read(SettingsPath, new());
         Assert.True(imported.IsSuccess);
@@ -55,7 +55,7 @@ public sealed class WindowRuleSettingsTests : IDisposable
         Assert.False(loaded.ResetToDefaults);
         Assert.Equal(rules, loaded.Value.WindowRules);
         using var document = JsonDocument.Parse(File.ReadAllText(SettingsPath));
-        Assert.Equal(12, document.RootElement.GetProperty("SchemaVersion").GetInt32());
+        Assert.Equal(PortableSettings.CurrentSchemaVersion, document.RootElement.GetProperty("SchemaVersion").GetInt32());
         foreach (var item in document.RootElement.GetProperty("WindowRules").EnumerateArray())
         {
             Assert.Equal(JsonValueKind.String, item.GetProperty("Placement").ValueKind);
@@ -197,7 +197,7 @@ public sealed class WindowRuleSettingsTests : IDisposable
     [Fact]
     public void FutureVersionsRemainReadOnlyAndKeepTheirRulesUntouched()
     {
-        const string json = """{"SchemaVersion":13,"WindowRules":[{"FutureProperty":true}]}""";
+        const string json = """{"SchemaVersion":14,"WindowRules":[{"FutureProperty":true}]}""";
         File.WriteAllText(SettingsPath, json);
         var store = SettingsStores.Portable(SettingsPath);
         Assert.True(store.Load().IsReadOnly);

@@ -48,6 +48,11 @@
   "Feel_MotionTitle.Text": "動きを減らす",
   "Feel_MotionDescription.Text": "オンにすると、アニメーションせずに吸着先へすぐ移動します。Windows の「アニメーション効果」がオフのときも同じです",
   "Feel_MotionSwitch.AutomationName": "動きを減らす",
+  "Feel_ResizeTimingTitle.Text": "サイズの変え方",
+  "Feel_ResizeTimingDescription.Text": "移動しながら変えると、ウィンドウによっては描画が乱れることがあります",
+  "Feel_ResizeTimingBox.AutomationName": "サイズの変え方",
+  "Feel_ResizeTimingOnLand.Content": "着地時に変える",
+  "Feel_ResizeTimingWhileMoving.Content": "移動しながら変える",
   "Feel.State.Custom": "カスタム（{feel} から変更）",
   "Feel.State.Preset": "プリセット: {feel}"
 }

@@ -113,6 +113,7 @@ internal sealed class ResizeSnapController(IWindowInspector inspector, IMonitorS
                 return;
             }
 
+            // 手動リサイズで決めた寸法は移動中に変えず、区画への補正だけを着地時に適用する。
             motion.Request(new(end.Handle, window.VisualBounds, plan.Target, plan.Walls,
                 options.ToFeelPreset(), SizeMode: SizeMode.Land));
             if (options.ShowZonePreview && ShowPreview(plan.Target))

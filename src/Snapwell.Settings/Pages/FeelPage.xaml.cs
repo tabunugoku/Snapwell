@@ -51,6 +51,7 @@ public sealed partial class FeelPage : Page
         var value = session.Current;
         IsEnabled = !session.IsReadOnly;
         ModeBox.SelectedIndex = value.SnapMode == SnapMode.Corners ? 1 : 0;
+        ResizeTimingBox.SelectedIndex = value.ResizeTiming == SizeChangeTiming.WhileMoving ? 1 : 0;
         MotionSwitch.IsOn = value.ReduceMotion;
         foreach (var tuning in _tunings)
         {
@@ -197,6 +198,15 @@ public sealed partial class FeelPage : Page
         {
             var mode = ModeBox.SelectedIndex == 1 ? SnapMode.Corners : SnapMode.Zones;
             _session.Update(_session.Current with { SnapMode = mode });
+        }
+    }
+
+    private void ResizeTiming_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_refreshing)
+        {
+            var timing = ResizeTimingBox.SelectedIndex == 1 ? SizeChangeTiming.WhileMoving : SizeChangeTiming.OnLand;
+            _session.Update(_session.Current with { ResizeTiming = timing });
         }
     }
 
