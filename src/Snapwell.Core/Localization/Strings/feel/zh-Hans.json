@@ -48,6 +48,11 @@
   "Feel_MotionTitle.Text": "减少动画",
   "Feel_MotionDescription.Text": "开启后，不播放动画，直接移到吸附目标。关闭 Windows 的“动画效果”时也相同",
   "Feel_MotionSwitch.AutomationName": "减少动画",
+  "Feel_ResizeTimingTitle.Text": "调整大小的时机",
+  "Feel_ResizeTimingDescription.Text": "在移动时调整大小，可能会导致某些窗口出现绘制异常",
+  "Feel_ResizeTimingBox.AutomationName": "调整大小的时机",
+  "Feel_ResizeTimingOnLand.Content": "停下时调整",
+  "Feel_ResizeTimingWhileMoving.Content": "移动时调整",
   "Feel.State.Custom": "自定义（由 {feel} 修改）",
   "Feel.State.Preset": "预设：{feel}"
 }

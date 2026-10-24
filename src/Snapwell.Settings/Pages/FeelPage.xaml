@@ -348,22 +348,42 @@
 
             <TextBlock l:Loc.Uid="Feel_AccessibilityTitle" Style="{StaticResource SnapwellGroupTitleStyle}" />
             <Border Style="{StaticResource SnapwellRowsBorderStyle}">
-                <Grid Style="{StaticResource SnapwellRowGridStyle}">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <StackPanel VerticalAlignment="Center">
-                        <TextBlock l:Loc.Uid="Feel_MotionTitle" Style="{StaticResource SnapwellRowTitleStyle}" />
-                        <TextBlock l:Loc.Uid="Feel_MotionDescription"
-                                   Style="{StaticResource SnapwellRowDescriptionStyle}" />
-                    </StackPanel>
-                    <ToggleSwitch l:Loc.Uid="Feel_MotionSwitch" x:Name="MotionSwitch" Grid.Column="1"
-                                  OnContent="" OffContent="" MinWidth="0"
-                                  Style="{StaticResource SnapwellToggleSwitchStyle}"
-                                  VerticalAlignment="Center"
-                                  Toggled="Motion_Toggled" />
-                </Grid>
+                <StackPanel>
+                    <Grid Style="{StaticResource SnapwellRowGridStyle}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock l:Loc.Uid="Feel_ResizeTimingTitle" Style="{StaticResource SnapwellRowTitleStyle}" />
+                            <TextBlock l:Loc.Uid="Feel_ResizeTimingDescription" TextWrapping="Wrap"
+                                       Style="{StaticResource SnapwellRowDescriptionStyle}" />
+                        </StackPanel>
+                        <ComboBox l:Loc.Uid="Feel_ResizeTimingBox" x:Name="ResizeTimingBox" Grid.Column="1"
+                                  Width="240" VerticalAlignment="Center"
+                                  SelectionChanged="ResizeTiming_SelectionChanged">
+                            <ComboBoxItem l:Loc.Uid="Feel_ResizeTimingOnLand" />
+                            <ComboBoxItem l:Loc.Uid="Feel_ResizeTimingWhileMoving" />
+                        </ComboBox>
+                    </Grid>
+                    <Border Style="{StaticResource SnapwellRowDividerStyle}" />
+                    <Grid Style="{StaticResource SnapwellRowGridStyle}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock l:Loc.Uid="Feel_MotionTitle" Style="{StaticResource SnapwellRowTitleStyle}" />
+                            <TextBlock l:Loc.Uid="Feel_MotionDescription"
+                                       Style="{StaticResource SnapwellRowDescriptionStyle}" />
+                        </StackPanel>
+                        <ToggleSwitch l:Loc.Uid="Feel_MotionSwitch" x:Name="MotionSwitch" Grid.Column="1"
+                                      OnContent="" OffContent="" MinWidth="0"
+                                      Style="{StaticResource SnapwellToggleSwitchStyle}"
+                                      VerticalAlignment="Center"
+                                      Toggled="Motion_Toggled" />
+                    </Grid>
+                </StackPanel>
             </Border>
         </StackPanel>
     </ScrollViewer>
