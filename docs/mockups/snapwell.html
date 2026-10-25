@@ -1385,11 +1385,12 @@ function loop(t) {
   rafId = bodies.size ? requestAnimationFrame(loop) : 0;
 }
 
-/** ウィンドウ 1 枚の 2D のばね。位置は壁で止め、サイズは着地時かなめらかに変える */
+/** ウィンドウ 1 枚の 2D のばね。位置は壁で止め、サイズは着地時か、行き過ぎないなめらかな動きで変える */
 class WindowBody {
   constructor(win, from, to, vel, feel, opts) {
     this.win = win;
     this.s = { ...from };
+    this.from = { ...from };
     this.v = { x: vel.x, y: vel.y, w: 0, h: 0 };
     this.to = to;
     this.sp = springOf(feel);
@@ -1398,11 +1399,22 @@ class WindowBody {
   }
   step(dt) {
     const { m, k, c } = this.sp;
-    const axes = this.opts.sizeMode === 'smooth' ? ['x', 'y', 'w', 'h'] : ['x', 'y'];
+    const smooth = this.opts.sizeMode === 'smooth';
+    const axes = smooth ? ['x', 'y', 'w', 'h'] : ['x', 'y'];
+    // サイズは実装と同じく行き過ぎさせない: 減衰を臨界以上にし、開始値と目標の間に収める
+    // (他プロセスのウィンドウは最小サイズを下回れず、作業領域の外へも広げられないため)
+    const cSize = Math.max(c, 2 * Math.sqrt(k * m));
     for (const a of axes) {
-      const force = -k * (this.s[a] - this.to[a]) - c * this.v[a];
+      const sized = a === 'w' || a === 'h';
+      const force = -k * (this.s[a] - this.to[a]) - (sized ? cSize : c) * this.v[a];
       this.v[a] += (force / m) * dt;
       this.s[a] += this.v[a] * dt;
+      if (sized) {
+        const lo = Math.min(this.from[a], this.to[a]);
+        const hi = Math.max(this.from[a], this.to[a]);
+        if (this.s[a] <= lo && this.v[a] < 0) { this.s[a] = lo; this.v[a] = 0; }
+        else if (this.s[a] >= hi && this.v[a] > 0) { this.s[a] = hi; this.v[a] = 0; }
+      }
     }
     // 壁: 作業領域の内側で止め、はみ出した描画をしない (着地前のサイズでも目標には届くように広げる)
     const W = this.opts.areaW;
