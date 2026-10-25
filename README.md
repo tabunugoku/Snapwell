@@ -19,7 +19,7 @@ The Japanese original of this page is folded at the bottom. 日本語の原文�
 - From the speed you let go with, Snapwell predicts where a window would stop, then carries it to a zone or a corner with a spring, a magnet and walls.
 - Work with hotkeys, a launcher and a tray menu.
 - Native on x64 and ARM64. There is no x86 build.
-- No network access, and no DLL is injected into other apps.
+- Network access is only for an optional update check, and no DLL is injected into other apps.
 
 ## Features in detail
 
@@ -101,6 +101,7 @@ Starting at sign-in is also not registered until you turn it on. Turning it off 
 - You can import and export settings.
 - The interface is available in Japanese and English, and follows the Windows display language by default.
 - On first launch, a setup in the settings window lets you decide the standard features, hotkeys and grid in turn.
+- By default, Snapwell does not check for updates. When you turn on automatic checks or click Check now, it checks GitHub Releases for new versions without downloading anything automatically.
 
 ## Requirements
 
@@ -183,7 +184,7 @@ This policy is written to apply for free code signing from SignPath Foundation. 
 
 This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it.
 
-Snapwell does no analytics or tracking, has no accounts, and does not check for updates or send anything automatically. It stores settings only on this PC, in these folders:
+By default, Snapwell makes no network connections. It does no analytics or tracking, has no accounts, and sends nothing else automatically. Only when you turn on automatic update checks or click Check now does it send a GET request to GitHub Releases for update information. It sends only the GET request and a User-Agent header (`Snapwell/<version>`), with no identifiers or usage data (GitHub can see your IP address). Snapwell stores settings only on this PC, in these folders:
 
 - `%APPDATA%\Snapwell\` (settings)
 - `%LOCALAPPDATA%\Snapwell\` (the state of this PC, and the saved original values of OS settings)
@@ -212,7 +213,7 @@ Snapwell は Windows 11 用のウィンドウマネージャーです。ウィ�
 - 離した速さから止まる位置を予測し、ばね、磁石、壁でウィンドウを区画や四隅に運びます。
 - ホットキー、ランチャー、トレイのメニューで操作します。
 - x64 と ARM64 のネイティブ版です。x86 は対象外です。
-- ネットワークにはつながず、DLL を他のアプリに差し込むこともしません。
+- 通信は利用者が有効にした更新の確認だけで、DLL を他のアプリに差し込むこともしません。
 
 ## 機能の詳細
 
@@ -294,6 +295,7 @@ Snapwell が OS の設定を変えるのは、利用者が同意して設定画�
 - 設定のインポートとエクスポートができます。
 - 画面の言語は日本語と英語です。既定では Windows の表示言語に合わせます。
 - 初回の起動では、設定画面のセットアップが開き、標準機能、ホットキー、分割案を順に決められます。
+- 更新の確認は既定で無効です。自動確認を有効にしたときや「今すぐ確認」を押したときだけ GitHub Releases に問い合わせ、新しい版の案内を表示します。アプリ内での自動ダウンロードは行いません。
 
 ## 動作環境
 
@@ -376,7 +378,7 @@ Free code signing provided by [SignPath.io](https://about.signpath.io/), certifi
 
 This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it.
 
-Snapwell は解析、トラッキング、アカウント、更新の確認、自動送信をしません。設定は次のファイルに、この PC の中だけで保存します。
+Snapwell は既定ではどこにも通信しません。解析、トラッキング、アカウント、それ以外の自動送信は行いません。利用者が「更新を自動で確認する」を有効にしたときや「今すぐ確認」を押したときだけ、GitHub Releases へ GET 要求を送って更新を確認します。送信するのは GET 要求と User-Agent（`Snapwell/<版>`）だけで、識別子や利用状況は送信しません（接続先の GitHub には IP アドレスが見えます）。設定は次のファイルに、この PC の中だけで保存します。
 
 - `%APPDATA%\Snapwell\`（設定）
 - `%LOCALAPPDATA%\Snapwell\`（この PC の状態と、OS の設定の退避値）
