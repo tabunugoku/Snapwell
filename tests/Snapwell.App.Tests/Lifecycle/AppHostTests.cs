@@ -1445,7 +1445,7 @@ public sealed class AppHostTests
     {
         var json = """
             {"version":"1.2.0","publishedAt":"2026-10-23T00:00:00Z",
-            "releaseNotesUrl":"https://example.com/notes","files":{"win-arm64":{"url":"https://example.com/app.zip",
+            "releaseNotesUrl":"https://example.com/notes","files":{"win-arm64":{"url":"https://github.com/app.zip",
             "sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","size":123}}}
             """;
         var manifest = UpdateManifestParser.Parse(System.Text.Encoding.UTF8.GetBytes(json)).Manifest!;

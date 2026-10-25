@@ -94,7 +94,7 @@ public sealed class UpdateCheckerTests
             var bytes = Encoding.UTF8.GetBytes("""
                 {"version":"1.2.0","publishedAt":"2026-10-23T00:00:00Z",
                 "releaseNotesUrl":"https://example.com/notes","minimumSupported":"1.1.0",
-                "files":{"win-arm64":{"url":"https://example.com/arm64.zip",
+                "files":{"win-arm64":{"url":"https://github.com/arm64.zip",
                 "sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","size":123}}}
                 """);
             Fetcher.Result = new(bytes, ManifestSignature.Sign(bytes, keys.PrivateKeyPkcs8Base64));

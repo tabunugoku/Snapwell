@@ -44,7 +44,8 @@ public static class UpdateManifestParser
             {
                 if (data.Files is null || !data.Files.TryGetValue(rid, out var element)) { continue; }
                 var asset = element.Deserialize(UpdateJsonContext.Default.AssetData);
-                if (asset is null || !TryUrl(asset.Url, out var url) || asset.Size is null or <= 0
+                if (asset is null || !TryUrl(asset.Url, out var url) || asset.Size is null
+                    || !UpdateDownloadPolicy.IsAllowed(url!, asset.Size.Value)
                     || asset.Sha256 is not { Length: 64 } || !asset.Sha256.All(Uri.IsHexDigit))
                 {
                     return Failure($"Invalid files.{rid}.");

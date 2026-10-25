@@ -378,7 +378,7 @@ public sealed class UpdatePageModelTests
     private static byte[] ManifestBytes() => Encoding.UTF8.GetBytes("""
         {"version":"1.2.0","publishedAt":"2026-10-23T00:00:00Z",
         "summary":{"ja":"Japanese summary","en":"English summary"},
-        "releaseNotesUrl":"https://example.com/notes","files":{"win-arm64":{"url":"https://example.com/app.zip",
+        "releaseNotesUrl":"https://example.com/notes","files":{"win-arm64":{"url":"https://github.com/app.zip",
         "sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","size":123}}}
         """);
 
