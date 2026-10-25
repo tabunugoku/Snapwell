@@ -143,6 +143,67 @@
                     </Grid>
                 </StackPanel>
             </Border>
+
+            <TextBlock l:Loc.Uid="General_UpdatesTitle" Style="{StaticResource SnapwellGroupTitleStyle}" />
+            <Border Style="{StaticResource SnapwellRowsBorderStyle}">
+                <StackPanel>
+                    <Grid Style="{StaticResource SnapwellRowGridStyle}" ColumnSpacing="20">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock l:Loc.Uid="General_UpdateAutoTitle" Style="{StaticResource SnapwellRowTitleStyle}" />
+                            <TextBlock l:Loc.Uid="General_UpdateAutoDescription" TextWrapping="Wrap"
+                                       Style="{StaticResource SnapwellRowDescriptionStyle}" />
+                        </StackPanel>
+                        <ToggleSwitch x:Name="UpdateAutoToggle" Grid.Column="1" OnContent="" OffContent="" MinWidth="0"
+                                      IsEnabled="False" Style="{StaticResource SnapwellToggleSwitchStyle}"
+                                      VerticalAlignment="Center" l:Loc.Uid="General_UpdateAutoToggle"
+                                      Toggled="UpdateAuto_Toggled" />
+                    </Grid>
+                    <Border Style="{StaticResource SnapwellRowDividerStyle}" />
+                    <Grid Style="{StaticResource SnapwellRowGridStyle}" ColumnSpacing="20">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock l:Loc.Uid="General_UpdateCheckNowTitle" Style="{StaticResource SnapwellRowTitleStyle}" />
+                            <TextBlock l:Loc.Uid="General_UpdateCheckNowDescription" TextWrapping="Wrap"
+                                       Style="{StaticResource SnapwellRowDescriptionStyle}" />
+                            <TextBlock x:Name="UpdateStatus" TextWrapping="Wrap"
+                                       AutomationProperties.LiveSetting="Polite"
+                                       Style="{StaticResource SnapwellRowDescriptionStyle}" />
+                            <TextBlock x:Name="UpdateLastChecked" TextWrapping="Wrap" Visibility="Collapsed"
+                                       Style="{StaticResource SnapwellRowDescriptionStyle}" />
+                        </StackPanel>
+                        <Button x:Name="UpdateCheckNowButton" Grid.Column="1" VerticalAlignment="Center"
+                                l:Loc.Uid="General_UpdateCheckNowButton" IsEnabled="False"
+                                Click="UpdateCheckNow_Click" />
+                    </Grid>
+                    <StackPanel x:Name="UpdateOfferPanel" Visibility="Collapsed">
+                        <Border Style="{StaticResource SnapwellRowDividerStyle}" />
+                        <StackPanel Padding="20,16" Spacing="10">
+                            <TextBlock x:Name="UpdateOfferTitle" TextWrapping="Wrap"
+                                       Style="{StaticResource SnapwellRowTitleStyle}" />
+                            <TextBlock x:Name="UpdateOfferRequired"
+                                       TextWrapping="Wrap" Foreground="{ThemeResource SnapwellYellowTextBrush}"
+                                       Style="{StaticResource SnapwellRowDescriptionStyle}" />
+                            <TextBlock x:Name="UpdateOfferSummary" TextWrapping="Wrap"
+                                       Style="{StaticResource SnapwellRowDescriptionStyle}" />
+                            <VariableSizedWrapGrid Orientation="Horizontal" MaximumRowsOrColumns="3">
+                                <Button l:Loc.Uid="General_UpdateDownload" Margin="0,0,8,8"
+                                        Click="UpdateDownload_Click" />
+                                <Button l:Loc.Uid="General_UpdateReleaseNotes" Margin="0,0,8,8"
+                                        Click="UpdateReleaseNotes_Click" />
+                                <Button x:Name="UpdateSkipButton" l:Loc.Uid="General_UpdateSkip" Margin="0,0,0,8"
+                                        Click="UpdateSkip_Click" />
+                            </VariableSizedWrapGrid>
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
         </StackPanel>
     </ScrollViewer>
 </Page>
