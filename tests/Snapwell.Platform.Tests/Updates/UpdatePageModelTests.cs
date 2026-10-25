@@ -10,6 +10,92 @@ namespace Snapwell.Platform.Tests.Updates;
 /// <summary>WinUI を起動せず、更新画面の表示と保存結果を検証する。</summary>
 public sealed class UpdatePageModelTests
 {
+    /// <summary>読み取りの配送前に保存が完了した場合、古いスイッチもスキップ済みの案内も反映しない。</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ReadStartedBeforeSaveCannotRollBackAutomaticOrSkip(bool skip)
+    {
+        var session = new UpdatePageSession();
+        var store = new Store();
+        var generation = session.Generation;
+        var delayedRead = store.Load().Value;
+
+        if (skip)
+        {
+            await session.SaveAsync(() => UpdatePageModel.Skip(store, "1.2.0"));
+        }
+        else
+        {
+            await session.SaveAsync(() => UpdatePageModel.SetAutomatic(store, true, false));
+        }
+        var displayed = store.Value;
+        if (session.CanApply(generation, cancelled: false)) { displayed = delayedRead; }
+
+        Assert.False(session.CanApply(generation, cancelled: false));
+        Assert.Equal(skip ? "1.2.0" : null, displayed.SkippedVersion);
+        Assert.Equal(!skip, displayed.UpdateCheckEnabled);
+        Assert.True(session.CanApply(session.Generation, cancelled: false));
+        Assert.False(session.CanApply(session.Generation, cancelled: true));
+    }
+
+    /// <summary>保存で待たされても呼び出し元を返し、完了までコントロールと再保存を無効にする。</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task PendingSaveRunsOffCallerAndRejectsRepeatedClicks(bool skip)
+    {
+        var session = new UpdatePageSession();
+        var store = new Store();
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var calls = 0;
+        var generation = session.Generation;
+        var pending = session.SaveAsync(() =>
+        {
+            Interlocked.Increment(ref calls);
+            started.SetResult();
+            release.Task.WaitAsync(TimeSpan.FromSeconds(10)).GetAwaiter().GetResult();
+            return skip ? UpdatePageModel.Skip(store, "1.2.0")
+                : DeviceStateChanges.Update(store, state => state with { UpdateCheckEnabled = true });
+        });
+        try
+        {
+            Assert.True(session.IsSaving);
+            Assert.False(pending.IsCompleted);
+            Assert.False(session.CanApply(generation, cancelled: false));
+            await started.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            Assert.Null(await session.SaveAsync(() =>
+            {
+                Interlocked.Increment(ref calls);
+                return new DeviceState();
+            }));
+            Assert.Equal(1, calls);
+        }
+        finally { release.TrySetResult(); }
+        await pending;
+        Assert.False(session.IsSaving);
+        Assert.True(session.CanApply(generation + 1, cancelled: false));
+    }
+
+    /// <summary>保存失敗後の実際のスイッチを、配送待ちの古い読み取りで上書きしない。</summary>
+    [Fact]
+    public async Task FailedSaveRestoresPersistedToggleAndInvalidatesPendingRead()
+    {
+        var session = new UpdatePageSession();
+        var store = new Store { FailSave = true, Value = new() { UpdateCheckEnabled = true } };
+        var generation = session.Generation;
+
+        var result = await session.SaveAsync(() => UpdatePageModel.SetAutomatic(store, false, true));
+
+        Assert.NotNull(result);
+        Assert.False(result.Saved);
+        Assert.True(result.Enabled);
+        Assert.True(result.CanWrite);
+        Assert.False(session.IsSaving);
+        Assert.False(session.CanApply(generation, cancelled: false));
+    }
+
     /// <summary>失敗の診断を含めず、結果の種類だけから表示キーを選ぶ。</summary>
     [Theory]
     [InlineData(UpdateCheckOutcome.UpToDate, "General_UpdateStatusUpToDate")]

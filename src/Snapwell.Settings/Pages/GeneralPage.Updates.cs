@@ -24,7 +24,9 @@ public sealed partial class GeneralPage
     };
     private bool _syncingUpdates = true;
     private bool _automaticUpdateEnabled;
+    private bool _updateCanWrite;
     private bool _updateBusy;
+    private UpdatePageSession _updateSession = new();
     private CancellationTokenSource? _updatePageStop;
     private UpdateOffer? _updateOffer;
 
@@ -32,12 +34,17 @@ public sealed partial class GeneralPage
     {
         var stop = new CancellationTokenSource();
         _updatePageStop = stop;
+        var session = new UpdatePageSession();
+        _updateSession = session;
+        var generation = session.Generation;
+        _updateBusy = false;
+        _updateCanWrite = false;
         UpdateCheckNowButton.IsEnabled = false;
-        UpdateAutoToggle.IsEnabled = false;
+        RefreshUpdateSaveControls();
         try
         {
             var restored = await Task.Run(() => ReadUpdateState(), stop.Token);
-            if (stop.IsCancellationRequested) { return; }
+            if (!session.CanApply(generation, stop.IsCancellationRequested)) { return; }
             ApplyUpdateState(restored.State, restored.Offer);
         }
         catch (OperationCanceledException) { }
@@ -86,19 +93,40 @@ public sealed partial class GeneralPage
         try
         {
             _automaticUpdateEnabled = enabled;
+            _updateCanWrite = canWrite;
             UpdateAutoToggle.IsOn = enabled;
-            UpdateAutoToggle.IsEnabled = canWrite;
+            RefreshUpdateSaveControls();
         }
         finally { _syncingUpdates = false; }
     }
 
-    private void UpdateAuto_Toggled(object sender, RoutedEventArgs args)
+    private void RefreshUpdateSaveControls()
     {
-        if (_syncingUpdates) { return; }
+        UpdateAutoToggle.IsEnabled = _updateCanWrite && !_updateSession.IsSaving;
+        UpdateSkipButton.IsEnabled = _updateCanWrite && !_updateSession.IsSaving && _updateOffer is not null;
+    }
+
+    private async void UpdateAuto_Toggled(object sender, RoutedEventArgs args)
+    {
+        var session = _updateSession;
+        if (_syncingUpdates || session.IsSaving || _updatePageStop is not { } stop) { return; }
         ErrorNotice.IsOpen = false;
-        var result = UpdatePageModel.SetAutomatic(_deviceStore, UpdateAutoToggle.IsOn, _automaticUpdateEnabled);
-        SetUpdateToggle(result.Enabled, result.CanWrite);
-        if (!result.Saved) { ReportEnabledFailure(UiText.Current.Get("General_UpdateSaveFailed")); }
+        var enabled = UpdateAutoToggle.IsOn;
+        var previous = _automaticUpdateEnabled;
+        var generation = session.Generation + 1;
+        var pending = session.SaveAsync(() => UpdatePageModel.SetAutomatic(_deviceStore, enabled, previous));
+        RefreshUpdateSaveControls();
+        try
+        {
+            var result = await pending;
+            if (result is null || !session.CanApply(generation, stop.IsCancellationRequested)) { return; }
+            SetUpdateToggle(result.Enabled, result.CanWrite);
+            if (!result.Saved) { ReportEnabledFailure(UiText.Current.Get("General_UpdateSaveFailed")); }
+        }
+        finally
+        {
+            if (!stop.IsCancellationRequested) { RefreshUpdateSaveControls(); }
+        }
     }
 
     private async void UpdateCheckNow_Click(object sender, RoutedEventArgs args)
@@ -115,13 +143,22 @@ public sealed partial class GeneralPage
             var checker = new UpdateChecker(fetcher, _deviceStore, _updateVersion,
                 UpdatePublicKey.Current, _updateArchitecture);
             var token = stop.Token;
+            var session = _updateSession;
+            var checkGeneration = session.Generation;
             var result = await Task.Run(() => checker.CheckAsync(token), token);
             if (stop.IsCancellationRequested) { return; }
             var key = UpdatePageModel.StatusKey(result.Outcome);
-            UpdateStatus.Text = key is null ? "" : UiText.Current.Get(key);
+            if (session.CanApply(checkGeneration, stop.IsCancellationRequested))
+            {
+                UpdateStatus.Text = key is null ? "" : UiText.Current.Get(key);
+            }
             // 確認中の本体によるスキップや新しいキャッシュも最新値から再評価する。
+            var generation = session.Generation;
             var restored = await Task.Run(() => ReadUpdateState(), token);
-            if (!stop.IsCancellationRequested) { ApplyUpdateState(restored.State, restored.Offer); }
+            if (session.CanApply(generation, stop.IsCancellationRequested))
+            {
+                ApplyUpdateState(restored.State, restored.Offer);
+            }
         }
         catch (OperationCanceledException) { }
         catch (Exception exception) when (UpdatePageModel.IsSaveFailure(exception))
@@ -130,8 +167,11 @@ public sealed partial class GeneralPage
         }
         finally
         {
-            _updateBusy = false;
-            if (!stop.IsCancellationRequested) { UpdateCheckNowButton.IsEnabled = true; }
+            if (!stop.IsCancellationRequested)
+            {
+                _updateBusy = false;
+                UpdateCheckNowButton.IsEnabled = true;
+            }
         }
     }
 
@@ -140,28 +180,42 @@ public sealed partial class GeneralPage
         _updateOffer = offer;
         var panel = UpdatePageModel.Panel(offer, UiText.Current.Language);
         UpdateOfferPanel.Visibility = panel is null ? Visibility.Collapsed : Visibility.Visible;
+        RefreshUpdateSaveControls();
         if (panel is null) { return; }
         UpdateOfferTitle.Text = UiText.Current.Format("General_UpdateOfferTitle", ("version", panel.Version));
         UpdateOfferRequired.Text = UiText.Current.Get("General_UpdateOfferRequired");
         UpdateOfferRequired.Visibility = panel.RequiresUpdate ? Visibility.Visible : Visibility.Collapsed;
         UpdateOfferSummary.Text = panel.Summary;
         UpdateOfferSummary.Visibility = panel.Summary.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
-        UpdateSkipButton.IsEnabled = canWrite;
+        UpdateSkipButton.IsEnabled = canWrite && !_updateSession.IsSaving;
     }
 
-    private void UpdateSkip_Click(object sender, RoutedEventArgs args)
+    private async void UpdateSkip_Click(object sender, RoutedEventArgs args)
     {
-        if (_updateOffer is not { } offer) { return; }
+        var session = _updateSession;
+        if (session.IsSaving || _updatePageStop is not { } stop || _updateOffer is not { } offer) { return; }
         ErrorNotice.IsOpen = false;
+        var generation = session.Generation + 1;
+        var version = offer.Manifest.Version.ToString();
+        var pending = session.SaveAsync(() => UpdatePageModel.Skip(_deviceStore, version));
+        RefreshUpdateSaveControls();
         try
         {
-            UpdatePageModel.Skip(_deviceStore, offer.Manifest.Version.ToString());
+            var saved = await pending;
+            if (saved is null || !session.CanApply(generation, stop.IsCancellationRequested)) { return; }
             ShowUpdateOffer(null, true);
             UpdateStatus.Text = UiText.Current.Get("General_UpdateStatusSkipped");
         }
         catch (Exception exception) when (UpdatePageModel.IsSaveFailure(exception))
         {
-            ReportEnabledFailure(UiText.Current.Get("General_UpdateSaveFailed"));
+            if (session.CanApply(generation, stop.IsCancellationRequested))
+            {
+                ReportEnabledFailure(UiText.Current.Get("General_UpdateSaveFailed"));
+            }
+        }
+        finally
+        {
+            if (!stop.IsCancellationRequested) { RefreshUpdateSaveControls(); }
         }
     }
 

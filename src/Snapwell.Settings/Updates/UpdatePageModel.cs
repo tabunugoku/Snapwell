@@ -11,6 +11,31 @@ internal sealed record UpdatePanel(string Version, bool RequiresUpdate, string S
 /// <summary>保存結果に合わせたスイッチの状態。</summary>
 internal sealed record UpdateToggleResult(bool Enabled, bool CanWrite, bool Saved);
 
+/// <summary>ページごとの保存を直列化し、古い読み取りによる表示の巻き戻りを防ぐ。</summary>
+internal sealed class UpdatePageSession
+{
+    internal int Generation { get; private set; }
+    internal bool IsSaving { get; private set; }
+
+    /// <summary>保存中と、保存やページの破棄より前の結果は反映しない。</summary>
+    internal bool CanApply(int generation, bool cancelled) =>
+        !cancelled && !IsSaving && generation == Generation;
+
+    /// <summary>保存と失敗後の読み直しをワーカーへ渡し、連打は受け付けない。</summary>
+    internal async Task<T?> SaveAsync<T>(Func<T> save) where T : class
+    {
+        if (IsSaving) { return null; }
+        IsSaving = true;
+        try { return await Task.Run(save); }
+        finally
+        {
+            // 失敗後に読み直した実際の値も、保存前の読み取りで上書きさせない。
+            Generation++;
+            IsSaving = false;
+        }
+    }
+}
+
 /// <summary>WinUI に依存しない、更新画面の表示と保存の判断。</summary>
 internal static class UpdatePageModel
 {
