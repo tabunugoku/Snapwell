@@ -318,6 +318,8 @@ internal sealed class AppHost
     {
         try
         {
+            var presentation = _tray as ITrayUpdateGeneration;
+            var generation = presentation?.BeginUpdateOffer() ?? 0;
             // 署名の検証はトレイ・入力フック・移動のスレッドから切り離す。
             var offer = await Task.Run(() => _resolveUpdateOffer(state)).ConfigureAwait(false);
             if (Volatile.Read(ref _shutdown) != 0) { return; }
@@ -328,7 +330,8 @@ internal sealed class AppHost
                     if (CanOperate() && version == _deviceReloadVersion && !_deviceReadOnly
                         && _tray is ITrayUpdateSink sink)
                     {
-                        sink.SetUpdateOffer(offer);
+                        if (presentation is not null) { presentation.SetUpdateOffer(offer, generation); }
+                        else { sink.SetUpdateOffer(offer); }
                     }
                 }
             });
