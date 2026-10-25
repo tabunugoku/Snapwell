@@ -23,6 +23,13 @@ public sealed class UpdateDownloader : IDisposable
     private readonly string _userAgent;
     private readonly Func<Uri, bool> _allowedHost;
     private readonly TimeSpan _idleTimeout;
+    private bool _enforceReleasePolicy;
+
+    /// <summary>正式配布の URL・サイズと、GitHub の転送先の制約を結線する。</summary>
+    public static UpdateDownloader CreateForRelease(string version) => CreateForRelease(version, null);
+
+    internal static UpdateDownloader CreateForRelease(string version, HttpMessageHandler? handler) =>
+        new(version, UpdateDownloadPolicy.IsAllowedRedirectHost, handler) { _enforceReleasePolicy = true };
 
     /// <summary>版とホストの許可条件を指定し、任意のハンドラーの所有権を受け取る。</summary>
     public UpdateDownloader(string version, Func<Uri, bool> allowedHost, HttpMessageHandler? handler = null)
@@ -58,6 +65,13 @@ public sealed class UpdateDownloader : IDisposable
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
+            if (_enforceReleasePolicy && !UpdateDownloadPolicy.IsAllowed(asset.Url, asset.Size))
+            {
+                // i18n-keep: 画面に出さない開発者向けの診断。通信前の拒否を HTTP の許可失敗に寄せる。
+                return asset.Size is < 1 or > UpdateDownloadPolicy.MaximumPackageBytes
+                    ? new(UpdateDownloadFailure.SizeMismatch, "Asset size is outside the release policy.")
+                    : new(UpdateDownloadFailure.HttpStatus, "Asset URL is forbidden by the release policy.");
+            }
             if (File.Exists(destinationPath))
             {
                 return new(UpdateDownloadFailure.IoError, "Destination file already exists.");

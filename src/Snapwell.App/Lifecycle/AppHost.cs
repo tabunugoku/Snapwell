@@ -24,6 +24,7 @@ internal sealed class AppHost
 
     private readonly object _gate = new();
     private readonly string? _osTag;
+    private readonly IResidentUpdateSignals? _updateSignals;
     private readonly ISingleInstance _instance;
     private readonly ISnapGuard _guard;
     private readonly ISettingsStore<PortableSettings> _portableStore;
@@ -72,8 +73,9 @@ internal sealed class AppHost
         Action? openSetup = null, ISettingsWatcher? deviceWatcher = null,
         Func<TimeSpan, CancellationToken, Task>? retryDelay = null, ISettingsSyncService? sync = null,
         Action<bool>? setReplaceWinArrow = null, string? osTag = null,
-        Func<DeviceState, UpdateOffer?>? resolveUpdateOffer = null)
+        Func<DeviceState, UpdateOffer?>? resolveUpdateOffer = null, IResidentUpdateSignals? updateSignals = null)
     {
+        _updateSignals = updateSignals;
         _resolveUpdateOffer = resolveUpdateOffer ?? ResolveUpdateOffer;
         _osTag = osTag;
         _instance = instance;
@@ -224,8 +226,17 @@ internal sealed class AppHost
                 Cleanup(_openSetup);
             }
 
+            _updateSignals?.Start(() =>
+            {
+                if (Volatile.Read(ref _shutdown) == 0) { _tray.Post(Shutdown); }
+            });
             return true;
         }
+    }
+
+    internal void SignalUpdateReady()
+    {
+        if (CanOperate()) { _updateSignals?.SignalReady(); }
     }
 
     internal void RunMessageLoop() => _tray.RunMessageLoop();
@@ -622,6 +633,7 @@ internal sealed class AppHost
 
     private void ShutdownCore()
     {
+        Cleanup(() => _updateSignals?.Dispose());
         Cleanup(_deviceReloadStop.Cancel);
         if (_deviceWatcher is not null)
         {

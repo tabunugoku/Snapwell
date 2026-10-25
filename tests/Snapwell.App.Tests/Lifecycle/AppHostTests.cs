@@ -22,6 +22,50 @@ namespace Snapwell.App.Tests.Lifecycle;
 [Collection("UI language")]
 public sealed class AppHostTests
 {
+    [Fact]
+    public void UpdateSignalsStartAfterTrayAndQuitUsesPostedShutdown()
+    {
+        var signals = new FakeResidentSignals();
+        using var fixture = new Fixture(updateSignals: signals);
+        fixture.Tray.QueuePosts = true;
+        Assert.True(fixture.Host.Start());
+        Assert.NotNull(signals.Quit);
+        Assert.Contains("tray.show", fixture.Calls);
+        Assert.Equal(0, signals.Ready);
+        fixture.Host.SignalUpdateReady();
+        Assert.Equal(1, signals.Ready);
+        signals.Quit!();
+        Assert.DoesNotContain("mutex.release", fixture.Calls);
+        fixture.Tray.Flush();
+        Assert.Contains("mutex.release", fixture.Calls);
+        Assert.Contains("tray.remove", fixture.Calls);
+        Assert.True(signals.Disposed);
+        fixture.Host.SignalUpdateReady();
+        Assert.Equal(1, signals.Ready);
+    }
+
+    [Fact]
+    public void UpdateSignalsAreNotStartedWhenInstanceIsAlreadyRunning()
+    {
+        var signals = new FakeResidentSignals();
+        using var fixture = new Fixture(updateSignals: signals);
+        fixture.Instance.Available = false;
+        Assert.False(fixture.Host.Start());
+        fixture.Host.SignalUpdateReady();
+        Assert.Null(signals.Quit);
+        Assert.Equal(0, signals.Ready);
+    }
+
+    private sealed class FakeResidentSignals : IResidentUpdateSignals
+    {
+        internal Action? Quit;
+        internal int Ready;
+        internal bool Disposed;
+        public void Start(Action quit) => Quit = quit;
+        public void SignalReady() => Ready++;
+        public void Dispose() => Disposed = true;
+    }
+
     /// <summary>保持した状態は次の障害を待たず、端末の言語変更だけで再翻訳する。</summary>
     [Theory]
     [InlineData("reset", "壊れた設定を退避し、既定値で起動しました", "Damaged settings backed up; using defaults.")]
@@ -1522,7 +1566,7 @@ public sealed class AppHostTests
         internal Fixture(DeviceState? state = null, bool watchDevice = false,
             ISettingsStore<DeviceState>? deviceStore = null, Func<TimeSpan, CancellationToken, Task>? retryDelay = null,
             ISettingsSyncService? sync = null, Action<bool>? setReplaceWinArrow = null, string? osTag = "ja-JP",
-            Func<DeviceState, UpdateOffer?>? resolveUpdateOffer = null)
+            Func<DeviceState, UpdateOffer?>? resolveUpdateOffer = null, IResidentUpdateSignals? updateSignals = null)
         {
             Instance = new(Calls);
             Guard = new(Calls);
@@ -1539,7 +1583,7 @@ public sealed class AppHostTests
                     SettingsSeen.Add(settings);
                     return runtime;
                 }, Watcher, () => SetupOpens++, watchDevice ? DeviceWatcher : null, retryDelay, sync,
-                setReplaceWinArrow, osTag, resolveUpdateOffer);
+                setReplaceWinArrow, osTag, resolveUpdateOffer, updateSignals);
         }
 
         public void Dispose() => Host.Shutdown();

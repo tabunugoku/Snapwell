@@ -28,6 +28,10 @@ internal static class Program
     [STAThread]
     private static int Main(string[] args)
     {
+        if (args.Length > 0 && args[0] is "--apply-update" or "--apply-update-elevated")
+        {
+            return UpdateModes.Execute(args, new FileAppLog());
+        }
         if (args.Length > 0)
         {
             // 専用プロセスでは Mutex・トレイ・フックや通常の起動処理を一切作らない。
@@ -119,7 +123,8 @@ internal static class Program
             sync: new SettingsSyncService(SettingsStores.PortablePath(),
                 Path.Combine(Path.GetDirectoryName(SettingsStores.DevicePath())!, "sync-backups"),
                 deviceStore, log),
-            setReplaceWinArrow: replace => Volatile.Write(ref replaceWinArrow, replace), osTag: osLanguageTag);
+            setReplaceWinArrow: replace => Volatile.Write(ref replaceWinArrow, replace), osTag: osLanguageTag,
+            updateSignals: new ResidentUpdateSignals(captureIdentity.User!.Value));
         UnhandledExceptionEventHandler unhandled = (_, args) => host.HandleUnhandledException(
             // i18n-keep: 画面に出さない開発者向けの例外・ログ。
             args.ExceptionObject as Exception ?? new InvalidOperationException("未処理の例外。"));
@@ -134,6 +139,7 @@ internal static class Program
         {
             if (host.Start())
             {
+                host.SignalUpdateReady();
                 host.RunMessageLoop();
             }
 
