@@ -30,7 +30,7 @@ dotnet run --project tools/ManifestTool -- keygen --private "$env:TEMP/update-pr
 
 Actions では秘密鍵を署名の手順だけに渡す。未登録なら処理を失敗させ、署名なしの `latest.json` は添付しない。署名の手順は、秘密鍵から導いた公開鍵が `release/update-public-key.txt` と一致しなければ失敗し、添付前にその公開鍵ファイルでもう一度検証する（別の有効な鍵への差し替えや誤設定を、配布の前に止める）。手元でも `sign --key-env <環境変数名> --in <latest.json> --out <latest.json.sig>` と `verify --public <公開鍵ファイルかBase64> --in <latest.json> --sig <latest.json.sig>` を使える。`sign` の標準出力は導いた公開鍵の Base64 だけになる。生成時刻を固定して試すときは `generate` に `--published-at 2026-10-23T00:00:00Z` を渡す。
 
-確認先は `https://github.com/tabunugoku/Snapwell/releases/latest/download/latest.json`（署名は同じ場所の `latest.json.sig`）とする。公開済みの最新の正式版にだけ転送され、下書きのうちは確認先に出ない。`v1.0.0-rc.1` のようなタグも生成・署名できるが、公開時に GitHub の **pre-release** として指定すること。GitHub の latest は prerelease を除外するため、この確認先には出ない。リポジトリが非公開の場合、匿名では取得できない（`docs/DESIGN.md` §17.1）。
+確認先は `https://github.com/tabunugoku/Snapwell/releases/latest/download/latest.json`（署名は同じ場所の `latest.json.sig`）とする。公開済みの最新の正式版にだけ転送され、下書きのうちは確認先に出ない。`v1.0.0-rc.1` のようなタグも生成・署名できるが、公開時に GitHub の **pre-release** として指定すること。GitHub の latest は prerelease を除外するため、この確認先には出ない。
 
 ## 1.0.0 のブロッカー（実機で確かめる項目）
 `docs/MANUAL_TEST.md` は全件（約 380）を 1.0.0 の条件にしない。次の項目を確かめ終えてから出す。確かめたら MANUAL_TEST の該当の項目を `[x]` にする。OS の設定を変える項目は、同意を得てから行い、終わったら戻す。
@@ -59,7 +59,7 @@ Actions では秘密鍵を署名の手順だけに渡す。未登録なら処理
 ## ホームページ（GitHub Pages）
 - `site/` が公開元。`.github/workflows/pages.yml` を手動で実行すると公開する (v1.0.0 のリリースを公開する日まで、自動の公開は止めてある。リリース後に push の節を足せば、main の `site/**` の変更で自動になる)。URL は `https://tabunugoku.github.io/Snapwell/`
 - 初回だけ、リポジトリの Settings → Pages の Source を「GitHub Actions」にする
-- **非公開のリポジトリから公開するには、GitHub Pro 以上が要る**。無料のプランでは、リポジトリを公開にする必要がある（その場合は、先に LICENSE を決める）
+- リポジトリは公開済みなので、プランの制約はない
 - ダウンロードのボタンは `releases/download/v1.0.0/Snapwell-1.0.0-win-<rid>.zip` を直接指す。v1.0.0 のリリースを公開するまでは 404 になる。公開は、ページと同じ日にそろえる
 - 動きは feel のランタイムで動かしている（`site/js/feel.js`、`THIRD_PARTY_NOTICES.md` に記載）。`transition` や `cubic-bezier` を足さない
 - 紹介動画（`site/video/`）は `tools/film/` で作る。feel のモデルを偽の時計で 1 コマずつ進めて撮る（実時間に依存しないので、毎回同じ映像になる）。作り直すときは `cd tools/film && npm install && node render.mjs`（ffmpeg と Chrome か Edge が要る）。できた `out/snapwell.mp4`・`snapwell.webm`・`poster.jpg` を `site/video/` に置く。実アプリの録画ではなく、モックアップ相当の画面なので、ページにもそう書いてある
