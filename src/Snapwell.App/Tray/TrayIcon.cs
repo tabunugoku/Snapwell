@@ -15,7 +15,8 @@ using Windows.Win32.UI.WindowsAndMessaging;
 namespace Snapwell.App.Tray;
 
 /// <summary>TaskbarCreated を受信できる、隠したトップレベルウィンドウのトレイ。</summary>
-internal sealed unsafe class TrayIcon(IAppLog log, ISettingsStore<DeviceState> device, ISettingsLauncher? settings = null) : ITrayService, ITrayBalloon
+internal sealed unsafe class TrayIcon(IAppLog log, ISettingsStore<DeviceState> device,
+    ISettingsLauncher? settings = null) : ITrayService, ITrayBalloon, ITrayUpdateSink, ITrayUpdateGeneration
 {
     private const uint CallbackMessage = 0x8001;
     private const uint InvokeMessage = 0x8002;
@@ -51,15 +52,37 @@ internal sealed unsafe class TrayIcon(IAppLog log, ISettingsStore<DeviceState> d
     private readonly ReleaseNotesLauncher _releaseNotes = new(log);
 
     /// <summary>確認サービスからの案内をトレイのスレッドへ配送する。</summary>
-    public void Notify(UpdateOffer offer) => Post(() =>
+    public void Notify(UpdateOffer offer)
     {
-        _updateNotifier ??= new(device, this, value =>
+        var generation = BeginUpdateOffer();
+        Post(() => SetUpdateOffer(offer, generation));
+    }
+
+    /// <summary>直接通知と再評価の共通の表示世代を確保する。</summary>
+    public long BeginUpdateOffer() => UpdateNotifier().BeginUpdateOffer();
+
+    /// <summary>再配送せずに最新の表示世代で反映する。</summary>
+    public void SetUpdateOffer(UpdateOffer? offer) => SetUpdateOffer(offer, BeginUpdateOffer());
+
+    /// <summary>表示世代と端末状態を確認し、トレイのスレッドで反映する。</summary>
+    public void SetUpdateOffer(UpdateOffer? offer, long generation) =>
+        UpdateNotifier().SetUpdateOffer(offer, generation);
+
+    private TrayUpdateNotifier UpdateNotifier()
+    {
+        lock (_gate)
         {
-            _updateOffer = value;
-            RefreshMenu();
-        }, log);
-        _updateNotifier.Notify(offer);
-    });
+            return _updateNotifier ??= new(device, this, value =>
+            {
+                _updateOffer = value;
+                RefreshMenu();
+            }, log, () =>
+            {
+                _updateOffer = null;
+                RefreshMenu();
+            });
+        }
+    }
 
     /// <summary>情報の吹き出しを Shell に要求する。実際の表示は OS の通知設定に従うため実機未確認。</summary>
     bool ITrayBalloon.Show(string title, string message)

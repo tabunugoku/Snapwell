@@ -22,4 +22,8 @@
     <ProjectReference Include="..\..\src\Snapwell.Platform\Snapwell.Platform.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="../../src/Snapwell.Settings/Updates/UpdatePageModel.cs" Link="Settings/UpdatePageModel.cs" />
+  </ItemGroup>
+
 </Project>

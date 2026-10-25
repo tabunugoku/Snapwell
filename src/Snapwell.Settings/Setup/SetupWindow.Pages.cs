@@ -5,11 +5,17 @@ using Microsoft.UI.Xaml.Documents;
 using Snapwell.Core.Commands;
 using Snapwell.Core.Localization;
 using Snapwell.Core.Settings;
+using Snapwell.Settings.Updates;
 
 namespace Snapwell.Settings.Setup;
 
 public sealed partial class SetupWindow
 {
+    private object? _welcomeUpdatePage;
+    private Task<UpdateToggleResult?>? _welcomeUpdateSave;
+    private bool _welcomeUpdateEnabled;
+    private bool _welcomeUpdateClosed;
+
     private void SetHeading(string title, string lead)
     {
         Heading.Text = title;
@@ -93,8 +99,18 @@ public sealed partial class SetupWindow
         rows.Children.Add(row);
     }
 
-    private void ShowWelcome()
+    private async void ShowWelcome()
     {
+        if (_welcomeUpdatePage is null)
+        {
+            Closed += (_, _) => _welcomeUpdateClosed = true;
+        }
+        var page = new object();
+        _welcomeUpdatePage = page;
+        var session = UpdatePageSession.Shared;
+        bool IsCurrent() => !_welcomeUpdateClosed && _welcomeUpdatePage == page &&
+            _wizard.Step == SetupStep.Welcome;
+
         SetHeading(UiText.Current.Get("Setup.Welcome.Title"),
             UiText.Current.Get("Setup.Welcome.Lead"));
         var rows = Rows();
@@ -105,6 +121,81 @@ public sealed partial class SetupWindow
         AddRow(rows, UiText.Current.Get("Setup.Welcome.Keys"),
             InlineDescription(UiText.Current.Get("Setup.Welcome.KeysTemplate"),
                 ("keys", ["Ctrl", "Alt"]), ("shift", ["Shift"])));
+        var description = Text(UiText.Current.Get("Setup_UpdateDescription.Text"), "SnapwellRowDescriptionStyle");
+        description.TextWrapping = TextWrapping.Wrap;
+        var toggle = new ToggleSwitch
+        {
+            OnContent = "",
+            OffContent = "",
+            MinWidth = 0,
+            VerticalAlignment = VerticalAlignment.Center,
+            Style = FindStyle("SnapwellToggleSwitchStyle"),
+            IsOn = _welcomeUpdateEnabled,
+            IsEnabled = false,
+        };
+        AutomationProperties.SetName(toggle, UiText.Current.Get("Setup_UpdateToggle.AutomationName"));
+        var syncing = false;
+        void SetToggle(bool enabled, bool canWrite)
+        {
+            syncing = true;
+            try
+            {
+                toggle.IsOn = enabled;
+                toggle.IsEnabled = canWrite && !_loadFailed && !session.IsSaving;
+            }
+            finally { syncing = false; }
+        }
+        toggle.Toggled += async (_, _) =>
+        {
+            if (syncing || session.IsSaving || !IsCurrent() || !toggle.IsEnabled) { return; }
+            var enabled = toggle.IsOn;
+            var previous = _welcomeUpdateEnabled;
+            var generation = session.Generation + 1;
+            toggle.IsEnabled = false;
+            ErrorNotice.IsOpen = false;
+            var pending = session.SaveAsync(() => UpdatePageModel.SetAutomatic(_deviceStore, enabled, previous));
+            _welcomeUpdateSave = pending;
+            var result = await pending;
+            if (_welcomeUpdateSave == pending) { _welcomeUpdateSave = null; }
+            if (result is null) { return; }
+
+            // ページを離れても確認済みの値は保つが、古い要素へは結果を反映しない。
+            _welcomeUpdateEnabled = result.Enabled;
+            if (!session.CanApply(generation, cancelled: !IsCurrent())) { return; }
+            SetToggle(result.Enabled, result.CanWrite);
+            if (!result.Saved)
+            {
+                ErrorNotice.Message = UiText.Current.Get(result.CanWrite
+                    ? "Setup.Error.SaveFallback" : "Setup.Error.Load");
+                ErrorNotice.IsOpen = true;
+            }
+        };
+        AddRow(rows, UiText.Current.Get("Setup_UpdateTitle.Text"), description, toggle);
+
+        // 戻ってきたページも前の保存を待ち、書き込み途中の値で操作可能にしない。
+        UpdateToggleResult? previousSave = null;
+        if (_welcomeUpdateSave is { } saving)
+        {
+            previousSave = await saving;
+            if (!IsCurrent()) { return; }
+            if (previousSave is not null) { _welcomeUpdateEnabled = previousSave.Enabled; }
+        }
+        var lastEnabled = _welcomeUpdateEnabled;
+        var restored = await session.ReadAsync(() => UpdatePageModel.ReadAutomatic(_deviceStore, lastEnabled));
+        if (!session.CanApply(restored.Generation, cancelled: !IsCurrent())) { return; }
+        var loaded = restored.Value;
+        _welcomeUpdateEnabled = loaded.Enabled;
+        SetToggle(loaded.Enabled, loaded.CanWrite);
+        if (!loaded.Succeeded || !loaded.CanWrite || _loadFailed)
+        {
+            ErrorNotice.Message = UiText.Current.Get("Setup.Error.Load");
+            ErrorNotice.IsOpen = true;
+        }
+        else if (previousSave is { Saved: false })
+        {
+            ErrorNotice.Message = UiText.Current.Get("Setup.Error.SaveFallback");
+            ErrorNotice.IsOpen = true;
+        }
     }
 
     private void ShowStandardFeatures()

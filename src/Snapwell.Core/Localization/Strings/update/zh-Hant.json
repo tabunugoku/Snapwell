@@ -1,3 +1,26 @@
 {
-  "Update.NotificationTitle": "Snapwell"
+  "Update.NotificationTitle": "Snapwell",
+  "General_UpdatesTitle.Text": "更新",
+  "General_UpdateAutoTitle.Text": "自動檢查更新",
+  "General_UpdateAutoDescription.Text": "開啟後，Snapwell 會連線至 GitHub，僅取得最新版本資訊。只傳送包含版本號碼的 User-Agent，不傳送識別碼。預設關閉。",
+  "General_UpdateAutoToggle.AutomationName": "自動檢查更新",
+  "General_UpdateCheckNowTitle.Text": "立即檢查",
+  "General_UpdateCheckNowDescription.Text": "按下按鈕後，僅連線一次以檢查更新。",
+  "General_UpdateCheckNowButton.Content": "立即檢查",
+  "General_UpdateStatusChecking": "正在檢查…",
+  "General_UpdateStatusUpToDate": "已是最新版本。",
+  "General_UpdateStatusFailed": "無法檢查更新，請稍後再試。",
+  "General_UpdateStatusSkipped": "已略過此版本。",
+  "General_UpdateStatusDevelopmentBuild": "開發版本不檢查更新。",
+  "General_UpdateStatusNoPublicKey": "尚未設定公開金鑰，無法檢查更新。",
+  "General_UpdateStatusLastChecked": "上次檢查：{time}",
+  "General_UpdateOfferTitle": "新版本 {version} 已推出",
+  "General_UpdateOfferRequired": "目前版本低於最低支援版本，請更新。",
+  "General_UpdateDownload.Content": "下載",
+  "General_UpdateReleaseNotes.Content": "版本資訊",
+  "General_UpdateSkip.Content": "略過此版本",
+  "General_UpdateSaveFailed": "無法儲存更新設定，請檢查檔案位置與權限。",
+  "Setup_UpdateTitle.Text": "更新",
+  "Setup_UpdateDescription.Text": "開啟後，Snapwell 會連線至 GitHub，僅取得最新版本資訊。只傳送包含版本號碼的 User-Agent，不傳送識別碼。預設關閉。",
+  "Setup_UpdateToggle.AutomationName": "自動檢查更新"
 }

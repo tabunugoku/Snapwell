@@ -10,6 +10,95 @@ namespace Snapwell.App.Tests.Tray;
 /// <summary>Win32 に触れず、吹き出しの重複抑止とブラウザー起動を検証する。</summary>
 public sealed class TrayUpdateNotifierTests
 {
+    /// <summary>スキップの反映後に古い直接通知が届いても、同じ版の案内を復活させない。</summary>
+    [Theory]
+    [InlineData("1.2.0", "1.2.0")]
+    [InlineData("v1.2.0+build", "1.2.0")]
+    [InlineData(null, "1.3.0")]
+    public void LateNotificationDoesNotRestoreSkippedOrSupersededOffer(string? skipped, string highest)
+    {
+        var store = new Store();
+        var balloon = new Balloon();
+        UpdateOffer? visible = null;
+        var notifier = new TrayUpdateNotifier(store, balloon, offer => visible = offer, new Log());
+        var delayed = Offer("1.2.0");
+        notifier.Notify(delayed);
+        store.Value = store.Value with { SkippedVersion = skipped, HighestSeenVersion = highest };
+        visible = null;
+
+        notifier.Notify(delayed);
+
+        Assert.Null(visible);
+        Assert.Equal(1, balloon.Calls);
+    }
+
+    /// <summary>再評価で案内を消した後は、配送待ちだった通知の世代を受け付けない。</summary>
+    [Fact]
+    public void QueuedNotificationCannotOutliveLaterClear()
+    {
+        var store = new Store();
+        var balloon = new Balloon();
+        UpdateOffer? visible = Offer("1.2.0");
+        var notifier = new TrayUpdateNotifier(store, balloon, offer => visible = offer, new Log(), () => visible = null);
+        var delayedGeneration = notifier.BeginUpdateOffer();
+        store.Value = store.Value with { SkippedVersion = "1.2.0" };
+        notifier.SetUpdateOffer(null, notifier.BeginUpdateOffer());
+
+        notifier.SetUpdateOffer(Offer("1.2.0"), delayedGeneration);
+
+        Assert.Null(visible);
+        Assert.Equal(0, balloon.Calls);
+    }
+
+    /// <summary>無効な通知がクリアを追い越しても、既に表示中のスキップ済み案内を残さない。</summary>
+    [Fact]
+    public void InvalidNotificationOvertakingPendingClearRemovesSkippedPresentation()
+    {
+        var store = new Store();
+        UpdateOffer? visible = null;
+        var notifier = new TrayUpdateNotifier(store, new Balloon(), offer => visible = offer,
+            new Log(), () => visible = null);
+        notifier.Notify(Offer("1.2.0"));
+        var pendingClear = notifier.BeginUpdateOffer();
+        store.Value = store.Value with { SkippedVersion = "1.2.0" };
+
+        notifier.Notify(Offer("1.2.0"));
+        notifier.SetUpdateOffer(null, pendingClear);
+
+        Assert.Null(visible);
+    }
+
+    /// <summary>古い通知を破棄する際も、既に表示した新しい有効な案内は消さない。</summary>
+    [Fact]
+    public void SupersededNotificationPreservesNewerValidPresentation()
+    {
+        var store = new Store { Value = new() { HighestSeenVersion = "1.3.0" } };
+        UpdateOffer? visible = null;
+        var notifier = new TrayUpdateNotifier(store, new Balloon(), offer => visible = offer,
+            new Log(), () => visible = null);
+        notifier.Notify(Offer("1.3.0"));
+
+        notifier.Notify(Offer("1.2.0"));
+
+        Assert.Equal("1.3.0", visible?.Manifest.Version.ToString());
+    }
+
+    /// <summary>遅れた案内なしの再評価も、後から届いた新しい通知を消さない。</summary>
+    [Fact]
+    public void DelayedClearCannotEraseNewerNotification()
+    {
+        var store = new Store();
+        UpdateOffer? visible = null;
+        var notifier = new TrayUpdateNotifier(store, new Balloon(), offer => visible = offer,
+            new Log(), () => visible = null);
+        var delayedGeneration = notifier.BeginUpdateOffer();
+        notifier.Notify(Offer("1.3.0"));
+
+        notifier.SetUpdateOffer(null, delayedGeneration);
+
+        Assert.Equal("1.3.0", visible?.Manifest.Version.ToString());
+    }
+
     /// <summary>初めての版と異なる版だけを知らせ、案内なしでは表示しない。</summary>
     [Fact]
     public void NotificationDecisionUsesVersionPrecedence()

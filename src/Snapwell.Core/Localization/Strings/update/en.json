@@ -1,3 +1,26 @@
 {
-  "Update.NotificationTitle": "Snapwell"
+  "Update.NotificationTitle": "Snapwell",
+  "General_UpdatesTitle.Text": "Updates",
+  "General_UpdateAutoTitle.Text": "Check for updates automatically",
+  "General_UpdateAutoDescription.Text": "When enabled, Snapwell connects to GitHub to fetch only the latest version information. Only a User-Agent containing the version is sent; no identifiers are sent. Off by default.",
+  "General_UpdateAutoToggle.AutomationName": "Check for updates automatically",
+  "General_UpdateCheckNowTitle.Text": "Check now",
+  "General_UpdateCheckNowDescription.Text": "Press to connect once and check for updates.",
+  "General_UpdateCheckNowButton.Content": "Check now",
+  "General_UpdateStatusChecking": "Checking…",
+  "General_UpdateStatusUpToDate": "You’re up to date.",
+  "General_UpdateStatusFailed": "Couldn’t check for updates. Try again later.",
+  "General_UpdateStatusSkipped": "This version has been skipped.",
+  "General_UpdateStatusDevelopmentBuild": "Development builds don’t check for updates.",
+  "General_UpdateStatusNoPublicKey": "No public key is configured, so updates can’t be checked.",
+  "General_UpdateStatusLastChecked": "Last checked: {time}",
+  "General_UpdateOfferTitle": "Version {version} is available",
+  "General_UpdateOfferRequired": "Your version is below the minimum supported version. Please update.",
+  "General_UpdateDownload.Content": "Download",
+  "General_UpdateReleaseNotes.Content": "Release notes",
+  "General_UpdateSkip.Content": "Skip this version",
+  "General_UpdateSaveFailed": "Couldn’t save the update settings. Check the file location and permissions.",
+  "Setup_UpdateTitle.Text": "Updates",
+  "Setup_UpdateDescription.Text": "When enabled, Snapwell connects to GitHub to fetch only the latest version information. Only a User-Agent containing the version is sent; no identifiers are sent. Off by default.",
+  "Setup_UpdateToggle.AutomationName": "Check for updates automatically"
 }

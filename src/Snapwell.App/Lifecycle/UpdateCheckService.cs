@@ -1,3 +1,4 @@
+global using UpdateOffer = Snapwell.Platform.Updates.UpdateOffer;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -6,9 +7,6 @@ using Snapwell.Core.Updates;
 using Snapwell.Platform.Updates;
 
 namespace Snapwell.App.Lifecycle;
-
-/// <summary>検証済みのリリースと OS に対応する配布ファイルの案内。</summary>
-internal sealed record UpdateOffer(UpdateManifest Manifest, UpdateAsset Asset, bool RequiresUpdate);
 
 /// <summary>バックグラウンドから更新の案内を受け取る境界。</summary>
 internal interface IUpdateNotifier
@@ -37,12 +35,6 @@ internal sealed class UnpackagedIdentity : IPackageIdentity
 {
     public bool IsPackaged => false;
 }
-
-/// <summary>確認操作の結果の種類。</summary>
-internal enum UpdateCheckOutcome { UpToDate, Available, Skipped, DevelopmentBuild, NoPublicKey, Failed }
-
-/// <summary>明示的な確認操作の結果と開発者向けの失敗理由。</summary>
-internal sealed record UpdateCheckResponse(UpdateCheckOutcome Outcome, UpdateOffer? Offer = null, string? Reason = null);
 
 /// <summary>常駐中だけ更新を確認し、保存と通知を入力フックから切り離す。</summary>
 internal sealed class UpdateCheckService : IDisposable
@@ -127,31 +119,12 @@ internal sealed class UpdateCheckService : IDisposable
         if (_current is null || _current.IsDevelopmentBuild || _package.IsPackaged || _publicKey is null) { return; }
         try
         {
-            // ローカルの案内の復元は通信せず、自動確認の同意と待ち時間から独立させる。
             var loaded = ReadState();
-            if (loaded.IsReadOnly || loaded.Value.CachedUpdateManifest is not { } bytes
-                || loaded.Value.CachedUpdateSignature is not { } signature) { return; }
-            if (signature.Length > 1024 || !ManifestSignature.Verify(bytes, signature, _publicKey))
-            {
-                throw new InvalidOperationException("Cached manifest signature verification failed.");
-            }
-            var parsed = UpdateManifestParser.Parse(bytes);
-            if (parsed.Manifest is not { } manifest)
-            {
-                throw new InvalidOperationException(parsed.Error ?? "Invalid cached manifest.");
-            }
-            ReleaseVersion.TryParse(loaded.Value.HighestSeenVersion, out var highest);
-            if (!UpdateReplayGuard.Accept(manifest, highest))
-            {
-                throw new InvalidOperationException("Cached manifest replay was rejected.");
-            }
-            ReleaseVersion.TryParse(loaded.Value.SkippedVersion, out var skipped);
-            var evaluation = UpdateCheckPolicy.Evaluate(_current, manifest, skipped);
-            if (evaluation.Status != UpdateCheckStatus.Available) { return; }
-            var asset = UpdateAssetSelector.Select(_architecture, manifest);
-            if (asset is null) { return; }
+            if (loaded.IsReadOnly) { return; }
+            var offer = UpdateOfferResolver.Resolve(loaded.Value, _current.ToString(), _publicKey,
+                _architecture, _package.IsPackaged);
             _stop.Token.ThrowIfCancellationRequested();
-            _notifier.Notify(new(manifest, asset, evaluation.RequiresUpdate));
+            if (offer is not null) { _notifier.Notify(offer); }
         }
         catch (OperationCanceledException) when (_stop.IsCancellationRequested) { }
         // キャッシュの破損は通信を早める理由にはせず、通常の周期で再取得する。
@@ -220,70 +193,20 @@ internal sealed class UpdateCheckService : IDisposable
 
     private async Task<UpdateCheckResponse> CheckCoreAsync(CancellationToken cancellationToken)
     {
-        using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _stop.Token);
-        var token = linked.Token;
-        try
+        var checker = new UpdateChecker(_fetcher, _store, _current?.ToString(), _publicKey,
+            _architecture, _package.IsPackaged);
+        var response = await checker.CheckAsync(cancellationToken, () => _clock.UtcNow,
+            _notifier.Notify).ConfigureAwait(false);
+        if (response.Outcome == UpdateCheckOutcome.Failed) { return Failure(response.Reason!); }
+        if (response.Outcome is UpdateCheckOutcome.Available or UpdateCheckOutcome.Skipped or UpdateCheckOutcome.UpToDate)
         {
-            token.ThrowIfCancellationRequested();
-            if (_current is null || _current.IsDevelopmentBuild) { return new(UpdateCheckOutcome.DevelopmentBuild); }
-            if (_package.IsPackaged) { return Failure("Packaged applications do not check for updates."); }
-            if (_publicKey is null) { return new(UpdateCheckOutcome.NoPublicKey); }
-            var fetched = await _fetcher.FetchAsync(token).ConfigureAwait(false);
-            token.ThrowIfCancellationRequested();
-            if (!fetched.IsSuccess) { return Failure(fetched.Diagnostic ?? "Update fetch failed."); }
-            // 内容には署名の検証が通るまで触れない。
-            if (!ManifestSignature.Verify(fetched.Manifest!, fetched.Signature!, _publicKey))
-            {
-                return Failure("Manifest signature verification failed.");
-            }
-            var parsed = UpdateManifestParser.Parse(fetched.Manifest!);
-            if (parsed.Manifest is not { } manifest) { return Failure(parsed.Error ?? "Invalid manifest."); }
-            token.ThrowIfCancellationRequested();
-            var replay = false;
-            var state = DeviceStateChanges.Update(_store, current =>
-            {
-                ReleaseVersion.TryParse(current.HighestSeenVersion, out var highest);
-                replay = !UpdateReplayGuard.Accept(manifest, highest);
-                // 最高受理版と署名付きの元データを一緒に保存し、再起動時にも再検証できるようにする。
-                return replay ? current : current with
-                {
-                    HighestSeenVersion = manifest.Version.ToString(),
-                    CachedUpdateManifest = fetched.Manifest,
-                    CachedUpdateSignature = fetched.Signature,
-                };
-            });
-            if (replay) { return Failure("Manifest replay was rejected."); }
-            ReleaseVersion.TryParse(state.SkippedVersion, out var skipped);
-            var evaluation = UpdateCheckPolicy.Evaluate(_current, manifest, skipped);
-            UpdateOffer? offer = null;
-            if (evaluation.Status == UpdateCheckStatus.Available)
-            {
-                var asset = UpdateAssetSelector.Select(_architecture, manifest);
-                if (asset is null) { return Failure("No update asset matches the OS architecture."); }
-                offer = new(manifest, asset, evaluation.RequiresUpdate);
-                token.ThrowIfCancellationRequested();
-                _notifier.Notify(offer);
-            }
-            token.ThrowIfCancellationRequested();
-            DeviceStateChanges.Update(_store, current => current with { LastUpdateCheckUtc = _clock.UtcNow });
             lock (_gate)
             {
                 _retryPending = false;
                 _lastSuccess = _clock.Uptime;
             }
-            return new(evaluation.Status switch
-            {
-                UpdateCheckStatus.Available => UpdateCheckOutcome.Available,
-                UpdateCheckStatus.Skipped => UpdateCheckOutcome.Skipped,
-                _ => UpdateCheckOutcome.UpToDate,
-            }, offer);
         }
-        catch (OperationCanceledException) { return Failure("Update check was cancelled."); }
-        catch (Exception exception)
-        {
-            Log(exception);
-            return Failure("Update check failed: " + exception.Message);
-        }
+        return response;
     }
 
     private SettingsLoadResult<DeviceState> ReadState() => _store.TryReload() ?? _store.Load();

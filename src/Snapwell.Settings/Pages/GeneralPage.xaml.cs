@@ -28,6 +28,8 @@ public sealed partial class GeneralPage : Page
     {
         _session = session;
         InitializeComponent();
+        Loaded += Updates_Loaded;
+        Unloaded += Updates_Unloaded;
         SyncFixedSizeToggle();
         RefreshEnabledToggle();
         Loaded += (_, _) =>
