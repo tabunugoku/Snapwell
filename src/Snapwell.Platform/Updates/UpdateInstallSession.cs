@@ -189,6 +189,8 @@ public sealed class UpdateInstallSession(IUpdateFileSystem fs, IUpdateSignals si
                 var rollback = Rollback(applier, request.InstallDir, journal!);
                 preserveStaging = rollback.Status != RollbackStatus.RolledBack;
                 diagnostic += RollbackDiagnostic(rollback);
+                // 部分的に復元された配置を、進行役が再起動しないよう専用のコードで知らせる。
+                if (preserveStaging) { return UpdateInstallResult.ApplyFailedRollbackIncomplete; }
             }
             return UpdateInstallResult.IoError;
         }

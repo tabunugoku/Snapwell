@@ -399,7 +399,7 @@ public sealed class UpdateInstallSessionTests : IDisposable
         if (timeout) { _signals.Ready = false; }
         else { _signals.OnApplied = () => throw new IOException("Signal failed."); }
         var diagnostic = AssertResult(timeout ? UpdateInstallResult.ReadyTimeoutRollbackIncomplete
-            : UpdateInstallResult.IoError,
+            : UpdateInstallResult.ApplyFailedRollbackIncomplete,
             fs: new Faults(_fs) { FailJournalRead = true });
         Assert.Contains("Injected journal failure", diagnostic);
         Assert.True(File.Exists(Journal));

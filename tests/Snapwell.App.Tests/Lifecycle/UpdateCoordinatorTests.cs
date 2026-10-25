@@ -132,6 +132,16 @@ public sealed class UpdateCoordinatorTests
     }
 
     [Fact]
+    public void RestartIgnoresTaskRegisteredForAnotherLocation()
+    {
+        var tasks = new FakeTasks { Command = @"D:\Old\Snapwell.exe" };
+        var normal = 0;
+        UpdateResidentLauncher.Start(@"C:\Snapwell.exe", tasks, _ => normal++);
+        Assert.Equal(0, tasks.Runs);
+        Assert.Equal(1, normal);
+    }
+
+    [Fact]
     public void RestartFallsBackToNormalStartWhenTaskCannotRun()
     {
         var tasks = new FakeTasks { Command = @"C:\Snapwell.exe", RunException = new UnauthorizedAccessException() };

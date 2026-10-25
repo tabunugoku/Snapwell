@@ -73,7 +73,9 @@ internal static class UpdateResidentLauncher
 {
     internal static void Start(string path, IAdminTaskService tasks, Action<string>? normalStart = null)
     {
-        if (tasks.ReadCommand() is not null)
+        // 別の配置先を指す古いタスクを実行すると、旧配置の起動を更新の成功と誤認する。
+        if (tasks.ReadCommand() is { } command && string.Equals(command, Path.GetFullPath(path),
+            StringComparison.OrdinalIgnoreCase))
         {
             try
             {
