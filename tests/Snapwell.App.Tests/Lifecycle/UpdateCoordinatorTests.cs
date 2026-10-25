@@ -56,6 +56,33 @@ public sealed class UpdateCoordinatorTests
         Assert.Equal(1, fixture.Calls.Count(call => call == "start"));
     }
 
+    /// <summary>コード 31 は元の版を再起動し、last-result.json に failed と 31 を保存する。</summary>
+    [Fact]
+    public void AnotherUpdateRunningRestartsOriginalAndWritesFailedResult()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "snapwell-busy-result-" + Guid.NewGuid().ToString("N"));
+        var path = Path.Combine(directory, "last-result.json");
+        var fixture = new Fixture();
+        fixture.Environment.Signals.Applied = false;
+        fixture.Launcher.Process.Code = (int)UpdateInstallResult.AnotherUpdateRunning;
+        fixture.Environment.WriteAction = result => UpdateResultFile.Write(path, result);
+        try
+        {
+            var result = fixture.Run();
+            Assert.Equal("failed", result.Result);
+            Assert.Equal(31, result.Code);
+            Assert.Equal(result, fixture.Environment.Saved);
+            Assert.Equal(1, fixture.Calls.Count(call => call == "start"));
+            var calls = fixture.Calls.ToList();
+            Assert.True(calls.IndexOf("helper.dispose") < calls.IndexOf("start"));
+            Assert.True(calls.IndexOf("start") < calls.IndexOf("write:failed"));
+            using var json = JsonDocument.Parse(File.ReadAllBytes(path));
+            Assert.Equal("failed", json.RootElement.GetProperty("result").GetString());
+            Assert.Equal(31, json.RootElement.GetProperty("code").GetInt32());
+        }
+        finally { if (Directory.Exists(directory)) { Directory.Delete(directory, true); } }
+    }
+
     [Fact]
     public void ReadyTimeoutWaitsForRollbackBeforeRestarting()
     {
@@ -228,6 +255,7 @@ public sealed class UpdateCoordinatorTests
         internal bool ProcessExit = true;
         internal UpdateLastResult? Saved;
         internal Action? StartAction;
+        internal Action<UpdateLastResult>? WriteAction;
         internal FakeSignals Signals { get; } = new(calls, clock);
         public bool IsProtected { get; set; } = true;
         public bool QuitAndWait(TimeSpan timeout)
@@ -239,7 +267,12 @@ public sealed class UpdateCoordinatorTests
         public bool WaitProcess(int? pid, TimeSpan timeout) { calls.Add("pid:" + pid); return ProcessExit; }
         public IUpdateCoordinatorSignals CreateSignals() { calls.Add("signals"); return Signals; }
         public void StartResident() { calls.Add("start"); StartAction?.Invoke(); }
-        public void WriteResult(UpdateLastResult result) { Saved = result; calls.Add("write:" + result.Result); }
+        public void WriteResult(UpdateLastResult result)
+        {
+            Saved = result;
+            calls.Add("write:" + result.Result);
+            WriteAction?.Invoke(result);
+        }
     }
 
     private sealed class FakeSignals(List<string> calls, FakeClock clock) : IUpdateCoordinatorSignals

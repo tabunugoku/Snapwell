@@ -29,19 +29,22 @@ internal static class UpdateModes
                 // UAC の承認が遅れて進行役が既に終了していたら、差し替えを始めない。
                 using (UpdateSignalNames.Open(names.Applied, signal: true)) { }
                 var protectedLocation = ExecutableLocation.IsProtected(path);
-                using var work = new UpdateWorkDirectory(protectedLocation);
-                using var signals = new UpdateSignals(names);
-                var unresolved = HasPreviousUpdateUnresolved(work.Path, FindPreviousJournals());
-                var request = CreateRequest(command, path, work.Path, unresolved);
-                var result = new UpdateInstallSession(new UpdateFileSystem(), signals, new UpdateResidentStopper(names))
-                    .Run(request, out var diagnostic);
-                work.Preserve = result is UpdateInstallResult.ApplyFailedRollbackIncomplete
-                    or UpdateInstallResult.ReadyTimeoutRollbackIncomplete
-                    or UpdateInstallResult.ReadyTimeoutResidentRunning
-                    || Directory.Exists(Path.Combine(work.Path, "staging"));
-                // i18n-keep: 画面に出さない開発者向けの終了コードと診断。
-                log.Error(new InvalidOperationException($"Update helper: {(int)result}. {diagnostic}"));
-                return (int)result;
+                return (int)RunWithInstallLock(Path.GetDirectoryName(path)!, new UpdateInstallLock(protectedLocation), () =>
+                {
+                    using var work = new UpdateWorkDirectory(protectedLocation);
+                    using var signals = new UpdateSignals(names);
+                    var unresolved = HasPreviousUpdateUnresolved(work.Path, FindPreviousJournals());
+                    var request = CreateRequest(command, path, work.Path, unresolved);
+                    var result = new UpdateInstallSession(new UpdateFileSystem(), signals, new UpdateResidentStopper(names))
+                        .Run(request, out var diagnostic);
+                    work.Preserve = result is UpdateInstallResult.ApplyFailedRollbackIncomplete
+                        or UpdateInstallResult.ReadyTimeoutRollbackIncomplete
+                        or UpdateInstallResult.ReadyTimeoutResidentRunning
+                        || Directory.Exists(Path.Combine(work.Path, "staging"));
+                    // i18n-keep: 画面に出さない開発者向けの終了コードと診断。
+                    log.Error(new InvalidOperationException($"Update helper: {(int)result}. {diagnostic}"));
+                    return result;
+                });
             }
             var environment = new UpdateEnvironment(command.Sid, path, new TaskSchedulerService());
             var outcome = new UpdateCoordinator(environment, new UpdateHelperLauncher(path), TimeProvider.System, log)
@@ -64,6 +67,14 @@ internal static class UpdateModes
             }
             return (int)UpdateInstallResult.IoError;
         }
+    }
+
+    internal static UpdateInstallResult RunWithInstallLock(string installDir, IUpdateInstallLock installLock,
+        Func<UpdateInstallResult> run)
+    {
+        // 作業フォルダーの作成と journal の列挙も、取得後に同じスレッドで実行する。
+        using var ownership = installLock.TryAcquire(installDir);
+        return ownership is null ? UpdateInstallResult.AnotherUpdateRunning : run();
     }
 
     internal static bool IsAllowedSid(UpdateCommandLine command, string currentSid)

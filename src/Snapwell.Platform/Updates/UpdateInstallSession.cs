@@ -43,6 +43,7 @@ public enum UpdateInstallResult
     ReadyTimeoutRollbackIncomplete = 23,
     ReadyTimeoutResidentRunning = 24,
     IoError = 30,
+    AnotherUpdateRunning = 31,
 }
 
 /// <summary>作業用コピーを検証・展開・適用し、新版の起動確認まで旧版を保持する。</summary>
