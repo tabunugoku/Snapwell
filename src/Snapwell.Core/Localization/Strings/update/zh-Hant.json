@@ -16,7 +16,7 @@
   "General_UpdateStatusLastChecked": "上次檢查：{time}",
   "General_UpdateOfferTitle": "新版本 {version} 已推出",
   "General_UpdateOfferRequired": "目前版本低於最低支援版本，請更新。",
-  "General_UpdateDownload.Content": "下載",
+  "General_UpdateDownload.Content": "在瀏覽器中下載",
   "General_UpdateReleaseNotes.Content": "版本資訊",
   "General_UpdateSkip.Content": "略過此版本",
   "General_UpdateSaveFailed": "無法儲存更新設定，請檢查檔案位置與權限。",

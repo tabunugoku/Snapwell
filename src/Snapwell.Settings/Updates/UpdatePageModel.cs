@@ -68,6 +68,38 @@ internal sealed class UpdatePageSession
 /// <summary>WinUI に依存しない、更新画面の表示と保存の判断。</summary>
 internal static class UpdatePageModel
 {
+    internal static string? InstallBlockKey(UpdateInstallBlock reason) => reason == UpdateInstallBlock.None
+        ? null : "Update.InstallBlock." + reason;
+
+    internal static string ResultKey(UpdateReadResult result) => result.Result switch
+    {
+        "installed" => "Update.Result.Installed",
+        "cancelled" => "Update.Result.Cancelled",
+        "rolled-back" => "Update.Result.RolledBack",
+        _ => result.Code switch
+        {
+            10 or 11 => "Update.Result.InvalidManifest",
+            12 => "Update.Result.NotNewer",
+            13 => "Update.Result.Architecture",
+            14 or 15 => "Update.Result.InvalidPackage",
+            20 => "Update.Result.ApplyRolledBack",
+            21 or 23 or 24 => "Update.Result.Reinstall",
+            30 => "Update.Result.IoError",
+            31 => "Update.Result.Busy",
+            _ => "Update.Result.Failed",
+        },
+    };
+
+    internal static string StartupKey(UpdateStartupResult result) => result.Failure switch
+    {
+        UpdateStartupFailure.Download => "Update.Download." + result.DownloadFailure,
+        UpdateStartupFailure.SignatureInvalid => "Update.Result.InvalidManifest",
+        UpdateStartupFailure.ProcessStart => "Update.StartFailed",
+        UpdateStartupFailure.IoError => "Update.Result.IoError",
+        UpdateStartupFailure.Cancelled => "Update.Download.Cancelled",
+        _ => throw new ArgumentOutOfRangeException(nameof(result)),
+    };
+
     /// <summary>表示だけでは破損ファイルを退避せず、復旧された既定値も正常値として返さない。</summary>
     internal static SettingsLoadResult<DeviceState> ReadState(ISettingsStore<DeviceState> store)
     {
@@ -126,4 +158,26 @@ internal static class UpdatePageModel
 
     internal static bool IsSaveFailure(Exception exception) => exception is IOException or UnauthorizedAccessException
         or SecurityException or System.Text.Json.JsonException or FutureSettingsVersionException;
+}
+
+/// <summary>単調時計で進捗の UI 配送を 100 ms 以上あける。</summary>
+internal sealed class UpdateProgressThrottle(TimeProvider clock, Action<Action> dispatch, Action<long> report)
+    : IProgress<long>
+{
+    private readonly object _gate = new();
+    private long? _last;
+
+    /// <summary>初回と前回から十分に経過した値だけを配送する。</summary>
+    public void Report(long value) => dispatch(() => Apply(value));
+
+    private void Apply(long value)
+    {
+        lock (_gate)
+        {
+            var now = clock.GetTimestamp();
+            if (_last is { } last && clock.GetElapsedTime(last, now) < TimeSpan.FromMilliseconds(100)) { return; }
+            _last = now;
+            report(value);
+        }
+    }
 }
