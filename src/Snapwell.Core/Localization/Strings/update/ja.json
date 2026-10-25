@@ -1,3 +1,26 @@
 {
-  "Update.NotificationTitle": "Snapwell"
+  "Update.NotificationTitle": "Snapwell",
+  "General_UpdatesTitle.Text": "更新",
+  "General_UpdateAutoTitle.Text": "更新を自動で確認する",
+  "General_UpdateAutoDescription.Text": "オンにすると GitHub に接続して最新版の情報だけを取得します。送るのは版を含む User-Agent だけで、識別子は送りません。既定はオフです。",
+  "General_UpdateAutoToggle.AutomationName": "更新を自動で確認する",
+  "General_UpdateCheckNowTitle.Text": "今すぐ確認",
+  "General_UpdateCheckNowDescription.Text": "ボタンを押すと、1 回だけ通信して更新を確認します。",
+  "General_UpdateCheckNowButton.Content": "今すぐ確認",
+  "General_UpdateStatusChecking": "確認中…",
+  "General_UpdateStatusUpToDate": "最新の版です。",
+  "General_UpdateStatusFailed": "更新を確認できませんでした。後でもう一度お試しください。",
+  "General_UpdateStatusSkipped": "この版はスキップ済みです。",
+  "General_UpdateStatusDevelopmentBuild": "開発用ビルドでは更新を確認しません。",
+  "General_UpdateStatusNoPublicKey": "公開鍵が設定されていないため、更新を確認できません。",
+  "General_UpdateStatusLastChecked": "最終確認: {time}",
+  "General_UpdateOfferTitle": "新しい版 {version} があります",
+  "General_UpdateOfferRequired": "現在の版は最低サポート版を下回っています。更新してください。",
+  "General_UpdateDownload.Content": "ダウンロード",
+  "General_UpdateReleaseNotes.Content": "リリースノート",
+  "General_UpdateSkip.Content": "この版をスキップ",
+  "General_UpdateSaveFailed": "更新の設定を保存できませんでした。ファイルの場所と権限を確認してください。",
+  "Setup_UpdateTitle.Text": "更新",
+  "Setup_UpdateDescription.Text": "オンにすると GitHub に接続して最新版の情報だけを取得します。送るのは版を含む User-Agent だけで、識別子は送りません。既定はオフです。",
+  "Setup_UpdateToggle.AutomationName": "更新を自動で確認する"
 }

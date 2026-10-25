@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using Snapwell.Core.Localization;
 
 namespace Snapwell.Core.Updates;
 
@@ -41,6 +42,9 @@ public sealed class UpdateManifest
 
     /// <summary>サポートする最も古い版。</summary>
     public ReleaseVersion? MinimumSupported { get; }
+
+    /// <summary>現在の UI 言語、英語、空文字の順で表示用の要約を選ぶ。</summary>
+    public string GetSummary(UiLanguage language) => GetSummary(language.ToPreference()) ?? "";
 
     /// <summary>指定言語の要約、英語の要約、null の順で選ぶ。</summary>
     public string? GetSummary(string languageCode) => Summary.TryGetValue(languageCode, out var text)
