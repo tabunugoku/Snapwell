@@ -13,6 +13,7 @@ using Snapwell.Core.Localization;
 using Snapwell.Core.Rules;
 using Snapwell.Core.Settings;
 using Snapwell.Core.Tray;
+using Snapwell.Core.Updates;
 using Snapwell.Platform.Hooks;
 using Snapwell.Platform.Windows;
 
@@ -1436,6 +1437,68 @@ public sealed class AppHostTests
         internal void Notify() => Changed?.Invoke();
     }
 
+    /// <summary>新しいキャッシュは自動確認オフでも評価し、スキップは案内を消す。</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task DeviceReloadRefreshesOrClearsOfferIndependentlyOfAutomaticChecks(bool skipped)
+    {
+        var json = """
+            {"version":"1.2.0","publishedAt":"2026-10-23T00:00:00Z",
+            "releaseNotesUrl":"https://example.com/notes","files":{"win-arm64":{"url":"https://example.com/app.zip",
+            "sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","size":123}}}
+            """;
+        var manifest = UpdateManifestParser.Parse(System.Text.Encoding.UTF8.GetBytes(json)).Manifest!;
+        var offer = new UpdateOffer(manifest, manifest.Files["win-arm64"], false);
+        using var fixture = new Fixture(resolveUpdateOffer: state => state.SkippedVersion is null ? offer : null);
+        Assert.True(fixture.Host.Start());
+        fixture.Device.ReloadResult = new(new() { SkippedVersion = skipped ? "1.2.0" : null });
+        fixture.Host.ReloadDevice();
+        await fixture.Tray.OfferChanged.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.True(fixture.Tray.UpdateOffers.TryDequeue(out var shown));
+        Assert.Equal(skipped ? null : offer, shown);
+    }
+
+    /// <summary>読み取り専用と失敗した再読み込みでは検証も案内の変更もしない。</summary>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void UnreadableOrReadOnlyDeviceReloadPreservesOffer(bool readOnly)
+    {
+        var resolutions = 0;
+        using var fixture = new Fixture(resolveUpdateOffer: _ => { resolutions++; return null; });
+        Assert.True(fixture.Host.Start());
+        fixture.Device.ReloadResult = readOnly ? new(new(), IsReadOnly: true) : null;
+        fixture.Host.ReloadDevice();
+        Assert.Equal(0, resolutions);
+        Assert.Empty(fixture.Tray.UpdateOffers);
+    }
+
+    /// <summary>バックグラウンドの古い結果は新しい再読み込み後に反映しない。</summary>
+    [Fact]
+    public async Task SupersededResolutionCannotOverwriteNewerDeviceReload()
+    {
+        using var entered = new ManualResetEventSlim();
+        using var release = new ManualResetEventSlim();
+        using var fixture = new Fixture(resolveUpdateOffer: state =>
+        {
+            if (state.SkippedVersion is null) { entered.Set(); release.Wait(TimeSpan.FromSeconds(10)); }
+            return null;
+        });
+        Assert.True(fixture.Host.Start());
+        fixture.Tray.QueuePosts = true;
+        fixture.Host.ReloadDevice();
+        Assert.True(entered.Wait(TimeSpan.FromSeconds(10)));
+        fixture.Device.ReloadResult = new(new() { SkippedVersion = "1.2.0" });
+        fixture.Host.ReloadDevice();
+        release.Set();
+        // 両方の検証が終わるまで待つ。反映自体はトレイに配送した後に世代を検査する。
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(10);
+        while (fixture.Tray.Posted.Count < 2 && DateTime.UtcNow < deadline) { await Task.Yield(); }
+        fixture.Tray.Flush();
+        Assert.Single(fixture.Tray.UpdateOffers);
+    }
+
     private sealed class Fixture : IDisposable
     {
         internal ConcurrentQueue<string> Calls { get; } = new();
@@ -1458,14 +1521,15 @@ public sealed class AppHostTests
 
         internal Fixture(DeviceState? state = null, bool watchDevice = false,
             ISettingsStore<DeviceState>? deviceStore = null, Func<TimeSpan, CancellationToken, Task>? retryDelay = null,
-            ISettingsSyncService? sync = null, Action<bool>? setReplaceWinArrow = null, string? osTag = "ja-JP")
+            ISettingsSyncService? sync = null, Action<bool>? setReplaceWinArrow = null, string? osTag = "ja-JP",
+            Func<DeviceState, UpdateOffer?>? resolveUpdateOffer = null)
         {
             Instance = new(Calls);
             Guard = new(Calls);
             Portable = new(new(), Calls, "portable");
             Device = new(state ?? new(), Calls, "device");
             Hooks = new(Calls);
-            Tray = new(Calls);
+            Tray = resolveUpdateOffer is null ? new(Calls) : new UpdatingFakeTray(Calls);
             Runtime = new(Calls);
             Host = new(Instance, Guard, Portable,
                 deviceStore ?? Device, Hooks, Tray, Consent, Log, () => Calls.Enqueue("corners"), (settings, _, _) =>
@@ -1475,7 +1539,7 @@ public sealed class AppHostTests
                     SettingsSeen.Add(settings);
                     return runtime;
                 }, Watcher, () => SetupOpens++, watchDevice ? DeviceWatcher : null, retryDelay, sync,
-                setReplaceWinArrow, osTag);
+                setReplaceWinArrow, osTag, resolveUpdateOffer);
         }
 
         public void Dispose() => Host.Shutdown();
@@ -1585,7 +1649,7 @@ public sealed class AppHostTests
         public Exception? Failure => null;
     }
 
-    private sealed class FakeTray(ConcurrentQueue<string> calls) : ITrayService
+    private class FakeTray(ConcurrentQueue<string> calls) : ITrayService
     {
         public event Action? ToggleRequested;
         public event Action? StandardSnapRequested;
@@ -1598,6 +1662,13 @@ public sealed class AppHostTests
         public event Action? SessionEnding;
         internal TrayState? State;
         internal int Updates;
+        internal ConcurrentQueue<UpdateOffer?> UpdateOffers { get; } = new();
+        internal TaskCompletionSource OfferChanged = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public void SetUpdateOffer(UpdateOffer? offer)
+        {
+            UpdateOffers.Enqueue(offer);
+            OfferChanged.TrySetResult();
+        }
         public void Show(TrayState state) { State = state; calls.Enqueue("tray.show"); }
         public void Update(TrayState state) { State = state; Updates++; }
         public void Remove() => calls.Enqueue("tray.remove");
@@ -1621,6 +1692,8 @@ public sealed class AppHostTests
         internal void RequestExit() => ExitRequested?.Invoke();
         internal void EndSession() => SessionEnding?.Invoke();
     }
+
+    private sealed class UpdatingFakeTray(ConcurrentQueue<string> calls) : FakeTray(calls), ITrayUpdateSink;
 
     private sealed class FakeRetryDelay
     {

@@ -31,20 +31,28 @@ internal sealed class TrayUpdateNotifier(ISettingsStore<DeviceState> store, ITra
         setOffer(offer);
         try
         {
+            // 自分の保存による watcher の再通知で、同じファイルを書き続けない。
+            var loaded = store.TryReload() ?? store.Load();
+            if (loaded.IsReadOnly || !ShouldNotify(offer, loaded.Value.LastNotifiedVersion)) { return; }
             DeviceStateChanges.Update(store, current =>
             {
-                if (!ShouldNotify(offer, current.LastNotifiedVersion)) { return current; }
+                if (!ShouldNotify(offer, current.LastNotifiedVersion)) { throw new NotificationUnchangedException(); }
                 var shown = balloon.Show(UiText.Current.Get("Update.NotificationTitle"),
                     UiText.Current.Format("Tray.UpdateAvailable", ("version", offer.Manifest.Version.ToString())));
-                return shown ? current with { LastNotifiedVersion = offer.Manifest.Version.ToString() } : current;
+                // 保存不要なら Update を抜け、ファイル監視による無限の再評価を避ける。
+                if (!shown) { throw new NotificationUnchangedException(); }
+                return current with { LastNotifiedVersion = offer.Manifest.Version.ToString() };
             });
         }
+        catch (NotificationUnchangedException) { }
         catch (Exception exception)
         {
             try { log.Error(exception); }
             catch (Exception) { }
         }
     }
+
+    private sealed class NotificationUnchangedException : Exception;
 }
 
 /// <summary>HTTPS のリリースノートだけを既定のブラウザーで開く。</summary>
@@ -53,8 +61,7 @@ internal sealed class ReleaseNotesLauncher(IAppLog log, Action<ProcessStartInfo>
     /// <summary>不正な URL は開かず、起動失敗は診断にだけ記録する。</summary>
     internal bool Open(Uri uri)
     {
-        if (!uri.IsAbsoluteUri || uri.Scheme != Uri.UriSchemeHttps || uri.Host.Length == 0
-            || uri.UserInfo.Length != 0) { return false; }
+        if (!UpdateLinks.IsAllowed(uri)) { return false; }
         try
         {
             var info = new ProcessStartInfo(uri.AbsoluteUri) { UseShellExecute = true };

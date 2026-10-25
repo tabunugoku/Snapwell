@@ -1,7 +1,12 @@
+using System.Reflection;
+using System.Runtime.InteropServices;
 using Snapwell.App.Hotkeys;
+using Snapwell.App.Tray;
 using Snapwell.Core.Commands;
 using Snapwell.Core.Localization;
 using Snapwell.Core.Settings;
+using Snapwell.Core.Updates;
+using Snapwell.Platform.Updates;
 
 namespace Snapwell.App.Lifecycle;
 
@@ -49,6 +54,7 @@ internal sealed class AppHost
     private bool _deviceReadOnly;
     private bool _pausePending;
     private int _deviceReloadVersion;
+    private readonly Func<DeviceState, UpdateOffer?> _resolveUpdateOffer;
     private bool _started;
     private bool _enabled;
     private int _shutdown;
@@ -65,8 +71,10 @@ internal sealed class AppHost
         IAppLog log, Action restoreCorners, RuntimeFactory createRuntime, ISettingsWatcher? watcher = null,
         Action? openSetup = null, ISettingsWatcher? deviceWatcher = null,
         Func<TimeSpan, CancellationToken, Task>? retryDelay = null, ISettingsSyncService? sync = null,
-        Action<bool>? setReplaceWinArrow = null, string? osTag = null)
+        Action<bool>? setReplaceWinArrow = null, string? osTag = null,
+        Func<DeviceState, UpdateOffer?>? resolveUpdateOffer = null)
     {
+        _resolveUpdateOffer = resolveUpdateOffer ?? ResolveUpdateOffer;
         _osTag = osTag;
         _instance = instance;
         _guard = guard;
@@ -285,12 +293,47 @@ internal sealed class AppHost
                 }
 
                 _tray.Update(State());
+                if (!loaded.IsReadOnly && _tray is ITrayUpdateSink)
+                {
+                    _ = RefreshUpdateOfferAsync(loaded.Value, version);
+                }
             }
             catch (Exception exception)
             {
                 RetryDeviceReload(exception, attempt, version);
             }
         }
+    }
+
+    private static UpdateOffer? ResolveUpdateOffer(DeviceState state) => UpdateOfferResolver.Resolve(state,
+        typeof(AppHost).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion,
+        UpdatePublicKey.Current, RuntimeInformation.OSArchitecture switch
+        {
+            Architecture.X64 => UpdateOsArchitecture.X64,
+            Architecture.Arm64 => UpdateOsArchitecture.Arm64,
+            _ => UpdateOsArchitecture.Other,
+        });
+
+    private async Task RefreshUpdateOfferAsync(DeviceState state, int version)
+    {
+        try
+        {
+            // 署名の検証はトレイ・入力フック・移動のスレッドから切り離す。
+            var offer = await Task.Run(() => _resolveUpdateOffer(state)).ConfigureAwait(false);
+            if (Volatile.Read(ref _shutdown) != 0) { return; }
+            _tray.Post(() =>
+            {
+                lock (_gate)
+                {
+                    if (CanOperate() && version == _deviceReloadVersion && !_deviceReadOnly
+                        && _tray is ITrayUpdateSink sink)
+                    {
+                        sink.SetUpdateOffer(offer);
+                    }
+                }
+            });
+        }
+        catch (Exception exception) { Log(exception); }
     }
 
     private void RetryDeviceReload(Exception exception, int attempt, int version)
