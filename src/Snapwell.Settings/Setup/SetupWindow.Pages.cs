@@ -11,7 +11,7 @@ namespace Snapwell.Settings.Setup;
 
 public sealed partial class SetupWindow
 {
-    private UpdatePageSession? _welcomeUpdateSession;
+    private object? _welcomeUpdatePage;
     private Task<UpdateToggleResult?>? _welcomeUpdateSave;
     private bool _welcomeUpdateEnabled;
     private bool _welcomeUpdateClosed;
@@ -101,13 +101,14 @@ public sealed partial class SetupWindow
 
     private async void ShowWelcome()
     {
-        if (_welcomeUpdateSession is null)
+        if (_welcomeUpdatePage is null)
         {
             Closed += (_, _) => _welcomeUpdateClosed = true;
         }
-        var session = new UpdatePageSession();
-        _welcomeUpdateSession = session;
-        bool IsCurrent() => !_welcomeUpdateClosed && _welcomeUpdateSession == session &&
+        var page = new object();
+        _welcomeUpdatePage = page;
+        var session = UpdatePageSession.Shared;
+        bool IsCurrent() => !_welcomeUpdateClosed && _welcomeUpdatePage == page &&
             _wizard.Step == SetupStep.Welcome;
 
         SetHeading(UiText.Current.Get("Setup.Welcome.Title"),
@@ -179,10 +180,10 @@ public sealed partial class SetupWindow
             if (!IsCurrent()) { return; }
             if (previousSave is not null) { _welcomeUpdateEnabled = previousSave.Enabled; }
         }
-        var readGeneration = session.Generation;
         var lastEnabled = _welcomeUpdateEnabled;
-        var loaded = await Task.Run(() => UpdatePageModel.ReadAutomatic(_deviceStore, lastEnabled));
-        if (!session.CanApply(readGeneration, cancelled: !IsCurrent())) { return; }
+        var restored = await session.ReadAsync(() => UpdatePageModel.ReadAutomatic(_deviceStore, lastEnabled));
+        if (!session.CanApply(restored.Generation, cancelled: !IsCurrent())) { return; }
+        var loaded = restored.Value;
         _welcomeUpdateEnabled = loaded.Enabled;
         SetToggle(loaded.Enabled, loaded.CanWrite);
         if (!loaded.Succeeded || !loaded.CanWrite || _loadFailed)

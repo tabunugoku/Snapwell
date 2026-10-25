@@ -26,7 +26,7 @@ public sealed partial class GeneralPage
     private bool _automaticUpdateEnabled;
     private bool _updateCanWrite;
     private bool _updateBusy;
-    private UpdatePageSession _updateSession = new();
+    private readonly UpdatePageSession _updateSession = UpdatePageSession.Shared;
     private CancellationTokenSource? _updatePageStop;
     private UpdateOffer? _updateOffer;
 
@@ -34,18 +34,16 @@ public sealed partial class GeneralPage
     {
         var stop = new CancellationTokenSource();
         _updatePageStop = stop;
-        var session = new UpdatePageSession();
-        _updateSession = session;
-        var generation = session.Generation;
+        var session = _updateSession;
         _updateBusy = false;
         _updateCanWrite = false;
         UpdateCheckNowButton.IsEnabled = false;
         RefreshUpdateSaveControls();
         try
         {
-            var restored = await Task.Run(() => ReadUpdateState(), stop.Token);
-            if (!session.CanApply(generation, stop.IsCancellationRequested)) { return; }
-            ApplyUpdateState(restored.State, restored.Offer);
+            var restored = await session.ReadAsync(ReadUpdateState, stop.Token);
+            if (!session.CanApply(restored.Generation, stop.IsCancellationRequested)) { return; }
+            ApplyUpdateState(restored.Value.State, restored.Value.Offer);
         }
         catch (OperationCanceledException) { }
         catch (Exception exception) when (UpdatePageModel.IsSaveFailure(exception))
@@ -71,7 +69,7 @@ public sealed partial class GeneralPage
 
     private (SettingsLoadResult<DeviceState> State, UpdateOffer? Offer) ReadUpdateState()
     {
-        var loaded = _deviceStore.TryReload() ?? _deviceStore.Load();
+        var loaded = UpdatePageModel.ReadState(_deviceStore);
         var offer = loaded.IsReadOnly ? null : UpdateOfferResolver.Resolve(loaded.Value,
             _updateVersion, UpdatePublicKey.Current, _updateArchitecture);
         return (loaded, offer);
@@ -79,8 +77,10 @@ public sealed partial class GeneralPage
 
     private void ApplyUpdateState(SettingsLoadResult<DeviceState> loaded, UpdateOffer? offer)
     {
-        SetUpdateToggle(loaded.Value.UpdateCheckEnabled, !loaded.IsReadOnly);
+        SetUpdateToggle(loaded.IsReadOnly ? _automaticUpdateEnabled : loaded.Value.UpdateCheckEnabled,
+            !loaded.IsReadOnly);
         ShowUpdateOffer(offer, !loaded.IsReadOnly);
+        if (loaded.IsReadOnly) { ReportEnabledFailure(UiText.Current.Get("General.Device.Unreadable")); }
         UpdateLastChecked.Text = loaded.Value.LastUpdateCheckUtc is { } time
             ? UiText.Current.Format("General_UpdateStatusLastChecked", ("time", time.ToLocalTime().ToString("yyyy/MM/dd HH:mm", CultureInfo.InvariantCulture)))
             : "";
@@ -153,17 +153,21 @@ public sealed partial class GeneralPage
                 UpdateStatus.Text = key is null ? "" : UiText.Current.Get(key);
             }
             // 確認中の本体によるスキップや新しいキャッシュも最新値から再評価する。
-            var generation = session.Generation;
-            var restored = await Task.Run(() => ReadUpdateState(), token);
-            if (session.CanApply(generation, stop.IsCancellationRequested))
+            var restored = await session.ReadAsync(ReadUpdateState, token);
+            if (session.CanApply(restored.Generation, stop.IsCancellationRequested))
             {
-                ApplyUpdateState(restored.State, restored.Offer);
+                ApplyUpdateState(restored.Value.State, restored.Value.Offer);
             }
         }
         catch (OperationCanceledException) { }
         catch (Exception exception) when (UpdatePageModel.IsSaveFailure(exception))
         {
-            if (!stop.IsCancellationRequested) { UpdateStatus.Text = UiText.Current.Get("General_UpdateStatusFailed"); }
+            if (!stop.IsCancellationRequested)
+            {
+                SetUpdateToggle(_automaticUpdateEnabled, false);
+                UpdateStatus.Text = UiText.Current.Get("General_UpdateStatusFailed");
+                ReportEnabledFailure(UiText.Current.Get("General.Device.Unreadable"));
+            }
         }
         finally
         {

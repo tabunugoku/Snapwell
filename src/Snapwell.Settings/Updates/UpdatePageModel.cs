@@ -14,9 +14,12 @@ internal sealed record UpdateToggleResult(bool Enabled, bool CanWrite, bool Save
 /// <summary>読み込みの成否と書き込み可否を区別したスイッチの状態。</summary>
 internal sealed record UpdateToggleState(bool Enabled, bool Succeeded, bool CanWrite);
 
-/// <summary>ページごとの保存を直列化し、古い読み取りによる表示の巻き戻りを防ぐ。</summary>
+/// <summary>設定ウィンドウの保存を共有し、ページを開き直しても古い読み取りを反映しない。</summary>
 internal sealed class UpdatePageSession
 {
+    internal static UpdatePageSession Shared { get; } = new();
+
+    private Task? _pendingSave;
     internal int Generation { get; private set; }
     internal bool IsSaving { get; private set; }
 
@@ -25,10 +28,33 @@ internal sealed class UpdatePageSession
         !cancelled && !IsSaving && generation == Generation;
 
     /// <summary>保存と失敗後の読み直しをワーカーへ渡し、連打は受け付けない。</summary>
-    internal async Task<T?> SaveAsync<T>(Func<T> save) where T : class
+    internal Task<T?> SaveAsync<T>(Func<T> save) where T : class
     {
-        if (IsSaving) { return null; }
+        if (IsSaving) { return Task.FromResult<T?>(null); }
         IsSaving = true;
+        var pending = SaveCoreAsync(save);
+        _pendingSave = pending;
+        return pending;
+    }
+
+    /// <summary>前ページの保存と世代の更新を待ち、最新値の読み取りをワーカーへ渡す。</summary>
+    internal async Task<(int Generation, T Value)> ReadAsync<T>(Func<T> read,
+        CancellationToken cancellationToken = default)
+    {
+        if (_pendingSave is { } pending)
+        {
+            try { await pending.WaitAsync(cancellationToken); }
+            catch (Exception exception) when (UpdatePageModel.IsSaveFailure(exception))
+            {
+                // スキップ保存が失敗しても、実際に残った値を読み直す。
+            }
+        }
+        var generation = Generation;
+        return (generation, await Task.Run(read, cancellationToken));
+    }
+
+    private async Task<T?> SaveCoreAsync<T>(Func<T> save) where T : class
+    {
         try { return await Task.Run(save); }
         finally
         {
@@ -42,6 +68,17 @@ internal sealed class UpdatePageSession
 /// <summary>WinUI に依存しない、更新画面の表示と保存の判断。</summary>
 internal static class UpdatePageModel
 {
+    /// <summary>表示だけでは破損ファイルを退避せず、復旧された既定値も正常値として返さない。</summary>
+    internal static SettingsLoadResult<DeviceState> ReadState(ISettingsStore<DeviceState> store)
+    {
+        var loaded = store.TryReload();
+        if (loaded is null || loaded.ResetToDefaults)
+        {
+            throw new IOException("更新の設定を読み取れない。");
+        }
+        return loaded;
+    }
+
     internal static string? StatusKey(UpdateCheckOutcome outcome) => outcome switch
     {
         UpdateCheckOutcome.Available => null,
@@ -61,7 +98,7 @@ internal static class UpdatePageModel
     {
         try
         {
-            var loaded = store.TryReload() ?? store.Load();
+            var loaded = ReadState(store);
             return new(loaded.IsReadOnly ? previous : loaded.Value.UpdateCheckEnabled, true, !loaded.IsReadOnly);
         }
         catch (Exception exception) when (IsSaveFailure(exception))

@@ -10,6 +10,73 @@ namespace Snapwell.Platform.Tests.Updates;
 /// <summary>WinUI を起動せず、更新画面の表示と保存結果を検証する。</summary>
 public sealed class UpdatePageModelTests
 {
+    /// <summary>ページを再生成しても共有保存を待ち、保存後のスイッチとスキップを初期値にする。</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ReopenedPageWaitsForSharedSaveBeforeInitialRead(bool skip)
+    {
+        var session = UpdatePageSession.Shared;
+        var store = new Store();
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var generation = session.Generation;
+        var pending = session.SaveAsync(() =>
+        {
+            started.SetResult();
+            release.Task.WaitAsync(TimeSpan.FromSeconds(10)).GetAwaiter().GetResult();
+            return skip ? UpdatePageModel.Skip(store, "1.2.0")
+                : DeviceStateChanges.Update(store, state => state with { UpdateCheckEnabled = true });
+        });
+        Task<(int Generation, SettingsLoadResult<DeviceState> Value)>? reading = null;
+        var reads = 0;
+        try
+        {
+            await started.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            var reopened = UpdatePageSession.Shared;
+            Assert.Same(session, reopened);
+            reading = reopened.ReadAsync(() =>
+            {
+                Interlocked.Increment(ref reads);
+                return UpdatePageModel.ReadState(store);
+            });
+
+            Assert.True(reopened.IsSaving);
+            Assert.False(reading.IsCompleted);
+            Assert.Equal(0, Volatile.Read(ref reads));
+            Assert.Null(await reopened.SaveAsync(() => new DeviceState()));
+        }
+        finally
+        {
+            release.TrySetResult();
+            await pending;
+        }
+        Assert.NotNull(reading);
+        var restored = await reading.WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.Equal(generation + 1, restored.Generation);
+        Assert.True(session.CanApply(restored.Generation, cancelled: false));
+        Assert.Equal(!skip, restored.Value.Value.UpdateCheckEnabled);
+        Assert.Equal(skip ? "1.2.0" : null, restored.Value.Value.SkippedVersion);
+        Assert.Equal(1, reads);
+    }
+
+    /// <summary>スキップの保存が失敗しても再表示は続行し、実際に残った値を読み直す。</summary>
+    [Fact]
+    public async Task InitialReadContinuesAfterFailedSave()
+    {
+        var session = new UpdatePageSession();
+        var store = new Store { FailSave = true, Value = new() { UpdateCheckEnabled = true } };
+        var pending = session.SaveAsync(() => UpdatePageModel.Skip(store, "1.2.0"));
+        var reading = session.ReadAsync(() => UpdatePageModel.ReadAutomatic(store));
+
+        await Assert.ThrowsAsync<IOException>(async () => await pending);
+        var restored = await reading;
+
+        Assert.True(restored.Value.Succeeded);
+        Assert.True(restored.Value.Enabled);
+        Assert.True(session.CanApply(restored.Generation, cancelled: false));
+    }
+
     /// <summary>読み取りの配送前に保存が完了した場合、古いスイッチもスキップ済みの案内も反映しない。</summary>
     [Theory]
     [InlineData(false)]
@@ -237,6 +304,50 @@ public sealed class UpdatePageModelTests
         Assert.Equal(readOnly ? previous : !previous, result.Enabled);
     }
 
+    /// <summary>破損した実ファイルは表示の読み取りで退避せず、直前値のまま操作を止める。</summary>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void CorruptFileReadFailsWithoutMovingOriginal(bool previous)
+    {
+        var directory = Directory.CreateTempSubdirectory("snapwell-update-read-");
+        try
+        {
+            var path = Path.Combine(directory.FullName, "device.json");
+            const string corrupt = "{broken json";
+            File.WriteAllText(path, corrupt);
+            var store = SettingsStores.Device(path);
+
+            var result = UpdatePageModel.ReadAutomatic(store, previous);
+
+            Assert.False(result.Succeeded);
+            Assert.False(result.CanWrite);
+            Assert.Equal(previous, result.Enabled);
+            Assert.Equal(corrupt, File.ReadAllText(path));
+            Assert.Single(directory.GetFiles());
+        }
+        finally { directory.Delete(recursive: true); }
+    }
+
+    /// <summary>既定値への復旧は正常なオフにせず、保存失敗後の再読込でも直前値を保つ。</summary>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ResetToDefaultsReadFailsAndPreservesPrevious(bool previous)
+    {
+        var store = new Store { ResetToDefaults = true, FailSave = true };
+
+        var loaded = UpdatePageModel.ReadAutomatic(store, previous);
+        var saved = UpdatePageModel.SetAutomatic(store, !previous, previous);
+
+        Assert.False(loaded.Succeeded);
+        Assert.False(loaded.CanWrite);
+        Assert.Equal(previous, loaded.Enabled);
+        Assert.False(saved.Saved);
+        Assert.False(saved.CanWrite);
+        Assert.Equal(previous, saved.Enabled);
+    }
+
     /// <summary>スキップは最新値へ保存し、同じ署名済みの版を復元しなくなる。</summary>
     [Fact]
     public void SkipPersistsVersionAndSuppressesCachedOffer()
@@ -281,11 +392,12 @@ public sealed class UpdatePageModelTests
         internal bool Unreadable;
         internal bool UnreadableAfterFailure;
         internal bool ReloadReturnsNull;
+        internal bool ResetToDefaults;
         private bool _failed;
         public SettingsLoadResult<DeviceState> Load()
         {
             if (Unreadable || (_failed && UnreadableAfterFailure)) { throw new IOException(); }
-            return new(Value, IsReadOnly: ReadOnly);
+            return new(Value, ResetToDefaults: ResetToDefaults, IsReadOnly: ReadOnly);
         }
         public SettingsLoadResult<DeviceState>? TryReload() => ReloadReturnsNull ? null
             : Latest is null ? Load() : new(Latest);
