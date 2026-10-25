@@ -24,7 +24,8 @@ public sealed record UpdateInstallRequest(
     string PublicKeySpkiBase64,
     ReleaseVersion CurrentVersion,
     UpdateOsArchitecture Architecture,
-    TimeSpan ReadyTimeout);
+    TimeSpan ReadyTimeout,
+    bool PreviousUpdateUnresolved);
 
 /// <summary>更新ヘルパーの終了コードとして使う固定の処理結果。</summary>
 public enum UpdateInstallResult
@@ -40,11 +41,13 @@ public enum UpdateInstallResult
     ApplyFailedRollbackIncomplete = 21,
     ReadyTimeoutRolledBack = 22,
     ReadyTimeoutRollbackIncomplete = 23,
+    ReadyTimeoutResidentRunning = 24,
     IoError = 30,
+    AnotherUpdateRunning = 31,
 }
 
 /// <summary>作業用コピーを検証・展開・適用し、新版の起動確認まで旧版を保持する。</summary>
-public sealed class UpdateInstallSession(IUpdateFileSystem fs, IUpdateSignals signals)
+public sealed class UpdateInstallSession(IUpdateFileSystem fs, IUpdateSignals signals, IUpdateResidentStopper stopper)
 {
     private static readonly uint[] _crc32Table = CreateCrc32Table();
 
@@ -139,6 +142,7 @@ public sealed class UpdateInstallSession(IUpdateFileSystem fs, IUpdateSignals si
                 diagnostic = "Package extraction rejected: " + exception.Message;
                 return UpdateInstallResult.ZipRejected;
             }
+            if (!request.PreviousUpdateUnresolved) { CleanupPreviousBackups(install); }
             needsRollback = true;
             var result = applier.Apply(install, staging, files, journal);
             if (result.Status != ApplyStatus.Success)
@@ -146,6 +150,8 @@ public sealed class UpdateInstallSession(IUpdateFileSystem fs, IUpdateSignals si
                 needsRollback = false;
                 preserveStaging = result.Rollback?.Status != RollbackStatus.RolledBack;
                 diagnostic = result.Diagnostic + RollbackDiagnostic(result.Rollback);
+                // 事前検査だけの失敗では、配置先もジャーナルも変更されていない。
+                if (!fs.Exists(journal)) { return UpdateInstallResult.IoError; }
                 return preserveStaging ? UpdateInstallResult.ApplyFailedRollbackIncomplete
                     : UpdateInstallResult.ApplyFailedRolledBack;
             }
@@ -155,11 +161,22 @@ public sealed class UpdateInstallSession(IUpdateFileSystem fs, IUpdateSignals si
                 // 起動確認後は旧版を一部削除済みの可能性があるため、巻き戻しに移らない。
                 needsRollback = false;
                 BestEffort(() => applier.CommitCleanup(install, journal));
-                diagnostic = "Update installed and startup confirmed.";
+                diagnostic = "Update installed and startup confirmed."
+                    + " Any remaining .old files will be cleaned up at the start of the next update.";
                 return UpdateInstallResult.Success;
             }
-            var rollback = Rollback(applier, install, journal);
+            // 停止処理が例外になっても、新版の実行中イメージを残したまま巻き戻さない。
             needsRollback = false;
+            preserveStaging = true;
+            var stopped = false;
+            BestEffort(() => stopped = stopper.StopResidents(install, TimeSpan.FromSeconds(15)));
+            if (!stopped)
+            {
+                diagnostic = "Startup confirmation timed out."
+                    + " Rollback was skipped because the new resident could not be stopped.";
+                return UpdateInstallResult.ReadyTimeoutResidentRunning;
+            }
+            var rollback = Rollback(applier, install, journal);
             preserveStaging = rollback.Status != RollbackStatus.RolledBack;
             diagnostic = "Startup confirmation timed out." + RollbackDiagnostic(rollback);
             return preserveStaging ? UpdateInstallResult.ReadyTimeoutRollbackIncomplete
@@ -173,6 +190,8 @@ public sealed class UpdateInstallSession(IUpdateFileSystem fs, IUpdateSignals si
                 var rollback = Rollback(applier, request.InstallDir, journal!);
                 preserveStaging = rollback.Status != RollbackStatus.RolledBack;
                 diagnostic += RollbackDiagnostic(rollback);
+                // 部分的に復元された配置を、進行役が再起動しないよう専用のコードで知らせる。
+                if (preserveStaging) { return UpdateInstallResult.ApplyFailedRollbackIncomplete; }
             }
             return UpdateInstallResult.IoError;
         }
@@ -185,6 +204,21 @@ public sealed class UpdateInstallSession(IUpdateFileSystem fs, IUpdateSignals si
             }
         }
     }
+
+    private void CleanupPreviousBackups(string install)
+    {
+        var files = fs.EnumerateFiles(install).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var relative in files.Where(IsOld))
+        {
+            // 対応する現行ファイルが無い退避は、未完了の復旧で必要かもしれない。
+            if (files.Contains(relative[..^4]))
+            {
+                BestEffort(() => fs.DeleteFile(Path.Combine(install, relative)));
+            }
+        }
+    }
+
+    private static bool IsOld(string path) => path.EndsWith(".old", StringComparison.OrdinalIgnoreCase);
 
     private static IReadOnlyList<string> Extract(string packagePath, string staging)
     {

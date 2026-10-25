@@ -13,6 +13,7 @@ namespace Snapwell.Platform.Startup;
 public sealed unsafe class TaskSchedulerService : IAdminTaskService
 {
     private readonly AdminTaskRegistration _registration;
+    private readonly string _taskName;
 
     /// <summary>接続前に現在のユーザーの SID を固定する。</summary>
     public TaskSchedulerService()
@@ -20,6 +21,7 @@ public sealed unsafe class TaskSchedulerService : IAdminTaskService
         using var identity = WindowsIdentity.GetCurrent();
         _registration = new(new SchedulerStore(),
             identity.User?.Value ?? throw new InvalidOperationException("SID を取得できない。"), identity.Name);
+        _taskName = AdminTaskXml.GetTaskName(identity.User!.Value);
     }
 
     /// <summary>現在のタスクの実行先を読む。</summary>
@@ -31,6 +33,25 @@ public sealed unsafe class TaskSchedulerService : IAdminTaskService
 
     /// <summary>自分のタスクを削除する。</summary>
     public void Delete() => _registration.Delete();
+
+    /// <summary>現在の利用者の登録済みタスクを、登録内容を変更せず実行する。</summary>
+    public void Run()
+    {
+        using var connection = new Connection();
+        using var name = new Bstr(_taskName);
+        IRegisteredTask* task = null;
+        IRunningTask* running = null;
+        try
+        {
+            connection.Folder->GetTask(name.Value, &task);
+            task->Run(default, &running);
+        }
+        finally
+        {
+            if (running != null) { running->Release(); }
+            if (task != null) { task->Release(); }
+        }
+    }
 
     private sealed class SchedulerStore : IAdminTaskStore
     {

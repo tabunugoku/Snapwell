@@ -17,6 +17,9 @@ public interface IAdminTaskService
 
     /// <summary>自分のタスクを削除する。</summary>
     void Delete();
+
+    /// <summary>登録済みのタスクを実行する。OS に接続しない登録用の実装では未対応とする。</summary>
+    void Run() => throw new NotSupportedException();
 }
 
 /// <summary>通常権限の画面から、登録専用のヘルパーだけを昇格する境界。</summary>
