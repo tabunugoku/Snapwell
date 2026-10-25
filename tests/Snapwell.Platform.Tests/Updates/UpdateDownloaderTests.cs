@@ -33,7 +33,7 @@ public sealed class UpdateDownloaderTests : IDisposable
         var result = await downloader.DownloadAsync(Asset(bytes), Destination, new Reports(reports.Add), default);
         Assert.True(result.IsSuccess, result.Diagnostic);
         Assert.Equal(bytes, await File.ReadAllBytesAsync(Destination));
-        Assert.False(File.Exists(Destination + ".part"));
+        Assert.Empty(Directory.EnumerateFiles(_directory, "*.part"));
         Assert.Equal(new long[] { 65536, 131072, bytes.Length }, reports);
     }
 
@@ -215,7 +215,7 @@ public sealed class UpdateDownloaderTests : IDisposable
         AssertFailed(await pending, UpdateDownloadFailure.Cancelled);
     }
 
-    /// <summary>ヘッダーまたは本文が三十秒途絶えたときはタイムアウトとして返す。</summary>
+    /// <summary>ヘッダーまたは本文が指定した期限まで途絶えたときはタイムアウトとして返す。</summary>
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -226,24 +226,25 @@ public sealed class UpdateDownloaderTests : IDisposable
             if (!body) { await Task.Delay(Timeout.InfiniteTimeSpan, token); }
             return Ok(new StreamContent(new BodyStream([1], beforeRead: readToken =>
                 Task.Delay(Timeout.InfiniteTimeSpan, readToken))));
-        });
+        }, idleTimeout: TimeSpan.FromMilliseconds(250));
         var result = await downloader.DownloadAsync(Asset([1]), Destination, null, default)
-            .WaitAsync(TimeSpan.FromSeconds(45));
+            .WaitAsync(TimeSpan.FromSeconds(5));
         AssertFailed(result, UpdateDownloadFailure.Timeout);
     }
 
-    /// <summary>通信が続けば全体が三十秒を超えても取得し、読み取りごとに期限を更新する。</summary>
+    /// <summary>通信が続けば全体が無通信の期限を超えても取得し、読み取りごとに期限を更新する。</summary>
     [Fact]
     public async Task ContinuesWhileDataArrives()
     {
+        var idleTimeout = TimeSpan.FromMilliseconds(500);
         byte[] bytes = [1, 2, 3, 4, 5, 6];
         using var downloader = Create((_, _) => Task.FromResult(Ok(new StreamContent(new BodyStream(bytes,
-            beforeRead: token => Task.Delay(TimeSpan.FromSeconds(5), token), maximumChunk: 1)))));
+            beforeRead: token => Task.Delay(TimeSpan.FromMilliseconds(100), token), maximumChunk: 1)))), idleTimeout);
         var result = await downloader.DownloadAsync(Asset(bytes), Destination, null, default)
-            .WaitAsync(TimeSpan.FromSeconds(50));
+            .WaitAsync(TimeSpan.FromSeconds(5));
         Assert.True(result.IsSuccess, result.Diagnostic);
         Assert.Equal(bytes, await File.ReadAllBytesAsync(Destination));
-        Assert.False(File.Exists(Destination + ".part"));
+        Assert.Empty(Directory.EnumerateFiles(_directory, "*.part"));
     }
 
     /// <summary>開始前の取り消しでは通信もファイルの作成もしない。</summary>
@@ -272,7 +273,7 @@ public sealed class UpdateDownloaderTests : IDisposable
         var result = await downloader.DownloadAsync(Asset([1]), destination, null, default);
         Assert.Equal(UpdateDownloadFailure.IoError, result.Failure);
         Assert.False(File.Exists(destination));
-        Assert.False(File.Exists(destination + ".part"));
+        Assert.Empty(Directory.EnumerateFiles(_directory, "*.part", SearchOption.AllDirectories));
     }
 
     /// <summary>既存の確定ファイルは要求を送る前に保護する。</summary>
@@ -290,7 +291,7 @@ public sealed class UpdateDownloaderTests : IDisposable
         var result = await downloader.DownloadAsync(Asset([1]), Destination, null, default);
         Assert.Equal(UpdateDownloadFailure.IoError, result.Failure);
         Assert.Equal(existing, await File.ReadAllBytesAsync(Destination));
-        Assert.False(File.Exists(Destination + ".part"));
+        Assert.Empty(Directory.EnumerateFiles(_directory, "*.part"));
         Assert.Equal(0, calls);
     }
 
@@ -303,19 +304,93 @@ public sealed class UpdateDownloaderTests : IDisposable
             new Reports(_ => File.WriteAllBytes(Destination, [9])), default);
         Assert.Equal(UpdateDownloadFailure.IoError, result.Failure);
         Assert.Equal(new byte[] { 9 }, await File.ReadAllBytesAsync(Destination));
-        Assert.False(File.Exists(Destination + ".part"));
+        Assert.Empty(Directory.EnumerateFiles(_directory, "*.part"));
     }
 
-    /// <summary>別の取得の一時ファイルを上書きも削除もしない。</summary>
+    /// <summary>古い一時ファイルが残っていても取得でき、古いファイルを変更しない。</summary>
     [Fact]
-    public async Task PreservesExistingPartFile()
+    public async Task DownloadsDespiteExistingPartFile()
     {
         await File.WriteAllBytesAsync(Destination + ".part", [9]);
         using var downloader = Create((_, _) => Task.FromResult(Ok(new ByteArrayContent([1]))));
-        Assert.Equal(UpdateDownloadFailure.IoError,
-            (await downloader.DownloadAsync(Asset([1]), Destination, null, default)).Failure);
+        var result = await downloader.DownloadAsync(Asset([1]), Destination, null, default);
+        Assert.True(result.IsSuccess, result.Diagnostic);
+        Assert.Equal(new byte[] { 1 }, await File.ReadAllBytesAsync(Destination));
         Assert.Equal(new byte[] { 9 }, await File.ReadAllBytesAsync(Destination + ".part"));
+        Assert.Equal(Destination + ".part", Assert.Single(Directory.EnumerateFiles(_directory, "*.part")));
+    }
+
+    /// <summary>同じ確定先への取得を同時に進めても、一方だけが保存し、他方は上書きせず失敗する。</summary>
+    [Fact]
+    public async Task ConcurrentDownloadsDoNotOverwriteOrDeleteEachOthersFiles()
+    {
+        var firstEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var secondEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseFirst = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseSecond = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var stop = new CancellationTokenSource();
+        byte[] firstBytes = [1, 2, 3];
+        byte[] secondBytes = [4, 5, 6];
+        using var firstDownloader = Create(async (_, token) =>
+        {
+            firstEntered.SetResult();
+            await releaseFirst.Task.WaitAsync(token);
+            return Ok(new ByteArrayContent(firstBytes));
+        });
+        using var secondDownloader = Create(async (_, token) =>
+        {
+            secondEntered.SetResult();
+            await releaseSecond.Task.WaitAsync(token);
+            return Ok(new ByteArrayContent(secondBytes));
+        });
+        var firstPending = firstDownloader.DownloadAsync(Asset(firstBytes), Destination, null, stop.Token);
+        var secondPending = secondDownloader.DownloadAsync(Asset(secondBytes), Destination, null, stop.Token);
+        try
+        {
+            await Task.WhenAll(firstEntered.Task, secondEntered.Task).WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.Equal(2, Directory.EnumerateFiles(_directory, "*.part").Count());
+            releaseFirst.SetResult();
+            var firstResult = await firstPending.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.True(firstResult.IsSuccess, firstResult.Diagnostic);
+            Assert.Equal(firstBytes, await File.ReadAllBytesAsync(Destination));
+            var secondPart = Assert.Single(Directory.EnumerateFiles(_directory, "*.part"));
+            Assert.False(secondPending.IsCompleted);
+
+            releaseSecond.SetResult();
+            var secondResult = await secondPending.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.Equal(UpdateDownloadFailure.IoError, secondResult.Failure);
+            Assert.False(string.IsNullOrWhiteSpace(secondResult.Diagnostic));
+            Assert.Equal(firstBytes, await File.ReadAllBytesAsync(Destination));
+            Assert.False(File.Exists(secondPart));
+            Assert.Equal(Destination, Assert.Single(Directory.EnumerateFiles(_directory)));
+        }
+        finally
+        {
+            stop.Cancel();
+            await Task.WhenAll(firstPending, secondPending);
+        }
+    }
+
+    /// <summary>失敗や取り消しでは自分の一時ファイルだけを削除し、残っている他の一時ファイルを保つ。</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task PreservesOtherPartFilesOnFailureOrCancellation(bool cancel)
+    {
+        var oldPart = Destination + ".part";
+        var otherPart = Destination + "." + Guid.NewGuid().ToString("N") + ".part";
+        await File.WriteAllBytesAsync(oldPart, [8]);
+        await File.WriteAllBytesAsync(otherPart, [9]);
+        using var stop = new CancellationTokenSource();
+        using var downloader = Create((_, _) => Task.FromResult(Ok(new ByteArrayContent([1]))));
+        var asset = Asset([1]) with { Sha256 = new string('0', 64) };
+        var result = await downloader.DownloadAsync(asset, Destination,
+            new Reports(_ => { if (cancel) { stop.Cancel(); } }), stop.Token);
+        Assert.Equal(cancel ? UpdateDownloadFailure.Cancelled : UpdateDownloadFailure.HashMismatch, result.Failure);
         Assert.False(File.Exists(Destination));
+        Assert.Equal(new byte[] { 8 }, await File.ReadAllBytesAsync(oldPart));
+        Assert.Equal(new byte[] { 9 }, await File.ReadAllBytesAsync(otherPart));
+        Assert.Equal(2, Directory.EnumerateFiles(_directory).Count());
     }
 
     /// <summary>無限に続く本文は上限の次の一バイトで打ち切り、上限までしかディスクに書かない。</summary>
@@ -327,7 +402,8 @@ public sealed class UpdateDownloaderTests : IDisposable
         var lengths = new List<long>();
         using var downloader = Create((_, _) => Task.FromResult(Ok(new StreamContent(stream))));
         var result = await downloader.DownloadAsync(Asset(new byte[size]), Destination,
-            new Reports(_ => lengths.Add(new FileInfo(Destination + ".part").Length)), default);
+            new Reports(_ => lengths.Add(new FileInfo(
+                Assert.Single(Directory.EnumerateFiles(_directory, "*.part"))).Length)), default);
         AssertFailed(result, UpdateDownloadFailure.SizeMismatch);
         Assert.Equal(size + 1, stream.BytesRead);
         Assert.Equal(new long[] { size }, lengths);
@@ -352,13 +428,13 @@ public sealed class UpdateDownloaderTests : IDisposable
         Assert.Equal(expected, result.Failure);
         Assert.False(string.IsNullOrWhiteSpace(result.Diagnostic));
         Assert.False(File.Exists(Destination));
-        Assert.False(File.Exists(Destination + ".part"));
+        Assert.Empty(Directory.EnumerateFiles(_directory, "*.part"));
     }
 
     private static UpdateDownloader Create(
-        Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> send) =>
+        Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> send, TimeSpan? idleTimeout = null) =>
         new("1.2.3+commit", static uri => uri.Host is "github.com" or "objects.githubusercontent.com",
-            new Handler(send));
+            new Handler(send), idleTimeout);
 
     private static UpdateAsset Asset(byte[] bytes) => new(new Uri("https://github.com/update.zip"),
         Convert.ToHexStringLower(SHA256.HashData(bytes)), bytes.LongLength);

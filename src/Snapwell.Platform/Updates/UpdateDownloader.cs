@@ -22,12 +22,21 @@ public sealed class UpdateDownloader : IDisposable
     private readonly HttpClient _client;
     private readonly string _userAgent;
     private readonly Func<Uri, bool> _allowedHost;
+    private readonly TimeSpan _idleTimeout;
 
     /// <summary>版とホストの許可条件を指定し、任意のハンドラーの所有権を受け取る。</summary>
     public UpdateDownloader(string version, Func<Uri, bool> allowedHost, HttpMessageHandler? handler = null)
+        : this(version, allowedHost, handler, null)
+    {
+    }
+
+    /// <summary>テストでは無通信の期限を短くし、実時間の待機を抑える。</summary>
+    internal UpdateDownloader(string version, Func<Uri, bool> allowedHost, HttpMessageHandler? handler,
+        TimeSpan? idleTimeout)
     {
         _userAgent = "Snapwell/" + version.Split('+')[0];
         _allowedHost = allowedHost;
+        _idleTimeout = idleTimeout ?? TimeSpan.FromSeconds(30);
         _client = new(handler ?? new HttpClientHandler
         {
             AllowAutoRedirect = false,
@@ -43,7 +52,7 @@ public sealed class UpdateDownloader : IDisposable
     public async Task<UpdateDownloadResult> DownloadAsync(UpdateAsset asset, string destinationPath,
         IProgress<long>? progress, CancellationToken cancellationToken)
     {
-        var partPath = destinationPath + ".part";
+        var partPath = destinationPath + "." + Guid.NewGuid().ToString("N") + ".part";
         var ownsPart = false;
         UpdateDownloadResult result = new();
         try
@@ -63,7 +72,7 @@ public sealed class UpdateDownloader : IDisposable
                 // CreateNew が失敗したときは、別の取得が所有する一時ファイルを消さない。
                 ownsPart = true;
                 await UpdateHttp.GetAsync(_client, _userAgent, asset.Url, asset.Size, _allowedHost, file,
-                    cancellationToken, requireExactLength: true, idleTimeout: TimeSpan.FromSeconds(30),
+                    cancellationToken, requireExactLength: true, idleTimeout: _idleTimeout,
                     progress: progress).ConfigureAwait(false);
                 file.Position = 0;
                 var hash = await SHA256.HashDataAsync(file, cancellationToken).ConfigureAwait(false);
@@ -94,7 +103,8 @@ public sealed class UpdateDownloader : IDisposable
         {
             result = cancellationToken.IsCancellationRequested
                 ? new(UpdateDownloadFailure.Cancelled, "Update download was cancelled.")
-                : new(UpdateDownloadFailure.Timeout, "Update download was idle for 30 seconds.");
+                : new(UpdateDownloadFailure.Timeout,
+                    $"Update download was idle for {_idleTimeout.TotalSeconds} seconds.");
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException
             or ArgumentException or NotSupportedException)
