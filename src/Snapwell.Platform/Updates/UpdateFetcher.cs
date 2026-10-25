@@ -1,4 +1,3 @@
-using System.Net;
 using Snapwell.Core.Updates;
 
 namespace Snapwell.Platform.Updates;
@@ -55,7 +54,7 @@ public sealed class UpdateFetcher : IUpdateFetcher, IDisposable
             var signature = await GetAsync(UpdateEndpoints.Signature, 1024, timeout.Token).ConfigureAwait(false);
             return new(manifest, signature);
         }
-        catch (FetchException exception) { return new(Failure: exception.Failure, Diagnostic: exception.Message); }
+        catch (UpdateHttpException exception) { return new(Failure: exception.Failure, Diagnostic: exception.Message); }
         catch (OperationCanceledException)
         {
             return cancellationToken.IsCancellationRequested
@@ -70,64 +69,12 @@ public sealed class UpdateFetcher : IUpdateFetcher, IDisposable
 
     private async Task<byte[]> GetAsync(Uri uri, int limit, CancellationToken cancellationToken)
     {
-        for (var redirects = 0; redirects <= 10; redirects++)
-        {
-            if (!IsSecure(uri))
-            {
-                throw new FetchException(UpdateFetchFailure.InsecureRedirect, "Redirect requires an anonymous HTTPS URL.");
-            }
-            using var request = new HttpRequestMessage(HttpMethod.Get, uri);
-            request.Headers.UserAgent.ParseAdd(_userAgent);
-            using var response = await _client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead,
-                cancellationToken).ConfigureAwait(false);
-            if (response.RequestMessage?.RequestUri is { } final && !IsSecure(final))
-            {
-                throw new FetchException(UpdateFetchFailure.InsecureRedirect, "Response URL is not anonymous HTTPS.");
-            }
-            if (response.StatusCode is HttpStatusCode.MovedPermanently or HttpStatusCode.Redirect
-                or HttpStatusCode.SeeOther or HttpStatusCode.TemporaryRedirect or HttpStatusCode.PermanentRedirect)
-            {
-                if (response.Headers.Location is not { } location)
-                {
-                    throw new FetchException(UpdateFetchFailure.HttpStatus, "Redirect has no location.");
-                }
-                uri = location.IsAbsoluteUri ? location : new(uri, location);
-                continue;
-            }
-            if (!response.IsSuccessStatusCode)
-            {
-                throw new FetchException(UpdateFetchFailure.HttpStatus, $"HTTP status {(int)response.StatusCode}.");
-            }
-            if (response.Content.Headers.ContentLength > limit)
-            {
-                throw new FetchException(UpdateFetchFailure.TooLarge, "Response exceeds its size limit.");
-            }
-            using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
-            using var body = new MemoryStream();
-            var buffer = new byte[4096];
-            while (true)
-            {
-                var count = await stream.ReadAsync(buffer.AsMemory(0, Math.Min(buffer.Length,
-                    limit + 1 - (int)body.Length)), cancellationToken).ConfigureAwait(false);
-                if (count == 0) { return body.ToArray(); }
-                if (body.Length + count > limit)
-                {
-                    throw new FetchException(UpdateFetchFailure.TooLarge, "Response exceeds its size limit.");
-                }
-                body.Write(buffer, 0, count);
-            }
-        }
-        throw new FetchException(UpdateFetchFailure.NetworkError, "Too many HTTPS redirects.");
+        using var body = new MemoryStream();
+        await UpdateHttp.GetAsync(_client, _userAgent, uri, limit, static _ => true, body,
+            cancellationToken).ConfigureAwait(false);
+        return body.ToArray();
     }
-
-    private static bool IsSecure(Uri uri) => uri.IsAbsoluteUri && uri.Scheme == Uri.UriSchemeHttps
-        && uri.Host.Length > 0 && uri.UserInfo.Length == 0;
 
     /// <summary>通信資源を解放し、進行中の取得を取り消す。</summary>
     public void Dispose() => _client.Dispose();
-
-    private sealed class FetchException(UpdateFetchFailure failure, string message) : Exception(message)
-    {
-        internal UpdateFetchFailure Failure { get; } = failure;
-    }
 }
