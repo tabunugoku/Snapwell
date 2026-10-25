@@ -91,7 +91,8 @@ internal sealed class UpdateCoordinator(IUpdateCoordinatorEnvironment environmen
                 var code = helper.ExitCode is { } exitCode && exitCode != 0
                     ? exitCode : (int)UpdateInstallResult.IoError;
                 restart &= code is not ((int)UpdateInstallResult.ApplyFailedRollbackIncomplete)
-                    and not ((int)UpdateInstallResult.ReadyTimeoutRollbackIncomplete);
+                    and not ((int)UpdateInstallResult.ReadyTimeoutRollbackIncomplete)
+                    and not ((int)UpdateInstallResult.ReadyTimeoutResidentRunning);
                 result = result with { Result = code == 1223 ? "cancelled" : "failed", Code = code };
                 return result;
             }

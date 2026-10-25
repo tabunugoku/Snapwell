@@ -40,14 +40,18 @@ public sealed class UpdateCommandLineTests
         }
     }
 
-    [Fact]
-    public void HelperRequestDerivesInstallDirectoryVersionKeyAndTimeoutLocally()
+    /// <summary>ローカルで決めた検証条件と、前回の未解決状態を要求へ渡す。</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void HelperRequestDerivesInstallDirectoryVersionKeyAndTimeoutLocally(bool unresolved)
     {
         Assert.True(UpdateCommandLine.TryParse(Valid("--apply-update-elevated"), out var command));
-        var request = UpdateModes.CreateRequest(command!, @"C:\Program Files\Snapwell\Snapwell.exe", @"C:\work");
+        var request = UpdateModes.CreateRequest(command!, @"C:\Program Files\Snapwell\Snapwell.exe", @"C:\work", unresolved);
         Assert.Equal(@"C:\Program Files\Snapwell", request.InstallDir);
         Assert.Equal(UpdatePublicKey.Current ?? "", request.PublicKeySpkiBase64);
         Assert.Equal(TimeSpan.FromSeconds(45), request.ReadyTimeout);
+        Assert.Equal(unresolved, request.PreviousUpdateUnresolved);
         Assert.False(UpdateCommandLine.TryParse([.. Valid(), "--current-version", "0.0.0"], out _));
         Assert.False(UpdateCommandLine.TryParse([.. Valid(), "--install-dir", @"C:\other"], out _));
     }

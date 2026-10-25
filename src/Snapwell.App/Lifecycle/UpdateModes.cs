@@ -31,10 +31,13 @@ internal static class UpdateModes
                 var protectedLocation = ExecutableLocation.IsProtected(path);
                 using var work = new UpdateWorkDirectory(protectedLocation);
                 using var signals = new UpdateSignals(names);
-                var request = CreateRequest(command, path, work.Path);
-                var result = new UpdateInstallSession(new UpdateFileSystem(), signals).Run(request, out var diagnostic);
+                var unresolved = HasPreviousUpdateUnresolved(work.Path, FindPreviousJournals());
+                var request = CreateRequest(command, path, work.Path, unresolved);
+                var result = new UpdateInstallSession(new UpdateFileSystem(), signals, new UpdateResidentStopper(names))
+                    .Run(request, out var diagnostic);
                 work.Preserve = result is UpdateInstallResult.ApplyFailedRollbackIncomplete
                     or UpdateInstallResult.ReadyTimeoutRollbackIncomplete
+                    or UpdateInstallResult.ReadyTimeoutResidentRunning
                     || Directory.Exists(Path.Combine(work.Path, "staging"));
                 // i18n-keep: 画面に出さない開発者向けの終了コードと診断。
                 log.Error(new InvalidOperationException($"Update helper: {(int)result}. {diagnostic}"));
@@ -69,7 +72,8 @@ internal static class UpdateModes
         return matches || command.Elevated;
     }
 
-    internal static UpdateInstallRequest CreateRequest(UpdateCommandLine command, string ownPath, string work)
+    internal static UpdateInstallRequest CreateRequest(UpdateCommandLine command, string ownPath, string work,
+        bool previousUpdateUnresolved)
     {
         var version = typeof(UpdateModes).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()
             ?.InformationalVersion;
@@ -85,7 +89,30 @@ internal static class UpdateModes
             _ => UpdateOsArchitecture.Other,
         };
         return new(Path.GetDirectoryName(ownPath)!, work, command.Manifest, command.Signature, command.Zip,
-            UpdatePublicKey.Current ?? "", current, architecture, TimeSpan.FromSeconds(45));
+            UpdatePublicKey.Current ?? "", current, architecture, TimeSpan.FromSeconds(45), previousUpdateUnresolved);
+    }
+
+    internal static bool HasPreviousUpdateUnresolved(string currentWork, IEnumerable<string> journalPaths)
+    {
+        var current = Path.TrimEndingDirectorySeparator(Path.GetFullPath(currentWork));
+        return journalPaths.Any(journal => !string.Equals(current,
+            Path.TrimEndingDirectorySeparator(Path.GetFullPath(Path.GetDirectoryName(journal)!)),
+            StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static IEnumerable<string> FindPreviousJournals()
+    {
+        foreach (var folder in new[] { Environment.SpecialFolder.CommonApplicationData,
+            Environment.SpecialFolder.LocalApplicationData })
+        {
+            var root = Path.Combine(Environment.GetFolderPath(folder), "Snapwell", "update");
+            if (!Directory.Exists(root)) { continue; }
+            foreach (var directory in Directory.EnumerateDirectories(root))
+            {
+                var journal = Path.Combine(directory, "journal.jsonl");
+                if (File.Exists(journal)) { yield return journal; }
+            }
+        }
     }
 
     private static string? ReadVersion(string path)

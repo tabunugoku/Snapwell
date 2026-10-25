@@ -81,6 +81,23 @@ public sealed class UpdateCoordinatorTests
         Assert.Equal(1, fixture.Calls.Count(call => call == "start"));
     }
 
+    /// <summary>停止できない新版を残した結果 24 は、旧版を再起動せず失敗として保存する。</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void RunningResidentFailureIsSavedWithoutRecoveryRestart(bool applied)
+    {
+        var fixture = new Fixture();
+        fixture.Environment.Signals.Applied = applied;
+        fixture.Environment.Signals.Ready = false;
+        fixture.Launcher.Process.Code = (int)UpdateInstallResult.ReadyTimeoutResidentRunning;
+        var result = fixture.Run();
+        Assert.Equal("failed", result.Result);
+        Assert.Equal(24, result.Code);
+        Assert.Equal(result, fixture.Environment.Saved);
+        Assert.Equal(applied ? 1 : 0, fixture.Calls.Count(call => call == "start"));
+    }
+
     [Fact]
     public void UnprotectedLocationDoesNotElevate()
     {

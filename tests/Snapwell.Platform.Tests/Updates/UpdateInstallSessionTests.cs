@@ -14,6 +14,7 @@ public sealed class UpdateInstallSessionTests : IDisposable
     private readonly (string PrivateKeyPkcs8Base64, string PublicKeySpkiBase64) _key =
         ManifestSignature.GenerateKeyPair();
     private readonly Signals _signals = new();
+    private readonly Stopper _stopper = new();
     private readonly UpdateFileSystem _fs = new();
 
     private string Install => Path.Combine(_root, "配置 先");
@@ -63,12 +64,88 @@ public sealed class UpdateInstallSessionTests : IDisposable
     {
         var before = Snapshot(Install);
         _signals.Ready = false;
+        _stopper.BeforeStop = () =>
+            Assert.Equal("new executable", File.ReadAllText(Path.Combine(Install, "Snapwell.exe")));
         AssertResult(UpdateInstallResult.ReadyTimeoutRolledBack);
+        Assert.Equal(Install, _stopper.InstallDir);
+        Assert.Equal(TimeSpan.FromSeconds(15), _stopper.Timeout);
         AssertSnapshot(before, Install);
         Assert.False(Directory.Exists(Path.Combine(Install, "日本語")));
         Assert.Equal(new[] { "applied", "wait" }, _signals.Calls);
         AssertCleaned();
         Assert.True(File.Exists(Journal));
+    }
+
+    /// <summary>新版が止まらなければ配置を戻さず、復旧用の資料を保持する。</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ReadyTimeoutWithRunningResidentPreservesNewFiles(bool throws)
+    {
+        _signals.Ready = false;
+        _stopper.Stopped = false;
+        _stopper.BeforeStop = () =>
+        {
+            Assert.Equal("new executable", File.ReadAllText(Path.Combine(Install, "Snapwell.exe")));
+            if (throws) { throw new IOException("Injected stop failure."); }
+        };
+        var diagnostic = AssertResult(UpdateInstallResult.ReadyTimeoutResidentRunning);
+        Assert.Equal(24, (int)UpdateInstallResult.ReadyTimeoutResidentRunning);
+        Assert.Contains("Rollback was skipped", diagnostic);
+        Assert.Equal("new executable", File.ReadAllText(Path.Combine(Install, "Snapwell.exe")));
+        Assert.Equal("old executable", File.ReadAllText(Path.Combine(Install, "Snapwell.exe.old")));
+        Assert.True(File.Exists(Journal));
+        Assert.True(File.Exists(Path.Combine(Staging, "Snapwell.exe")));
+    }
+
+    /// <summary>前回成功時の退避だけを、今回の差し替え前に削除する。</summary>
+    [Fact]
+    public void RemovesPreviousSuccessfulBackupsBeforeApply()
+    {
+        WriteInstalled("Snapwell.exe.old", "previous executable");
+        WriteInstalled("obsolete/data.txt.OLD", "previous data");
+        _signals.OnApplied = () =>
+            Assert.Equal("old executable", File.ReadAllText(Path.Combine(Install, "Snapwell.exe.old")));
+        AssertResult(UpdateInstallResult.Success);
+        Assert.DoesNotContain(Snapshot(Install).Keys, name => name.EndsWith(".old", StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>現行ファイルが無い退避と未解決の前回更新には触れず、事前検査で拒否する。</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void KeepsBackupsNeededForPreviousRecovery(bool unresolved)
+    {
+        WriteInstalled("Snapwell.exe.old", "previous executable");
+        if (!unresolved) { File.Delete(Path.Combine(Install, "Snapwell.exe")); }
+        var before = Snapshot(Install);
+        var diagnostic = AssertResult(UpdateInstallResult.IoError,
+            Request() with { PreviousUpdateUnresolved = unresolved });
+        Assert.Contains("Previous .old files", diagnostic);
+        AssertSnapshot(before, Install);
+        Assert.Empty(_signals.Calls);
+        AssertCleaned();
+    }
+
+    /// <summary>古い退避の削除失敗も、事前検査の診断で返す。</summary>
+    [Fact]
+    public void PreviousBackupDeleteFailureReturnsIoError()
+    {
+        WriteInstalled("Snapwell.exe.old", "previous executable");
+        var before = Snapshot(Install);
+        var diagnostic = AssertResult(UpdateInstallResult.IoError, fs: new Faults(_fs) { FailOldDelete = true });
+        Assert.Contains("Previous .old files", diagnostic);
+        AssertSnapshot(before, Install);
+    }
+
+    /// <summary>成功後に消せない退避は残し、次回の更新開始時に再試行することを診断に記す。</summary>
+    [Fact]
+    public void LockedBackupAfterReadyStillSucceedsWithCleanupDiagnostic()
+    {
+        var diagnostic = AssertResult(UpdateInstallResult.Success, fs: new Faults(_fs) { FailOldDelete = true });
+        Assert.Contains("at the start of the next update", diagnostic);
+        Assert.True(File.Exists(Path.Combine(Install, "Snapwell.exe.old")));
+        Assert.False(Directory.Exists(Staging));
     }
 
     /// <summary>署名の破損、別の鍵、本文の改ざんでは適用を始めない。</summary>
@@ -356,13 +433,14 @@ public sealed class UpdateInstallSessionTests : IDisposable
     {
         Assert.True(ReleaseVersion.TryParse("1.0.0", out var version));
         return new(Install, Work, Manifest, Signature, Package, _key.PublicKeySpkiBase64, version,
-            UpdateOsArchitecture.X64, TimeSpan.Zero);
+            UpdateOsArchitecture.X64, TimeSpan.Zero, false);
     }
 
     private string AssertResult(UpdateInstallResult expected, UpdateInstallRequest? request = null,
         IUpdateFileSystem? fs = null)
     {
-        var result = new UpdateInstallSession(fs ?? _fs, _signals).Run(request ?? Request(), out var diagnostic);
+        var result = new UpdateInstallSession(fs ?? _fs, _signals, _stopper)
+            .Run(request ?? Request(), out var diagnostic);
         Assert.True(result == expected, $"Expected {expected}, got {result}: {diagnostic}");
         Assert.False(string.IsNullOrWhiteSpace(diagnostic));
         return diagnostic;
@@ -444,6 +522,23 @@ public sealed class UpdateInstallSessionTests : IDisposable
     /// <summary>このテスト専用の一時フォルダーを削除する。</summary>
     public void Dispose() => Directory.Delete(_root, recursive: true);
 
+    private sealed class Stopper : IUpdateResidentStopper
+    {
+        internal bool Stopped { get; set; } = true;
+        internal string? InstallDir { get; private set; }
+        internal TimeSpan? Timeout { get; private set; }
+        internal Action? BeforeStop { get; set; }
+
+        /// <summary>停止要求を記録し、指定した結果を返す。</summary>
+        public bool StopResidents(string installDir, TimeSpan timeout)
+        {
+            InstallDir = installDir;
+            Timeout = timeout;
+            BeforeStop?.Invoke();
+            return Stopped;
+        }
+    }
+
     private sealed class Signals : IUpdateSignals
     {
         internal bool Ready { get; set; } = true;
@@ -475,6 +570,7 @@ public sealed class UpdateInstallSessionTests : IDisposable
         internal bool UnexpectedCopyFailure { get; init; }
         internal bool FailRestore { get; init; }
         internal bool FailPackageDelete { get; init; }
+        internal bool FailOldDelete { get; init; }
         internal bool FailJournalRead { get; init; }
         internal Action<string>? BeforeEnumerate { get; init; }
 
@@ -513,6 +609,10 @@ public sealed class UpdateInstallSessionTests : IDisposable
         /// <summary>パッケージの後始末だけを失敗させる。</summary>
         public void DeleteFile(string path)
         {
+            if (FailOldDelete && path.EndsWith(".old", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new IOException("Injected backup cleanup failure.");
+            }
             if (FailPackageDelete && Path.GetFileName(path) == "package.zip")
             {
                 throw new UnauthorizedAccessException("Injected cleanup failure.");
