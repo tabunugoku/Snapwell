@@ -172,7 +172,7 @@ public sealed class TrayUpdateNotifierTests
         var json = $$$$"""
             {"version":"{{{{version}}}}","publishedAt":"2026-10-23T00:00:00Z",
             "releaseNotesUrl":"https://example.com/notes",
-            "files":{"win-arm64":{"url":"https://example.com/arm64.zip","sha256":"{{{{new string('a', 64)}}}}","size":123}}}
+            "files":{"win-arm64":{"url":"https://github.com/arm64.zip","sha256":"{{{{new string('a', 64)}}}}","size":123}}}
             """;
         var manifest = UpdateManifestParser.Parse(Encoding.UTF8.GetBytes(json)).Manifest!;
         return new(manifest, manifest.Files["win-arm64"], false);

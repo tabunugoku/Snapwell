@@ -101,7 +101,7 @@ public static class UpdateZipPolicy
         {
             return true;
         }
-        return name.Length == 4 && name[3] is >= '1' and <= '9'
+        return name.Length == 4 && name[3] is (>= '1' and <= '9') or '¹' or '²' or '³'
             && (name.StartsWith("COM", StringComparison.OrdinalIgnoreCase)
                 || name.StartsWith("LPT", StringComparison.OrdinalIgnoreCase));
     }
