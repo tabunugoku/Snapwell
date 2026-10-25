@@ -11,6 +11,9 @@ internal sealed record UpdatePanel(string Version, bool RequiresUpdate, string S
 /// <summary>保存結果に合わせたスイッチの状態。</summary>
 internal sealed record UpdateToggleResult(bool Enabled, bool CanWrite, bool Saved);
 
+/// <summary>読み込みの成否と書き込み可否を区別したスイッチの状態。</summary>
+internal sealed record UpdateToggleState(bool Enabled, bool Succeeded, bool CanWrite);
+
 /// <summary>ページごとの保存を直列化し、古い読み取りによる表示の巻き戻りを防ぐ。</summary>
 internal sealed class UpdatePageSession
 {
@@ -53,6 +56,20 @@ internal static class UpdatePageModel
     internal static UpdatePanel? Panel(UpdateOffer? offer, UiLanguage language) => offer is null ? null
         : new(offer.Manifest.Version.ToString(), offer.RequiresUpdate, offer.Manifest.GetSummary(language));
 
+    /// <summary>読めない場合と未来の版では、最後に確認できた値を保って書き込みを止める。</summary>
+    internal static UpdateToggleState ReadAutomatic(ISettingsStore<DeviceState> store, bool previous = false)
+    {
+        try
+        {
+            var loaded = store.TryReload() ?? store.Load();
+            return new(loaded.IsReadOnly ? previous : loaded.Value.UpdateCheckEnabled, true, !loaded.IsReadOnly);
+        }
+        catch (Exception exception) when (IsSaveFailure(exception))
+        {
+            return new(previous, false, false);
+        }
+    }
+
     internal static UpdateToggleResult SetAutomatic(ISettingsStore<DeviceState> store, bool enabled, bool previous)
     {
         try
@@ -62,15 +79,8 @@ internal static class UpdatePageModel
         }
         catch (Exception exception) when (IsSaveFailure(exception))
         {
-            try
-            {
-                var actual = store.TryReload() ?? store.Load();
-                return new(actual.Value.UpdateCheckEnabled, !actual.IsReadOnly, false);
-            }
-            catch (Exception reloadException) when (IsSaveFailure(reloadException))
-            {
-                return new(previous, false, false);
-            }
+            var actual = ReadAutomatic(store, previous);
+            return new(actual.Enabled, actual.CanWrite, false);
         }
     }
 

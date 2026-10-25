@@ -1,5 +1,3 @@
-using System.Security;
-using System.Text.Json;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
@@ -7,11 +5,17 @@ using Microsoft.UI.Xaml.Documents;
 using Snapwell.Core.Commands;
 using Snapwell.Core.Localization;
 using Snapwell.Core.Settings;
+using Snapwell.Settings.Updates;
 
 namespace Snapwell.Settings.Setup;
 
 public sealed partial class SetupWindow
 {
+    private UpdatePageSession? _welcomeUpdateSession;
+    private Task<UpdateToggleResult?>? _welcomeUpdateSave;
+    private bool _welcomeUpdateEnabled;
+    private bool _welcomeUpdateClosed;
+
     private void SetHeading(string title, string lead)
     {
         Heading.Text = title;
@@ -95,8 +99,17 @@ public sealed partial class SetupWindow
         rows.Children.Add(row);
     }
 
-    private void ShowWelcome()
+    private async void ShowWelcome()
     {
+        if (_welcomeUpdateSession is null)
+        {
+            Closed += (_, _) => _welcomeUpdateClosed = true;
+        }
+        var session = new UpdatePageSession();
+        _welcomeUpdateSession = session;
+        bool IsCurrent() => !_welcomeUpdateClosed && _welcomeUpdateSession == session &&
+            _wizard.Step == SetupStep.Welcome;
+
         SetHeading(UiText.Current.Get("Setup.Welcome.Title"),
             UiText.Current.Get("Setup.Welcome.Lead"));
         var rows = Rows();
@@ -116,62 +129,73 @@ public sealed partial class SetupWindow
             MinWidth = 0,
             VerticalAlignment = VerticalAlignment.Center,
             Style = FindStyle("SnapwellToggleSwitchStyle"),
-            IsOn = ReadUpdateCheckEnabled(),
-            IsEnabled = !_loadFailed,
+            IsOn = _welcomeUpdateEnabled,
+            IsEnabled = false,
         };
         AutomationProperties.SetName(toggle, UiText.Current.Get("Setup_UpdateToggle.AutomationName"));
         var syncing = false;
-        toggle.Toggled += (_, _) =>
+        void SetToggle(bool enabled, bool canWrite)
         {
-            if (syncing)
-            {
-                return;
-            }
-            var value = toggle.IsOn;
+            syncing = true;
             try
             {
-                DeviceStateChanges.Update(_deviceStore, s => s with { UpdateCheckEnabled = value });
-                ErrorNotice.IsOpen = _loadFailed;
+                toggle.IsOn = enabled;
+                toggle.IsEnabled = canWrite && !_loadFailed && !session.IsSaving;
             }
-            catch (Exception exception) when (IsDeviceSaveFailure(exception))
+            finally { syncing = false; }
+        }
+        toggle.Toggled += async (_, _) =>
+        {
+            if (syncing || session.IsSaving || !IsCurrent() || !toggle.IsEnabled) { return; }
+            var enabled = toggle.IsOn;
+            var previous = _welcomeUpdateEnabled;
+            var generation = session.Generation + 1;
+            toggle.IsEnabled = false;
+            ErrorNotice.IsOpen = false;
+            var pending = session.SaveAsync(() => UpdatePageModel.SetAutomatic(_deviceStore, enabled, previous));
+            _welcomeUpdateSave = pending;
+            var result = await pending;
+            if (_welcomeUpdateSave == pending) { _welcomeUpdateSave = null; }
+            if (result is null) { return; }
+
+            // ページを離れても確認済みの値は保つが、古い要素へは結果を反映しない。
+            _welcomeUpdateEnabled = result.Enabled;
+            if (!session.CanApply(generation, cancelled: !IsCurrent())) { return; }
+            SetToggle(result.Enabled, result.CanWrite);
+            if (!result.Saved)
             {
-                // 保存に失敗したときは Toggled を再発火させずに元の値へ戻す。
-                syncing = true;
-                try
-                {
-                    toggle.IsOn = !value;
-                }
-                finally
-                {
-                    syncing = false;
-                }
-                ErrorNotice.Message = UiText.Current.Get("Setup.Error.SaveFallback");
+                ErrorNotice.Message = UiText.Current.Get(result.CanWrite
+                    ? "Setup.Error.SaveFallback" : "Setup.Error.Load");
                 ErrorNotice.IsOpen = true;
             }
         };
         AddRow(rows, UiText.Current.Get("Setup_UpdateTitle.Text"), description, toggle);
-    }
 
-    private bool ReadUpdateCheckEnabled()
-    {
-        if (_loadFailed)
+        // 戻ってきたページも前の保存を待ち、書き込み途中の値で操作可能にしない。
+        UpdateToggleResult? previousSave = null;
+        if (_welcomeUpdateSave is { } saving)
         {
-            return false;
+            previousSave = await saving;
+            if (!IsCurrent()) { return; }
+            if (previousSave is not null) { _welcomeUpdateEnabled = previousSave.Enabled; }
         }
-        try
+        var readGeneration = session.Generation;
+        var lastEnabled = _welcomeUpdateEnabled;
+        var loaded = await Task.Run(() => UpdatePageModel.ReadAutomatic(_deviceStore, lastEnabled));
+        if (!session.CanApply(readGeneration, cancelled: !IsCurrent())) { return; }
+        _welcomeUpdateEnabled = loaded.Enabled;
+        SetToggle(loaded.Enabled, loaded.CanWrite);
+        if (!loaded.Succeeded || !loaded.CanWrite || _loadFailed)
         {
-            var loaded = _deviceStore.TryReload() ?? _deviceStore.Load();
-            return !loaded.IsReadOnly && loaded.Value.UpdateCheckEnabled;
+            ErrorNotice.Message = UiText.Current.Get("Setup.Error.Load");
+            ErrorNotice.IsOpen = true;
         }
-        catch (Exception exception) when (IsDeviceSaveFailure(exception))
+        else if (previousSave is { Saved: false })
         {
-            return false;
+            ErrorNotice.Message = UiText.Current.Get("Setup.Error.SaveFallback");
+            ErrorNotice.IsOpen = true;
         }
     }
-
-    private static bool IsDeviceSaveFailure(Exception exception) =>
-        exception is IOException or UnauthorizedAccessException or SecurityException or
-            JsonException or InvalidOperationException;
 
     private void ShowStandardFeatures()
     {

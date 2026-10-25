@@ -143,7 +143,7 @@ public sealed class UpdatePageModelTests
     [Theory]
     [InlineData(false, false, false, true)]
     [InlineData(false, true, false, false)]
-    [InlineData(true, false, true, false)]
+    [InlineData(true, false, false, false)]
     public void FailedToggleMatchesPersistedValueAndWritePermission(bool readOnly, bool unreadable,
         bool expectedEnabled, bool expectedCanWrite)
     {
@@ -158,6 +158,83 @@ public sealed class UpdatePageModelTests
         Assert.False(result.Saved);
         Assert.Equal(expectedEnabled, result.Enabled);
         Assert.Equal(expectedCanWrite, result.CanWrite);
+    }
+
+    /// <summary>置換後の後始末で例外が出ても、保存済みの値を表示して保存失敗を知らせる。</summary>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task FailureAfterPersistingReturnsActualToggle(bool enabled)
+    {
+        var store = new Store { FailAfterSave = true, Value = new() { UpdateCheckEnabled = !enabled } };
+        var session = new UpdatePageSession();
+
+        var result = await session.SaveAsync(() => UpdatePageModel.SetAutomatic(store, enabled, !enabled));
+
+        Assert.NotNull(result);
+        Assert.Equal(enabled, store.Value.UpdateCheckEnabled);
+        Assert.Equal(enabled, result.Enabled);
+        Assert.False(result.Saved);
+        Assert.True(result.CanWrite);
+    }
+
+    /// <summary>保存後の実際の値も読めなければ、オン・オフどちらの直前値も保って操作を止める。</summary>
+    [Theory]
+    [InlineData(true, true)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(false, false)]
+    public void UnreadableAfterSavingPreservesPreviousToggle(bool previous, bool reloadReturnsNull)
+    {
+        var store = new Store
+        {
+            Value = new() { UpdateCheckEnabled = previous },
+            FailAfterSave = true,
+            UnreadableAfterFailure = true,
+            ReloadReturnsNull = reloadReturnsNull,
+        };
+
+        var result = UpdatePageModel.SetAutomatic(store, !previous, previous);
+
+        Assert.Equal(!previous, store.Value.UpdateCheckEnabled);
+        Assert.Equal(previous, result.Enabled);
+        Assert.False(result.Saved);
+        Assert.False(result.CanWrite);
+    }
+
+    /// <summary>初期値の読み込み失敗を正常なオフと区別し、最後に確認できた値を保つ。</summary>
+    [Theory]
+    [InlineData(true, true)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(false, false)]
+    public void FailedInitialReadReportsFailureAndPreservesPrevious(bool previous, bool reloadReturnsNull)
+    {
+        var store = new Store { Unreadable = true, ReloadReturnsNull = reloadReturnsNull };
+
+        var result = UpdatePageModel.ReadAutomatic(store, previous);
+
+        Assert.False(result.Succeeded);
+        Assert.False(result.CanWrite);
+        Assert.Equal(previous, result.Enabled);
+        Assert.False(UpdatePageModel.ReadAutomatic(store).Enabled);
+    }
+
+    /// <summary>正常なオン・オフと読み取り専用を区別し、未来の版の既定値で表示を巻き戻さない。</summary>
+    [Theory]
+    [InlineData(true, false)]
+    [InlineData(false, false)]
+    [InlineData(true, true)]
+    [InlineData(false, true)]
+    public void InitialReadDistinguishesWritableValuesFromReadOnly(bool previous, bool readOnly)
+    {
+        var store = new Store { Value = new() { UpdateCheckEnabled = !previous }, ReadOnly = readOnly };
+
+        var result = UpdatePageModel.ReadAutomatic(store, previous);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(!readOnly, result.CanWrite);
+        Assert.Equal(readOnly ? previous : !previous, result.Enabled);
     }
 
     /// <summary>スキップは最新値へ保存し、同じ署名済みの版を復元しなくなる。</summary>
@@ -200,19 +277,24 @@ public sealed class UpdatePageModelTests
         internal DeviceState? Latest;
         internal bool ReadOnly;
         internal bool FailSave;
+        internal bool FailAfterSave;
+        internal bool Unreadable;
         internal bool UnreadableAfterFailure;
+        internal bool ReloadReturnsNull;
         private bool _failed;
         public SettingsLoadResult<DeviceState> Load()
         {
-            if (_failed && UnreadableAfterFailure) { throw new IOException(); }
+            if (Unreadable || (_failed && UnreadableAfterFailure)) { throw new IOException(); }
             return new(Value, IsReadOnly: ReadOnly);
         }
-        public SettingsLoadResult<DeviceState>? TryReload() => Latest is null ? Load() : new(Latest);
+        public SettingsLoadResult<DeviceState>? TryReload() => ReloadReturnsNull ? null
+            : Latest is null ? Load() : new(Latest);
         public void Save(DeviceState state)
         {
             if (FailSave) { _failed = true; throw new IOException(); }
             Value = state;
             Latest = null;
+            if (FailAfterSave) { _failed = true; throw new IOException(); }
         }
     }
 }
