@@ -272,22 +272,68 @@ public sealed class UpdateApplierTests
         fixture.AssertRestored();
     }
 
-    /// <summary>ジャーナルの中間の破損や範囲外の操作を変更前に拒否する。</summary>
+    /// <summary>中間の不正行を報告し、前後の計画を復旧して範囲外のファイルを保持する。</summary>
     [Theory]
     [InlineData("{\"state\":\"planned\",\"kind\":\"copied-new\",\"path\":\"../outside\"}")]
     [InlineData("{\"state\":\"planned\",\"kind\":\"unknown\",\"path\":\"Snapwell.exe\"}")]
+    [InlineData("{\"state\":\"unknown\",\"kind\":\"copied-new\",\"path\":\"Snapwell.exe\"}")]
+    [InlineData("{\"state\":\"completed\",\"kind\":\"copied-new\",\"path\":\"unplanned.exe\"}")]
+    [InlineData("{\"state\":\"planned\",\"kind\":\"renamed-old\",\"path\":\"Snapwell.exe\"}")]
+    [InlineData("{\"state\":\"planned\",\"kind\":\"copied-new\"}")]
+    [InlineData("{\"state\":null,\"kind\":\"copied-new\",\"path\":\"Snapwell.exe\"}")]
+    [InlineData("[]")]
+    [InlineData("not JSON")]
     [InlineData("{\"state\":")]
-    public void CorruptJournalDoesNotPartiallyRollback(string corruptLine)
+    public void CorruptJournalRollsBackReadablePlans(string corruptLine)
     {
         var fixture = new Fixture();
         Assert.Equal(ApplyStatus.Success, fixture.Apply().Status);
-        fixture.Fs.Files[fixture.Journal] = corruptLine + "\n" + fixture.Fs.Files[fixture.Journal];
-        var before = fixture.Fs.Snapshot(fixture.Install);
-        fixture.Fs.Operations.Clear();
+        var journal = fixture.Fs.Files[fixture.Journal];
+        var insertion = journal.IndexOf('\n') + 1;
+        fixture.Fs.Files[fixture.Journal] = journal.Insert(insertion, corruptLine + "\n");
+        var outside = Path.GetFullPath(Path.Combine(fixture.Install, "../outside"));
+        fixture.Fs.Seed(outside, "keep outside");
         var result = fixture.Applier.Rollback(fixture.Install, fixture.Journal);
         Assert.Equal(RollbackStatus.RollbackIncomplete, result.Status);
-        Assert.Equal(before, fixture.Fs.Snapshot(fixture.Install));
-        Assert.Empty(fixture.Fs.Operations);
+        var failure = Assert.Single(result.Failures);
+        Assert.Equal("journal", failure.Kind);
+        Assert.Equal(fixture.Journal, failure.RelativePath);
+        Assert.StartsWith("Invalid journal line 2:", failure.Diagnostic);
+        Assert.Equal("keep outside", fixture.Fs.Files[outside]);
+        Assert.DoesNotContain(fixture.Fs.Operations, operation => operation.Path == outside);
+        fixture.AssertRestored();
+    }
+
+    /// <summary>複数の不正行を行番号と理由付きで報告し、復旧可能な計画をすべて戻す。</summary>
+    [Fact]
+    public void RollbackReportsEveryInvalidLine()
+    {
+        var fixture = new Fixture();
+        Assert.Equal(ApplyStatus.Success, fixture.Apply().Status);
+        fixture.Fs.Files[fixture.Journal] = "not JSON\n{}\n" + fixture.Fs.Files[fixture.Journal] + "{}\n";
+        var result = fixture.Applier.Rollback(fixture.Install, fixture.Journal);
+        Assert.Equal(RollbackStatus.RollbackIncomplete, result.Status);
+        Assert.Equal(3, result.Failures.Count);
+        Assert.All(result.Failures, failure => Assert.Equal("journal", failure.Kind));
+        Assert.StartsWith("Invalid journal line 1:", result.Failures[0].Diagnostic);
+        Assert.Contains("Invalid journal entry.", result.Failures[1].Diagnostic);
+        Assert.StartsWith("Invalid journal line 2:", result.Failures[1].Diagnostic);
+        Assert.Contains("Invalid journal entry.", result.Failures[2].Diagnostic);
+        fixture.AssertRestored();
+    }
+
+    /// <summary>ジャーナル自体が存在しない場合は復旧未完了として読み取り失敗を報告する。</summary>
+    [Fact]
+    public void RollbackReportsUnreadableJournal()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "Snapwell missing journal " + Guid.NewGuid());
+        var journal = Path.Combine(root, "journal.jsonl");
+        var result = new UpdateApplier(new UpdateFileSystem()).Rollback(root, journal);
+        Assert.Equal(RollbackStatus.RollbackIncomplete, result.Status);
+        var failure = Assert.Single(result.Failures);
+        Assert.Equal("journal", failure.Kind);
+        Assert.Equal(journal, failure.RelativePath);
+        Assert.StartsWith("Cannot read rollback journal:", failure.Diagnostic);
     }
 
     /// <summary>消せない退避があっても残りを削除し、次の呼び出しで完了できる。</summary>

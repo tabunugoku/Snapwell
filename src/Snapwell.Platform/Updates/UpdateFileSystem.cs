@@ -5,6 +5,18 @@ namespace Snapwell.Platform.Updates;
 /// <summary>更新に必要なファイル操作と一時的なロックの再試行を実装する。</summary>
 public sealed class UpdateFileSystem : IUpdateFileSystem
 {
+    private readonly TimeSpan _retryDelay;
+    private readonly Action<string, string> _copyFile;
+
+    /// <summary>一時的なロックを 200 ms 間隔で再試行するファイル操作を作成する。</summary>
+    public UpdateFileSystem() : this(TimeSpan.FromMilliseconds(200)) { }
+
+    internal UpdateFileSystem(TimeSpan retryDelay, Action<string, string>? copyFile = null)
+    {
+        _retryDelay = retryDelay;
+        _copyFile = copyFile ?? ((source, destination) => File.Copy(source, destination, overwrite: false));
+    }
+
     /// <summary>配下のファイルを / 区切りの相対パスで列挙する。</summary>
     public IEnumerable<string> EnumerateFiles(string root) =>
         Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories)
@@ -26,8 +38,28 @@ public sealed class UpdateFileSystem : IUpdateFileSystem
     }
 
     /// <summary>親フォルダーの ACL を継承する新規ファイルとして上書きせずコピーする。</summary>
-    public void CopyFile(string source, string destination) =>
-        Retry(() => File.Copy(source, destination, overwrite: false));
+    public void CopyFile(string source, string destination)
+    {
+        var destinationExisted = Exists(destination);
+        var cleanupRequired = false;
+        Retry(() =>
+        {
+            if (cleanupRequired)
+            {
+                File.Delete(destination);
+            }
+            try
+            {
+                _copyFile(source, destination);
+            }
+            catch (Exception exception) when (!destinationExisted && IsRetryable(exception))
+            {
+                // 開始時に存在しなかったコピー先だけを書きかけとして扱う。
+                cleanupRequired = true;
+                throw;
+            }
+        });
+    }
 
     /// <summary>一時的なロックを再試行しながらファイルを削除する。</summary>
     public void DeleteFile(string path) => Retry(() => File.Delete(path));
@@ -57,7 +89,7 @@ public sealed class UpdateFileSystem : IUpdateFileSystem
     /// <summary>ファイルの行を読み取る。</summary>
     public IEnumerable<string> ReadLines(string path) => File.ReadLines(path);
 
-    private static void Retry(Action operation)
+    private void Retry(Action operation)
     {
         for (var retry = 0; ; retry++)
         {
@@ -66,10 +98,13 @@ public sealed class UpdateFileSystem : IUpdateFileSystem
                 operation();
                 return;
             }
-            catch (Exception exception) when (retry < 10 && exception is IOException or UnauthorizedAccessException)
+            catch (Exception exception) when (retry < 10 && IsRetryable(exception))
             {
-                Thread.Sleep(200);
+                Thread.Sleep(_retryDelay);
             }
         }
     }
+
+    private static bool IsRetryable(Exception exception) => exception is UnauthorizedAccessException
+        || exception is IOException && (exception.HResult & 0xffff) is 32 or 33;
 }

@@ -167,8 +167,10 @@ public sealed class UpdateApplier(IUpdateFileSystem fs)
         try
         {
             var root = Path.GetFullPath(installDir);
-            var plans = ReadPlans(root, journalPath);
-            return RollbackCore(root, plans);
+            var failures = new List<RollbackFailure>();
+            var plans = ReadPlans(root, journalPath, failures);
+            failures.AddRange(RollbackCore(root, plans).Failures);
+            return new(failures.Count == 0 ? RollbackStatus.RolledBack : RollbackStatus.RollbackIncomplete, failures);
         }
         catch (Exception exception) when (IsFileFailure(exception) || exception is JsonException)
         {
@@ -220,24 +222,15 @@ public sealed class UpdateApplier(IUpdateFileSystem fs)
         return new(failures.Count == 0 ? RollbackStatus.RolledBack : RollbackStatus.RollbackIncomplete, failures);
     }
 
-    private List<JournalEntry> ReadPlans(string root, string journalPath)
+    private List<JournalEntry> ReadPlans(string root, string journalPath, List<RollbackFailure> failures)
     {
         var lines = fs.ReadLines(journalPath).ToArray();
         var plans = new List<JournalEntry>();
         for (var index = 0; index < lines.Length; index++)
         {
-            JsonDocument document;
             try
             {
-                document = JsonDocument.Parse(lines[index]);
-            }
-            catch (JsonException) when (index == lines.Length - 1)
-            {
-                // 最後の追記だけは、異常終了によって行の途中で切れることがある。
-                break;
-            }
-            using (document)
-            {
+                using var document = JsonDocument.Parse(lines[index]);
                 var value = document.RootElement;
                 if (value.ValueKind != JsonValueKind.Object
                     || !value.TryGetProperty("state", out var stateValue)
@@ -270,6 +263,16 @@ public sealed class UpdateApplier(IUpdateFileSystem fs)
                 {
                     throw new IOException("Journal completion has no plan.");
                 }
+            }
+            catch (JsonException) when (index == lines.Length - 1)
+            {
+                // 最後の追記だけは、異常終了によって行の途中で切れることがある。
+                break;
+            }
+            catch (Exception exception) when (IsFileFailure(exception) || exception is JsonException)
+            {
+                failures.Add(new("journal", journalPath,
+                    $"Invalid journal line {index + 1}: {exception.Message}"));
             }
         }
         return plans;
