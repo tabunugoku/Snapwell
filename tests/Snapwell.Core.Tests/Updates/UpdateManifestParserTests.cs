@@ -21,6 +21,50 @@ public sealed class UpdateManifestParserTests
         Assert.Equal(123, manifest.Files["win-x64"].Size);
     }
 
+    /// <summary>配布 URL とサイズの制約を両方の RID に適用する。</summary>
+    [Theory]
+    [InlineData("https://example.com/app.zip", 123)]
+    [InlineData("https://objects.githubusercontent.com/app.zip", 123)]
+    [InlineData("https://release-assets.githubusercontent.com/app.zip", 123)]
+    [InlineData("https://github.com.evil.example/app.zip", 123)]
+    [InlineData("https://evilgithub.com/app.zip", 123)]
+    [InlineData("http://github.com/app.zip", 123)]
+    [InlineData("https://github.com:444/app.zip", 123)]
+    [InlineData("https://github.com:80/app.zip", 123)]
+    [InlineData("https://user@github.com/app.zip", 123)]
+    [InlineData("https://user:pass@github.com/app.zip", 123)]
+    [InlineData("https://github.com/app.zip", 0)]
+    [InlineData("https://github.com/app.zip", -1)]
+    [InlineData("https://github.com/app.zip", 314572801)]
+    [InlineData("https://github.com/app.zip", long.MaxValue)]
+    public void InvalidPackagesFailForEachRid(string url, long size)
+    {
+        foreach (var rid in new[] { "x64", "arm64" })
+        {
+            var original = $"\"url\":\"https://github.com/{rid}.zip\","
+                + $"\"sha256\":\"{new string('A', 64)}\",\"size\":123";
+            var replacement = original.Replace($"https://github.com/{rid}.zip", url)
+                .Replace("\"size\":123", $"\"size\":{size}");
+            var json = ManifestTestData.Json.Replace(original, replacement);
+            var result = UpdateManifestParser.Parse(Encoding.UTF8.GetBytes(json));
+            Assert.False(result.IsSuccess);
+            Assert.Null(result.Manifest);
+            Assert.Equal($"Invalid files.win-{rid}.", result.Error);
+        }
+    }
+
+    /// <summary>大文字のホストと既定ポート、サイズの上下限を許可する。</summary>
+    [Theory]
+    [InlineData("https://GITHUB.COM/app.zip", 1)]
+    [InlineData("https://github.com:443/app.zip", 314572800)]
+    public void ValidPackageBoundariesAreAccepted(string url, long size)
+    {
+        var json = ManifestTestData.Json.Replace("https://github.com/x64.zip", url)
+            .Replace("\"size\":123", $"\"size\":{size}");
+        var manifest = ManifestTestData.Parse(json);
+        Assert.Equal(size, manifest.Files["win-x64"].Size);
+    }
+
     /// <summary>日本語と英語の要約を選び、指定言語がなければ英語に戻す。</summary>
     [Fact]
     public void SummaryUsesRequestedLanguageThenEnglishThenNull()
@@ -50,7 +94,7 @@ public sealed class UpdateManifestParserTests
     [InlineData("https://")]
     public void UnsafeUrlsFailInEveryUrlField(string url)
     {
-        foreach (var original in new[] { "https://example.com/x64.zip", "https://example.com/arm64.zip",
+        foreach (var original in new[] { "https://github.com/x64.zip", "https://github.com/arm64.zip",
             "https://example.com/notes", "https://example.com/setup.exe" })
         {
             AssertFailure(ManifestTestData.Json.Replace(original, url));
@@ -154,8 +198,8 @@ internal static class ManifestTestData
         "summary":{"en":"Fixes","ja":"修正"},
         "releaseNotesUrl":"https://example.com/notes","installerUrl":"https://example.com/setup.exe",
         "minimumSupported":"0.9.0","files":{
-        "win-x64":{"url":"https://example.com/x64.zip","sha256":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","size":123},
-        "win-arm64":{"url":"https://example.com/arm64.zip","sha256":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","size":123}}}
+        "win-x64":{"url":"https://github.com/x64.zip","sha256":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","size":123},
+        "win-arm64":{"url":"https://github.com/arm64.zip","sha256":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","size":123}}}
         """;
 
     internal static UpdateManifest Parse(string? json = null)

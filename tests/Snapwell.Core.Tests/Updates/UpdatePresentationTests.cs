@@ -16,7 +16,7 @@ public sealed class UpdatePresentationTests
     {
         var json = $$$$"""
             {"version":"1.2.0","publishedAt":"2026-10-23T00:00:00Z","summary":{{{{summary}}}},
-            "releaseNotesUrl":"https://example.com/notes","files":{"win-x64":{"url":"https://example.com/app.zip",
+            "releaseNotesUrl":"https://example.com/notes","files":{"win-x64":{"url":"https://github.com/app.zip",
             "sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","size":123}}}
             """;
         var manifest = UpdateManifestParser.Parse(Encoding.UTF8.GetBytes(json)).Manifest!;
