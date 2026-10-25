@@ -1,3 +1,5 @@
+using System.Security;
+using System.Text.Json;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
@@ -105,7 +107,71 @@ public sealed partial class SetupWindow
         AddRow(rows, UiText.Current.Get("Setup.Welcome.Keys"),
             InlineDescription(UiText.Current.Get("Setup.Welcome.KeysTemplate"),
                 ("keys", ["Ctrl", "Alt"]), ("shift", ["Shift"])));
+        var description = Text(UiText.Current.Get("Setup_UpdateDescription.Text"), "SnapwellRowDescriptionStyle");
+        description.TextWrapping = TextWrapping.Wrap;
+        var toggle = new ToggleSwitch
+        {
+            OnContent = "",
+            OffContent = "",
+            MinWidth = 0,
+            VerticalAlignment = VerticalAlignment.Center,
+            Style = FindStyle("SnapwellToggleSwitchStyle"),
+            IsOn = ReadUpdateCheckEnabled(),
+            IsEnabled = !_loadFailed,
+        };
+        AutomationProperties.SetName(toggle, UiText.Current.Get("Setup_UpdateToggle.AutomationName"));
+        var syncing = false;
+        toggle.Toggled += (_, _) =>
+        {
+            if (syncing)
+            {
+                return;
+            }
+            var value = toggle.IsOn;
+            try
+            {
+                DeviceStateChanges.Update(_deviceStore, s => s with { UpdateCheckEnabled = value });
+                ErrorNotice.IsOpen = _loadFailed;
+            }
+            catch (Exception exception) when (IsDeviceSaveFailure(exception))
+            {
+                // 保存に失敗したときは Toggled を再発火させずに元の値へ戻す。
+                syncing = true;
+                try
+                {
+                    toggle.IsOn = !value;
+                }
+                finally
+                {
+                    syncing = false;
+                }
+                ErrorNotice.Message = UiText.Current.Get("Setup.Error.SaveFallback");
+                ErrorNotice.IsOpen = true;
+            }
+        };
+        AddRow(rows, UiText.Current.Get("Setup_UpdateTitle.Text"), description, toggle);
     }
+
+    private bool ReadUpdateCheckEnabled()
+    {
+        if (_loadFailed)
+        {
+            return false;
+        }
+        try
+        {
+            var loaded = _deviceStore.TryReload() ?? _deviceStore.Load();
+            return !loaded.IsReadOnly && loaded.Value.UpdateCheckEnabled;
+        }
+        catch (Exception exception) when (IsDeviceSaveFailure(exception))
+        {
+            return false;
+        }
+    }
+
+    private static bool IsDeviceSaveFailure(Exception exception) =>
+        exception is IOException or UnauthorizedAccessException or SecurityException or
+            JsonException or InvalidOperationException;
 
     private void ShowStandardFeatures()
     {
