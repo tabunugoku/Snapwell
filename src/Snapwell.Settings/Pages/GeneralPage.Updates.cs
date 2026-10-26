@@ -194,6 +194,7 @@ public sealed partial class GeneralPage
             var session = _updateSession;
             var checkGeneration = session.Generation;
             var result = await Task.Run(() => checker.CheckAsync(token), token);
+            if (result.Reason is { } diagnostic) { Trace.TraceError(diagnostic); }
             if (stop.IsCancellationRequested) { return; }
             var key = UpdatePageModel.StatusKey(result.Outcome);
             if (session.CanApply(checkGeneration, stop.IsCancellationRequested))

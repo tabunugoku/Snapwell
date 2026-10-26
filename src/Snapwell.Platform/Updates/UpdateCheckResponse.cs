@@ -8,6 +8,7 @@ public sealed record UpdateOffer(UpdateManifest Manifest, UpdateAsset Asset, boo
 /// <summary>確認操作の結果の種類。</summary>
 public enum UpdateCheckOutcome { UpToDate, Available, Skipped, DevelopmentBuild, NoPublicKey, Failed }
 
-/// <summary>確認の結果と画面には表示しない開発者向けの失敗理由。</summary>
-public sealed record UpdateCheckResponse(UpdateCheckOutcome Outcome, UpdateOffer? Offer = null, string? Reason = null);
+/// <summary>確認結果、画面には表示しない診断、短い間隔で再試行できるかを返す。</summary>
+public sealed record UpdateCheckResponse(UpdateCheckOutcome Outcome, UpdateOffer? Offer = null,
+    string? Reason = null, bool Retryable = false);
 

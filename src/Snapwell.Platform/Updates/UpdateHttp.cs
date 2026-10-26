@@ -37,7 +37,7 @@ internal static class UpdateHttp
             if (!response.IsSuccessStatusCode)
             {
                 throw new UpdateHttpException(UpdateFetchFailure.HttpStatus,
-                    $"HTTP status {(int)response.StatusCode}.");
+                    $"HTTP status {(int)response.StatusCode}.", response.StatusCode);
             }
             if (response.Content.Headers.ContentLength is { } length
                 && (length > limit || (requireExactLength && length != limit)))
@@ -94,7 +94,9 @@ internal static class UpdateHttp
     }
 }
 
-internal sealed class UpdateHttpException(UpdateFetchFailure failure, string message) : Exception(message)
+internal sealed class UpdateHttpException(UpdateFetchFailure failure, string message,
+    HttpStatusCode? statusCode = null) : Exception(message)
 {
     internal UpdateFetchFailure Failure { get; } = failure;
+    internal HttpStatusCode? StatusCode { get; } = statusCode;
 }

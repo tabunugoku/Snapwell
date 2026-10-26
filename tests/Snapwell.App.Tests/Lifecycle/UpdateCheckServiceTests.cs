@@ -1,3 +1,4 @@
+using System.Net;
 using System.Text;
 using Snapwell.App.Lifecycle;
 using Snapwell.App.Tray;
@@ -278,6 +279,134 @@ public sealed class UpdateCheckServiceTests
         Assert.Equal(3, fixture.Fetcher.Calls);
     }
 
+    /// <summary>恒久的な失敗の後は壁時計を補正しても通常の間隔まで通信しない。</summary>
+    [Theory]
+    [InlineData("signature", 2)]
+    [InlineData("parse", 1)]
+    [InlineData("replay", 1)]
+    [InlineData("http", 1)]
+    [InlineData("size", 1)]
+    public async Task PermanentFailureWaitsForRegularInterval(string failure, int calls)
+    {
+        var fixture = new Fixture();
+        fixture.Store.Value = new()
+        {
+            UpdateCheckEnabled = true,
+            HighestSeenVersion = failure == "replay" ? "2.0.0" : null
+        };
+        if (failure == "signature") { fixture.Fetcher.Result = fixture.Fetcher.Result with { Signature = [0] }; }
+        if (failure == "parse") { fixture.SetManifest("broken"); }
+        if (failure is "http" or "size")
+        {
+            fixture.Fetcher.Result = new(Failure: failure == "http"
+                ? UpdateFetchFailure.HttpStatus : UpdateFetchFailure.TooLarge);
+        }
+        using var service = fixture.Create();
+        fixture.Clock.Advance(UpdateCheckPolicy.StartupDelay);
+        Assert.Equal(UpdateCheckOutcome.Failed, (await service.RunScheduledCheckAsync())!.Outcome);
+        fixture.Clock.Now = fixture.Clock.Now.AddDays(-2);
+        fixture.Clock.Advance(UpdateCheckPolicy.CheckInterval - TimeSpan.FromTicks(1));
+        Assert.Null(await service.RunScheduledCheckAsync());
+        Assert.Equal(calls, fixture.Fetcher.Calls);
+        fixture.Clock.Advance(TimeSpan.FromTicks(1));
+        Assert.Equal(UpdateCheckOutcome.Failed, (await service.RunScheduledCheckAsync())!.Outcome);
+        Assert.Equal(calls * 2, fixture.Fetcher.Calls);
+        Assert.Empty(fixture.Notifier.Offers);
+        Assert.Null(fixture.Store.Value.LastUpdateCheckUtc);
+    }
+
+    /// <summary>タイムアウト、429、5xx は一時間後に再試行する。</summary>
+    [Theory]
+    [InlineData(0)]
+    [InlineData(429)]
+    [InlineData(500)]
+    [InlineData(503)]
+    public async Task TransientFailureRetainsHourlyRetry(int status)
+    {
+        var fixture = new Fixture();
+        fixture.Store.Value = new() { UpdateCheckEnabled = true };
+        fixture.Fetcher.Result = status == 0 ? new(Failure: UpdateFetchFailure.Timeout)
+            : new(Failure: UpdateFetchFailure.HttpStatus, StatusCode: (HttpStatusCode)status);
+        using var service = fixture.Create();
+        fixture.Clock.Advance(UpdateCheckPolicy.StartupDelay);
+        Assert.Equal(UpdateCheckOutcome.Failed, (await service.RunScheduledCheckAsync())!.Outcome);
+        fixture.Clock.Advance(TimeSpan.FromHours(1) - TimeSpan.FromTicks(1));
+        Assert.Null(await service.RunScheduledCheckAsync());
+        fixture.Clock.Advance(TimeSpan.FromTicks(1));
+        Assert.Equal(UpdateCheckOutcome.Failed, (await service.RunScheduledCheckAsync())!.Outcome);
+        Assert.Equal(2, fixture.Fetcher.Calls);
+    }
+
+    /// <summary>設定の読み取り失敗を挟んでも、恒久的な失敗の待ち時間を短縮しない。</summary>
+    [Fact]
+    public async Task StateReadFailureDoesNotShortenPermanentFailureInterval()
+    {
+        var fixture = new Fixture();
+        fixture.Store.Value = new() { UpdateCheckEnabled = true };
+        fixture.Fetcher.Result = new(Failure: UpdateFetchFailure.TooLarge);
+        using var service = fixture.Create();
+        fixture.Clock.Advance(UpdateCheckPolicy.StartupDelay);
+        Assert.Equal(UpdateCheckOutcome.Failed, (await service.RunScheduledCheckAsync())!.Outcome);
+        fixture.Clock.Advance(TimeSpan.FromHours(1));
+        fixture.Store.BeforeRead = () => throw new IOException("Read failed.");
+        Assert.Equal(UpdateCheckOutcome.Failed, (await service.RunScheduledCheckAsync())!.Outcome);
+        fixture.Store.BeforeRead = null;
+        fixture.Clock.Advance(TimeSpan.FromHours(1));
+        Assert.Null(await service.RunScheduledCheckAsync());
+        Assert.Equal(1, fixture.Fetcher.Calls);
+    }
+
+    /// <summary>確認日時だけ保存できなくても結果と通知を保ち、再通信を早めない。</summary>
+    [Fact]
+    public async Task TimestampFailureKeepsOfferAndRegularInterval()
+    {
+        var fixture = new Fixture();
+        fixture.Store.Value = new() { UpdateCheckEnabled = true };
+        fixture.Store.FailTimestamp = true;
+        using var service = fixture.Create();
+        fixture.Clock.Advance(UpdateCheckPolicy.StartupDelay);
+        Assert.Equal(UpdateCheckOutcome.Available, (await service.RunScheduledCheckAsync())!.Outcome);
+        Assert.Single(fixture.Notifier.Offers);
+        Assert.Single(fixture.Log.Errors);
+        fixture.Clock.Advance(TimeSpan.FromHours(1));
+        Assert.Null(await service.RunScheduledCheckAsync());
+        Assert.Equal(1, fixture.Fetcher.Calls);
+    }
+
+    /// <summary>遅い設定読み取り中も明示確認を開始でき、古い読み取りから重複確認を開始しない。</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task StateReadDoesNotHoldGateOrStartStaleCheck(bool failRead)
+    {
+        var fixture = new Fixture();
+        fixture.Store.Value = new() { UpdateCheckEnabled = true };
+        fixture.Clock.Advance(UpdateCheckPolicy.StartupDelay);
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var reads = 0;
+        fixture.Store.BeforeRead = () =>
+        {
+            if (Interlocked.Increment(ref reads) != 1) { return; }
+            entered.SetResult();
+            release.Task.GetAwaiter().GetResult();
+            if (failRead) { throw new IOException("Read failed."); }
+        };
+        using var service = fixture.Create();
+        var scheduled = Task.Run(service.RunScheduledCheckAsync);
+        await entered.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        try
+        {
+            var manual = await Task.Run(() => service.CheckNowAsync(default)).WaitAsync(TimeSpan.FromSeconds(10));
+            Assert.Equal(UpdateCheckOutcome.Available, manual.Outcome);
+            fixture.Clock.Advance(UpdateCheckPolicy.CheckInterval);
+        }
+        finally { release.SetResult(); }
+        Assert.Null(await scheduled);
+        Assert.Equal(1, fixture.Fetcher.Calls);
+        Assert.Empty(fixture.Log.Errors);
+    }
+
     /// <summary>明示確認は無効でも動作し、重なった要求は一つの取得を共有する。</summary>
     [Fact]
     public async Task ConcurrentManualChecksShareOneFetch()
@@ -354,9 +483,15 @@ public sealed class UpdateCheckServiceTests
     private sealed class Store : ISettingsStore<DeviceState>
     {
         internal DeviceState Value = new();
+        internal bool FailTimestamp;
+        internal Action? BeforeRead;
         public SettingsLoadResult<DeviceState> Load() => new(Value);
-        public SettingsLoadResult<DeviceState>? TryReload() => Load();
-        public void Save(DeviceState value) => Value = value;
+        public SettingsLoadResult<DeviceState>? TryReload() { BeforeRead?.Invoke(); return Load(); }
+        public void Save(DeviceState value)
+        {
+            if (FailTimestamp && value.LastUpdateCheckUtc is not null) { throw new IOException("Timestamp save failed."); }
+            Value = value;
+        }
     }
 
     private sealed class Clock : IUpdateClock

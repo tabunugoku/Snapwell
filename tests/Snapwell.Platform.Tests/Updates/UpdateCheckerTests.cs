@@ -82,6 +82,69 @@ public sealed class UpdateCheckerTests
         Assert.Null(fixture.Store.Value.LastUpdateCheckUtc);
     }
 
+    /// <summary>公開中の新旧の組み合わせは一回だけ取り直し、検証済みの組だけを通知する。</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task SignatureMismatchRefetchesPairOnce(bool recovered)
+    {
+        var fixture = new Fixture();
+        var valid = fixture.Fetcher.Result;
+        var bad = valid with { Manifest = valid.Manifest!.Concat(" "u8.ToArray()).ToArray() };
+        fixture.Fetcher.Result = bad;
+        fixture.Fetcher.Next = recovered ? valid : bad;
+        var offers = new List<UpdateOffer>();
+        var result = await fixture.Checker().CheckAsync(default, notify: offers.Add);
+        Assert.Equal(2, fixture.Fetcher.Calls);
+        Assert.Equal(recovered ? UpdateCheckOutcome.Available : UpdateCheckOutcome.Failed, result.Outcome);
+        Assert.False(result.Retryable);
+        Assert.Equal(recovered ? 1 : 0, offers.Count);
+        Assert.Equal(recovered ? valid.Manifest : null, fixture.Store.Value.CachedUpdateManifest);
+        if (!recovered) { Assert.Equal(new DeviceState(), fixture.Store.Value); }
+    }
+
+    /// <summary>日時の保存だけ失敗しても最新版とスキップを含む成功結果を返す。</summary>
+    [Theory]
+    [InlineData("1.0.0", null, UpdateCheckOutcome.Available)]
+    [InlineData("1.2.0", null, UpdateCheckOutcome.UpToDate)]
+    [InlineData("1.0.0", "1.2.0", UpdateCheckOutcome.Skipped)]
+    public async Task TimestampSaveFailurePreservesResult(string current, string? skipped, UpdateCheckOutcome expected)
+    {
+        var fixture = new Fixture();
+        fixture.Store.Value = new() { SkippedVersion = skipped };
+        fixture.Store.FailTimestamp = true;
+        var offers = new List<UpdateOffer>();
+        var result = await fixture.Checker(current).CheckAsync(default, notify: offers.Add);
+        Assert.Equal(expected, result.Outcome);
+        Assert.Equal(expected == UpdateCheckOutcome.Available ? 1 : 0, offers.Count);
+        Assert.Equal("1.2.0", fixture.Store.Value.HighestSeenVersion);
+        Assert.Null(fixture.Store.Value.LastUpdateCheckUtc);
+        Assert.NotNull(result.Reason);
+    }
+
+    /// <summary>手動確認と復元は同じ配布条件を使い、自動確認の同意や休止には左右されない。</summary>
+    [Theory]
+    [InlineData("bad", true, false, UpdateCheckOutcome.DevelopmentBuild)]
+    [InlineData("0.0.0-dev", false, true, UpdateCheckOutcome.DevelopmentBuild)]
+    [InlineData("1.0.0", true, true, UpdateCheckOutcome.Failed)]
+    [InlineData("1.0.0", false, true, UpdateCheckOutcome.NoPublicKey)]
+    [InlineData("1.0.0", false, false, UpdateCheckOutcome.Available)]
+    public async Task CheckAndRestoreShareDistributionEligibility(string current, bool packaged, bool noKey,
+        UpdateCheckOutcome expected)
+    {
+        var fixture = new Fixture();
+        await fixture.Checker().CheckAsync(default);
+        fixture.Store.Value = fixture.Store.Value with { UpdateCheckEnabled = false, Enabled = false };
+        fixture.Fetcher.Calls = 0;
+        var key = noKey ? null : fixture.Key;
+        var result = await new UpdateChecker(fixture.Fetcher, fixture.Store, current, key,
+            UpdateOsArchitecture.Arm64, packaged).CheckAsync(default);
+        var offer = UpdateOfferResolver.Resolve(fixture.Store.Value, current, key, UpdateOsArchitecture.Arm64, packaged);
+        Assert.Equal(expected, result.Outcome);
+        Assert.Equal(expected == UpdateCheckOutcome.Available, offer is not null);
+        Assert.Equal(expected == UpdateCheckOutcome.Available ? 1 : 0, fixture.Fetcher.Calls);
+    }
+
     private sealed class Fixture
     {
         internal readonly Store Store = new();
@@ -107,14 +170,23 @@ public sealed class UpdateCheckerTests
     {
         internal DeviceState Value = new();
         internal DeviceState? Latest;
+        internal bool FailTimestamp;
         public SettingsLoadResult<DeviceState> Load() => new(Value);
         public SettingsLoadResult<DeviceState>? TryReload() => new(Latest ?? Value);
-        public void Save(DeviceState value) { Value = value; Latest = null; }
+        public void Save(DeviceState value)
+        {
+            if (FailTimestamp && value.LastUpdateCheckUtc is not null) { throw new IOException("Timestamp save failed."); }
+            Value = value;
+            Latest = null;
+        }
     }
 
     private sealed class Fetcher : IUpdateFetcher
     {
         internal UpdateFetchResult Result = new();
-        public Task<UpdateFetchResult> FetchAsync(CancellationToken cancellationToken) => Task.FromResult(Result);
+        internal UpdateFetchResult? Next;
+        internal int Calls;
+        public Task<UpdateFetchResult> FetchAsync(CancellationToken cancellationToken) =>
+            Task.FromResult(++Calls == 1 ? Result : Next ?? Result);
     }
 }
