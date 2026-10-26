@@ -2529,6 +2529,7 @@ function initFeelTry(getTune) {
   let size = { w: CARD_W, h: CARD_H };
   let c = { x: 0, y: 0, vx: 0, vy: 0 };
   let flight = null;
+  let settledKind = null;
   let dragging = false;
   let rafId = 0;
   let lastT = 0;
@@ -2624,7 +2625,8 @@ function initFeelTry(getTune) {
     const coast = t.m / (2 * t.z * Math.sqrt(k * t.m));
     const cur = { x: c.x, y: c.y, w: size.w, h: size.h };
     if (mode === 'corners') {
-      return { stops: corners, target: null, kind: 'corners' };
+      const rest = predictRest({ tune: t, stops: corners, w: size.w, h: size.h }, c, vx, vy);
+      return { stops: corners, target: null, kind: `corner${corners.indexOf(rest)}` };
     }
     const z = zoneRects();
     const px = cur.x + vx * coast;
@@ -2662,6 +2664,7 @@ function initFeelTry(getTune) {
     guideBox.innerHTML = guides.map((g, i) => `<div class="fz${g.k === 'max' ? ' fz-max' : ''}" data-k="${g.k}" style="left:${g.r.x}px;top:${g.r.y}px;width:${g.r.w}px;height:${g.r.h}px"></div>`).join('')
       + corners.map((s) => `<div class="fz-dot" style="left:${s.x + CARD_W / 2}px;top:${s.y + CARD_H / 2}px"></div>`).join('');
     if (!flight && !dragging) place((W - CARD_W) / 2, (H - CARD_H) / 2, CARD_W, CARD_H);
+    settledKind = null;
   };
   const place = (x, y, w, h) => {
     c = { x, y, vx: 0, vy: 0 };
@@ -2676,6 +2679,7 @@ function initFeelTry(getTune) {
   };
   const settle = () => {
     const f = flight;
+    settledKind = f.kind;
     flight = null;
     rafId = 0;
     const s = f.stops[nearest(f.stops, c.x, c.y)];
@@ -2718,6 +2722,69 @@ function initFeelTry(getTune) {
     rafId = requestAnimationFrame(loop);
   };
 
+  // Core の FeelTrial と同じく、惰性の距離で走査し、実際の場で吸着先が変わる速度を絞り込む
+  const throwTargets = () => mode === 'corners'
+    ? corners.map((p, i) => ({ ...center({ ...p, w: CARD_W, h: CARD_H }), kind: `corner${i}` }))
+    : ['left', 'right', 'tl', 'tr', 'bl', 'br'].map((kind) => ({ ...center(zoneRects()[kind]), kind }));
+  const currentKind = (t) => flight?.kind ?? settledKind ?? resolve(t, 150, 0).kind;
+  const throwVelocity = (delta, t, accepts, margin, zone = null) => {
+    const length = Math.hypot(delta.x, delta.y);
+    const dx = delta.x / length;
+    const dy = delta.y / length;
+    const coast = 1 / (2 * t.z * 2 * Math.PI * t.f);
+    const velocity = (speed) => {
+      let x = dx * speed;
+      let y = dy * speed;
+      if (zone) {
+        const from = center({ ...c, ...size });
+        const limit = (zone.y - from.y) / coast;
+        y = Math.max(Math.min(0, limit), Math.min(Math.max(0, limit), y));
+        const minX = Math.sqrt(Math.max(0, 151 * 151 - y * y));
+        if (Math.abs(x) < minX) x = (zone.x < area().W / 2 ? -1 : 1) * minX;
+      }
+      return [x, y];
+    };
+    const step = Math.max(150, length / coast / 16);
+    let low = 0;
+    let high = 151;
+    // 届く速さがどこにもない設定でも固めないよう、上限で打ち切る
+    while (high < 200000 && !accepts(resolve(t, ...velocity(high)).kind)) {
+      low = high;
+      high += step;
+    }
+    const found = high;
+    for (let i = 0; i < 12; i++) {
+      const mid = (low + high) / 2;
+      if (mid >= 151 && accepts(resolve(t, ...velocity(mid)).kind)) high = mid;
+      else low = mid;
+    }
+    const speed = accepts(resolve(t, ...velocity(high * margin)).kind) ? high * margin : found;
+    return velocity(speed);
+  };
+  const randomThrowVelocity = (random = Math.random) => {
+    const t = getTune();
+    const current = currentKind(t);
+    const from = center({ ...c, ...size });
+    const targets = throwTargets().filter((q) => q.kind !== current && Math.hypot(q.x - from.x, q.y - from.y) > 1);
+    const target = targets[Math.floor(random() * targets.length)];
+    return throwVelocity({ x: target.x - from.x, y: target.y - from.y }, t,
+      (kind) => kind !== current, 1.1 + random() * 0.3);
+  };
+  const keyThrowVelocity = (dx, dy) => {
+    const t = getTune();
+    const current = currentKind(t);
+    const from = center({ ...c, ...size });
+    const targets = throwTargets().filter((q) => q.kind !== current)
+      .map((q) => ({ ...q, dx: q.x - from.x, dy: q.y - from.y }))
+      .filter((q) => q.dx * dx + q.dy * dy > 1)
+      .sort((a, b) => Math.abs(a.dx * dy - a.dy * dx) - Math.abs(b.dx * dy - b.dy * dx)
+        || Math.hypot(a.dx, a.dy) - Math.hypot(b.dx, b.dy));
+    if (!targets.length) return [dx * 2200, dy * 2200];
+    const target = targets[0];
+    return throwVelocity({ x: target.dx, y: target.dy }, t, (kind) => kind === target.kind, 1.2,
+      mode === 'zones' ? target : null);
+  };
+
   // 本体のウィンドウをタイトルバーのドラッグで動かすのと同じく、タイトルバーの上だけがつかめる。
   // 左と上の辺は含み、右と下の辺は含まない
   const hitsTitle = (px, py, pointerType) => {
@@ -2737,6 +2804,7 @@ function initFeelTry(getTune) {
     cancelAnimationFrame(rafId);
     flight = null;
     dragging = true;
+    settledKind = null;
     $$('.fz', guideBox).forEach((el) => el.classList.remove('on'));
     // つかんだら元の大きさに戻し、つかんだ点はタイトルバーの上に残す
     const fraction = Math.min(1, Math.max(0, (p.x - c.x) / size.w));
@@ -2779,16 +2847,16 @@ function initFeelTry(getTune) {
     const v = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[ev.key];
     if (!v) return;
     ev.preventDefault();
+    if (dragging) return;
+    const velocity = keyThrowVelocity(v[0], v[1]);
     cancelAnimationFrame(rafId);
-    flight = null;
-    release(v[0] * 2200, v[1] * 2200);
+    release(...velocity);
   });
   $('#feelThrow').addEventListener('click', () => {
-    const a = Math.random() * Math.PI * 2;
-    const sp = 1200 + Math.random() * 2400;
+    if (dragging) return;
+    const velocity = randomThrowVelocity();
     cancelAnimationFrame(rafId);
-    flight = null;
-    release(Math.cos(a) * sp, Math.sin(a) * sp);
+    release(...velocity);
   });
   $$('.feel-try-bar [data-mode]').forEach((b) => b.addEventListener('click', () => {
     mode = b.dataset.mode;

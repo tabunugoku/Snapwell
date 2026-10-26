@@ -8,6 +8,147 @@ namespace Snapwell.Core.Tests.Physics;
 /// <summary>設定画面の試す領域が、本体と同じ規則（SnapResolver）と磁石場で動くことを確かめる。</summary>
 public sealed class FeelTrialTests
 {
+    /// <summary>全プリセット・両方式と、縦横比と端数の異なる舞台を組み合わせる。</summary>
+    public static IEnumerable<object[]> ThrowCases()
+    {
+        foreach (var preset in new[] { "Standard", "Crisp", "Smooth", "Bouncy" })
+        {
+            foreach (var (width, height) in new[] { (640, 260), (870, 400), (1201, 601) })
+            {
+                foreach (var mode in new[] { SnapMode.Zones, SnapMode.Corners })
+                {
+                    yield return [preset, width, height, mode];
+                }
+            }
+        }
+    }
+
+    /// <summary>各吸着先から種を変えて連続で投げても、毎回別の吸着先へ実際に収束する。</summary>
+    [Theory]
+    [MemberData(nameof(ThrowCases))]
+    public void RandomThrowsAlwaysSettleAtAnotherTarget(string preset, int width, int height, SnapMode mode)
+    {
+        var feel = FeelPreset.ByName(preset)!;
+        var count = mode == SnapMode.Zones ? 7 : 4;
+        for (var target = 0; target < count; target++)
+        {
+            for (var seed = 0; seed < 8; seed++)
+            {
+                var trial = AtTarget(width, height, mode, target, feel);
+                var random = new Random(seed);
+                for (var repeat = 0; repeat < 4; repeat++)
+                {
+                    var previous = trial.Kind;
+                    var velocity = trial.RandomThrowVelocity(feel, 28, random);
+                    Assert.True(trial.Release(velocity, feel, 28));
+                    Assert.True(Fly(trial));
+                    Assert.NotEqual(previous, trial.Kind);
+                }
+            }
+        }
+    }
+
+    /// <summary>矢印は同じ行・列を優先した隣へ届き、隣のない向きでは従来の速度を保つ。</summary>
+    [Theory]
+    [MemberData(nameof(ThrowCases))]
+    public void ArrowThrowsReachTheNeighbor(string preset, int width, int height, SnapMode mode)
+    {
+        var feel = FeelPreset.ByName(preset)!;
+        // 左・右・上・下。区画は左右半分、左上、右上、左下、右下、最大化の順。
+        int?[][] zones = [[null, 1, 2, 4], [0, null, 3, 5], [null, 3, null, 0],
+            [2, null, null, 1], [null, 5, 0, null], [4, null, 1, null], [0, 1, 2, 4]];
+        int?[][] corners = [[null, 1, null, 3], [0, null, null, 2], [3, null, 1, null], [null, 2, 0, null]];
+        var neighbors = mode == SnapMode.Zones ? zones : corners;
+        Vec2[] directions = [new(-1, 0), new(1, 0), new(0, -1), new(0, 1)];
+        for (var target = 0; target < neighbors.Length; target++)
+        {
+            for (var key = 0; key < directions.Length; key++)
+            {
+                var trial = AtTarget(width, height, mode, target, feel);
+                var velocity = trial.KeyThrowVelocity(directions[key], feel, 28);
+                if (neighbors[target][key] is not { } next)
+                {
+                    Assert.Equal(directions[key] * 2200, velocity);
+                    continue;
+                }
+
+                Assert.True(trial.Release(velocity, feel, 28));
+                Assert.True(Fly(trial));
+                if (mode == SnapMode.Zones && target == 6 && key >= 2)
+                {
+                    Assert.Contains(trial.Kind, key == 2
+                        ? [SnapTargetKind.TopLeft, SnapTargetKind.TopRight]
+                        : new SnapTargetKind?[] { SnapTargetKind.BottomLeft, SnapTargetKind.BottomRight });
+                }
+                else
+                {
+                    Assert.Equal(TargetKind(mode, next), trial.Kind);
+                }
+            }
+        }
+    }
+
+    /// <summary>惰性の長いカスタム値でも足切り速度で中段を飛び越さず、隣の半分へ届く。</summary>
+    [Fact]
+    public void ArrowThrowWithLongCoastDoesNotSkipTheMiddleRow()
+    {
+        var feel = FeelPreset.Standard.With(frequency: 0.4, dampingRatio: 0.1);
+        var trial = AtTarget(870, 400, SnapMode.Zones, 2, feel);
+        var velocity = trial.KeyThrowVelocity(new(0, 1), feel, 28);
+        Assert.True(trial.Release(velocity, feel, 28));
+        trial.Settle();
+        Assert.Equal(SnapTargetKind.LeftHalf, trial.Kind);
+    }
+
+    /// <summary>飛行中に連打しても直前に選んだ吸着先とは別の先を選ぶ。</summary>
+    [Theory]
+    [MemberData(nameof(ThrowCases))]
+    public void RapidRandomThrowsChangeThePendingTarget(string preset, int width, int height, SnapMode mode)
+    {
+        var feel = FeelPreset.ByName(preset)!;
+        var trial = AtTarget(width, height, mode, 0, feel);
+        var random = new Random(42);
+        var previous = trial.Kind;
+        for (var i = 0; i < 16; i++)
+        {
+            var velocity = trial.RandomThrowVelocity(feel, 28, random);
+            var current = new PixelRect((int)Math.Round(trial.Center.X - trial.Size.X / 2),
+                (int)Math.Round(trial.Center.Y - trial.Size.Y / 2),
+                (int)Math.Round(trial.Size.X), (int)Math.Round(trial.Size.Y));
+            var predicted = SnapResolver.Resolve(current, velocity, feel, mode, new Spacing(6, 6),
+                [new("trial", new PixelRect(0, 0, width, height), 1)], snapRadius: 28)!.Value.Kind;
+            Assert.NotEqual(previous, predicted);
+            Assert.True(trial.Release(velocity, feel, 28));
+            previous = predicted;
+            trial.Advance(i % 2 == 0 ? 0 : 1.0 / 60);
+        }
+
+        Assert.True(Fly(trial));
+        Assert.Equal(previous, trial.Kind);
+    }
+
+    private static SnapTargetKind TargetKind(SnapMode mode, int target) => mode == SnapMode.Zones
+        ? new[] { SnapTargetKind.LeftHalf, SnapTargetKind.RightHalf, SnapTargetKind.TopLeft,
+            SnapTargetKind.TopRight, SnapTargetKind.BottomLeft, SnapTargetKind.BottomRight, SnapTargetKind.Maximize }[target]
+        : new[] { SnapTargetKind.CornerTopLeft, SnapTargetKind.CornerTopRight,
+            SnapTargetKind.CornerBottomRight, SnapTargetKind.CornerBottomLeft }[target];
+
+    private static FeelTrial AtTarget(int width, int height, SnapMode mode, int target, FeelPreset feel)
+    {
+        var trial = new FeelTrial(width, height, mode);
+        var center = mode == SnapMode.Corners ? trial.CornerPoints[target]
+            : target == 6 ? new Vec2(width / 2.0, 0)
+            : new Vec2(trial.Guides[target].X + trial.Guides[target].W / 2,
+                trial.Guides[target].Y + trial.Guides[target].H / 2);
+        var title = trial.Center - new Vec2(0, trial.Size.Y / 2 - FeelTrial.TitleBarHeight / 2);
+        Assert.True(trial.Grab(title));
+        trial.Move(title + center - trial.Center);
+        Assert.True(trial.Release(new(151, 0), feel, 28));
+        trial.Settle();
+        Assert.Equal(TargetKind(mode, target), trial.Kind);
+        return trial;
+    }
+
     private static bool Fly(FeelTrial trial)
     {
         for (var i = 0; i < 60 * 12; i++)
