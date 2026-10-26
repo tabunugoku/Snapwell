@@ -397,6 +397,9 @@ internal sealed class LauncherController : IDisposable
             var maximum = Math.Max(0, list.Rows.Count * (int)Math.Round(32 * _scale) - list.Viewport.Height);
             _windowScroll = (int)Math.Round(Math.Clamp((pointer.Position.Y - list.Viewport.Y) /
                 Math.Max(1, list.Viewport.Height), 0, 1) * maximum);
+            // 縮小配置で焦点行を表示する際も、スクロール操作を元の行へ引き戻さない。
+            _focusedWindow = list.First + Math.Min(list.Rows.Count - 1,
+                (int)Math.Ceiling(_windowScroll / Math.Max(1, Math.Round(32 * _scale))));
             Draw();
             return true;
         }
@@ -416,8 +419,8 @@ internal sealed class LauncherController : IDisposable
 
         if (list.Header.Contains(pointer.Position))
         {
-            _windowsExpanded = !_windowsExpanded;
-            ApplyCurrentBindings();
+            _windowsExpanded = !_windowsExpanded &&
+                LauncherWindowListLayout.CanExpand(_selection!.WorkArea, _panelLayout!.Panel, _scale);
             Draw();
         }
         else if (_windowsExpanded && list.Expanded && list.Viewport.Contains(pointer.Position) &&
@@ -661,13 +664,15 @@ internal sealed class LauncherController : IDisposable
         var windows = _windows;
         var selected = _selectedWindows.Snapshot();
         var focused = _focusedWindow;
-        var expanded = _windowsExpanded;
         var status = _windowStatus;
         var scroll = _windowScroll;
         var windowText = _windowText;
         _panelLayout ??= LauncherPanelLayout.Create(selection, scale, title, menuOpen, presetIds: _presetIds);
         _windowList = LauncherWindowListLayout.Create(selection.WorkArea, _panelLayout.Panel, scale,
-            windows, selected, focused, expanded, status, scroll, windowText);
+            windows, selected, focused, _windowsExpanded, status, scroll, windowText);
+        var expanded = _windowsExpanded = _windowList.Expanded;
+        _windowScroll = _windowList.Scroll;
+        ApplyCurrentBindings();
         var generation = _displayGeneration;
         var renderedPanel = _panelLayout;
         var renderedList = _windowList;
@@ -691,7 +696,10 @@ internal sealed class LauncherController : IDisposable
                         {
                             _panelLayout = renderedPanel;
                             _windowList = renderedList;
+                            _windowsExpanded = renderedList.Expanded;
+                            _windowScroll = renderedList.Scroll;
                         }
+                        ApplyCurrentBindings();
                     }
                 }
             });
@@ -744,7 +752,8 @@ internal sealed class LauncherController : IDisposable
 
     private void ApplyCurrentBindings() =>
         _applyBindings(_selection is not null
-            ? _windowsExpanded ? _launcherBindings
+            ? _windowsExpanded && _windowList is { Expanded: true } && _displayedWindowList is { Expanded: true }
+                ? _launcherBindings
                 : _launcherBindings.Where(binding => !LauncherWindowBindings.Contains(binding.Id)).ToArray()
             : _enabled ? _normalBindings : _pausedBindings);
 

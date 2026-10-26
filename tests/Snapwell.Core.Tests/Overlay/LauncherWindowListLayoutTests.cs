@@ -7,6 +7,185 @@ namespace Snapwell.Core.Tests.Overlay;
 /// <summary>一覧の DPI 換算・ページ・選択表示を検証する。</summary>
 public sealed class LauncherWindowListLayoutTests
 {
+    /// <summary>高 DPI の低い作業領域でも最低一行と操作部を展開できる。</summary>
+    [Theory]
+    [InlineData(1920, 960)]
+    [InlineData(1536, 864)]
+    [InlineData(1920, 1040)]
+    public void HighDpiShortAreasExpandWithUsableControls(int width, int height)
+    {
+        var area = new PixelRect(0, 0, width, height);
+        var panel = new PixelRect(0, 35, width - 70, 399);
+        var list = LauncherWindowListLayout.Create(area, panel, 2.5, [new(1, "Window")], [], 0, true);
+        Assert.True(list.Expanded);
+        Assert.True(area.Contains(list.Panel));
+        Assert.True(list.Viewport.Contains(Assert.Single(list.Rows).Bounds));
+        Assert.True(list.Panel.Contains(list.Previous));
+        Assert.True(list.Panel.Contains(list.Next));
+        Assert.All(list.Buttons, button => Assert.True(list.Panel.Contains(button.Bounds)));
+    }
+
+    /// <summary>実際のプリセット配置でも展開判定が一致し、負座標・件数・焦点・スクロールに依存しない。</summary>
+    [Theory]
+    [InlineData(1920, 960, true)]
+    [InlineData(1536, 864, true)]
+    [InlineData(1920, 1040, true)]
+    [InlineData(1280, 720, false)]
+    public void ExpansionMatchesPredictionAcrossShortAreasAndPages(int width, int height, bool canExpand)
+    {
+        const double Scale = 2.5;
+        var area = new PixelRect(-width, -300, width, height);
+        var panel = LauncherPanelLayout.Create(new(area, new(8, 8), new()), Scale).Panel;
+        Assert.Equal(canExpand, LauncherWindowListLayout.CanExpand(area, panel, Scale));
+        foreach (var count in new[] { 0, 1, 9, 10, 20 })
+        {
+            var windows = Enumerable.Range(1, count).Select(i => new LauncherWindow(i, "Window")).ToArray();
+            for (var focused = 0; focused < Math.Max(1, count); focused++)
+            {
+                foreach (var scroll in new[] { -100, 0, 10000 })
+                {
+                    var list = LauncherWindowListLayout.Create(area, panel, Scale, windows, [], focused, true,
+                        scroll: scroll);
+                    Assert.Equal(canExpand, list.Expanded);
+                    if (!list.Expanded) { continue; }
+                    AssertControlsFit(area, list, Scale);
+                    Assert.Equal(count == 0 ? 0 : focused / 9 * 9, list.First);
+                    if (list.Rows.Count == 0) { continue; }
+                    Assert.True(list.Viewport.Height >= 70);
+                    if (height < 1040)
+                    {
+                        Assert.True(list.Viewport.Contains(Assert.Single(list.Rows, row => row.Focused).Bounds));
+                    }
+                    Assert.InRange(list.Scroll, 0, Math.Max(0, list.Rows.Count * 80 - list.Viewport.Height));
+                }
+            }
+        }
+    }
+
+    /// <summary>ボタンを縮め、次にヒントを省き、最後に一行まで減らす。下限の一画素下では展開しない。</summary>
+    [Theory]
+    [InlineData(211, true, 32, true)]
+    [InlineData(186, true, 32, true)]
+    [InlineData(185, true, 32, false)]
+    [InlineData(161, true, 31, false)]
+    [InlineData(158, true, 28, false)]
+    [InlineData(157, false, 0, false)]
+    public void CompactStagesKeepControlsBeforeReducingRows(int available, bool expanded,
+        int viewportHeight, bool hint)
+    {
+        Assert.Equal(158, LauncherWindowListLayout.MinimumExpandedHeight);
+        var area = new PixelRect(-900, -200, 900, 114 + available);
+        var panel = new PixelRect(-700, -200, 560, 100);
+        var list = LauncherWindowListLayout.Create(area, panel, 1, [new(1, "Window")], [], 0, true);
+        Assert.Equal(expanded, LauncherWindowListLayout.CanExpand(area, panel, 1));
+        Assert.Equal(expanded, list.Expanded);
+        Assert.Equal(viewportHeight, list.Viewport.Height);
+        Assert.Equal(hint, list.Hint.Height > 0);
+        if (expanded)
+        {
+            AssertControlsFit(area, list, 1);
+            Assert.All(list.Buttons, button => Assert.Equal(70, button.Bounds.Height));
+        }
+    }
+
+    /// <summary>部品ごとの丸めを含む下限で全操作部が収まり、一画素下では展開しない。</summary>
+    [Theory]
+    [InlineData(1)]
+    [InlineData(1.2)]
+    [InlineData(1.25)]
+    [InlineData(1.5)]
+    [InlineData(1.75)]
+    [InlineData(2)]
+    [InlineData(2.5)]
+    [InlineData(3)]
+    public void MinimumHeightAccountsForPhysicalPixelRounding(double scale)
+    {
+        int Px(int value) => (int)Math.Round(value * scale);
+        var minimum = Math.Max(Px(158), Px(4) + Px(28) + Px(24) + Px(70) + Px(4) + Px(28));
+        var panel = new PixelRect(-600, -300, Px(560), 100);
+        foreach (var offset in new[] { -1, 0 })
+        {
+            var area = new PixelRect(-900, -300, Px(900), 100 + minimum + Px(14) + offset);
+            var list = LauncherWindowListLayout.Create(area, panel, scale, [new(1, "Window")], [], 0, true);
+            Assert.Equal(offset == 0, LauncherWindowListLayout.CanExpand(area, panel, scale));
+            Assert.Equal(offset == 0, list.Expanded);
+            if (list.Expanded)
+            {
+                AssertControlsFit(area, list, scale);
+                Assert.True(list.Viewport.Contains(Assert.Single(list.Rows).Bounds));
+            }
+        }
+        Assert.False(LauncherWindowListLayout.CanExpand(new(0, 0, Px(300), Px(900)), default, scale));
+    }
+
+    /// <summary>通常領域では以前のパネル・行・ページャー・ボタン・ヒントの全座標を保つ。</summary>
+    [Theory]
+    [InlineData(1, 680, 174, 560, 356, 160)]
+    [InlineData(1.5, 540, 261, 840, 534, 240)]
+    [InlineData(2, 400, 348, 1120, 664, 272)]
+    public void NormalAreasPreserveOriginalCoordinates(double scale, int x, int y, int width,
+        int height, int viewportHeight)
+    {
+        int Px(int value) => (int)Math.Round(value * scale);
+        var windows = Enumerable.Range(1, 9).Select(i => new LauncherWindow(i, "Window")).ToArray();
+        var list = LauncherWindowListLayout.Create(new(0, 0, 1920, 1040), new(0, 0, width, y),
+            scale, windows, [], 0, true);
+        Assert.Equal(new(x, y, width, height), list.Panel);
+        var left = x + Px(14);
+        var inner = width - Px(28);
+        Assert.Equal(new(left, y + Px(8), inner, Px(28)), list.Header);
+        Assert.Equal(new(left, y + Px(44), inner, viewportHeight), list.Viewport);
+        var pagerY = y + Px(44) + viewportHeight + Px(8);
+        Assert.Equal(new(x + width - Px(122), pagerY, Px(50), Px(22)), list.Previous);
+        Assert.Equal(new(x + width - Px(66), pagerY, Px(50), Px(22)), list.Next);
+        Assert.Equal(new(left, pagerY + Px(112), inner, Px(18)), list.Hint);
+        for (var i = 0; i < 9; i++)
+        {
+            Assert.Equal(new(left, y + Px(44) + i * Px(32), inner, Px(28)), list.Rows[i].Bounds);
+        }
+        for (var i = 0; i < 4; i++)
+        {
+            var button = list.Buttons[i];
+            var buttonX = left + i * (inner + Px(6)) / 4;
+            var right = left + (i + 1) * (inner + Px(6)) / 4 - Px(6);
+            Assert.Equal(new(buttonX, pagerY + Px(30), right - buttonX, Px(76)), button.Bounds);
+            Assert.Equal(new(buttonX, pagerY + Px(66), right - buttonX, Px(18)), button.LabelBounds(scale));
+            Assert.Equal(new((button.Bounds.Width - Px(44)) / 2, Px(6), Px(44), Px(28)),
+                button.IconBounds(scale));
+        }
+    }
+
+    private static void AssertControlsFit(PixelRect area, LauncherWindowListLayout list, double scale)
+    {
+        Assert.True(area.Contains(list.Panel));
+        Assert.True(list.Panel.Contains(list.Header));
+        Assert.True(list.Panel.Contains(list.Viewport));
+        Assert.True(list.Panel.Contains(list.Previous));
+        Assert.True(list.Panel.Contains(list.Next));
+        Assert.True(list.Header.Bottom <= list.Viewport.Y);
+        Assert.True(list.Viewport.Bottom <= list.Previous.Y);
+        Assert.Equal(4, list.Buttons.Count);
+        Assert.All(list.Buttons, button =>
+        {
+            Assert.True(list.Panel.Contains(button.Bounds));
+            Assert.True(list.Previous.Bottom <= button.Bounds.Y);
+            Assert.True(button.Bounds.Contains(button.LabelBounds(scale)));
+            var icon = button.IconBounds(scale);
+            var label = button.LabelBounds(scale);
+            var key = new PixelRect(button.Bounds.X,
+                button.Bounds.Bottom - (int)Math.Round(20 * scale), button.Bounds.Width, (int)Math.Round(16 * scale));
+            Assert.True(new PixelRect(0, 0, button.Bounds.Width, button.Bounds.Height).Contains(icon));
+            Assert.True(button.Bounds.Y + icon.Bottom <= label.Y);
+            Assert.True(label.Bottom <= key.Y);
+            Assert.True(button.Bounds.Contains(key));
+        });
+        if (list.Hint.Height > 0)
+        {
+            Assert.True(list.Panel.Contains(list.Hint));
+            Assert.True(list.Buttons[0].Bounds.Bottom <= list.Hint.Y);
+        }
+    }
+
     /// <summary>空の一覧と折りたたみは一行を保ち、展開しても領域内へ収まる。</summary>
     [Fact]
     public void EmptyAndCollapsedListsKeepHeaderAndExpandedControlsFit()
