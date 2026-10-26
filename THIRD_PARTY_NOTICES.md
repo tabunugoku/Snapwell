@@ -30,3 +30,11 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
+
+## Newsreader
+
+- https://github.com/productiontype/Newsreader (Production Type)
+- ホームページ（`site/`）と紹介動画のワードマーク「Snapwell」に使う。太さ 500 と ASCII だけに切り出した `site/fonts/newsreader-500.woff2` を同梱する（切り出しは `tools/subset-wordmark-font.py`）。
+- SIL Open Font License 1.1。全文は `site/fonts/OFL-Newsreader.txt`。
+
+Copyright 2020 The Newsreader Project Authors (http://github.com/productiontype/Newsreader)
