@@ -119,6 +119,55 @@ public sealed record FeelPreset
         return 1 + u;
     }
 
+    /// <summary>静止から目標へ動き、許容幅（既定は ±2%）に入って以後出なくなる秒数を 1 ms 単位で求める。</summary>
+    public double StepSettleSeconds(double tolerance = 0.02)
+    {
+        if (!double.IsFinite(tolerance) || tolerance <= 0 || tolerance >= 1)
+        {
+            throw new ArgumentOutOfRangeException(nameof(tolerance));
+        }
+
+        var w = 2 * Math.PI * Frequency;
+        var z = DampingRatio;
+        var decay = w * (z <= 1 ? z : 1 / (z + Math.Sqrt(z * z - 1)));
+        var horizon = 1 / w;
+        // 全減衰域で誤差を上から包む (1 + max(1, ζ)ωt)exp(-decay·t) が許容幅に収まるまで待つ。
+        while ((1 + Math.Max(1, z) * w * horizon) * Math.Exp(-decay * horizon) > tolerance)
+        {
+            horizon *= 2;
+        }
+
+        // 最後に許容幅を外れた標本の次を返し、途中の目標通過を収束と取り違えない。
+        for (var i = (long)Math.Ceiling(horizon * 1000); i >= 0; i--)
+        {
+            if (Math.Abs(StepPosition(i / 1000.0) - 1) > tolerance)
+            {
+                return (i + 1) / 1000.0;
+            }
+        }
+
+        return 0;
+    }
+
+    /// <summary>静止から目標へ動く位置を 1 ms 刻みで走査し、目標を越える最大の割合を求める。</summary>
+    public double StepOvershoot()
+    {
+        if (DampingRatio >= 1)
+        {
+            return 0;
+        }
+
+        // 不足減衰では最初の山が最大になる。
+        var peakSeconds = Math.PI / (2 * Math.PI * Frequency * Math.Sqrt(1 - DampingRatio * DampingRatio));
+        var overshoot = 0.0;
+        for (var i = 0L; i <= Math.Ceiling(peakSeconds * 1000); i++)
+        {
+            overshoot = Math.Max(overshoot, StepPosition(i / 1000.0) - 1);
+        }
+
+        return overshoot;
+    }
+
     /// <summary>磁石の強さだけを変えた操作感を返す。範囲外は 0〜上限に収め、非有限は既定値にする。</summary>
     public FeelPreset WithMagnetStrength(double strength) => new(Mass, Frequency, DampingRatio,
         double.IsFinite(strength) ? Math.Clamp(strength, 0, MaximumMagnetStrength) : DefaultMagnetStrength);

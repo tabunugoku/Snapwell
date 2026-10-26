@@ -1,6 +1,10 @@
 {
   "Feel_Title.Text": "手感",
-  "Feel_Lead.Text": "調整投擲視窗時的運動。固有頻率和阻尼比決定運動速度與回彈方式。選擇預設會變更吸附半徑以外的 4 個值，變更其中任意一個值後將顯示為「自訂」。曲線表示按鍵操作後到停止為止的位置變化。",
+  "Feel_Lead.Text": "調整投擲視窗時的運動。固有頻率和阻尼比決定運動速度與回彈方式。選擇預設會變更吸附半徑以外的 4 個值，變更其中任意一個值後將顯示為「自訂」。",
+  "Feel.StepMetrics": "穩定需時 {settle} 秒 · 超越目標 {overshoot}%",
+  "Feel_CurveLegend.Text": "曲線：按鍵移動一個區域後的位置變化（時間由左至右，虛線為目標位置）。",
+  "Feel_CurveThrowNote.Text": "投擲時，運動速度與回彈方式也由相同的固有頻率和阻尼比決定。",
+  "Feel_TrialExpander.AutomationName": "試試看",
   "Feel_TrialTitle.Text": "試試看",
   "Feel_TrialCard.AutomationName": "試用視窗。拖曳標題列或用方向鍵甩出",
   "Feel_TrialWindowLabel.Text": "視窗",

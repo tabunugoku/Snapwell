@@ -632,6 +632,11 @@ table.list tr:last-child td { border-bottom: 0; }
 .feel-card svg { width: 100%; height: 54px; margin-top: 8px; }
 .feel-card svg path.c { fill: none; stroke: var(--ink); stroke-width: 1.5; }
 .feel-card svg line { stroke: var(--border-strong); stroke-dasharray: 3 3; }
+.feel-metrics { display: block; margin-top: 8px; font-size: 12px; line-height: 16px; color: var(--muted); }
+.feel-curve-note { margin: 8px 0 0; font-size: 12px; line-height: 16px; color: var(--muted); }
+.feel-trial { margin-top: 14px; }
+.feel-trial > summary { font-size: 13px; font-weight: 600; color: var(--ink); }
+.feel-trial > summary:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .feel-state { margin-left: 12px; font: inherit; color: inherit; }
 .feel-reset { margin-left: 8px; padding: 1px 10px; font-size: 11.5px; }
 .feel-try { border: 1px solid var(--border); border-radius: 8px; background: var(--surface); padding: 12px; }
@@ -1039,23 +1044,27 @@ table.list tr:last-child td { border-bottom: 0; }
           <!-- 操作感 -->
           <div class="spage" data-page="feel">
             <h3>操作感</h3>
-            <p class="lead">投げたときの動き方を調整します。動きの速さと戻り方は固有振動数と減衰比で決まります。プリセットを選ぶと、吸着半径を除く 4 つの値が変わり、どれかを変えると「カスタム」になります。曲線はキー操作で止まるまでの位置の変化です。</p>
+            <p class="lead">投げたときの動き方を調整します。動きの速さと戻り方は固有振動数と減衰比で決まります。プリセットを選ぶと、吸着半径を除く 4 つの値が変わり、どれかを変えると「カスタム」になります。</p>
             <div class="feel-cards" id="feelCards"></div>
-            <div class="group-title">試す</div>
-            <div class="feel-try">
-              <div class="feel-stage" id="feelStage" aria-label="操作感を試す領域">
-                <div class="fs-zones" id="feelZones"></div>
-                <div class="fs-card" id="feelCard" tabindex="0" aria-label="試すウィンドウ。タイトルバーをドラッグして投げる。矢印キーで投げる"></div>
-              </div>
-              <div class="feel-try-bar">
-                <div class="chips" role="group" aria-label="吸着の方式">
-                  <button class="chip" type="button" data-mode="zones" aria-pressed="true">区画</button>
-                  <button class="chip" type="button" data-mode="corners" aria-pressed="false">四隅</button>
+            <p class="feel-curve-note">曲線: キー操作で 1 区画動かしたときの位置の変化（左から右へ時間、破線が目標）</p>
+            <p class="feel-curve-note">投げたときも、同じ固有振動数と減衰比で動きの速さや戻り方が決まります。</p>
+            <details class="os-det feel-trial" id="feelTrial">
+              <summary aria-label="試す">試す</summary>
+              <div class="feel-try">
+                <div class="feel-stage" id="feelStage" aria-label="操作感を試す領域">
+                  <div class="fs-zones" id="feelZones"></div>
+                  <div class="fs-card" id="feelCard" tabindex="0" aria-label="試すウィンドウ。タイトルバーをドラッグして投げる。矢印キーで投げる"></div>
                 </div>
-                <button class="chip" type="button" id="feelThrow">ランダムに投げる</button>
-                <span class="feel-try-hint">ウィンドウのタイトルバーをつかんで投げます（ウィンドウの中をつかんでも動きません）。いまの 5 つの値で動き、止まる先は Snapwell 本体と同じ規則で決まります（離した速さが 150 px/s 未満だと吸着しません。区画では、中央から上へ強く投げると最大化になります）</span>
+                <div class="feel-try-bar">
+                  <div class="chips" role="group" aria-label="吸着の方式">
+                    <button class="chip" type="button" data-mode="zones" aria-pressed="true">区画</button>
+                    <button class="chip" type="button" data-mode="corners" aria-pressed="false">四隅</button>
+                  </div>
+                  <button class="chip" type="button" id="feelThrow">ランダムに投げる</button>
+                  <span class="feel-try-hint">ウィンドウのタイトルバーをつかんで投げます（ウィンドウの中をつかんでも動きません）。いまの 5 つの値で動き、止まる先は Snapwell 本体と同じ規則で決まります（離した速さが 150 px/s 未満だと吸着しません。区画では、中央から上へ強く投げると最大化になります）</span>
+                </div>
               </div>
-            </div>
+            </details>
             <div class="group-title">詳細 <span class="feel-state" id="feelState"></span><button class="chip feel-reset" type="button" id="feelReset" hidden>プリセットに戻す</button></div>
             <div class="rows" id="feelAdvanced"></div>
             <div class="group-title">アクセシビリティ</div>
@@ -2381,6 +2390,7 @@ function initSaveBar() {
   $('#importCancel').addEventListener('click', () => dlg.close());
 }
 function showPage(id) {
+  $('#feelTrial').open = false;
   $$('#snav button').forEach((b) => b.setAttribute('aria-current', String(b.dataset.page === id)));
   $$('.spage').forEach((p) => p.classList.toggle('active', p.dataset.page === id));
 }
@@ -2470,6 +2480,48 @@ function renderGrid(force) {
   box.innerHTML = html;
 }
 
+// Core の FeelPreset.StepPosition と同じ、静止から目標へ動く閉形式。
+function stepPosition(p, seconds) {
+  const w = 2 * Math.PI * p.f;
+  const z = p.z;
+  let u;
+  if (Math.abs(z - 1) < 1e-6) {
+    u = Math.exp(-w * seconds) * (-1 - w * seconds);
+  } else if (z < 1) {
+    const wd = w * Math.sqrt(1 - z * z);
+    const b = -z * w / wd;
+    u = Math.exp(-z * w * seconds) * (-Math.cos(wd * seconds) + b * Math.sin(wd * seconds));
+  } else {
+    const q = Math.sqrt(z * z - 1);
+    const r1 = -w * (z - q);
+    const r2 = -w * (z + q);
+    const c2 = r1 / (r2 - r1);
+    const c1 = -1 - c2;
+    u = c1 * Math.exp(r1 * seconds) + c2 * Math.exp(r2 * seconds);
+  }
+  return 1 + u;
+}
+// Core と同じ包絡線で走査範囲を決め、1 ms 刻みで最後の許容幅逸脱と最初の山を探す。
+function stepMetrics(p, tolerance = 0.02) {
+  const w = 2 * Math.PI * p.f;
+  const z = p.z;
+  const decay = w * (z <= 1 ? z : 1 / (z + Math.sqrt(z * z - 1)));
+  let horizon = 1 / w;
+  while ((1 + Math.max(1, z) * w * horizon) * Math.exp(-decay * horizon) > tolerance) horizon *= 2;
+  let settle = 0;
+  for (let i = Math.ceil(horizon * 1000); i >= 0; i--) {
+    if (Math.abs(stepPosition(p, i / 1000) - 1) > tolerance) {
+      settle = (i + 1) / 1000;
+      break;
+    }
+  }
+  let overshoot = 0;
+  if (z < 1) {
+    const peakSeconds = Math.PI / (w * Math.sqrt(1 - z * z));
+    for (let i = 0; i <= Math.ceil(peakSeconds * 1000); i++) overshoot = Math.max(overshoot, stepPosition(p, i / 1000) - 1);
+  }
+  return { settle, overshoot };
+}
 function curvePath(p, w, h) {
   const { m, k, c } = springOf(p);
   let x = 0;
@@ -2512,6 +2564,7 @@ const fromSlider = (t, x) => {
  * 左右の二候補は磁石場で決める、四隅は 4 点の場）。位置はウィンドウの左上、停止点も左上の座標
  */
 function initFeelTry(getTune) {
+  const details = $('#feelTrial');
   const stage = $('#feelStage');
   const card = $('#feelCard');
   const guideBox = $('#feelZones');
@@ -2651,7 +2704,7 @@ function initFeelTry(getTune) {
 
   const layout = () => {
     const { W, H } = area();
-    if (!W) return;
+    if (!details.open || W <= 0 || H <= 0) return;
     const z = zoneRects();
     if (mode === 'zones') {
       corners = [];
@@ -2692,6 +2745,7 @@ function initFeelTry(getTune) {
     $$('.fz', guideBox).forEach((el) => el.classList.toggle('on', !!f.kind && el.dataset.k === f.kind));
   };
   const loop = (now) => {
+    if (!details.open) { stop(); return; }
     let acc = Math.min(1 / 30, (now - lastT) / 1000);
     lastT = now;
     flight.ctx.tune = getTune();
@@ -2797,6 +2851,18 @@ function initFeelTry(getTune) {
   };
   let samples = [];
   let grab = null;
+  let pointerId = null;
+  const stop = () => {
+    cancelAnimationFrame(rafId);
+    rafId = 0;
+    flight = null;
+    dragging = false;
+    grab = null;
+    samples = [];
+    stage.style.cursor = '';
+    if (pointerId !== null && stage.hasPointerCapture(pointerId)) stage.releasePointerCapture(pointerId);
+    pointerId = null;
+  };
   const stagePoint = (ev) => {
     const r = stage.getBoundingClientRect();
     return { x: ev.clientX - r.left, y: ev.clientY - r.top };
@@ -2816,6 +2882,7 @@ function initFeelTry(getTune) {
     grab = { x: fraction * CARD_W, y: TITLE_H / 2 };
     c = { x: p.x - grab.x, y: p.y - grab.y, vx: 0, vy: 0 };
     samples = [{ t: ev.timeStamp, x: c.x, y: c.y }];
+    pointerId = ev.pointerId;
     stage.setPointerCapture(ev.pointerId);
     stage.style.cursor = 'grabbing';
     paint(0.4);
@@ -2869,8 +2936,14 @@ function initFeelTry(getTune) {
     flight = null;
     layout();
   }));
-  new ResizeObserver(layout).observe(stage);
-  layout();
+  new ResizeObserver(() => {
+    if (stage.clientWidth <= 0 || stage.clientHeight <= 0) { stop(); return; }
+    layout();
+  }).observe(stage);
+  details.addEventListener('toggle', () => {
+    if (details.open) layout();
+    else stop();
+  });
 }
 
 function initFeelPage() {
@@ -2881,10 +2954,16 @@ function initFeelPage() {
   const params = () => tune;
   initFeelTry(params);
 
-  box.innerHTML = Object.entries(FEELS).map(([key, f]) => `<button type="button" class="feel-card" data-k="${key}">`
-    + `<div class="fname">${f.name}</div>`
-    + `<svg viewBox="0 0 160 54" preserveAspectRatio="none"><line x1="0" x2="160" y1="12" y2="12"/>`
-    + `<path class="c" d="${curvePath(f, 160, 54)}"/></svg></button>`).join('');
+  box.innerHTML = Object.entries(FEELS).map(([key, f]) => {
+    const metrics = stepMetrics(f);
+    const settle = metrics.settle.toFixed(2);
+    const overshoot = (metrics.overshoot * 100).toFixed(1);
+    return `<button type="button" class="feel-card" data-k="${key}">`
+      + `<div class="fname">${f.name}</div>`
+      + `<svg viewBox="0 0 160 54" preserveAspectRatio="none"><line x1="0" x2="160" y1="12" y2="12"/>`
+      + `<path class="c" d="${curvePath(f, 160, 54)}"/></svg>`
+      + `<span class="feel-metrics">落ち着くまで ${settle} 秒 · 行き過ぎ ${overshoot}%</span></button>`;
+  }).join('');
 
   $('#feelAdvanced').innerHTML = `<div class="row"><div><div class="t">吸着の方式</div><div class="d">投げたウィンドウを吸い寄せる対象</div></div>`
     + `<div class="ctl"><select class="input" style="width: 240px" aria-label="吸着の方式"><option>区画 — 半分・四分割・最大化</option><option>四隅 — サイズを変えずに移動</option></select></div></div>`

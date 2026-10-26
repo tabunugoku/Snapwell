@@ -5,6 +5,62 @@ namespace Snapwell.Core.Tests.Physics;
 /// <summary>feel の語彙から導く係数と入力制約を検証する。期待値は feel の references/vocabulary.md の表。</summary>
 public sealed class FeelPresetTests
 {
+    /// <summary>四プリセットの収束時刻と行き過ぎは承認済みの目安に一致し、収束後は許容幅から出ない。</summary>
+    [Theory]
+    [InlineData("Standard", 0.40, 4.6)]
+    [InlineData("Crisp", 0.30, 9.5)]
+    [InlineData("Smooth", 0.33, 1.5)]
+    [InlineData("Bouncy", 0.47, 20.5)]
+    public void StepMetricsMatchPresetMotion(string name, double expectedSeconds, double expectedPercent)
+    {
+        var feel = FeelPreset.ByName(name)!;
+        var seconds = feel.StepSettleSeconds();
+        Assert.InRange(seconds, expectedSeconds - 0.03, expectedSeconds + 0.03);
+        Assert.InRange(feel.StepOvershoot() * 100, expectedPercent - 1, expectedPercent + 1);
+        Assert.True(Math.Abs(feel.StepPosition(seconds - 0.001) - 1) > 0.02);
+        for (var i = 0; i <= 3000; i++)
+        {
+            Assert.InRange(feel.StepPosition(seconds + i / 1000.0), 0.98, 1.02);
+        }
+    }
+
+    /// <summary>遅いカスタムや全減衰域でも、曲線の描画範囲に制限されず最後の逸脱から収束時刻を求める。</summary>
+    [Theory]
+    [InlineData(0.4, 0.1)]
+    [InlineData(0.4, 1)]
+    [InlineData(0.4, 1.6)]
+    [InlineData(7, 0.1)]
+    [InlineData(7, 1.6)]
+    public void StepSettleHandlesCustomFrequencyAndDamping(double frequency, double dampingRatio)
+    {
+        var feel = new FeelPreset(1, frequency, dampingRatio);
+        const double tolerance = 0.01;
+        var seconds = feel.StepSettleSeconds(tolerance);
+        Assert.True(Math.Abs(feel.StepPosition(seconds - 0.001) - 1) > tolerance);
+        for (var i = 0; i <= 20000; i++)
+        {
+            Assert.InRange(feel.StepPosition(seconds + i / 1000.0), 1 - tolerance, 1 + tolerance);
+        }
+
+        Assert.True(seconds >= feel.StepSettleSeconds());
+        if (dampingRatio >= 1)
+        {
+            Assert.Equal(0, feel.StepOvershoot());
+        }
+    }
+
+    /// <summary>収束の許容幅は 0 より大きく 1 より小さい有限値に限る。</summary>
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-0.01)]
+    [InlineData(1)]
+    [InlineData(double.NaN)]
+    [InlineData(double.PositiveInfinity)]
+    public void StepSettleRejectsInvalidTolerance(double tolerance)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => FeelPreset.Standard.StepSettleSeconds(tolerance));
+    }
+
     /// <summary>語の質量・振動数・減衰比から、表どおりの剛性と減衰係数が出る。</summary>
     [Theory]
     [InlineData("snappy", 1, 3.4, 0.82, 456.4, 35.04)]

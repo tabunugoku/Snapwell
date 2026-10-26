@@ -47,6 +47,11 @@ public sealed partial class FeelPage : Page
         BuildCurve(CrispCurve, FeelPreset.Crisp);
         BuildCurve(SmoothCurve, FeelPreset.Smooth);
         BuildCurve(BouncyCurve, FeelPreset.Bouncy);
+        ShowStepMetrics(StandardMetrics, FeelPreset.Standard);
+        ShowStepMetrics(CrispMetrics, FeelPreset.Crisp);
+        ShowStepMetrics(SmoothMetrics, FeelPreset.Smooth);
+        ShowStepMetrics(BouncyMetrics, FeelPreset.Bouncy);
+        Unloaded += Trial_Unloaded;
 
         var value = session.Current;
         IsEnabled = !session.IsReadOnly;
@@ -81,6 +86,13 @@ public sealed partial class FeelPage : Page
             var py = height - 4 - preset.StepPosition(i / (double)steps * totalSeconds) * (height - 16);
             polyline.Points.Add(new Point(px, py));
         }
+    }
+
+    private static void ShowStepMetrics(TextBlock text, FeelPreset preset)
+    {
+        text.Text = UiText.Current.Format("Feel.StepMetrics",
+            ("settle", preset.StepSettleSeconds().ToString("F2", CultureInfo.CurrentCulture)),
+            ("overshoot", (preset.StepOvershoot() * 100).ToString("F1", CultureInfo.CurrentCulture)));
     }
 
     private void RefreshFeelDetails()
