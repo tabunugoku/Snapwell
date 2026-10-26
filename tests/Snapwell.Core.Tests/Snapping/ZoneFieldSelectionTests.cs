@@ -29,7 +29,8 @@ public sealed class ZoneFieldSelectionTests
     [Fact]
     public void FieldCanPullBackWhenProjectedPointIsOnTheOtherSide()
     {
-        var result = Resolve(new(600, 500, 400, 300), new(5000, 0))!.Value;
+        // 減衰に合わせた遠方ばねでも、予測中心は右半分、実際の停止先は左半分になる速度を使う。
+        var result = Resolve(new(600, 500, 400, 300), new(2500, 0))!.Value;
         Assert.True(result.PredictedPosition.X + 200 > 1280);
         Assert.Equal(SnapTargetKind.LeftHalf, result.Kind);
     }

@@ -6,6 +6,9 @@ public sealed record FeelPreset
     /// <summary>語に磁石がないときの強さ。feel の corner-card の <c>w.magnet || 0.6</c>。</summary>
     public const double DefaultMagnetStrength = 0.6;
 
+    /// <summary>遠方ばねの振動数を減衰比と固有振動数の積に合わせる比率。</summary>
+    public const double ReachRatio = 0.9;
+
     /// <summary>設定で選べる質量の範囲。feel の語彙の上限（0.15–8）と rig のスライダーに合わせる。</summary>
     public const double MinimumMass = 0.15;
 
@@ -60,13 +63,13 @@ public sealed record FeelPreset
     /// <summary>質量。</summary>
     public double Mass { get; }
 
-    /// <summary>固有振動数。単位は Hz。減衰係数と、目標へのばねの剛性を決める。</summary>
+    /// <summary>固有振動数。単位は Hz。減衰係数・目標へのばねの剛性・遠方ばねの振動数を決める。</summary>
     public double Frequency { get; }
 
     /// <summary>減衰比。</summary>
     public double DampingRatio { get; }
 
-    /// <summary>磁石の強さ。</summary>
+    /// <summary>吸着半径の内側で効く近傍ばねの強さ。</summary>
     public double MagnetStrength { get; }
 
     /// <summary>質量と固有振動数から導く剛性 k = m(2πf)²。</summary>
@@ -78,8 +81,8 @@ public sealed record FeelPreset
     /// <summary>手を離したあとの惰性で止まるまでの距離を速度に掛ける係数 m/c（feel の projected）。</summary>
     public double CoastTime => Mass / Damping;
 
-    /// <summary>磁石場の遠くまで届くばねの振動数 0.6 + 0.5×強さ。</summary>
-    public double ReachFrequency => 0.6 + 0.5 * MagnetStrength;
+    /// <summary>減衰に合わせた磁石場の遠方ばねの振動数 ζ·f·ReachRatio を 0.6〜6 Hz に収める。</summary>
+    public double ReachFrequency => Math.Clamp(DampingRatio * Frequency * ReachRatio, 0.6, 6);
 
     /// <summary>磁石場の吸着半径の内側で効くばねの振動数 3 + 4×強さ。</summary>
     public double ClickFrequency => 3 + 4 * MagnetStrength;
