@@ -11,6 +11,8 @@ public sealed record DeviceState
 
     public int SchemaVersion { get; set; } = CurrentSchemaVersion;
     public bool Enabled { get; set; } = true;
+    /// <summary>設定画面が有効にするたびに替える値。保存できなかった一時停止を、明示的な再開と古い値で区別する。</summary>
+    public string? ResumeRequest { get; set; }
     public bool DisableStandardSnap { get; set; }
     public bool ReplaceWinArrow { get; set; }
     public bool StandardSnapConsentGiven { get; set; }

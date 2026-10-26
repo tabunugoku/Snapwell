@@ -66,8 +66,18 @@ public sealed class DeviceStateChangesTests
             Assert.True(paused.DisableStandardSnap);
             Assert.True(paused.StandardSnapConsentGiven);
 
+            Assert.Null(paused.ResumeRequest);
+
             DeviceStateChanges.SetEnabled(store, true);
-            Assert.True(store.Load().Value.Enabled);
+            var resumed = store.Load().Value;
+            Assert.True(resumed.Enabled);
+            Assert.False(string.IsNullOrEmpty(resumed.ResumeRequest));
+
+            // 有効にするたびに新しい要求になり、無効にしても直前の値は消さない。
+            DeviceStateChanges.SetEnabled(store, false);
+            Assert.Equal(resumed.ResumeRequest, store.Load().Value.ResumeRequest);
+            DeviceStateChanges.SetEnabled(store, true);
+            Assert.NotEqual(resumed.ResumeRequest, store.Load().Value.ResumeRequest);
         }
         finally
         {
