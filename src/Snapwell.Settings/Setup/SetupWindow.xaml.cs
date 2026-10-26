@@ -224,11 +224,17 @@ public sealed partial class SetupWindow : Window
     private bool IsMotionAllowed() => SetupPresentation.IsMotionAllowed(_uiSettings.AnimationsEnabled,
         !_loadFailed && _initialSettings.ReduceMotion);
 
-    private void SetupWindowChanged(AppWindow sender, AppWindowChangedEventArgs args) =>
+    private void SetupWindowChanged(AppWindow sender, AppWindowChangedEventArgs args)
+    {
+        _intro?.RefreshActivity();
         _welcomeStage?.RefreshActivity();
+    }
 
-    private void SetupWindowActivated(object sender, WindowActivatedEventArgs args) =>
+    private void SetupWindowActivated(object sender, WindowActivatedEventArgs args)
+    {
+        _intro?.RefreshActivity();
         _welcomeStage?.RefreshActivity();
+    }
 
     private void AnimationsEnabledChanged(UISettings sender, object args) => DispatcherQueue.TryEnqueue(() =>
     {

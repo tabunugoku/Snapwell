@@ -16,6 +16,10 @@ public static class SetupPresentation
     public static bool ShouldSubscribeWelcomeRendering(bool motionAllowed, bool touched, bool settled, bool visible) =>
         motionAllowed && visible && (!touched || !settled);
 
+    /// <summary>表示中で未完了の導入だけが描画を購読し、破棄後は再開しない。</summary>
+    public static bool ShouldSubscribeIntroRendering(bool visible, bool complete, bool disposed) =>
+        visible && !complete && !disposed;
+
     /// <summary>手順に合う進行ボタンの文言キーを返す。</summary>
     public static string NextKey(SetupStep step) => step switch
     {
@@ -23,4 +27,21 @@ public static class SetupPresentation
         SetupStep.Grid => "Setup.Done",
         _ => "Setup.Next",
     };
+}
+
+/// <summary>導入の再開直後は時刻を進めず、以後のフレーム間隔にも上限を設ける。</summary>
+public sealed class IntroFrameClock
+{
+    private double? _last;
+
+    /// <summary>再購読前に古い時刻を捨て、最初のフレームで基準を取り直す。</summary>
+    public void Reset() => _last = null;
+
+    /// <summary>単調増加する秒単位の時刻から、導入を進める秒数を返す。</summary>
+    public double Advance(double now)
+    {
+        var dt = _last is { } last ? Math.Min(.05, now - last) : 0;
+        _last = now;
+        return dt;
+    }
 }

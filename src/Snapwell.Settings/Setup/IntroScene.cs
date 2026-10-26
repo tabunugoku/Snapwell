@@ -46,10 +46,11 @@ internal sealed partial class IntroScene : Grid, IDisposable
     private readonly IntroPalette _palette;
     private IntroChoreography? _model;
     private ContainerVisual? _field;
-    private long _last;
+    private readonly IntroFrameClock _clock = new();
     private double? _skipElapsed;
     private bool _disposed;
     private bool _rendering;
+    private XamlRoot? _root;
 
     internal IntroScene(Func<bool> visible, Action finished, Action<double> revealWelcome)
     {
@@ -131,7 +132,7 @@ internal sealed partial class IntroScene : Grid, IDisposable
 
     private void OnLoaded(object sender, RoutedEventArgs args)
     {
-        if (_disposed || _rendering) { return; }
+        if (_disposed || _model is not null) { return; }
         _model = new(ActualWidth, ActualHeight);
         var compositor = ElementCompositionPreview.GetElementVisual(this).Compositor;
         _field = compositor.CreateContainerVisual();
@@ -154,13 +155,35 @@ internal sealed partial class IntroScene : Grid, IDisposable
             var visual = new IntroWindowVisual();
             _windows.Add(visual); _windowsHost.Children.Add(visual);
         }
-        _last = Stopwatch.GetTimestamp();
-        _rendering = true;
-        CompositionTarget.Rendering += OnFrame;
+        _root = XamlRoot;
+        _root.Changed += OnRootChanged;
+        RefreshActivity();
         Paint();
     }
 
     private void OnUnloaded(object sender, RoutedEventArgs args) => Dispose();
+
+    private void OnRootChanged(XamlRoot sender, XamlRootChangedEventArgs args) => RefreshActivity();
+
+    /// <summary>表示状態と終了状態から描画購読を切り替える。</summary>
+    internal void RefreshActivity()
+    {
+        if (_disposed || _model is null) { return; }
+        SetRendering(SetupPresentation.ShouldSubscribeIntroRendering(
+            _visible() && _root is { IsHostVisible: true }, _model.IsComplete || _skipElapsed >= .8, _disposed));
+    }
+
+    private void SetRendering(bool rendering)
+    {
+        if (_rendering == rendering) { return; }
+        _rendering = rendering;
+        if (rendering)
+        {
+            _clock.Reset();
+            CompositionTarget.Rendering += OnFrame;
+        }
+        else { CompositionTarget.Rendering -= OnFrame; }
+    }
 
     /// <summary>何度呼ばれても同じ 0.8 秒のフェードを一度だけ始める。</summary>
     internal void Skip()
@@ -170,14 +193,17 @@ internal sealed partial class IntroScene : Grid, IDisposable
 
     private void OnFrame(object? sender, object args)
     {
-        var now = Stopwatch.GetTimestamp();
-        var dt = Math.Min(.05, (double)(now - _last) / Stopwatch.Frequency);
-        _last = now;
-        if (!_visible() || _model is null) { return; }
+        RefreshActivity();
+        if (!_rendering || _model is null) { return; }
+        var dt = _clock.Advance((double)Stopwatch.GetTimestamp() / Stopwatch.Frequency);
         _model.Advance(dt);
         if (_skipElapsed is { } skip) { _skipElapsed = skip + dt; }
         Paint();
-        if (_model.IsComplete || _skipElapsed >= .8) { _finished(); }
+        if (_model.IsComplete || _skipElapsed >= .8)
+        {
+            RefreshActivity();
+            _finished();
+        }
     }
 
     private void Paint()
@@ -267,7 +293,8 @@ internal sealed partial class IntroScene : Grid, IDisposable
     {
         if (_disposed) { return; }
         _disposed = true;
-        CompositionTarget.Rendering -= OnFrame;
+        SetRendering(false);
+        if (_root is not null) { _root.Changed -= OnRootChanged; _root = null; }
         Loaded -= OnLoaded; Unloaded -= OnUnloaded;
         foreach (var window in _windows) { window.Dispose(); }
         foreach (var dot in _dots) { dot.Visual.Dispose(); dot.Geometry.Dispose(); dot.Brush.Dispose(); }

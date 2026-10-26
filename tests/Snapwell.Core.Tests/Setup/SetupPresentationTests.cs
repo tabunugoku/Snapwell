@@ -42,6 +42,56 @@ public sealed class SetupPresentationTests
     public void RenderingRequiresVisibleMotion(bool allowed, bool touched, bool settled, bool visible, bool expected) =>
         Assert.Equal(expected, SetupPresentation.ShouldSubscribeWelcomeRendering(allowed, touched, settled, visible));
 
+    /// <summary>表示中かつ未完了だけ購読し、破棄後は表示が戻っても再開しない。</summary>
+    [Theory]
+    [InlineData(true, false, false, true)]
+    [InlineData(false, false, false, false)]
+    [InlineData(true, true, false, false)]
+    [InlineData(false, true, false, false)]
+    [InlineData(true, false, true, false)]
+    [InlineData(false, false, true, false)]
+    [InlineData(true, true, true, false)]
+    [InlineData(false, true, true, false)]
+    public void IntroRenderingRequiresVisibleUnfinishedScene(bool visible, bool complete, bool disposed, bool expected) =>
+        Assert.Equal(expected, SetupPresentation.ShouldSubscribeIntroRendering(visible, complete, disposed));
+
+    /// <summary>何度復帰しても最初のフレームは時刻を進めず、以後は通常の刻みで再開する。</summary>
+    [Fact]
+    public void IntroResumeStartsWithZeroDelta()
+    {
+        var clock = new IntroFrameClock();
+        var model = new IntroChoreography(520, 188);
+        Assert.Equal(0, clock.Advance(0));
+        model.Advance(clock.Advance(.02));
+        Assert.Equal(.02, model.Elapsed, 10);
+
+        for (var attempt = 1; attempt <= 3; attempt++)
+        {
+            var elapsed = model.Elapsed;
+            clock.Reset();
+            clock.Reset();
+            var now = attempt * 300d;
+            var dt = clock.Advance(now);
+            Assert.Equal(0, dt);
+            model.Advance(dt);
+            Assert.Equal(elapsed, model.Elapsed);
+            dt = clock.Advance(now + .02);
+            Assert.Equal(.02, dt, 10);
+            model.Advance(dt);
+            Assert.Equal(elapsed + .02, model.Elapsed, 10);
+        }
+    }
+
+    /// <summary>再開後の描画が遅れても既存の一フレーム上限を守る。</summary>
+    [Fact]
+    public void IntroFrameDeltaIsCapped()
+    {
+        var clock = new IntroFrameClock();
+        Assert.Equal(0, clock.Advance(10));
+        Assert.Equal(.05, clock.Advance(20));
+        Assert.Equal(.01, clock.Advance(20.01), 10);
+    }
+
     /// <summary>一度止まった窓も投げ直しで購読し、効果オフなら直接区画に収める。</summary>
     [Theory]
     [InlineData(true, false)]
