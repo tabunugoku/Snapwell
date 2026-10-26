@@ -7,6 +7,24 @@ namespace Snapwell.Platform.Tests.Updates;
 /// <summary>実ファイルや通信を使わず、更新開始の順序と後始末を検証する。</summary>
 public sealed class UpdateStartupTests
 {
+    /// <summary>進行役の動作中は入力を変更せず、取得も起動も後始末もしない。</summary>
+    [Fact]
+    public async Task RunningCoordinatorPreservesPendingWithoutAnyOperations()
+    {
+        var fixture = new Fixture { AnotherUpdateRunning = true };
+        fixture.Files.Add("manifest.json", [1]);
+        fixture.Files.Add("manifest.sig", [2]);
+        fixture.Files.Add("package.zip", [3]);
+        var original = fixture.Files.ToArray();
+
+        var result = await fixture.Run();
+
+        Assert.Equal(UpdateStartupFailure.AnotherUpdateRunning, result.Failure);
+        Assert.Null(result.DownloadFailure);
+        Assert.Empty(fixture.Calls);
+        Assert.Equal(original, fixture.Files.ToArray());
+    }
+
     /// <summary>署名した元バイト列と取得した zip を進行役へ渡し、成功時だけ保持する。</summary>
     [Fact]
     public async Task SuccessPreservesPendingAndStartsWithoutElevation()
@@ -116,6 +134,31 @@ public sealed class UpdateStartupTests
         Assert.Null((await running).Failure);
     }
 
+    /// <summary>待機中に進行役が動き始めた場合も、排他取得後に再判定して入力を守る。</summary>
+    [Fact]
+    public async Task WaitingStartupChecksCoordinatorAfterAcquiringGate()
+    {
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var first = new Fixture { DownloadWait = release.Task, OnDownload = () => entered.SetResult() };
+        var second = new Fixture();
+        var running = first.Run();
+        Task<UpdateStartupResult>? waiting = null;
+        try
+        {
+            await entered.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            waiting = second.Run();
+            Assert.False(waiting.IsCompleted);
+            second.AnotherUpdateRunning = true;
+        }
+        finally { release.TrySetResult(); }
+
+        Assert.Null((await running).Failure);
+        Assert.Equal(UpdateStartupFailure.AnotherUpdateRunning, (await waiting!).Failure);
+        Assert.Empty(second.Calls);
+        Assert.Equal(new[] { "manifest.json", "manifest.sig", "package.zip" }, first.Files.Keys);
+    }
+
     private sealed class Fixture : IUpdateStartupFiles
     {
         internal readonly List<string> Calls = [];
@@ -126,6 +169,7 @@ public sealed class UpdateStartupTests
         internal bool StartSucceeds = true;
         internal bool ThrowOnStart;
         internal bool ThrowOnWrite;
+        internal bool AnotherUpdateRunning;
         internal Action? OnDownload;
         internal Task? DownloadWait;
 
@@ -139,7 +183,7 @@ public sealed class UpdateStartupTests
         }
 
         internal Task<UpdateStartupResult> Run(CancellationToken token = default) =>
-            new UpdateStartup(this, Download, Start).RunAsync(Request, null, token);
+            new UpdateStartup(this, Download, Start, () => AnotherUpdateRunning).RunAsync(Request, null, token);
 
         private async Task<UpdateDownloadResult> Download(UpdateAsset asset, string path, IProgress<long>? progress,
             CancellationToken token)

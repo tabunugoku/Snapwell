@@ -20,6 +20,7 @@ public sealed class UpdateInstallPlannerTests
     [InlineData("size", UpdateInstallBlock.DownloadForbidden)]
     [InlineData("executable", UpdateInstallBlock.MissingExecutable)]
     [InlineData("space", UpdateInstallBlock.InsufficientSpace)]
+    [InlineData("running", UpdateInstallBlock.AnotherUpdateRunning)]
     public void EvaluatesConditions(string condition, UpdateInstallBlock expected)
     {
         var bytes = Encoding.UTF8.GetBytes("""
@@ -41,6 +42,7 @@ public sealed class UpdateInstallPlannerTests
         }, condition == "no-offer" ? null : offer, condition == "manifest" ? [] : bytes,
             condition == "signature" ? null : [1], condition == "architecture"
                 ? UpdateOsArchitecture.Other : UpdateOsArchitecture.Arm64, "exe", "pending",
-            _ => condition != "executable", _ => condition == "space" ? 245 : 246));
+            _ => condition != "executable", _ => condition == "space" ? 245 : 246,
+            () => condition == "running"));
     }
 }

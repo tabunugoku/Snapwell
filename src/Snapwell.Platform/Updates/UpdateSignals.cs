@@ -23,6 +23,18 @@ public sealed class UpdateSignalNames(string sid, string prefix = @"Local\Snapwe
     /// <summary>新版の起動成功を通知するイベント名。</summary>
     public string Ready => prefix + ".Ready." + _hash;
 
+    /// <summary>進行役が保持する Applied の存在を調べ、アクセス拒否も進行中として扱う。</summary>
+    public bool IsUpdateRunning()
+    {
+        try
+        {
+            using var applied = EventWaitHandle.OpenExisting(Applied);
+            return true;
+        }
+        catch (WaitHandleCannotBeOpenedException) { return false; }
+        catch (UnauthorizedAccessException) { return true; }
+    }
+
     /// <summary>現在の利用者と Administrators だけに全権を与えて新規作成する。</summary>
     public static unsafe EventWaitHandle Create(string name)
     {

@@ -22,5 +22,7 @@
   "General_UpdateSaveFailed": "無法儲存更新設定，請檢查檔案位置與權限。",
   "Setup_UpdateTitle.Text": "更新",
   "Setup_UpdateDescription.Text": "開啟後，Snapwell 會連線至 GitHub，僅取得最新版本資訊。只傳送包含版本號碼的 User-Agent，不傳送識別碼。預設關閉。",
-  "Setup_UpdateToggle.AutomationName": "自動檢查更新"
+  "Setup_UpdateToggle.AutomationName": "自動檢查更新",
+  "Update.InstallBlock.AnotherUpdateRunning": "另一個更新正在進行中。請等待更新完成。",
+  "Update.Startup.AnotherUpdateRunning": "另一個更新正在進行中。請等待更新完成。"
 }

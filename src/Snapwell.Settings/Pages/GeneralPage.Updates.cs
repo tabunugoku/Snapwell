@@ -44,6 +44,12 @@ public sealed partial class GeneralPage
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Snapwell", "update");
     private static string UpdatePending => Path.Combine(UpdateRoot, "pending");
 
+    private static bool IsAnotherUpdateRunning()
+    {
+        using var identity = WindowsIdentity.GetCurrent();
+        return new UpdateSignalNames(identity.User!.Value).IsUpdateRunning();
+    }
+
     private async void Updates_Loaded(object sender, RoutedEventArgs args)
     {
         var stop = new CancellationTokenSource();
@@ -287,7 +293,7 @@ public sealed partial class GeneralPage
         {
             block = UpdateInstallPlanner.Evaluate(_updateVersion, _updateOffer, _updateManifest, _updateSignature,
                 _updateArchitecture, _executable, UpdatePending, File.Exists,
-                path => new DriveInfo(Path.GetPathRoot(path)!).AvailableFreeSpace);
+                path => new DriveInfo(Path.GetPathRoot(path)!).AvailableFreeSpace, IsAnotherUpdateRunning);
         }
         catch (Exception exception) when (UpdatePageModel.IsSaveFailure(exception))
         {
@@ -329,7 +335,7 @@ public sealed partial class GeneralPage
             ApplyUpdateState(restored.Value.State, restored.Value.Offer);
             var block = UpdateInstallPlanner.Evaluate(_updateVersion, _updateOffer, _updateManifest, _updateSignature,
                 _updateArchitecture, _executable, UpdatePending, File.Exists,
-                path => new DriveInfo(Path.GetPathRoot(path)!).AvailableFreeSpace);
+                path => new DriveInfo(Path.GetPathRoot(path)!).AvailableFreeSpace, IsAnotherUpdateRunning);
             if (block != UpdateInstallBlock.None || !_updateCanWrite) { return; }
             // 更新後に設定画面を閉じるため、編集中の設定を先に保存する。
             if (_session.HasChanges && !_session.TrySave(out var message))
@@ -353,7 +359,8 @@ public sealed partial class GeneralPage
                     ShowDownloadProgress(bytes, offer.Asset.Size);
                 }
             });
-            var startup = UpdateStartup.CreateForRelease(_updateVersion!, StartUpdateCoordinatorAsync);
+            var startup = UpdateStartup.CreateForRelease(_updateVersion!, IsAnotherUpdateRunning,
+                StartUpdateCoordinatorAsync);
             _updateInstallTask = Task.Run(() => startup.RunAsync(request, progress, stop.Token));
             var result = await _updateInstallTask;
             if (result.Failure is null)

@@ -95,6 +95,7 @@ internal static class UpdatePageModel
         UpdateStartupFailure.Download => "Update.Download." + result.DownloadFailure,
         UpdateStartupFailure.SignatureInvalid => "Update.Result.InvalidManifest",
         UpdateStartupFailure.ProcessStart => "Update.StartFailed",
+        UpdateStartupFailure.AnotherUpdateRunning => "Update.Startup.AnotherUpdateRunning",
         UpdateStartupFailure.IoError => "Update.Result.IoError",
         UpdateStartupFailure.Cancelled => "Update.Download.Cancelled",
         _ => throw new ArgumentOutOfRangeException(nameof(result)),

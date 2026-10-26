@@ -19,7 +19,7 @@ public sealed record UpdateStartupRequest(string Pending, string Executable, str
     UpdateAsset Asset, byte[] Manifest, byte[] Signature, string PublicKey);
 
 /// <summary>進行役へ渡す前に起きた失敗。</summary>
-public enum UpdateStartupFailure { Download, SignatureInvalid, ProcessStart, IoError, Cancelled }
+public enum UpdateStartupFailure { Download, SignatureInvalid, ProcessStart, IoError, Cancelled, AnotherUpdateRunning }
 
 /// <summary>起動の成否と、ダウンロードの詳しい失敗。</summary>
 public sealed record UpdateStartupResult(UpdateStartupFailure? Failure = null,
@@ -28,13 +28,13 @@ public sealed record UpdateStartupResult(UpdateStartupFailure? Failure = null,
 /// <summary>通常権限で取得と署名の先確認を行い、進行役へ引き渡す。</summary>
 public sealed class UpdateStartup(IUpdateStartupFiles files,
     Func<UpdateAsset, string, IProgress<long>?, CancellationToken, Task<UpdateDownloadResult>> download,
-    Func<ProcessStartInfo, CancellationToken, Task<bool>> start)
+    Func<ProcessStartInfo, CancellationToken, Task<bool>> start, Func<bool> isUpdateRunning)
 {
     // ページを開き直した場合も、古い取り消しの後始末と次の取得を競合させない。
     private static readonly SemaphoreSlim _pendingGate = new(1, 1);
 
     /// <summary>既存の匿名 HTTPS の配布ポリシーと実ファイル操作を接続する。</summary>
-    public static UpdateStartup CreateForRelease(string version,
+    public static UpdateStartup CreateForRelease(string version, Func<bool> isUpdateRunning,
         Func<ProcessStartInfo, CancellationToken, Task<bool>>? start = null) => new(new StartupFiles(),
         async (asset, path, progress, token) =>
         {
@@ -45,7 +45,7 @@ public sealed class UpdateStartup(IUpdateStartupFiles files,
             token.ThrowIfCancellationRequested();
             using var process = Process.Start(info);
             return Task.FromResult(process is not null);
-        }));
+        }), isUpdateRunning);
 
     /// <summary>起動成功だけ pending を保持し、それ以外は取得の残骸を削除する。</summary>
     public async Task<UpdateStartupResult> RunAsync(UpdateStartupRequest request, IProgress<long>? progress,
@@ -60,6 +60,8 @@ public sealed class UpdateStartup(IUpdateStartupFiles files,
             await _pendingGate.WaitAsync(cancellationToken).ConfigureAwait(false);
             locked = true;
             cancellationToken.ThrowIfCancellationRequested();
+            // 進行役への引き渡し後も入力を保護し、拒否時は後始末の削除も行わない。
+            if (isUpdateRunning()) { return new(UpdateStartupFailure.AnotherUpdateRunning); }
             ownsPending = true;
             files.Reset(request.Pending);
             var manifest = Path.Combine(request.Pending, "manifest.json");

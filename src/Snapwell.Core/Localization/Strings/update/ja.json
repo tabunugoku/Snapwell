@@ -38,6 +38,8 @@
   "Update.InstallBlock.DownloadForbidden": "この配布ファイルはアプリ内でダウンロードできません。",
   "Update.InstallBlock.MissingExecutable": "設定画面と同じフォルダーに Snapwell.exe がないため、アプリ内で更新できません。",
   "Update.InstallBlock.InsufficientSpace": "更新に必要な空き容量がありません。配布ファイルの 2 倍以上の空きを確保してください。",
+  "Update.InstallBlock.AnotherUpdateRunning": "別の更新が進行中です。完了するまでお待ちください。",
+  "Update.Startup.AnotherUpdateRunning": "別の更新が進行中です。完了するまでお待ちください。",
   "Update.Result.Installed": "更新しました (版 {version})。",
   "Update.Result.Cancelled": "更新の承認を取り消しました。",
   "Update.Result.RolledBack": "新しい版が起動しなかったため、元の版に戻しました。",

@@ -38,6 +38,8 @@
   "Update.InstallBlock.DownloadForbidden": "This package can't be downloaded in the app.",
   "Update.InstallBlock.MissingExecutable": "Snapwell.exe isn't in the same folder as Settings, so the app can't update.",
   "Update.InstallBlock.InsufficientSpace": "There is not enough free space to update. Free up at least twice the package size.",
+  "Update.InstallBlock.AnotherUpdateRunning": "Another update is in progress. Wait for it to finish.",
+  "Update.Startup.AnotherUpdateRunning": "Another update is in progress. Wait for it to finish.",
   "Update.Result.Installed": "Updated to version {version}.",
   "Update.Result.Cancelled": "Update approval was cancelled.",
   "Update.Result.RolledBack": "The new version didn't start, so the previous version was restored.",
