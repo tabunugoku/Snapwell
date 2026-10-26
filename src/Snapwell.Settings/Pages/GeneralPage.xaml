@@ -162,6 +162,52 @@
                                       VerticalAlignment="Center" l:Loc.Uid="General_UpdateAutoToggle"
                                       Toggled="UpdateAuto_Toggled" />
                     </Grid>
+                    <StackPanel x:Name="UpdateOfferPanel" Visibility="Collapsed">
+                        <Border Style="{StaticResource SnapwellRowDividerStyle}" />
+                        <Grid Style="{StaticResource SnapwellRowGridStyle}" ColumnSpacing="20">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock x:Name="UpdateOfferTitle" TextWrapping="Wrap"
+                                           AutomationProperties.LiveSetting="Polite"
+                                           Style="{StaticResource SnapwellRowTitleStyle}" />
+                                <TextBlock x:Name="UpdateOfferSummary" TextWrapping="Wrap"
+                                           Style="{StaticResource SnapwellRowDescriptionStyle}" />
+                                <TextBlock x:Name="UpdateOfferRequired"
+                                           TextWrapping="Wrap" Foreground="{ThemeResource SnapwellYellowTextBrush}"
+                                           Style="{StaticResource SnapwellRowDescriptionStyle}" />
+                                <TextBlock x:Name="UpdateInstallReason" TextWrapping="Wrap" Visibility="Collapsed"
+                                           AutomationProperties.LiveSetting="Polite"
+                                           Style="{StaticResource SnapwellRowDescriptionStyle}" />
+                                <StackPanel x:Name="UpdateDownloadProgress" Visibility="Collapsed"
+                                            Spacing="10" Margin="0,8,0,0">
+                                    <ProgressBar x:Name="UpdateProgressBar" Minimum="0" Maximum="100" Value="0"
+                                                 IsIndeterminate="False" l:Loc.Uid="Update_Progress" />
+                                    <TextBlock x:Name="UpdateProgressText" TextWrapping="Wrap"
+                                               AutomationProperties.LiveSetting="Polite"
+                                               Style="{StaticResource SnapwellRowDescriptionStyle}" />
+                                </StackPanel>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="8">
+                                <StackPanel x:Name="UpdateOfferActions" Spacing="8" HorizontalAlignment="Right">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <Button x:Name="UpdateInstallButton" l:Loc.Uid="Update_Install"
+                                                Style="{StaticResource AccentButtonStyle}" IsEnabled="False"
+                                                Click="UpdateInstall_Click" />
+                                        <Button x:Name="UpdateSkipButton" l:Loc.Uid="General_UpdateSkip"
+                                                Click="UpdateSkip_Click" />
+                                    </StackPanel>
+                                    <Button x:Name="UpdateBrowserDownloadButton" l:Loc.Uid="General_UpdateDownload"
+                                            Visibility="Collapsed" HorizontalAlignment="Right"
+                                            Click="UpdateDownload_Click" />
+                                </StackPanel>
+                                <Button x:Name="UpdateCancelButton" l:Loc.Uid="Update_Cancel" Visibility="Collapsed"
+                                        HorizontalAlignment="Right" Click="UpdateCancel_Click" />
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
                     <Border Style="{StaticResource SnapwellRowDividerStyle}" />
                     <Grid Style="{StaticResource SnapwellRowGridStyle}" ColumnSpacing="20">
                         <Grid.ColumnDefinitions>
@@ -187,42 +233,6 @@
                                 l:Loc.Uid="General_UpdateCheckNowButton" IsEnabled="False"
                                 Click="UpdateCheckNow_Click" />
                     </Grid>
-                    <StackPanel x:Name="UpdateOfferPanel">
-                        <Border Style="{StaticResource SnapwellRowDividerStyle}" />
-                        <StackPanel Padding="20,16" Spacing="10">
-                            <TextBlock x:Name="UpdateOfferTitle" TextWrapping="Wrap"
-                                       Style="{StaticResource SnapwellRowTitleStyle}" />
-                            <TextBlock x:Name="UpdateOfferRequired"
-                                       TextWrapping="Wrap" Foreground="{ThemeResource SnapwellYellowTextBrush}"
-                                       Style="{StaticResource SnapwellRowDescriptionStyle}" />
-                            <TextBlock x:Name="UpdateOfferSummary" TextWrapping="Wrap"
-                                       Style="{StaticResource SnapwellRowDescriptionStyle}" />
-                            <TextBlock x:Name="UpdateInstallReason" TextWrapping="Wrap" Visibility="Collapsed"
-                                       AutomationProperties.LiveSetting="Polite"
-                                       Style="{StaticResource SnapwellRowDescriptionStyle}" />
-                            <VariableSizedWrapGrid Orientation="Horizontal"
-                                                   MaximumRowsOrColumns="4">
-                                <Button x:Name="UpdateInstallButton" l:Loc.Uid="Update_Install" Margin="0,0,8,8"
-                                        Style="{StaticResource AccentButtonStyle}" IsEnabled="False"
-                                        Click="UpdateInstall_Click" />
-                                <Button x:Name="UpdateBrowserDownloadButton" l:Loc.Uid="General_UpdateDownload" Margin="0,0,8,8"
-                                        Click="UpdateDownload_Click" />
-                                <Button x:Name="UpdateReleaseNotesButton" l:Loc.Uid="General_UpdateReleaseNotes" Margin="0,0,8,8"
-                                        Click="UpdateReleaseNotes_Click" />
-                                <Button x:Name="UpdateSkipButton" l:Loc.Uid="General_UpdateSkip" Margin="0,0,0,8"
-                                        Click="UpdateSkip_Click" />
-                            </VariableSizedWrapGrid>
-                            <StackPanel x:Name="UpdateDownloadProgress" Visibility="Collapsed" Spacing="10">
-                                <ProgressBar x:Name="UpdateProgressBar" Minimum="0" Maximum="100" Value="0"
-                                             IsIndeterminate="False" l:Loc.Uid="Update_Progress" />
-                                <TextBlock x:Name="UpdateProgressText" TextWrapping="Wrap"
-                                           AutomationProperties.LiveSetting="Polite"
-                                           Style="{StaticResource SnapwellRowDescriptionStyle}" />
-                                <Button x:Name="UpdateCancelButton" l:Loc.Uid="Update_Cancel"
-                                        HorizontalAlignment="Left" Click="UpdateCancel_Click" />
-                            </StackPanel>
-                        </StackPanel>
-                    </StackPanel>
                 </StackPanel>
             </Border>
         </StackPanel>

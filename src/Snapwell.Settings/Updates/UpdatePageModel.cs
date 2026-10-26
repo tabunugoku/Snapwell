@@ -68,6 +68,12 @@ internal sealed class UpdatePageSession
 /// <summary>WinUI に依存しない、更新画面の表示と保存の判断。</summary>
 internal static class UpdatePageModel
 {
+    /// <summary>アプリ内で更新できない場合だけ、ブラウザーでの手動ダウンロードを案内する。</summary>
+    internal static bool ShowBrowserDownload(UpdateInstallBlock reason) => reason is
+        UpdateInstallBlock.DevelopmentBuild or UpdateInstallBlock.ArchitectureUnsupported
+        or UpdateInstallBlock.DownloadForbidden or UpdateInstallBlock.MissingExecutable
+        or UpdateInstallBlock.InsufficientSpace;
+
     internal static string? InstallBlockKey(UpdateInstallBlock reason) => reason == UpdateInstallBlock.None
         ? null : "Update.InstallBlock." + reason;
 

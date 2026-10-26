@@ -17,7 +17,6 @@
   "General_UpdateOfferTitle": "新しい版 {version} があります",
   "General_UpdateOfferRequired": "現在の版は最低サポート版を下回っています。更新してください。",
   "General_UpdateDownload.Content": "ブラウザーでダウンロード",
-  "General_UpdateReleaseNotes.Content": "リリースノート",
   "General_UpdateSkip.Content": "この版をスキップ",
   "General_UpdateSaveFailed": "更新の設定を保存できませんでした。ファイルの場所と権限を確認してください。",
   "Setup_UpdateTitle.Text": "更新",
@@ -25,12 +24,11 @@
   "Setup_UpdateToggle.AutomationName": "更新を自動で確認する",
   "Update_Install.Content": "更新して再起動",
   "Update_Install.AutomationName": "更新して再起動",
-  "Update_Cancel.Content": "取り消す",
   "Update_Cancel.AutomationName": "更新のダウンロードを取り消す",
   "Update_Progress.AutomationName": "更新のダウンロードの進捗",
   "Update_ReinstallLink.Content": "リリースのページを開く",
   "Update_ReinstallLink.AutomationName": "Snapwell のリリースのページを開く",
-  "Update.Progress": "ダウンロード中… {downloaded} / {total} MB",
+  "Update.Progress": "{downloaded} / {total} MB",
   "Update.InstallBlock.DevelopmentBuild": "開発用ビルドではアプリ内で更新できません。",
   "Update.InstallBlock.NoOffer": "利用できる更新の案内がありません。",
   "Update.InstallBlock.MissingCache": "更新情報か署名が保存されていません。「今すぐ確認」で確認してください。",
@@ -60,5 +58,7 @@
   "Update.Download.HashMismatch": "ダウンロードしたファイルのハッシュが一致しません。もう一度お試しください。",
   "Update.Download.InsecureRedirect": "安全でない転送先のため、ダウンロードを中止しました。",
   "Update.Download.Cancelled": "更新のダウンロードを取り消しました。",
-  "Update.Download.IoError": "ダウンロードしたファイルを保存できませんでした。空き容量とアクセス権を確認してください。"
+  "Update.Download.IoError": "ダウンロードしたファイルを保存できませんでした。空き容量とアクセス権を確認してください。",
+  "Update.Downloading.Title": "新しい版 {version} をダウンロードしています",
+  "Update.Cancel.Short": "取り消す"
 }

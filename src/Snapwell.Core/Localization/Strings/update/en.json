@@ -17,7 +17,6 @@
   "General_UpdateOfferTitle": "Version {version} is available",
   "General_UpdateOfferRequired": "Your version is below the minimum supported version. Please update.",
   "General_UpdateDownload.Content": "Download in browser",
-  "General_UpdateReleaseNotes.Content": "Release notes",
   "General_UpdateSkip.Content": "Skip this version",
   "General_UpdateSaveFailed": "Couldn’t save the update settings. Check the file location and permissions.",
   "Setup_UpdateTitle.Text": "Updates",
@@ -25,12 +24,11 @@
   "Setup_UpdateToggle.AutomationName": "Check for updates automatically",
   "Update_Install.Content": "Update and restart",
   "Update_Install.AutomationName": "Update and restart",
-  "Update_Cancel.Content": "Cancel",
   "Update_Cancel.AutomationName": "Cancel update download",
   "Update_Progress.AutomationName": "Update download progress",
   "Update_ReinstallLink.Content": "Open releases page",
   "Update_ReinstallLink.AutomationName": "Open the Snapwell releases page",
-  "Update.Progress": "Downloading… {downloaded} / {total} MB",
+  "Update.Progress": "{downloaded} / {total} MB",
   "Update.InstallBlock.DevelopmentBuild": "Development builds can't update in the app.",
   "Update.InstallBlock.NoOffer": "No update is available.",
   "Update.InstallBlock.MissingCache": "Update information or its signature is missing. Click Check now to check again.",
@@ -60,5 +58,7 @@
   "Update.Download.HashMismatch": "The downloaded file hash doesn't match. Try again.",
   "Update.Download.InsecureRedirect": "The download stopped because the redirect destination was unsafe.",
   "Update.Download.Cancelled": "The update download was cancelled.",
-  "Update.Download.IoError": "Couldn't save the downloaded file. Check free space and permissions."
+  "Update.Download.IoError": "Couldn't save the downloaded file. Check free space and permissions.",
+  "Update.Downloading.Title": "Downloading version {version}",
+  "Update.Cancel.Short": "Cancel"
 }
