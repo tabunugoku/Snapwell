@@ -1,7 +1,7 @@
 {
   "summary": {
-    "ja": "この版の変更点を日本語で記入する。",
-    "en": "Replace with the changes in this release."
+    "ja": "初めての公開版です。ウィンドウを投げると、ばねと磁石の動きで、いちばん近い区画に収まります。",
+    "en": "The first public release. Throw a window and it settles into the nearest zone, driven by spring and magnet physics."
   },
   "minimumSupported": null
 }
