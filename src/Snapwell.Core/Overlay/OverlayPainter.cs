@@ -318,14 +318,7 @@ public static class OverlayPainter
         Box(layout.Plan, 6, palette.Surface, palette.Border);
         if (layout.Plan.Width > 0)
         {
-            var plan = Local(layout.Plan, area);
-            // select の下向き矢印もレイヤードウィンドウ内に描く。
-            for (var row = 0; row < 3; row++)
-            {
-                Fill(frame, new(plan.Right - (int)Math.Round((14 - row) * scale),
-                    (int)(plan.Center.Y + row * scale), Math.Max(1, (int)Math.Round((5 - 2 * row) * scale)),
-                    Math.Max(1, (int)Math.Round(scale))), palette.Text);
-            }
+            FillDownArrow(frame, Local(layout.Plan, area), palette.Text, scale);
         }
 
         foreach (var button in layout.Presets)
@@ -364,6 +357,20 @@ public static class OverlayPainter
             {
                 drawText?.Invoke(frame, area, text);
             }
+        }
+    }
+
+    private static void FillDownArrow(OverlayFrame frame, PixelRect plan, OverlayColor color, double scale)
+    {
+        // 幅を奇数にそろえ、全行で同じ中心と連続した整数の Y 座標を使う。
+        var width = (int)Math.Round(9 * scale) | 1;
+        var height = Math.Max(1, (int)Math.Round(5 * scale));
+        var centerX = plan.Right - (int)Math.Round(14 * scale);
+        var top = plan.Y + (plan.Height - height) / 2;
+        for (var row = 0; row < height; row++)
+        {
+            var halfWidth = (width / 2) * (height - 1 - row) / Math.Max(1, height - 1);
+            Fill(frame, new(centerX - halfWidth, top + row, 2 * halfWidth + 1, 1), color);
         }
     }
 
