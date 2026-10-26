@@ -15,13 +15,13 @@ public sealed class LookGridSettingsTests : IDisposable
     public void OlderFilesPreserveExistingValuesAndDefaultNewFields(string version)
     {
         File.WriteAllText(SettingsPath, "{" + version +
-            "\"Grid\":{\"Columns\":12,\"Rows\":6},\"Gap\":12,\"Edge\":4,\"Feel\":\"Heavy\",\"ShowZonePreview\":false}");
+            "\"Grid\":{\"Columns\":12,\"Rows\":6},\"Gap\":12,\"Edge\":4,\"Feel\":\"Smooth\",\"ShowZonePreview\":false}");
         var value = SettingsStores.Portable(SettingsPath).Load().Value;
         Assert.Equal(PortableSettings.CurrentSchemaVersion, value.SchemaVersion);
         Assert.Equal(new(12, 6), value.Grid);
         Assert.Equal(12, value.Gap);
         Assert.Equal(4, value.Edge);
-        Assert.Equal("Heavy", value.Feel);
+        Assert.Equal("Smooth", value.Feel);
         Assert.False(value.ShowZonePreview);
         Assert.Equal(WindowCornerPreference.Default, value.CornerPreference);
         Assert.True(value.ShowZoneLines);

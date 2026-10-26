@@ -1,4 +1,5 @@
 using Snapwell.Core.Layout;
+using Snapwell.Core.Localization;
 using Snapwell.Core.Physics;
 using Snapwell.Core.Settings;
 using Snapwell.Core.Snapping;
@@ -17,9 +18,9 @@ public sealed class FeelCustomTests : IDisposable
     [Fact]
     public void UntouchedSettingsAreThePreset()
     {
-        var settings = new PortableSettings { Feel = "Heavy" };
+        var settings = new PortableSettings { Feel = "Smooth" };
         Assert.False(settings.IsCustomFeel());
-        Assert.Equal(FeelPreset.Heavy, settings.ToFeelPreset());
+        Assert.Equal(FeelPreset.Smooth, settings.ToFeelPreset());
     }
 
     /// <summary>値を一つ変えるとカスタムになり、変えた値だけが物理モデルへ入る。</summary>
@@ -30,8 +31,8 @@ public sealed class FeelCustomTests : IDisposable
     [InlineData(FeelParameter.MagnetStrength, 1.7)]
     public void ChangingOneValueMakesItCustomAndReachesThePreset(FeelParameter parameter, double value)
     {
-        var settings = new PortableSettings { Feel = "Snappy" }.WithFeelValue(parameter, value);
-        var expected = FeelPreset.Snappy.With(
+        var settings = new PortableSettings { Feel = "Crisp" }.WithFeelValue(parameter, value);
+        var expected = FeelPreset.Crisp.With(
             mass: parameter == FeelParameter.Mass ? value : null,
             frequency: parameter == FeelParameter.Frequency ? value : null,
             dampingRatio: parameter == FeelParameter.DampingRatio ? value : null,
@@ -73,16 +74,16 @@ public sealed class FeelCustomTests : IDisposable
     {
         var settings = new PortableSettings().WithFeelValue(FeelParameter.Mass, input);
         Assert.False(settings.IsCustomFeel());
-        Assert.Equal(FeelPreset.Airy, settings.ToFeelPreset());
+        Assert.Equal(FeelPreset.Standard, settings.ToFeelPreset());
     }
 
     /// <summary>プリセットの値と表示上（小数 2 桁）同じにすると、カスタムではなくなる。</summary>
     [Fact]
     public void EditingBackToThePresetValueIsNotCustom()
     {
-        var edited = new PortableSettings { Feel = "Heavy" }.WithFeelValue(FeelParameter.Mass, 5);
+        var edited = new PortableSettings { Feel = "Smooth" }.WithFeelValue(FeelParameter.Mass, 5);
         Assert.True(edited.IsCustomFeel());
-        var back = edited.WithFeelValue(FeelParameter.Mass, FeelPreset.Heavy.Mass + 0.001);
+        var back = edited.WithFeelValue(FeelParameter.Mass, FeelPreset.Smooth.Mass + 0.001);
         Assert.False(back.IsCustomFeel());
         Assert.Null(back.Mass);
     }
@@ -126,14 +127,14 @@ public sealed class FeelCustomTests : IDisposable
     public void OldFilesLoadAsPresetAndEditsRoundTrip()
     {
         var path = Path.Combine(_directory, "custom.json");
-        File.WriteAllText(path, "{\"SchemaVersion\":4,\"Feel\":\"Heavy\"}");
+        File.WriteAllText(path, "{\"SchemaVersion\":4,\"Feel\":\"Smooth\"}");
         var store = SettingsStores.Portable(path);
         var initial = store.Load();
         Assert.False(initial.IsReadOnly);
         Assert.False(initial.Value.IsCustomFeel());
-        Assert.Equal(FeelPreset.Heavy, initial.Value.ToFeelPreset());
+        Assert.Equal(FeelPreset.Smooth, initial.Value.ToFeelPreset());
 
-        store.Save(new PortableSettings { Feel = "Heavy" }.WithFeelValue(FeelParameter.Mass, 1.25)
+        store.Save(new PortableSettings { Feel = "Smooth" }.WithFeelValue(FeelParameter.Mass, 1.25)
             .WithFeelValue(FeelParameter.Frequency, 3).WithFeelValue(FeelParameter.DampingRatio, 0.5)
             .WithFeelValue(FeelParameter.MagnetStrength, 1.1));
         var loaded = store.Load();
@@ -147,10 +148,10 @@ public sealed class FeelCustomTests : IDisposable
     public void ImportingFeelBringsTheEditedValuesAndShowsCustom()
     {
         var path = Path.Combine(_directory, "export.json");
-        var custom = new PortableSettings { Feel = "Snappy" }.WithFeelValue(FeelParameter.Mass, 2)
+        var custom = new PortableSettings { Feel = "Crisp" }.WithFeelValue(FeelParameter.Mass, 2)
             .WithFeelValue(FeelParameter.DampingRatio, 0.3);
         SettingsTransfer.Export(path, custom);
-        var current = new PortableSettings { Feel = "Heavy" }.WithFeelValue(FeelParameter.Frequency, 6);
+        var current = new PortableSettings { Feel = "Smooth" }.WithFeelValue(FeelParameter.Frequency, 6);
 
         var result = SettingsTransfer.Read(path, current);
         var difference = Assert.Single(result.Differences, d => d.Key.Field == SettingsField.Feel);
@@ -158,7 +159,7 @@ public sealed class FeelCustomTests : IDisposable
         Assert.Contains("カスタム", difference.CurrentValue);
 
         var applied = SettingsTransfer.Apply(current, result, [difference.Key]);
-        Assert.Equal("Snappy", applied.Feel);
+        Assert.Equal("Crisp", applied.Feel);
         Assert.Equal(2, applied.Mass);
         Assert.Null(applied.Frequency);
         Assert.Equal(0.3, applied.DampingRatio);
@@ -168,11 +169,11 @@ public sealed class FeelCustomTests : IDisposable
     [Fact]
     public void PresetDifferenceShowsOnlyTheName()
     {
-        var differences = SettingsTransfer.GetDifferences(new PortableSettings { Feel = "Airy" },
-            new PortableSettings { Feel = "Heavy" });
+        var differences = SettingsTransfer.GetDifferences(new PortableSettings { Feel = "Standard" },
+            new PortableSettings { Feel = "Smooth" });
         var difference = Assert.Single(differences);
-        Assert.Equal("Airy", difference.CurrentValue);
-        Assert.Equal("Heavy", difference.ImportedValue);
+        Assert.Equal(UiText.Current.Get("Feel_PresetName_Standard.Text"), difference.CurrentValue);
+        Assert.Equal(UiText.Current.Get("Feel_PresetName_Smooth.Text"), difference.ImportedValue);
     }
 
     /// <summary>

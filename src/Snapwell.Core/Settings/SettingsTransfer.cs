@@ -331,12 +331,14 @@ public static class SettingsTransfer
                 ("columns", pair.Value.Columns), ("rows", pair.Value.Rows),
                 ("gap", Number(pair.Value.Gap)), ("edge", Number(pair.Value.Edge)))));
 
-    private static string FeelName((string Feel, double? Mass, double? Frequency, double? DampingRatio) value) =>
-        value.Mass is null && value.Frequency is null &&
-        value.DampingRatio is null
-        ? value.Feel
-        : UiText.Current.Format("Transfer.Value.CustomFeel", ("feel", value.Feel), ("mass", Number(value.Mass)),
-            ("frequency", Number(value.Frequency)), ("damping", Number(value.DampingRatio)));
+    private static string FeelName((string Feel, double? Mass, double? Frequency, double? DampingRatio) value)
+    {
+        var name = UiText.Current.Get($"Feel_PresetName_{value.Feel}.Text");
+        return value.Mass is null && value.Frequency is null && value.DampingRatio is null
+            ? name
+            : UiText.Current.Format("Transfer.Value.CustomFeel", ("feel", name), ("mass", Number(value.Mass)),
+                ("frequency", Number(value.Frequency)), ("damping", Number(value.DampingRatio)));
+    }
 
     private static string Number(double? value) =>
         value is { } number ? number.ToString("0.##", CultureInfo.InvariantCulture)

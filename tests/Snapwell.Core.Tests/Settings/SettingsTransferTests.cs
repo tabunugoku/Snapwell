@@ -90,7 +90,7 @@ public sealed class SettingsTransferTests : IDisposable
             Grid = new(12, 6),
             Gap = 17,
             Edge = 13,
-            Feel = "Heavy",
+            Feel = "Smooth",
             SnapMode = SnapMode.Corners,
             ReduceMotion = true,
         };
@@ -183,7 +183,7 @@ public sealed class SettingsTransferTests : IDisposable
     [InlineData("null")]
     [InlineData("[]")]
     [InlineData("{\"SchemaVersion\":13,\"Feel\":{\"future\":true}}")]
-    [InlineData("{\"SchemaVersion\":999999999999,\"Feel\":\"Airy\"}")]
+    [InlineData("{\"SchemaVersion\":999999999999,\"Feel\":\"Standard\"}")]
     public void InvalidOrFutureFilesAreRejectedWithoutChangingAnything(string json)
     {
         var path = Path.Combine(_directory, "import.json");

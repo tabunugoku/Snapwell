@@ -9,6 +9,28 @@ public sealed class SettingsStoreTests : IDisposable
 
     public SettingsStoreTests() => Directory.CreateDirectory(_directory);
 
+    /// <summary>旧識別子を新識別子へ正規化し、上書きを保って新しい名前で保存する。</summary>
+    [Theory]
+    [InlineData("Airy", "Standard")]
+    [InlineData("Snappy", "Crisp")]
+    [InlineData("Heavy", "Smooth")]
+    public void LegacyFeelNamesLoadAndSaveAsNewNames(string oldName, string name)
+    {
+        var path = Path.Combine(_directory, "legacy-feel.json");
+        File.WriteAllText(path, $$"""{"SchemaVersion":4,"Feel":"{{oldName}}","Mass":2.25}""");
+        var store = SettingsStores.Portable(path);
+        var loaded = store.Load();
+        Assert.False(loaded.IsReadOnly);
+        Assert.False(loaded.ResetToDefaults);
+        Assert.Equal(name, loaded.Value.Feel);
+        Assert.Equal(2.25, loaded.Value.Mass);
+        store.Save(loaded.Value with { Feel = oldName });
+        var json = File.ReadAllText(path);
+        Assert.Contains($"\"{name}\"", json);
+        Assert.DoesNotContain($"\"{oldName}\"", json);
+        Assert.Equal(name, store.Load().Value.Feel);
+    }
+
     /// <summary>廃止したキーは型にかかわらず無視し、既存の値を保ったまま次の保存で除く。</summary>
     [Theory]
     [InlineData(3, "800", "12")]
@@ -19,7 +41,7 @@ public sealed class SettingsStoreTests : IDisposable
         var path = Path.Combine(_directory, "retired-settings.json");
         File.WriteAllText(path, $$"""
             {
-              "SchemaVersion": {{version}}, "Grid": { "Columns": 6, "Rows": 4 }, "Gap": 21, "Feel": "Heavy",
+              "SchemaVersion": {{version}}, "Grid": { "Columns": 6, "Rows": 4 }, "Gap": 21, "Feel": "Smooth",
               "LongPressMilliseconds": {{milliseconds}}, "LongPressDistance": {{distance}}
             }
             """);
@@ -29,7 +51,7 @@ public sealed class SettingsStoreTests : IDisposable
         Assert.False(result.ResetToDefaults);
         Assert.Equal(new GridSettings(6, 4), result.Value.Grid);
         Assert.Equal(21, result.Value.Gap);
-        Assert.Equal("Heavy", result.Value.Feel);
+        Assert.Equal("Smooth", result.Value.Feel);
         Assert.Equal(13, PortableSettings.CurrentSchemaVersion);
 
         store.Save(result.Value);
@@ -254,7 +276,7 @@ public sealed class SettingsStoreTests : IDisposable
     {
         var path = Path.Combine(_directory, "settings.json");
         var store = SettingsStores.Portable(path);
-        var value = new PortableSettings { Feel = "Heavy", Gap = 12, Grid = new(12, 6), ReduceMotion = true };
+        var value = new PortableSettings { Feel = "Smooth", Gap = 12, Grid = new(12, 6), ReduceMotion = true };
         store.Save(value);
         var loaded = store.Load().Value;
         Assert.Equal(value.Feel, loaded.Feel);
@@ -276,7 +298,7 @@ public sealed class SettingsStoreTests : IDisposable
         File.WriteAllText(path, json);
         var result = SettingsStores.Portable(path).Load();
         Assert.True(result.ResetToDefaults);
-        Assert.Equal("Airy", result.Value.Feel);
+        Assert.Equal("Standard", result.Value.Feel);
         Assert.False(File.Exists(path));
         Assert.Equal(json, File.ReadAllText(Assert.Single(Directory.GetFiles(_directory, "*.broken-*"))));
     }
@@ -304,7 +326,7 @@ public sealed class SettingsStoreTests : IDisposable
         var value = SettingsStores.Portable(path).Load().Value;
         Assert.Equal(new GridSettings(8, 6), value.Grid);
         Assert.Equal(8, value.Gap);
-        Assert.Equal("Airy", value.Feel);
+        Assert.Equal("Standard", value.Feel);
         Assert.Equal(10, value.Edge);
     }
 

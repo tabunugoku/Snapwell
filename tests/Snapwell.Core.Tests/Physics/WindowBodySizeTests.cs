@@ -12,7 +12,7 @@ public sealed class WindowBodySizeTests
     [Fact]
     public void DisabledSizeAnimationKeepsSizeAndIgnoresSizeForSettling()
     {
-        var body = new WindowBody(new(0, 0, 100, 100), new(0, 0, 400, 300), _distantWalls, FeelPreset.Airy);
+        var body = new WindowBody(new(0, 0, 100, 100), new(0, 0, 400, 300), _distantWalls, FeelPreset.Standard);
         Assert.True(body.IsSettled);
         for (var i = 0; i < 240; i++)
         {
@@ -29,13 +29,13 @@ public sealed class WindowBodySizeTests
 
     /// <summary>異なる剛性や不足減衰のプリセットでも単調に目標へ収束する。</summary>
     [Theory]
-    [InlineData("Airy", false)]
-    [InlineData("Snappy", false)]
-    [InlineData("Heavy", false)]
+    [InlineData("Standard", false)]
+    [InlineData("Crisp", false)]
+    [InlineData("Smooth", false)]
     [InlineData("Bouncy", false)]
-    [InlineData("Airy", true)]
-    [InlineData("Snappy", true)]
-    [InlineData("Heavy", true)]
+    [InlineData("Standard", true)]
+    [InlineData("Crisp", true)]
+    [InlineData("Smooth", true)]
     [InlineData("Bouncy", true)]
     public void SizeConvergesMonotonicallyWithoutOvershoot(string preset, bool shrinking)
     {
@@ -64,7 +64,7 @@ public sealed class WindowBodySizeTests
     public void SettlingWaitsForSizeEvenWhenPositionHasArrived()
     {
         var body = new WindowBody(new(0, 0, 100, 100), new(0, 0, 400, 300), _distantWalls,
-            FeelPreset.Airy, animateSize: true);
+            FeelPreset.Standard, animateSize: true);
         body.Step(1.0 / 60);
         Assert.Equal(0, body.State.X);
         Assert.Equal(0, body.State.Y);
@@ -92,7 +92,7 @@ public sealed class WindowBodySizeTests
     public void SizeRestDistanceThresholdIsStrict(double distance, bool expected)
     {
         var body = new WindowBody(new(0, 0, 100, 100), new(0, 0, 100 + distance, 100), _distantWalls,
-            FeelPreset.Airy, animateSize: true);
+            FeelPreset.Standard, animateSize: true);
         Assert.Equal(expected, body.IsSettled);
     }
 
@@ -213,7 +213,7 @@ public sealed class WindowBodySizeTests
     public void SubpixelSizesAreRaisedToOneOnlyWhenAnimated(double size)
     {
         var body = new WindowBody(new(0, 0, size, size), new(0, 0, size, size), _distantWalls,
-            FeelPreset.Airy, animateSize: true);
+            FeelPreset.Standard, animateSize: true);
         Assert.Equal(new RectD(0, 0, 1, 1), body.State);
         Assert.Equal(body.State, body.Target);
         body.Step(10);
@@ -243,7 +243,7 @@ public sealed class WindowBodySizeTests
     {
         Vec2[]? stops = magnets ? [new(0, 0), new(200, 100)] : null;
         var body = new WindowBody(new(0, 0, 100, 100), new(200, 100, 400, 300), new(0, 0, 150, 120),
-            FeelPreset.Snappy, new(3000, 3000), stops, animateSize: true);
+            FeelPreset.Crisp, new(3000, 3000), stops, animateSize: true);
         body.Step(10);
         Assert.True(double.IsFinite(body.State.X) && double.IsFinite(body.State.Y));
         Assert.True(double.IsFinite(body.Velocity.Length) && double.IsFinite(body.SizeVelocity.Length));

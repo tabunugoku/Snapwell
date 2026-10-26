@@ -10,8 +10,8 @@ public sealed class SimulatorTests
     [Fact]
     public void OneSecondFrameAdvancesOnlyOneThirtiethOfSecond()
     {
-        var capped = CreateBody(FeelPreset.Airy);
-        var expected = CreateBody(FeelPreset.Airy);
+        var capped = CreateBody(FeelPreset.Standard);
+        var expected = CreateBody(FeelPreset.Standard);
         Simulator.Advance(capped, 1);
         Simulator.Advance(expected, 1.0 / 30);
         Assert.Equal(expected.State, capped.State);
@@ -22,8 +22,8 @@ public sealed class SimulatorTests
     [Fact]
     public void FractionalFrameUsesFixedStepThenShortRemainder()
     {
-        var actual = CreateBody(FeelPreset.Airy);
-        var expected = CreateBody(FeelPreset.Airy);
+        var actual = CreateBody(FeelPreset.Standard);
+        var expected = CreateBody(FeelPreset.Standard);
         const double frame = 1.5 / 240;
         expected.Step(1.0 / 240);
         expected.Step(frame - 1.0 / 240);
@@ -40,7 +40,7 @@ public sealed class SimulatorTests
     [InlineData(3)]
     public void EveryPresetSettlesWithinFiveSeconds(int preset)
     {
-        FeelPreset[] presets = [FeelPreset.Airy, FeelPreset.Snappy, FeelPreset.Heavy, FeelPreset.Bouncy];
+        FeelPreset[] presets = [FeelPreset.Standard, FeelPreset.Crisp, FeelPreset.Smooth, FeelPreset.Bouncy];
         var body = CreateBody(presets[preset]);
         for (var i = 0; i < 300; i++)
         {
@@ -62,7 +62,7 @@ public sealed class SimulatorTests
     [InlineData(-1)]
     public void NonPositiveFrameDoesNothing(double frame)
     {
-        var body = CreateBody(FeelPreset.Airy);
+        var body = CreateBody(FeelPreset.Standard);
         var state = body.State;
         Assert.False(Simulator.Advance(body, frame));
         Assert.Equal(state, body.State);
