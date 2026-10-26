@@ -23,12 +23,12 @@ public sealed class FeelTrial
     private const double Gap = 6;
     private const double KeyThrowSpeed = 2200;
     private const double MaximumThrowSpeed = 200000;
-    private static readonly SnapTargetKind[] ZoneKinds =
+    private static readonly SnapTargetKind[] _zoneKinds =
     [
         SnapTargetKind.LeftHalf, SnapTargetKind.RightHalf, SnapTargetKind.TopLeft,
         SnapTargetKind.TopRight, SnapTargetKind.BottomLeft, SnapTargetKind.BottomRight,
     ];
-    private static readonly SnapTargetKind[] CornerKinds =
+    private static readonly SnapTargetKind[] _cornerKinds =
     [
         SnapTargetKind.CornerTopLeft, SnapTargetKind.CornerTopRight,
         SnapTargetKind.CornerBottomRight, SnapTargetKind.CornerBottomLeft,
@@ -226,9 +226,9 @@ public sealed class FeelTrial
 
     // 最大化は上端を越える投げで選ばれるため、向きの候補には中心が異なる六区画を使う。
     private (Vec2 Center, SnapTargetKind Kind)[] ThrowTargets() => Mode == SnapMode.Corners
-        ? CornerPoints.Select((point, index) => (point, CornerKinds[index])).ToArray()
+        ? CornerPoints.Select((point, index) => (point, _cornerKinds[index])).ToArray()
         : _guides.Take(6).Select((guide, index) =>
-            (new Vec2(guide.X + guide.W / 2, guide.Y + guide.H / 2), ZoneKinds[index])).ToArray();
+            (new Vec2(guide.X + guide.W / 2, guide.Y + guide.H / 2), _zoneKinds[index])).ToArray();
 
     private Vec2 FindThrowVelocity(Vec2 delta, FeelPreset feel, double clickRadius,
         Func<SnapTargetKind, bool> accepts, double margin, Vec2? zoneCenter = null)
