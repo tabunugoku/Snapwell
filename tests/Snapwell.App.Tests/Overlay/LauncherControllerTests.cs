@@ -14,6 +14,95 @@ namespace Snapwell.App.Tests.Overlay;
 /// <summary>ランチャーの対象・選択・入力の切り替えを検証する。</summary>
 public sealed class LauncherControllerTests
 {
+    /// <summary>展開できない見出しを繰り返し押しても一覧専用キーを登録しない。</summary>
+    [Fact]
+    public void UnavailableExpansionDoesNotCaptureWindowKeys()
+    {
+        using var fixture = new Fixture(new ShortMonitor(1280, 720));
+        fixture.Launcher.Open();
+        for (var i = 0; i < 3; i++)
+        {
+            fixture.Presenter.Raise(new(OverlayPointerKind.Down, fixture.Launcher.WindowList!.Header.Center));
+            Assert.False(fixture.Launcher.WindowList!.Expanded);
+            Assert.DoesNotContain(fixture.Applied, binding => LauncherWindowBindings.Contains(binding.Id));
+        }
+    }
+
+    /// <summary>描画を待つ展開では数字キーを奪わず、表示完了で登録する。</summary>
+    [Fact]
+    public void ExpansionWaitsForPresentationBeforeCapturingWindowKeys()
+    {
+        using var fixture = new Fixture();
+        fixture.Launcher.Open();
+        fixture.Presenter.DelayPresentation = true;
+        fixture.Presenter.Raise(new(OverlayPointerKind.Down, fixture.Launcher.WindowList!.Header.Center));
+        Assert.True(fixture.Launcher.WindowList!.Expanded);
+        Assert.DoesNotContain(fixture.Applied, binding => LauncherWindowBindings.Contains(binding.Id));
+        fixture.Presenter.Requests[^1].Paint();
+        Assert.Contains(fixture.Applied, binding => LauncherWindowBindings.Contains(binding.Id));
+    }
+
+    /// <summary>高 DPI の縮小配置でも展開の表示と数字キーの登録が一致し、折りたたむと直ちに解放する。</summary>
+    [Theory]
+    [InlineData(1920, 960)]
+    [InlineData(1536, 864)]
+    [InlineData(1920, 1040)]
+    public void HighDpiExpansionKeepsPresentationAndBindingsTogether(int width, int height)
+    {
+        using var fixture = new Fixture(new ShortMonitor(width, height));
+        fixture.Launcher.Open();
+        fixture.Presenter.Raise(new(OverlayPointerKind.Down, fixture.Launcher.WindowList!.Header.Center));
+        Assert.True(fixture.Launcher.WindowList!.Expanded);
+        Assert.All(LauncherWindowBindings.All, binding => Assert.Contains(binding, fixture.Applied));
+        fixture.Presenter.DelayPresentation = true;
+        fixture.Presenter.Raise(new(OverlayPointerKind.Down, fixture.Launcher.WindowList.Header.Center));
+        Assert.False(fixture.Launcher.WindowList!.Expanded);
+        Assert.DoesNotContain(fixture.Applied, binding => LauncherWindowBindings.Contains(binding.Id));
+        fixture.Presenter.Requests[^1].Paint();
+        Assert.DoesNotContain(fixture.Applied, binding => LauncherWindowBindings.Contains(binding.Id));
+    }
+
+    /// <summary>展開要求の後に折りたたんだ場合、遅れた展開の表示完了でキーを復活させない。</summary>
+    [Fact]
+    public void PendingExpandedFrameCannotRestoreBindingsAfterCollapseOrReopen()
+    {
+        using var fixture = new Fixture();
+        fixture.Launcher.Open();
+        fixture.Presenter.DelayPresentation = true;
+        var header = fixture.Launcher.WindowList!.Header.Center;
+        fixture.Presenter.Raise(new(OverlayPointerKind.Down, header));
+        var expanded = fixture.Presenter.Requests[^1];
+        fixture.Presenter.Raise(new(OverlayPointerKind.Down, header));
+        expanded.Paint();
+        Assert.DoesNotContain(fixture.Applied, binding => LauncherWindowBindings.Contains(binding.Id));
+        fixture.Launcher.Close();
+        fixture.Launcher.Open();
+        expanded.Paint();
+        Assert.False(fixture.Launcher.WindowList!.Expanded);
+        Assert.DoesNotContain(fixture.Applied, binding => LauncherWindowBindings.Contains(binding.Id));
+    }
+
+    /// <summary>展開中に作業領域・DPI が変わると、描画待ちでも閉じて一時キーを解放する。</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void MonitorChangeWhileExpandedReleasesBindingsBeforeLatePresentation(bool changeDpi)
+    {
+        var monitors = new ShortMonitor(1920, 1040);
+        using var fixture = new Fixture(monitors);
+        fixture.Launcher.Open();
+        fixture.Presenter.Raise(new(OverlayPointerKind.Down, fixture.Launcher.WindowList!.Header.Center));
+        Assert.Contains(fixture.Applied, binding => LauncherWindowBindings.Contains(binding.Id));
+        var oldFrame = fixture.Presenter.Requests[^1];
+        monitors.Monitor = changeDpi ? monitors.Monitor with { DpiX = 288, DpiY = 288 }
+            : monitors.Monitor with { WorkArea = new(0, 0, 1280, 720) };
+        fixture.Launcher.ValidateTarget();
+        Assert.False(fixture.Launcher.IsOpen);
+        Assert.Equal(fixture.Normal, fixture.Applied);
+        oldFrame.Paint();
+        Assert.Equal(fixture.Normal, fixture.Applied);
+    }
+
     /// <summary>次回の表示で選択を読み直し、サイズ維持の中央を既存の移動経路へ渡す。</summary>
     [Fact]
     public void KeepSizeCentersCurrentBoundsAndReloadsPresetsOnNextOpen()
@@ -472,6 +561,13 @@ public sealed class LauncherControllerTests
             value => Applied = value, Normal, 999);
         internal void Key(LauncherInput input) => Launcher.Handle(new((int)input));
         public void Dispose() => Launcher.Dispose();
+    }
+
+    private sealed class ShortMonitor(int width, int height) : IMonitorSource
+    {
+        internal MonitorInfo Monitor { get; set; } =
+            new("short", new(0, 0, width, height), new(0, 0, width, height), 240, 240, true);
+        public IReadOnlyList<MonitorInfo> GetMonitors() => [Monitor];
     }
 
     private sealed class TwoMonitors : IMonitorSource
