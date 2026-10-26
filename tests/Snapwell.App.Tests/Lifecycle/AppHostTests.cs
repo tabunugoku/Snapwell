@@ -15,6 +15,7 @@ using Snapwell.Core.Settings;
 using Snapwell.Core.Tray;
 using Snapwell.Core.Updates;
 using Snapwell.Platform.Hooks;
+using Snapwell.Platform.Updates;
 using Snapwell.Platform.Windows;
 
 namespace Snapwell.App.Tests.Lifecycle;
@@ -54,6 +55,22 @@ public sealed class AppHostTests
         fixture.Host.SignalUpdateReady();
         Assert.Null(signals.Quit);
         Assert.Equal(0, signals.Ready);
+    }
+
+    /// <summary>更新のワーカーが待機に入った後も監視の読込回数を保ち、終了時は待機を取り消す。</summary>
+    [Fact]
+    public async Task UpdateWorkerDoesNotConsumeDeviceReloadsAndStopsWithHost()
+    {
+        using var fixture = new Fixture(watchDevice: true);
+        fixture.Tray.QueuePosts = true;
+        await fixture.StartAndSettleAsync();
+
+        await fixture.UpdateClock.Waiting.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.Equal(1, fixture.Device.Reloads);
+        Assert.Empty(fixture.Log.Errors);
+        fixture.Host.Shutdown();
+        Assert.True(fixture.UpdateClock.Token.IsCancellationRequested);
     }
 
     private sealed class FakeResidentSignals : IResidentUpdateSignals
@@ -411,13 +428,13 @@ public sealed class AppHostTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void RevokedConsentIsRetriedOnTrayWithoutAnotherFileChange(bool throws)
+    public async Task RevokedConsentIsRetriedOnTrayWithoutAnotherFileChange(bool throws)
     {
         var delay = new FakeRetryDelay();
         using var fixture = new Fixture(new() { DisableStandardSnap = true, StandardSnapConsentGiven = true },
             watchDevice: true, retryDelay: delay.WaitAsync);
-        Assert.True(fixture.Host.Start());
         fixture.Tray.QueuePosts = true;
+        await fixture.StartAndSettleAsync();
         fixture.Calls.Clear();
         var reloads = fixture.Device.Reloads;
         fixture.Device.ReloadResult = null;
@@ -437,7 +454,7 @@ public sealed class AppHostTests
         Assert.DoesNotContain("restore", fixture.Calls);
         Assert.Single(delay.Pending);
         delay.CompleteNext();
-        Assert.True(SpinWait.SpinUntil(() => !fixture.Tray.Posted.IsEmpty, 5000));
+        await fixture.Tray.WaitForPostsAsync();
         Assert.DoesNotContain("restore", fixture.Calls);
         fixture.Tray.Flush();
 
@@ -451,12 +468,12 @@ public sealed class AppHostTests
 
     /// <summary>読込失敗が続いても再試行を打ち切り、新しい通知では再び試行できる。</summary>
     [Fact]
-    public void DeviceReloadRetriesAreBoundedAndANewNotificationCanRecover()
+    public async Task DeviceReloadRetriesAreBoundedAndANewNotificationCanRecover()
     {
         var delay = new FakeRetryDelay();
         using var fixture = new Fixture(watchDevice: true, retryDelay: delay.WaitAsync);
-        Assert.True(fixture.Host.Start());
         fixture.Tray.QueuePosts = true;
+        await fixture.StartAndSettleAsync();
         var reloads = fixture.Device.Reloads;
         fixture.Device.ReloadResult = null;
         fixture.DeviceWatcher.Notify();
@@ -464,7 +481,7 @@ public sealed class AppHostTests
         for (var i = 0; i < 3; i++)
         {
             delay.CompleteNext();
-            Assert.True(SpinWait.SpinUntil(() => !fixture.Tray.Posted.IsEmpty, 5000));
+            await fixture.Tray.WaitForPostsAsync();
             fixture.Tray.Flush();
         }
         Assert.Equal(reloads + 4, fixture.Device.Reloads);
@@ -497,12 +514,12 @@ public sealed class AppHostTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void ShutdownCancelsDelayedAndPostedDeviceReloadRetries(bool alreadyPosted)
+    public async Task ShutdownCancelsDelayedAndPostedDeviceReloadRetries(bool alreadyPosted)
     {
         var delay = new FakeRetryDelay();
         using var fixture = new Fixture(watchDevice: true, retryDelay: delay.WaitAsync);
-        Assert.True(fixture.Host.Start());
         fixture.Tray.QueuePosts = true;
+        await fixture.StartAndSettleAsync();
         fixture.Device.ReloadResult = null;
         fixture.DeviceWatcher.Notify();
         fixture.Tray.Flush();
@@ -510,7 +527,7 @@ public sealed class AppHostTests
         if (alreadyPosted)
         {
             delay.CompleteNext();
-            Assert.True(SpinWait.SpinUntil(() => !fixture.Tray.Posted.IsEmpty, 5000));
+            await fixture.Tray.WaitForPostsAsync();
         }
         fixture.Host.Shutdown();
         Assert.True(delay.Token.IsCancellationRequested);
@@ -1537,8 +1554,7 @@ public sealed class AppHostTests
         fixture.Host.ReloadDevice();
         release.Set();
         // 両方の検証が終わるまで待つ。反映自体はトレイに配送した後に世代を検査する。
-        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(10);
-        while (fixture.Tray.Posted.Count < 2 && DateTime.UtcNow < deadline) { await Task.Yield(); }
+        await fixture.Tray.WaitForPostsAsync(2);
         fixture.Tray.Flush();
         Assert.Single(fixture.Tray.UpdateOffers);
     }
@@ -1554,6 +1570,7 @@ public sealed class AppHostTests
         internal FakeTray Tray { get; }
         internal FakeConsent Consent { get; } = new();
         internal FakeLog Log { get; } = new();
+        internal IdleUpdateClock UpdateClock { get; } = new();
         internal FakeRuntime Runtime { get; }
         internal AppHost Host { get; }
         internal FakeWatcher Watcher { get; } = new();
@@ -1583,10 +1600,49 @@ public sealed class AppHostTests
                     SettingsSeen.Add(settings);
                     return runtime;
                 }, Watcher, () => SetupOpens++, watchDevice ? DeviceWatcher : null, retryDelay, sync,
-                setReplaceWinArrow, osTag, resolveUpdateOffer, updateSignals);
+                setReplaceWinArrow, osTag, resolveUpdateOffer, updateSignals,
+                // 実際の更新確認によるキャッシュ読込が、同じ偽ストアの回数や AfterReload を消費しないようにする。
+                createUpdates: (store, notifier, log) => new(new UnexpectedUpdateFetcher(), store, "0.0.0", null,
+                    UpdateClock, new UnpackagedIdentity(), UpdateOsArchitecture.Other, notifier, log));
+        }
+
+        /// <summary>起動時の再読込と更新案内の非同期な投稿までそろえて配送し、後続の観測に混ざらないようにする。</summary>
+        internal async Task StartAndSettleAsync()
+        {
+            Assert.True(Host.Start());
+            // 起動時の再読込を配送すると更新案内の解決が始まり、その結果は別スレッドから投稿される。
+            Tray.Flush();
+            await Tray.WaitForOfferPostAsync();
+            Tray.Flush();
         }
 
         public void Dispose() => Host.Shutdown();
+    }
+
+    /// <summary>更新確認の待機を、経過時間によらず終了時の取り消しまで保持する。</summary>
+    private sealed class IdleUpdateClock : IUpdateClock
+    {
+        private readonly TaskCompletionSource _delay = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        internal TaskCompletionSource Waiting { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        internal CancellationToken Token;
+
+        public DateTimeOffset UtcNow => DateTimeOffset.UnixEpoch;
+        public TimeSpan Uptime => TimeSpan.Zero;
+        /// <summary>ワーカーがキャッシュ読込を通過したことを通知し、取り消しまで待機する。</summary>
+        public Task DelayAsync(TimeSpan delay, CancellationToken cancellationToken)
+        {
+            Token = cancellationToken;
+            Waiting.TrySetResult();
+            return _delay.Task.WaitAsync(cancellationToken);
+        }
+    }
+
+    /// <summary>AppHost のテストから更新の通信が要求された場合は失敗させる。</summary>
+    private sealed class UnexpectedUpdateFetcher : IUpdateFetcher
+    {
+        /// <summary>テストから実際の更新取得へ進ませない。</summary>
+        public Task<UpdateFetchResult> FetchAsync(CancellationToken cancellationToken) =>
+            throw new InvalidOperationException("AppHost のテストでは更新を取得しない。");
     }
 
     private sealed class FakeInstance(ConcurrentQueue<string> calls) : ISingleInstance
@@ -1695,6 +1751,9 @@ public sealed class AppHostTests
 
     private class FakeTray(ConcurrentQueue<string> calls) : ITrayService
     {
+        private readonly object _postGate = new();
+        private TaskCompletionSource _postChanged = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
         public event Action? ToggleRequested;
         public event Action? StandardSnapRequested;
         public event Action? RestoreRequested;
@@ -1718,11 +1777,53 @@ public sealed class AppHostTests
         public void Remove() => calls.Enqueue("tray.remove");
         internal bool QueuePosts;
         internal ConcurrentQueue<Action> Posted { get; } = new();
+        private int _offerPosts;
         public void Post(Action action)
         {
-            if (QueuePosts) { Posted.Enqueue(action); }
+            if (QueuePosts)
+            {
+                lock (_postGate)
+                {
+                    Posted.Enqueue(action);
+                    if (action.Method.Name.Contains("RefreshUpdateOfferAsync", StringComparison.Ordinal)) { _offerPosts++; }
+                    var changed = _postChanged;
+                    _postChanged = new(TaskCreationOptions.RunContinuationsAsynchronously);
+                    changed.SetResult();
+                }
+            }
             else { action(); }
         }
+
+        /// <summary>投稿と待機の登録を直列化し、指定数の投稿がそろうまで待つ。</summary>
+        internal async Task WaitForPostsAsync(int count = 1)
+        {
+            while (true)
+            {
+                Task changed;
+                lock (_postGate)
+                {
+                    if (Posted.Count >= count) { return; }
+                    changed = _postChanged.Task;
+                }
+                await changed.WaitAsync(TimeSpan.FromSeconds(5));
+            }
+        }
+
+        /// <summary>起動時の更新案内の投稿が積まれるまで待つ。</summary>
+        internal async Task WaitForOfferPostAsync()
+        {
+            while (true)
+            {
+                Task changed;
+                lock (_postGate)
+                {
+                    if (_offerPosts > 0) { return; }
+                    changed = _postChanged.Task;
+                }
+                await changed.WaitAsync(TimeSpan.FromSeconds(5));
+            }
+        }
+
         internal void Flush()
         {
             while (Posted.TryDequeue(out var action)) { action(); }

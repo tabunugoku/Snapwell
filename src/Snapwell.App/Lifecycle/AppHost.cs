@@ -41,6 +41,7 @@ internal sealed class AppHost
     private readonly Action? _openSetup;
     private readonly Action<bool>? _setReplaceWinArrow;
     private readonly Func<TimeSpan, CancellationToken, Task> _retryDelay;
+    private readonly Func<ISettingsStore<DeviceState>, IUpdateNotifier, IAppLog, UpdateCheckService> _createUpdates;
     private readonly CancellationTokenSource _deviceReloadStop = new();
     private readonly CancellationTokenSource _deliveryStop = new();
     private readonly ManualResetEventSlim _shutdownDone = new(false);
@@ -73,7 +74,8 @@ internal sealed class AppHost
         Action? openSetup = null, ISettingsWatcher? deviceWatcher = null,
         Func<TimeSpan, CancellationToken, Task>? retryDelay = null, ISettingsSyncService? sync = null,
         Action<bool>? setReplaceWinArrow = null, string? osTag = null,
-        Func<DeviceState, UpdateOffer?>? resolveUpdateOffer = null, IResidentUpdateSignals? updateSignals = null)
+        Func<DeviceState, UpdateOffer?>? resolveUpdateOffer = null, IResidentUpdateSignals? updateSignals = null,
+        Func<ISettingsStore<DeviceState>, IUpdateNotifier, IAppLog, UpdateCheckService>? createUpdates = null)
     {
         _updateSignals = updateSignals;
         _resolveUpdateOffer = resolveUpdateOffer ?? ResolveUpdateOffer;
@@ -94,6 +96,7 @@ internal sealed class AppHost
         _sync = sync;
         _setReplaceWinArrow = setReplaceWinArrow;
         _retryDelay = retryDelay ?? Task.Delay;
+        _createUpdates = createUpdates ?? UpdateCheckService.CreateDefault;
         if (_deviceWatcher is not null)
         {
             _deviceWatcher.Changed += OnDeviceChanged;
@@ -196,7 +199,7 @@ internal sealed class AppHost
             _runtime.SetEnabled(_enabled && _hooksStarted);
             DisableIfRequested();
             _tray.Show(State());
-            _updates = UpdateCheckService.CreateDefault(_deviceStore, _tray, _log);
+            _updates = _createUpdates(_deviceStore, _tray, _log);
             _updates.Start();
             if (_deviceWatcher is not null)
             {
