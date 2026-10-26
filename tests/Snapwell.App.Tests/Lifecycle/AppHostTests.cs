@@ -369,6 +369,36 @@ public sealed class AppHostTests
         Assert.Equal(0, fixture.Consent.Calls);
     }
 
+    /// <summary>保存できなかった一時停止は、古い有効の値では解除せず、設定画面の明示的な再開で解除する。</summary>
+    [Fact]
+    public void FailedPauseSaveResumesOnlyOnExplicitResumeRequest()
+    {
+        using var fixture = new Fixture(new() { SetupCompleted = true });
+        Assert.True(fixture.Host.Start());
+        fixture.Device.SaveException = new IOException("save");
+        fixture.Tray.RequestToggle();
+        Assert.False(fixture.Host.Enabled);
+        Assert.True(fixture.Device.Value.Enabled);
+
+        // 同じ ResumeRequest の有効 (古い値) では再開しない。
+        fixture.Device.ReloadResult = new(fixture.Device.Value with { Language = "en" });
+        fixture.Host.ReloadDevice();
+        Assert.False(fixture.Host.Enabled);
+        Assert.False(fixture.Runtime.Enabled);
+
+        // 設定画面のオフ→オンは新しい ResumeRequest を書くので、本体の保存失敗後でも再開する。
+        fixture.Device.SaveException = null;
+        fixture.Device.ReloadResult = new(fixture.Device.Value with { Enabled = true, ResumeRequest = "r1" });
+        fixture.Host.ReloadDevice();
+        Assert.True(fixture.Host.Enabled);
+        Assert.True(fixture.Runtime.Enabled);
+        Assert.Null(fixture.Tray.State!.Status);
+
+        // 再開後に再び同じ値が届いても、状態は変わらない。
+        fixture.Host.ReloadDevice();
+        Assert.True(fixture.Host.Enabled);
+    }
+
     /// <summary>別の書き手の Mutex がタイムアウトしても、待機前に停止と復元を済ませる。</summary>
     [Fact]
     public async Task PauseRestoresBeforeDeviceWriteMutexTimesOut()

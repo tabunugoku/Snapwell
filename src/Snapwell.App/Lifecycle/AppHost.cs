@@ -55,6 +55,7 @@ internal sealed class AppHost
     private bool _startupRecoveryFailed;
     private bool _deviceReadOnly;
     private bool _pausePending;
+    private string? _seenResumeRequest;
     private int _deviceReloadVersion;
     private readonly Func<DeviceState, UpdateOffer?> _resolveUpdateOffer;
     private bool _started;
@@ -150,6 +151,7 @@ internal sealed class AppHost
             _portable = SettingsTransfer.Normalize(portable.Value);
             var device = _deviceStore.Load();
             _device = device.Value;
+            _seenResumeRequest = _device.ResumeRequest;
             _deviceReadOnly = device.IsReadOnly;
             ApplyLanguage(_device);
             _enabled = _device.Enabled;
@@ -294,6 +296,13 @@ internal sealed class AppHost
                 if (!loaded.IsReadOnly)
                 {
                     // 保存できなかった一時停止は、古いディスクの有効状態では解除しない。
+                    // 設定画面の明示的な再開 (有効かつ新しい ResumeRequest) だけは解除する。
+                    if (_pausePending && loaded.Value.Enabled && loaded.Value.ResumeRequest != _seenResumeRequest)
+                    {
+                        _pausePending = false;
+                        _deviceSaveStatusKey = null;
+                    }
+                    _seenResumeRequest = loaded.Value.ResumeRequest;
                     var device = WithPendingPause(loaded.Value);
                     if (device != _device)
                     {

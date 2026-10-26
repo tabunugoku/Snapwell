@@ -40,9 +40,14 @@ public static class DeviceStateChanges
         }
     }
 
-    /// <summary>有効・無効だけを書き換える。標準スナップの選択など、ほかの項目は最新値のまま残す。</summary>
+    /// <summary>有効・無効を書き換える (有効にするときは再開の要求も更新する)。標準スナップの選択など、ほかの項目は最新値のまま残す。</summary>
     public static DeviceState SetEnabled(ISettingsStore<DeviceState> store, bool enabled) =>
-        Update(store, current => current with { Enabled = enabled });
+        Update(store, current => current with
+        {
+            Enabled = enabled,
+            // 本体が保存できなかった一時停止を、古い有効の値ではなくこの明示的な再開として解除できるようにする。
+            ResumeRequest = enabled ? Guid.NewGuid().ToString("N") : current.ResumeRequest,
+        });
 
     /// <summary>Win と矢印の置き換えだけを更新し、ほかの項目は最新値を保持する。</summary>
     public static DeviceState SetReplaceWinArrow(ISettingsStore<DeviceState> store, bool replace) =>
