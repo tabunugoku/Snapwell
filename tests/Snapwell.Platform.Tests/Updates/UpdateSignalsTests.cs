@@ -4,6 +4,24 @@ namespace Snapwell.Platform.Tests.Updates;
 
 public sealed class UpdateSignalsTests
 {
+    /// <summary>Applied の通知状態によらず存在を検出し、検出用のハンドルは残さない。</summary>
+    [Fact]
+    public void RunningUpdateFollowsAppliedEventLifetime()
+    {
+        var prefix = @"Local\Snapwell.Test." + Guid.NewGuid().ToString("N");
+        var names = new UpdateSignalNames("S-1-5-21-1", prefix);
+        var otherUser = new UpdateSignalNames("S-1-5-21-2", prefix);
+        Assert.False(names.IsUpdateRunning());
+        using (var applied = UpdateSignalNames.Create(names.Applied))
+        {
+            Assert.True(names.IsUpdateRunning());
+            Assert.False(otherUser.IsUpdateRunning());
+            applied.Set();
+            Assert.True(names.IsUpdateRunning());
+        }
+        Assert.False(names.IsUpdateRunning());
+    }
+
     [Fact]
     public void NamesAreDeterministicAndIsolated()
     {

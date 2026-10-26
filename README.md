@@ -184,7 +184,7 @@ This policy is written to apply for free code signing from SignPath Foundation. 
 
 This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it.
 
-By default, Snapwell makes no network connections. It does no analytics or tracking, has no accounts, and sends nothing else automatically. Only when you turn on automatic update checks or click Check now does it send a GET request to GitHub Releases for update information. It sends only the GET request and a User-Agent header (`Snapwell/<version>`), with no identifiers or usage data (GitHub can see your IP address). Snapwell stores settings only on this PC, in these folders:
+By default, Snapwell makes no network connections. It does no analytics or tracking, has no accounts, and sends nothing else automatically. Only when you turn on automatic update checks or click Check now does it send a GET request to GitHub Releases for update information. It sends only the GET request and a User-Agent header (`Snapwell/<version>`), with no identifiers or usage data (GitHub can see your IP address). Only when you click Update and restart does Snapwell download a signed release package from GitHub (GET and User-Agent only). Snapwell stores settings only on this PC, in these folders:
 
 - `%APPDATA%\Snapwell\` (settings)
 - `%LOCALAPPDATA%\Snapwell\` (the state of this PC, and the saved original values of OS settings)
@@ -378,7 +378,7 @@ Free code signing provided by [SignPath.io](https://about.signpath.io/), certifi
 
 This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it.
 
-Snapwell は既定ではどこにも通信しません。解析、トラッキング、アカウント、それ以外の自動送信は行いません。利用者が「更新を自動で確認する」を有効にしたときや「今すぐ確認」を押したときだけ、GitHub Releases へ GET 要求を送って更新を確認します。送信するのは GET 要求と User-Agent（`Snapwell/<版>`）だけで、識別子や利用状況は送信しません（接続先の GitHub には IP アドレスが見えます）。設定は次のファイルに、この PC の中だけで保存します。
+Snapwell は既定ではどこにも通信しません。解析、トラッキング、アカウント、それ以外の自動送信は行いません。利用者が「更新を自動で確認する」を有効にしたときや「今すぐ確認」を押したときだけ、GitHub Releases へ GET 要求を送って更新を確認します。送信するのは GET 要求と User-Agent（`Snapwell/<版>`）だけで、識別子や利用状況は送信しません（接続先の GitHub には IP アドレスが見えます）。「更新して再起動」を押したときだけ、署名つきの配布ファイルを GitHub からダウンロードします（GET と User-Agent のみ）。設定は次のファイルに、この PC の中だけで保存します。
 
 - `%APPDATA%\Snapwell\`（設定）
 - `%LOCALAPPDATA%\Snapwell\`（この PC の状態と、OS の設定の退避値）

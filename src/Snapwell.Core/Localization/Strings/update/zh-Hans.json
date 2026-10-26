@@ -16,11 +16,13 @@
   "General_UpdateStatusLastChecked": "上次检查：{time}",
   "General_UpdateOfferTitle": "新版本 {version} 已发布",
   "General_UpdateOfferRequired": "当前版本低于最低支持版本，请更新。",
-  "General_UpdateDownload.Content": "下载",
+  "General_UpdateDownload.Content": "在浏览器中下载",
   "General_UpdateReleaseNotes.Content": "发行说明",
   "General_UpdateSkip.Content": "跳过此版本",
   "General_UpdateSaveFailed": "无法保存更新设置，请检查文件位置和权限。",
   "Setup_UpdateTitle.Text": "更新",
   "Setup_UpdateDescription.Text": "启用后，Snapwell 会连接 GitHub，仅获取最新版本信息。只发送包含版本号的 User-Agent，不发送标识符。默认关闭。",
-  "Setup_UpdateToggle.AutomationName": "自动检查更新"
+  "Setup_UpdateToggle.AutomationName": "自动检查更新",
+  "Update.InstallBlock.AnotherUpdateRunning": "另一个更新正在进行中。请等待更新完成。",
+  "Update.Startup.AnotherUpdateRunning": "另一个更新正在进行中。请等待更新完成。"
 }
