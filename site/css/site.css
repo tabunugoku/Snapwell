@@ -397,3 +397,6 @@ details p { padding: 0 24px 24px; max-width: 52ch; font-size: var(--fs-body); co
   .foot nav { justify-content: flex-start; flex-wrap: wrap; gap: 8px 20px; }
   .foot-end { text-align: left; }
 }
+
+.gh-link { display: inline-flex; align-items: center; gap: 6px; }
+.gh-icon { flex: none; }
