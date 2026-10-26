@@ -13,6 +13,7 @@ namespace Snapwell.Settings.Setup;
 /// <summary>手順の進行から独立した、ポインターでつかんで投げられる舞台。</summary>
 internal sealed partial class WelcomeStage : Grid, IDisposable
 {
+    private const double ZoneInset = 3;
     private readonly Func<bool> _visible;
     private readonly Func<bool> _motionAllowed;
     private readonly Action<bool, bool> _hint;
@@ -44,7 +45,7 @@ internal sealed partial class WelcomeStage : Grid, IDisposable
         _visible = visible; _motionAllowed = motionAllowed; _hint = hint;
         _demoTimer.Tick += OnDemoTick;
         _palette = new(this);
-        Height = 188; MaxWidth = 520; HorizontalAlignment = HorizontalAlignment.Stretch;
+        Height = 156; MaxWidth = 520; HorizontalAlignment = HorizontalAlignment.Stretch;
         CornerRadius = new(10); BorderThickness = new(1);
         Children.Add(_canvas);
         foreach (var zone in _zones) { _canvas.Children.Add(zone); }
@@ -225,8 +226,9 @@ internal sealed partial class WelcomeStage : Grid, IDisposable
         for (var i = 0; i < _zones.Length; i++)
         {
             var z = _model.Cells[i]; var shape = _zones[i];
-            shape.Width = z.Width; shape.Height = z.Height;
-            Canvas.SetLeft(shape, z.X); Canvas.SetTop(shape, z.Y);
+            // 区画に収まった窓の丸い角から破線がはみ出して汚れるので、枠の内側へ寄せて窓の裏に隠す。
+            shape.Width = Math.Max(0, z.Width - ZoneInset * 2); shape.Height = Math.Max(0, z.Height - ZoneInset * 2);
+            Canvas.SetLeft(shape, z.X + ZoneInset); Canvas.SetTop(shape, z.Y + ZoneInset);
             var selected = i == _model.Target;
             shape.Stroke = selected ? _palette.AccentBrush : _palette.Border;
             shape.Fill = selected ? new SolidColorBrush(_palette.Accent) { Opacity = _palette.Dark ? .16 : .12 }

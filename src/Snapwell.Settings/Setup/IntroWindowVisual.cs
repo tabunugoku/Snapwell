@@ -54,7 +54,6 @@ internal sealed partial class IntroWindowVisual : Canvas, IDisposable
         _maskSurface = compositor.CreateVisualSurface();
         _maskSurface.SourceVisual = _maskVisual;
         _maskBrush = compositor.CreateSurfaceBrush(_maskSurface);
-        _shadowVisual.Brush = _maskBrush;
         _shadow.Mask = _maskBrush;
         ElementCompositionPreview.SetElementChildVisual(shadowHost, _shadowVisual);
         Children.Add(_surface);
