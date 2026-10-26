@@ -43,9 +43,9 @@ public sealed partial class FeelPage : Page
             new(null, SnapRadiusSlider, SnapRadiusBox, PortableSettings.MinimumSnapRadius,
                 PortableSettings.MaximumSnapRadius, false, 0),
         ];
-        BuildCurve(AiryCurve, FeelPreset.Airy);
-        BuildCurve(SnappyCurve, FeelPreset.Snappy);
-        BuildCurve(HeavyCurve, FeelPreset.Heavy);
+        BuildCurve(StandardCurve, FeelPreset.Standard);
+        BuildCurve(CrispCurve, FeelPreset.Crisp);
+        BuildCurve(SmoothCurve, FeelPreset.Smooth);
         BuildCurve(BouncyCurve, FeelPreset.Bouncy);
 
         var value = session.Current;
@@ -88,15 +88,16 @@ public sealed partial class FeelPage : Page
         var current = _session.Current;
         var custom = current.IsCustomFeel();
         var feel = current.Feel;
+        var name = UiText.Current.Get($"Feel_PresetName_{feel}.Text");
         var normalStyle = (Style)Resources["FeelCardButtonStyle"];
         var selectedStyle = (Style)Resources["SelectedFeelCardButtonStyle"];
         // カスタムのときは、どのカードも選ばれていない。
-        CardAiry.Style = !custom && feel is not ("Snappy" or "Heavy" or "Bouncy") ? selectedStyle : normalStyle;
-        CardSnappy.Style = !custom && feel == "Snappy" ? selectedStyle : normalStyle;
-        CardHeavy.Style = !custom && feel == "Heavy" ? selectedStyle : normalStyle;
+        CardStandard.Style = !custom && feel is not ("Crisp" or "Smooth" or "Bouncy") ? selectedStyle : normalStyle;
+        CardCrisp.Style = !custom && feel == "Crisp" ? selectedStyle : normalStyle;
+        CardSmooth.Style = !custom && feel == "Smooth" ? selectedStyle : normalStyle;
         CardBouncy.Style = !custom && feel == "Bouncy" ? selectedStyle : normalStyle;
-        FeelStateText.Text = custom ? UiText.Current.Format("Feel.State.Custom", ("feel", feel))
-            : UiText.Current.Format("Feel.State.Preset", ("feel", feel));
+        FeelStateText.Text = custom ? UiText.Current.Get("Feel.State.Custom")
+            : UiText.Current.Format("Feel.State.Preset", ("feel", name));
         FeelResetButton.Visibility = custom ? Visibility.Visible : Visibility.Collapsed;
 
         var preset = current.ToFeelPreset();

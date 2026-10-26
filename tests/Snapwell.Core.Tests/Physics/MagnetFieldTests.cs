@@ -7,7 +7,7 @@ namespace Snapwell.Core.Tests.Physics;
 public sealed class MagnetFieldTests
 {
     private static readonly RectD _distantWalls = new(-100000, -100000, 200000, 200000);
-    private static readonly FeelPreset _feel = FeelPreset.Airy;
+    private static readonly FeelPreset _feel = FeelPreset.Standard;
 
     // 微小時間の一歩で、速度 = 加速度 × dt（初速度 0 なので減衰は効かない）。
     private static double Acceleration(double offset, double clickRadius, bool field = true)
@@ -90,7 +90,7 @@ public sealed class MagnetFieldTests
 
     /// <summary>速く投げると遠い停止点に着き、遅いと近い停止点に戻る。止まったら停止点に正確に合う。</summary>
     [Theory]
-    [InlineData(12000, 1000)]
+    [InlineData(18000, 1000)]
     [InlineData(300, 0)]
     public void ThrowLandsOnStopDecidedByMomentum(double speed, double expectedX)
     {

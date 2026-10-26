@@ -12,10 +12,10 @@ namespace Snapwell.Core.Physics;
 public sealed class FeelTrial
 {
     /// <summary>カードの既定の寸法。</summary>
-    public static readonly Vec2 DefaultSize = new(132, 88);
+    public static readonly Vec2 DefaultSize = new(212, 140);
 
     /// <summary>タイトルバーの高さ。実物より大きめにして、つかみやすくする。</summary>
-    public const double TitleBarHeight = 30;
+    public const double TitleBarHeight = 36;
 
     /// <summary>タッチとペンは指先や筆先が大きいため、タイトルバーの判定を四方へこの分だけ広げる。</summary>
     public const double TouchSlop = 8;

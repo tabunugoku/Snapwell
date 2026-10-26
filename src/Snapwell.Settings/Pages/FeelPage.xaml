@@ -46,76 +46,64 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
-                <Button l:Loc.Uid="Feel_CardAiry" x:Name="CardAiry" Tag="Airy" Click="FeelCard_Click"
+                <Button l:Loc.Uid="Feel_CardStandard" x:Name="CardStandard" Tag="Standard" Click="FeelCard_Click"
                         Style="{StaticResource FeelCardButtonStyle}"
                         >
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
-                        <TextBlock Text="airy" FontWeight="SemiBold" FontSize="13" LineHeight="20.8"
+                        <TextBlock l:Loc.Uid="Feel_PresetName_Standard" FontWeight="SemiBold" FontSize="13" LineHeight="20.8"
                                    Foreground="{ThemeResource SnapwellInkBrush}" />
-                        <TextBlock l:Loc.Uid="Feel_AiryDescription" Grid.Row="1"
-                                   FontFamily="{StaticResource SnapwellMonoFontFamily}" FontSize="11" LineHeight="17.6"
-                                   Foreground="{ThemeResource SnapwellMutedBrush}" TextWrapping="Wrap" />
-                        <Viewbox Grid.Row="2" VerticalAlignment="Bottom" Height="54" Stretch="Fill" Margin="0,8,0,0">
+                        <Viewbox Grid.Row="1" VerticalAlignment="Bottom" Height="54" Stretch="Fill" Margin="0,8,0,0">
                             <Canvas Width="160" Height="54">
                                 <Line X1="0" Y1="12" X2="160" Y2="12"
                                       Stroke="{ThemeResource SnapwellBorderStrongBrush}"
                                       StrokeThickness="1" StrokeDashArray="3,3" />
-                                <Polyline x:Name="AiryCurve" Stroke="{ThemeResource SnapwellInkBrush}"
+                                <Polyline x:Name="StandardCurve" Stroke="{ThemeResource SnapwellInkBrush}"
                                           StrokeThickness="1.5" />
                             </Canvas>
                         </Viewbox>
                     </Grid>
                 </Button>
-                <Button l:Loc.Uid="Feel_CardSnappy" x:Name="CardSnappy" Grid.Column="1" Tag="Snappy" Click="FeelCard_Click"
+                <Button l:Loc.Uid="Feel_CardCrisp" x:Name="CardCrisp" Grid.Column="1" Tag="Crisp" Click="FeelCard_Click"
                         Style="{StaticResource FeelCardButtonStyle}"
                         >
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
-                        <TextBlock Text="snappy" FontWeight="SemiBold" FontSize="13" LineHeight="20.8"
+                        <TextBlock l:Loc.Uid="Feel_PresetName_Crisp" FontWeight="SemiBold" FontSize="13" LineHeight="20.8"
                                    Foreground="{ThemeResource SnapwellInkBrush}" />
-                        <TextBlock l:Loc.Uid="Feel_SnappyDescription" Grid.Row="1"
-                                   FontFamily="{StaticResource SnapwellMonoFontFamily}" FontSize="11" LineHeight="17.6"
-                                   Foreground="{ThemeResource SnapwellMutedBrush}" TextWrapping="Wrap" />
-                        <Viewbox Grid.Row="2" VerticalAlignment="Bottom" Height="54" Stretch="Fill" Margin="0,8,0,0">
+                        <Viewbox Grid.Row="1" VerticalAlignment="Bottom" Height="54" Stretch="Fill" Margin="0,8,0,0">
                             <Canvas Width="160" Height="54">
                                 <Line X1="0" Y1="12" X2="160" Y2="12"
                                       Stroke="{ThemeResource SnapwellBorderStrongBrush}"
                                       StrokeThickness="1" StrokeDashArray="3,3" />
-                                <Polyline x:Name="SnappyCurve" Stroke="{ThemeResource SnapwellInkBrush}"
+                                <Polyline x:Name="CrispCurve" Stroke="{ThemeResource SnapwellInkBrush}"
                                           StrokeThickness="1.5" />
                             </Canvas>
                         </Viewbox>
                     </Grid>
                 </Button>
-                <Button l:Loc.Uid="Feel_CardHeavy" x:Name="CardHeavy" Grid.Column="2" Tag="Heavy" Click="FeelCard_Click"
+                <Button l:Loc.Uid="Feel_CardSmooth" x:Name="CardSmooth" Grid.Column="2" Tag="Smooth" Click="FeelCard_Click"
                         Style="{StaticResource FeelCardButtonStyle}"
                         >
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
-                        <TextBlock Text="heavy" FontWeight="SemiBold" FontSize="13" LineHeight="20.8"
+                        <TextBlock l:Loc.Uid="Feel_PresetName_Smooth" FontWeight="SemiBold" FontSize="13" LineHeight="20.8"
                                    Foreground="{ThemeResource SnapwellInkBrush}" />
-                        <TextBlock l:Loc.Uid="Feel_HeavyDescription" Grid.Row="1"
-                                   FontFamily="{StaticResource SnapwellMonoFontFamily}" FontSize="11" LineHeight="17.6"
-                                   Foreground="{ThemeResource SnapwellMutedBrush}" TextWrapping="Wrap" />
-                        <Viewbox Grid.Row="2" VerticalAlignment="Bottom" Height="54" Stretch="Fill" Margin="0,8,0,0">
+                        <Viewbox Grid.Row="1" VerticalAlignment="Bottom" Height="54" Stretch="Fill" Margin="0,8,0,0">
                             <Canvas Width="160" Height="54">
                                 <Line X1="0" Y1="12" X2="160" Y2="12"
                                       Stroke="{ThemeResource SnapwellBorderStrongBrush}"
                                       StrokeThickness="1" StrokeDashArray="3,3" />
-                                <Polyline x:Name="HeavyCurve" Stroke="{ThemeResource SnapwellInkBrush}"
+                                <Polyline x:Name="SmoothCurve" Stroke="{ThemeResource SnapwellInkBrush}"
                                           StrokeThickness="1.5" />
                             </Canvas>
                         </Viewbox>
@@ -127,15 +115,11 @@
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
-                        <TextBlock Text="bouncy" FontWeight="SemiBold" FontSize="13" LineHeight="20.8"
+                        <TextBlock l:Loc.Uid="Feel_PresetName_Bouncy" FontWeight="SemiBold" FontSize="13" LineHeight="20.8"
                                    Foreground="{ThemeResource SnapwellInkBrush}" />
-                        <TextBlock l:Loc.Uid="Feel_BouncyDescription" Grid.Row="1"
-                                   FontFamily="{StaticResource SnapwellMonoFontFamily}" FontSize="11" LineHeight="17.6"
-                                   Foreground="{ThemeResource SnapwellMutedBrush}" TextWrapping="Wrap" />
-                        <Viewbox Grid.Row="2" VerticalAlignment="Bottom" Height="54" Stretch="Fill" Margin="0,8,0,0">
+                        <Viewbox Grid.Row="1" VerticalAlignment="Bottom" Height="54" Stretch="Fill" Margin="0,8,0,0">
                             <Canvas Width="160" Height="54">
                                 <Line X1="0" Y1="12" X2="160" Y2="12"
                                       Stroke="{ThemeResource SnapwellBorderStrongBrush}"
@@ -151,7 +135,7 @@
             <TextBlock l:Loc.Uid="Feel_TrialTitle" Style="{StaticResource SnapwellGroupTitleStyle}" />
             <Border Style="{StaticResource SnapwellRowsBorderStyle}" Padding="12">
                 <StackPanel Spacing="10">
-                    <Canvas x:Name="TrialStage" Height="260" HorizontalAlignment="Stretch"
+                    <Canvas x:Name="TrialStage" Height="400" HorizontalAlignment="Stretch"
                             Background="{ThemeResource SnapwellWallBrush}" SizeChanged="TrialStage_SizeChanged"
                             PointerPressed="TrialStage_PointerPressed" PointerMoved="TrialStage_PointerMoved"
                             PointerReleased="TrialStage_PointerReleased"
@@ -166,7 +150,7 @@
                             </Border.RenderTransform>
                             <Grid>
                                 <Grid.RowDefinitions>
-                                    <RowDefinition Height="30" />
+                                    <RowDefinition Height="36" />
                                     <RowDefinition Height="*" />
                                 </Grid.RowDefinitions>
                                 <StackPanel Orientation="Horizontal" Spacing="8" Padding="10,0,0,0"
@@ -200,10 +184,11 @@
                 </StackPanel>
             </Border>
 
-            <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                <TextBlock l:Loc.Uid="Feel_DetailsTitle" Style="{StaticResource SnapwellGroupTitleStyle}" VerticalAlignment="Center" />
-                <TextBlock x:Name="FeelStateText" Style="{StaticResource SnapwellMonoTextStyle}"
-                           VerticalAlignment="Center" />
+            <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,22,0,8" VerticalAlignment="Center">
+                <TextBlock l:Loc.Uid="Feel_DetailsTitle" Style="{StaticResource SnapwellGroupTitleStyle}"
+                           Margin="0" VerticalAlignment="Center" />
+                <TextBlock x:Name="FeelStateText" Style="{StaticResource SnapwellGroupTitleStyle}"
+                           Margin="0" VerticalAlignment="Center" />
                 <Button l:Loc.Uid="Feel_FeelResetButton" x:Name="FeelResetButton" Click="FeelReset_Click"
                         Style="{StaticResource SnapwellActionButtonStyle}" Visibility="Collapsed" />
             </StackPanel>

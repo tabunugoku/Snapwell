@@ -1016,7 +1016,7 @@ public sealed class LiveResizeTests
     }
 
     private static MotionRequest Request() => new(1, new(-400, -300, 400, 300),
-        new(300, 200, 800, 600), new(-1920, -1080, 3840, 2160), FeelPreset.Airy,
+        new(300, 200, 800, 600), new(-1920, -1080, 3840, 2160), FeelPreset.Standard,
         new(200, 100), SizeMode.Live);
 
     private static void WaitUntil(Func<bool> condition) => Assert.True(SpinWait.SpinUntil(condition, 5000));

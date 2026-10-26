@@ -27,9 +27,29 @@ public sealed class FeelTrialTests
     {
         var trial = new FeelTrial(640, 260, SnapMode.Zones);
         Assert.Equal(new Vec2(320, 130), trial.Center);
-        Assert.Equal(FeelTrial.DefaultSize, trial.Size);
+        Assert.Equal(new Vec2(212, 140), trial.Size);
+        Assert.Equal(36, FeelTrial.TitleBarHeight);
         Assert.False(trial.IsFlying);
         Assert.Null(trial.Kind);
+    }
+
+    /// <summary>拡大した舞台でも案内の区画と四隅はカード寸法と間隔に合う。</summary>
+    [Fact]
+    public void EnlargedStageKeepsGuidesAndCornerTargetsInsideItsBounds()
+    {
+        var trial = new FeelTrial(640, 400, SnapMode.Zones);
+        Assert.Equal(new Vec2(320, 200), trial.Center);
+        Assert.Equal(new RectD(6, 6, 311, 388), trial.Guides[0]);
+        Assert.Equal(new RectD(323, 6, 311, 191), trial.Guides[3]);
+        trial.SetMode(SnapMode.Corners);
+        Assert.Equal(new Vec2(112, 76), trial.CornerPoints[0]);
+        Assert.Equal(new Vec2(528, 324), trial.CornerPoints[2]);
+        for (var i = 0; i < trial.CornerPoints.Count; i++)
+        {
+            var point = trial.CornerPoints[i];
+            Assert.InRange(point.X - trial.Size.X / 2, 6, 640 - trial.Size.X - 6);
+            Assert.InRange(point.Y - trial.Size.Y / 2, 6, 400 - trial.Size.Y - 6);
+        }
     }
 
     /// <summary>遅く離すと吸着せず、その場に置かれる（本体と同じ 150 px/s の足切り）。</summary>
@@ -37,11 +57,11 @@ public sealed class FeelTrialTests
     public void SlowReleaseStaysWhereDropped()
     {
         var trial = new FeelTrial(640, 260, SnapMode.Zones);
-        Assert.True(trial.Grab(new(320, 100)));
-        trial.Move(new(330, 100));
-        Assert.False(trial.Release(new(149, 0), FeelPreset.Airy, 28));
+        Assert.True(trial.Grab(new(320, 80)));
+        trial.Move(new(330, 80));
+        Assert.False(trial.Release(new(149, 0), FeelPreset.Standard, 28));
         Assert.False(trial.IsFlying);
-        Assert.Equal(new Vec2(330, 129), trial.Center);
+        Assert.Equal(new Vec2(330, 132), trial.Center);
         Assert.Equal(FeelTrial.DefaultSize, trial.Size);
     }
 
@@ -50,7 +70,7 @@ public sealed class FeelTrialTests
     public void FastThrowToTheRightSettlesInTheRightHalf()
     {
         var trial = new FeelTrial(640, 260, SnapMode.Zones);
-        Assert.True(trial.Release(new(1500, 0), FeelPreset.Airy, 28));
+        Assert.True(trial.Release(new(1500, 0), FeelPreset.Standard, 28));
         Assert.True(Fly(trial));
         Assert.Equal(SnapTargetKind.RightHalf, trial.Kind);
         Assert.Equal(1, trial.GuideIndex);
@@ -64,7 +84,7 @@ public sealed class FeelTrialTests
     public void ThrowingUpFromTheMiddleMaximizes()
     {
         var trial = new FeelTrial(640, 260, SnapMode.Zones);
-        Assert.True(trial.Release(new(0, -3000), FeelPreset.Airy, 28));
+        Assert.True(trial.Release(new(0, -3000), FeelPreset.Standard, 28));
         Assert.True(Fly(trial));
         Assert.Equal(SnapTargetKind.Maximize, trial.Kind);
         Assert.Equal(6, trial.GuideIndex);
@@ -76,9 +96,9 @@ public sealed class FeelTrialTests
     public void ThrowingUpFromTheSideDoesNotMaximize()
     {
         var trial = new FeelTrial(640, 260, SnapMode.Zones);
-        Assert.True(trial.Grab(new(320, 100)));
-        trial.Move(new(80, 100));
-        Assert.True(trial.Release(new(0, -3000), FeelPreset.Airy, 28));
+        Assert.True(trial.Grab(new(320, 80)));
+        trial.Move(new(80, 80));
+        Assert.True(trial.Release(new(0, -3000), FeelPreset.Standard, 28));
         Assert.True(Fly(trial));
         Assert.NotEqual(SnapTargetKind.Maximize, trial.Kind);
     }
@@ -92,7 +112,7 @@ public sealed class FeelTrialTests
     public void CornersModeSettlesInTheThrownCorner(double vx, double vy, int corner)
     {
         var trial = new FeelTrial(640, 260, SnapMode.Corners);
-        Assert.True(trial.Release(new(vx, vy), FeelPreset.Airy, 28));
+        Assert.True(trial.Release(new(vx, vy), FeelPreset.Standard, 28));
         Assert.True(Fly(trial));
         var expected = trial.CornerPoints[corner];
         Assert.InRange((trial.Center - expected).Length, 0, 1.5);
@@ -105,9 +125,9 @@ public sealed class FeelTrialTests
     public void GrabStopsFlightAndRestoresSize()
     {
         var trial = new FeelTrial(640, 260, SnapMode.Zones);
-        trial.Release(new(1500, 0), FeelPreset.Airy, 28);
+        trial.Release(new(1500, 0), FeelPreset.Standard, 28);
         Assert.True(trial.IsFlying);
-        Assert.True(trial.Grab(new(320, 100)));
+        Assert.True(trial.Grab(new(320, 80)));
         Assert.False(trial.IsFlying);
         Assert.Equal(FeelTrial.DefaultSize, trial.Size);
     }
@@ -129,7 +149,7 @@ public sealed class FeelTrialTests
             return farthest;
         }
 
-        Assert.True(Reach(FeelPreset.Airy.With(frequency: 0.5, dampingRatio: 0.2)) > Reach(FeelPreset.Snappy));
+        Assert.True(Reach(FeelPreset.Standard.With(frequency: 0.5, dampingRatio: 0.2)) > Reach(FeelPreset.Crisp));
     }
 
     /// <summary>方式を切り替えると案内が作り直され、カードは中央に戻る。</summary>
@@ -149,22 +169,22 @@ public sealed class FeelTrialTests
     public void DraggingIsClampedToTheStage()
     {
         var trial = new FeelTrial(640, 260, SnapMode.Zones);
-        Assert.True(trial.Grab(new(320, 100)));
+        Assert.True(trial.Grab(new(320, 80)));
         trial.Move(new(-500, 999));
         Assert.Equal(new Vec2(0, 260), trial.Center);
     }
 
-    // 最初のカードは中央（320, 130）、大きさ 132×88。左 254、右 386、上 86、タイトルバーは上 86〜116。
+    // 最初のカードは中央（320, 130）、大きさ 212×140。左 214、右 426、上 60、タイトルバーは上 60〜96。
 
     /// <summary>タイトルバーの内側と、各辺の境界（左と上は含み、右と下は含まない）。マウスは広げない。</summary>
     [Theory]
-    [InlineData(254, 86, true)]
-    [InlineData(320, 100, true)]
-    [InlineData(385.9, 115.9, true)]
-    [InlineData(386, 100, false)]
-    [InlineData(320, 116, false)]
-    [InlineData(253.9, 100, false)]
-    [InlineData(320, 85.9, false)]
+    [InlineData(214, 60, true)]
+    [InlineData(320, 80, true)]
+    [InlineData(425.9, 95.9, true)]
+    [InlineData(426, 80, false)]
+    [InlineData(320, 96, false)]
+    [InlineData(213.9, 80, false)]
+    [InlineData(320, 59.9, false)]
     public void MouseHitsTheTitleBarOnly(double x, double y, bool expected)
     {
         var trial = new FeelTrial(640, 260, SnapMode.Zones);
@@ -189,14 +209,14 @@ public sealed class FeelTrialTests
     public void TouchAndPenHaveTheTitleBarSlop(TrialPointerKind kind)
     {
         var trial = new FeelTrial(640, 260, SnapMode.Zones);
-        Assert.True(trial.HitsTitleBar(new(320, 123.9), kind));
-        Assert.False(trial.HitsTitleBar(new(320, 124), kind));
-        Assert.True(trial.HitsTitleBar(new(246, 100), kind));
-        Assert.False(trial.HitsTitleBar(new(245.9, 100), kind));
-        Assert.True(trial.HitsTitleBar(new(320, 78), kind));
+        Assert.True(trial.HitsTitleBar(new(320, 103.9), kind));
+        Assert.False(trial.HitsTitleBar(new(320, 104), kind));
+        Assert.True(trial.HitsTitleBar(new(206, 80), kind));
+        Assert.False(trial.HitsTitleBar(new(205.9, 80), kind));
+        Assert.True(trial.HitsTitleBar(new(320, 52), kind));
         Assert.False(trial.HitsTitleBar(new(320, 150), kind));
-        Assert.False(trial.HitsTitleBar(new(320, 123.9)));
-        Assert.True(trial.Grab(new(320, 120), kind));
+        Assert.False(trial.HitsTitleBar(new(320, 103.9)));
+        Assert.True(trial.Grab(new(320, 100), kind));
     }
 
     /// <summary>区画の大きさに止まったカードのタイトルバー（その区画の上端）をつかむと元の大きさに戻り、つかんだ点はタイトルバーの上に残る。</summary>
@@ -204,7 +224,7 @@ public sealed class FeelTrialTests
     public void GrabbingASettledZoneKeepsThePointerOnTheTitleBar()
     {
         var trial = new FeelTrial(640, 260, SnapMode.Zones);
-        trial.Release(new(1500, 0), FeelPreset.Airy, 28);
+        trial.Release(new(1500, 0), FeelPreset.Standard, 28);
         Assert.True(Fly(trial));
         var zone = trial.Guides[trial.GuideIndex!.Value];
         var point = new Vec2(zone.X + zone.W * 0.75, zone.Y + 10);
@@ -221,7 +241,7 @@ public sealed class FeelTrialTests
     public void SettleJumpsToTheChosenTargetEvenWhenThePhysicsWouldNotConverge()
     {
         var trial = new FeelTrial(640, 260, SnapMode.Zones);
-        var feel = FeelPreset.Airy.With(frequency: 7, dampingRatio: 1.6, magnetStrength: 0);
+        var feel = FeelPreset.Standard.With(frequency: 7, dampingRatio: 1.6, magnetStrength: 0);
         Assert.True(trial.Release(new(1500, 0), feel, 28));
         trial.Settle();
         Assert.False(trial.IsFlying);
@@ -239,14 +259,14 @@ public sealed class FeelTrialTests
     {
         var trial = new FeelTrial(640, 260, SnapMode.Zones);
         var tracker = new VelocityTracker();
-        Assert.True(trial.Grab(new(320, 100)));
-        tracker.AddSample(new(320, 100), 0);
+        Assert.True(trial.Grab(new(320, 80)));
+        tracker.AddSample(new(320, 80), 0);
         trial.Move(new(420, 100));
         tracker.AddSample(new(420, 100), 0.05);
         Assert.NotEqual(default, tracker.Release(0.06 - 0.0001));
         var velocity = tracker.Release(0.55);
         Assert.Equal(default, velocity);
-        Assert.False(trial.Release(velocity, FeelPreset.Airy, 28));
+        Assert.False(trial.Release(velocity, FeelPreset.Standard, 28));
         Assert.False(trial.IsFlying);
     }
 
@@ -255,7 +275,7 @@ public sealed class FeelTrialTests
     public void CancelEndsTheGrabWithoutThrowing()
     {
         var trial = new FeelTrial(640, 260, SnapMode.Zones);
-        Assert.True(trial.Grab(new(320, 100)));
+        Assert.True(trial.Grab(new(320, 80)));
         trial.Move(new(420, 110));
         var center = trial.Center;
         trial.Cancel();
@@ -274,8 +294,8 @@ public sealed class FeelTrialTests
     public void ASecondPointerCannotGrabMoveOrCancelWhileGrabbed()
     {
         var trial = new FeelTrial(640, 260, SnapMode.Zones);
-        Assert.True(trial.Grab(new(320, 100), TrialPointerKind.Touch, 1));
-        Assert.False(trial.Grab(new(300, 95), TrialPointerKind.Touch, 2));
+        Assert.True(trial.Grab(new(320, 80), TrialPointerKind.Touch, 1));
+        Assert.False(trial.Grab(new(300, 75), TrialPointerKind.Touch, 2));
         Assert.True(trial.Owns(1));
         Assert.False(trial.Owns(2));
         trial.Move(new(400, 100), 1);
@@ -289,7 +309,7 @@ public sealed class FeelTrialTests
         trial.Cancel(1);
         Assert.False(trial.IsGrabbed);
         Assert.False(trial.Owns(1));
-        Assert.True(trial.Grab(new(trial.Center.X, trial.Center.Y - 30), TrialPointerKind.Touch, 2));
+        Assert.True(trial.Grab(new(trial.Center.X, trial.Center.Y - 50), TrialPointerKind.Touch, 2));
         Assert.True(trial.Owns(2));
     }
 
@@ -298,9 +318,9 @@ public sealed class FeelTrialTests
     public void ReleasingInTheTopBandPicksTheSameTargetAsTheResolver()
     {
         var trial = new FeelTrial(640, 260, SnapMode.Zones);
-        Assert.True(trial.Grab(new(320, 100)));
+        Assert.True(trial.Grab(new(320, 80)));
         trial.Move(new(320, 8));
-        var feel = FeelPreset.Airy;
+        var feel = FeelPreset.Standard;
         var pointer = new Vec2(320, 8);
         var current = new PixelRect((int)Math.Round(trial.Center.X - trial.Size.X / 2),
             (int)Math.Round(trial.Center.Y - trial.Size.Y / 2), (int)trial.Size.X, (int)trial.Size.Y);
@@ -312,7 +332,7 @@ public sealed class FeelTrialTests
         Assert.True(expected.Kind is SnapTargetKind.TopRight or SnapTargetKind.TopLeft);
 
         var without = new FeelTrial(640, 260, SnapMode.Zones);
-        Assert.True(without.Grab(new(320, 100)));
+        Assert.True(without.Grab(new(320, 80)));
         without.Move(new(320, 8));
         Assert.True(without.Release(new(1500, 800), feel, 28));
         Assert.True(Fly(without));
@@ -324,12 +344,12 @@ public sealed class FeelTrialTests
     public void LaunchAndModeChangeAreRefusedWhileGrabbed()
     {
         var trial = new FeelTrial(640, 260, SnapMode.Zones);
-        Assert.True(trial.Grab(new(320, 100), TrialPointerKind.Touch, 7));
-        Assert.False(trial.Release(new(1500, 0), FeelPreset.Airy, 28, 0));
+        Assert.True(trial.Grab(new(320, 80), TrialPointerKind.Touch, 7));
+        Assert.False(trial.Release(new(1500, 0), FeelPreset.Standard, 28, 0));
         Assert.True(trial.IsGrabbed);
         trial.SetMode(SnapMode.Corners);
         Assert.Equal(SnapMode.Zones, trial.Mode);
-        Assert.True(trial.Release(new(1500, 0), FeelPreset.Airy, 28, 7));
+        Assert.True(trial.Release(new(1500, 0), FeelPreset.Standard, 28, 7));
         Assert.False(trial.IsGrabbed);
     }
 }

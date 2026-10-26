@@ -14,26 +14,26 @@ public sealed class FeelTuningTests : IDisposable
     /// <summary>後始末。</summary>
     public void Dispose() => Directory.Delete(_directory, true);
 
-    /// <summary>既定では強さを操作感の語から決め、半径は feel の corner-card と同じ 28。</summary>
+    /// <summary>既定では強さを Standard から決め、半径は feel の corner-card と同じ 28。</summary>
     [Fact]
-    public void DefaultsFollowFeelWordsAndCornerCardRadius()
+    public void DefaultsFollowStandardAndCornerCardRadius()
     {
         var defaults = new PortableSettings();
         Assert.Null(defaults.MagnetStrength);
         Assert.Equal(28, defaults.SnapRadius);
-        Assert.Same(FeelPreset.Airy, defaults.ToFeelPreset());
-        Assert.Equal(0.6, new PortableSettings { Feel = "Heavy" }.ToFeelPreset().MagnetStrength);
+        Assert.Same(FeelPreset.Standard, defaults.ToFeelPreset());
+        Assert.Equal(0.5, new PortableSettings { Feel = "Smooth" }.ToFeelPreset().MagnetStrength);
     }
 
     /// <summary>強さを指定すると、質量・振動数・減衰比はそのままで強さだけが変わる。</summary>
     [Fact]
     public void ExplicitStrengthOverridesOnlyTheMagnet()
     {
-        var feel = new PortableSettings { Feel = "Heavy", MagnetStrength = 1.4 }.ToFeelPreset();
+        var feel = new PortableSettings { Feel = "Smooth", MagnetStrength = 1.4 }.ToFeelPreset();
         Assert.Equal(1.4, feel.MagnetStrength);
-        Assert.Equal(FeelPreset.Heavy.Mass, feel.Mass);
-        Assert.Equal(FeelPreset.Heavy.Frequency, feel.Frequency);
-        Assert.Equal(FeelPreset.Heavy.DampingRatio, feel.DampingRatio);
+        Assert.Equal(FeelPreset.Smooth.Mass, feel.Mass);
+        Assert.Equal(FeelPreset.Smooth.Frequency, feel.Frequency);
+        Assert.Equal(FeelPreset.Smooth.DampingRatio, feel.DampingRatio);
         Assert.Equal(0.6 + 0.5 * 1.4, feel.ReachFrequency, 10);
         Assert.Equal(3 + 4 * 1.4, feel.ClickFrequency, 10);
     }
@@ -98,7 +98,7 @@ public sealed class FeelTuningTests : IDisposable
     [Fact]
     public void ClickRadiusIsScaledToPhysicalPixels()
     {
-        var result = SnapResolver.Resolve(new(100, 100, 100, 100), new(500, 0), FeelPreset.Airy, SnapMode.Zones,
+        var result = SnapResolver.Resolve(new(100, 100, 100, 100), new(500, 0), FeelPreset.Standard, SnapMode.Zones,
             new Spacing(0, 0), [new("main", new(0, 0, 1000, 1000), 1.5)], snapRadius: 40)!.Value;
         Assert.Equal(60, result.ClickRadius);
         Assert.Equal([new Vec2(result.Target.X, result.Target.Y)], result.Stops);
@@ -106,9 +106,9 @@ public sealed class FeelTuningTests : IDisposable
 
     /// <summary>四つのプリセット名はそれぞれ別の物理値になり、正規化・保存・読み込みを経ても保たれる。</summary>
     [Theory]
-    [InlineData("Airy")]
-    [InlineData("Snappy")]
-    [InlineData("Heavy")]
+    [InlineData("Standard")]
+    [InlineData("Crisp")]
+    [InlineData("Smooth")]
     [InlineData("Bouncy")]
     public void EveryPresetNameSurvivesNormalizeSaveAndLoad(string name)
     {
@@ -119,7 +119,7 @@ public sealed class FeelTuningTests : IDisposable
         var loaded = SettingsTransfer.Normalize(store.Load().Value);
         Assert.Equal(name, loaded.Feel);
         Assert.Equal(expected, loaded.ToFeelPreset());
-        Assert.NotEmpty(SettingsTransfer.GetDifferences(new PortableSettings { Feel = name == "Airy" ? "Heavy" : "Airy" },
+        Assert.NotEmpty(SettingsTransfer.GetDifferences(new PortableSettings { Feel = name == "Standard" ? "Smooth" : "Standard" },
             loaded));
     }
 }

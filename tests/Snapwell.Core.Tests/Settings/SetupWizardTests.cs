@@ -47,7 +47,7 @@ public sealed class SetupWizardTests
     [Fact]
     public void FinishingPreservesOtherSettingsAndLatestDeviceFields()
     {
-        var portable = new Store<PortableSettings>(new() { Feel = "Heavy", Edge = 15 });
+        var portable = new Store<PortableSettings>(new() { Feel = "Smooth", Edge = 15 });
         var device = new Store<DeviceState>(new());
         var wizard = AtGrid(portable, device);
         wizard.PlanIndex = 1;
@@ -58,7 +58,7 @@ public sealed class SetupWizardTests
         Assert.Equal(new GridSettings(12, 6), portable.Value.Grid);
         Assert.Equal(24, portable.Value.Gap);
         Assert.Equal(24, portable.Value.Edge);
-        Assert.Equal("Heavy", portable.Value.Feel);
+        Assert.Equal("Smooth", portable.Value.Feel);
         Assert.Equal(PortableSettings.CurrentSchemaVersion, portable.Value.SchemaVersion);
         Assert.False(device.Value.Enabled);
         Assert.True(device.Value.SetupCompleted);

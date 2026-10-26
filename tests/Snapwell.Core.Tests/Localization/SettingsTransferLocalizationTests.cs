@@ -25,6 +25,31 @@ public sealed class SettingsTransferLocalizationTests : IDisposable
         if (Directory.Exists(_directory)) { Directory.Delete(_directory, recursive: true); }
     }
 
+    /// <summary>旧識別子も新しい表示名で差分に出し、カスタムの土台も同じ翻訳を使う。</summary>
+    [Theory]
+    [InlineData(UiLanguage.Japanese)]
+    [InlineData(UiLanguage.English)]
+    [InlineData(UiLanguage.ChineseSimplified)]
+    [InlineData(UiLanguage.ChineseTraditional)]
+    public void PresetDifferenceNamesFollowTheLanguage(UiLanguage language)
+    {
+        UiText.Use(language);
+        foreach (var (oldName, name) in new[] { ("Airy", "Standard"), ("Snappy", "Crisp"),
+            ("Heavy", "Smooth"), ("Bouncy", "Bouncy") })
+        {
+            var current = new PortableSettings { Feel = name == "Standard" ? "Smooth" : "Standard" };
+            var imported = new PortableSettings { Feel = oldName };
+            var difference = Assert.Single(SettingsTransfer.GetDifferences(current, imported));
+            var display = UiText.Current.Get($"Feel_PresetName_{name}.Text");
+            Assert.Equal(display, difference.ImportedValue);
+            imported.Mass = 2.25;
+            difference = Assert.Single(SettingsTransfer.GetDifferences(current, imported));
+            Assert.Equal(UiText.Current.Format("Transfer.Value.CustomFeel", ("feel", display), ("mass", "2.25"),
+                ("frequency", UiText.Current.Get("Transfer.Value.Preset")),
+                ("damping", UiText.Current.Get("Transfer.Value.Preset"))), difference.ImportedValue);
+        }
+    }
+
     /// <summary>列挙した全項目の名前と差分を、両言語で欠落なく表示する。</summary>
     [Theory]
     [InlineData(UiLanguage.Japanese)]
@@ -58,7 +83,7 @@ public sealed class SettingsTransferLocalizationTests : IDisposable
         Assert.Equal("12.5 px", japanese[SettingsField.Gap].ImportedValue);
         Assert.Equal("2 区画", japanese[SettingsField.ResizeStep].ImportedValue);
         Assert.Equal("操作感に従う", japanese[SettingsField.MagnetStrength].CurrentValue);
-        Assert.Equal("カスタム（Heavy から。質量 2、振動数 プリセットのまま、減衰比 プリセットのまま）",
+        Assert.Equal("カスタム（なめらか から。質量 2、振動数 プリセットのまま、減衰比 プリセットのまま）",
             japanese[SettingsField.Feel].ImportedValue);
         Assert.Equal("DISPLAY1: 6 × 4, 間隔 10, 余白 プリセットのまま",
             japanese[SettingsField.MonitorGrids].ImportedValue);
@@ -170,7 +195,7 @@ public sealed class SettingsTransferLocalizationTests : IDisposable
             Grid = new(6, 4),
             Gap = 12.5,
             Edge = 10,
-            Feel = "Heavy",
+            Feel = "Smooth",
             Mass = 2,
             SnapMode = SnapMode.Corners,
             ReduceMotion = true,

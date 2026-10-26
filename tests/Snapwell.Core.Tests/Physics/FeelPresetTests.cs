@@ -35,31 +35,58 @@ public sealed class FeelPresetTests
         Assert.Equal(34.18, feel.Damping, 1);
     }
 
-    /// <summary>四つのプリセットは、設定画面のカードの語から導く。</summary>
-    [Fact]
-    public void PresetsAreDerivedFromTheirCardPhrases()
+    /// <summary>承認済みの四つの物理値を名前から取得する。</summary>
+    [Theory]
+    [InlineData("Standard", 0.6, 2.4, 0.7, 0.55)]
+    [InlineData("Crisp", 0.8, 3.2, 0.6, 0.6)]
+    [InlineData("Smooth", 1.0, 1.8, 0.8, 0.5)]
+    [InlineData("Bouncy", 0.5, 2.8, 0.45, 0.6)]
+    public void PresetsHaveApprovedValues(string name, double mass, double frequency, double zeta, double magnet)
     {
-        // airy, slightly magnetic: slightly が magnetic の強さを半分にする。
-        Assert.Equal(0.35, FeelPreset.Airy.Mass, 10);
-        Assert.Equal(2.2, FeelPreset.Airy.Frequency, 10);
-        Assert.Equal(0.55, FeelPreset.Airy.DampingRatio, 10);
-        Assert.Equal(0.5, FeelPreset.Airy.MagnetStrength, 10);
+        var feel = FeelPreset.ByName(name);
+        Assert.NotNull(feel);
+        Assert.Equal(new FeelPreset(mass, frequency, zeta, magnet), feel);
+        Assert.Same(name switch
+        {
+            "Standard" => FeelPreset.Standard,
+            "Crisp" => FeelPreset.Crisp,
+            "Smooth" => FeelPreset.Smooth,
+            _ => FeelPreset.Bouncy,
+        }, feel);
+    }
 
-        // snappy, precise: 振動数は幾何平均、減衰比は平均。磁石の語がなければ 0.6。
-        Assert.Equal(1, FeelPreset.Snappy.Mass, 10);
-        Assert.Equal(Math.Sqrt(3.4 * 4.5), FeelPreset.Snappy.Frequency, 10);
-        Assert.Equal(0.91, FeelPreset.Snappy.DampingRatio, 10);
-        Assert.Equal(0.6, FeelPreset.Snappy.MagnetStrength, 10);
+    /// <summary>旧識別子は新しいプリセットの別名として読む。</summary>
+    [Theory]
+    [InlineData("Airy", "Standard")]
+    [InlineData("Snappy", "Crisp")]
+    [InlineData("Heavy", "Smooth")]
+    public void LegacyNamesResolveToNewPresets(string oldName, string name)
+    {
+        Assert.Same(FeelPreset.ByName(name), FeelPreset.ByName(oldName));
+    }
 
-        // heavy, settled: settled は語彙にないので heavy だけ。
-        Assert.Equal(3, FeelPreset.Heavy.Mass, 10);
-        Assert.Equal(1.35, FeelPreset.Heavy.Frequency, 10);
-        Assert.Equal(0.74, FeelPreset.Heavy.DampingRatio, 10);
+    /// <summary>識別子の大文字小文字を区別し、未知の名前は受け付けない。</summary>
+    [Theory]
+    [InlineData("standard")]
+    [InlineData("CRISP")]
+    [InlineData("airy")]
+    [InlineData("unknown")]
+    public void UnknownOrDifferentCaseNamesReturnNull(string name)
+    {
+        Assert.Null(FeelPreset.ByName(name));
+    }
 
-        // light, playful: 質量は light、振動数は幾何平均、減衰比は平均。
-        Assert.Equal(0.45, FeelPreset.Bouncy.Mass, 10);
-        Assert.Equal(Math.Sqrt(3 * 2.6), FeelPreset.Bouncy.Frequency, 10);
-        Assert.Equal(0.535, FeelPreset.Bouncy.DampingRatio, 10);
+    /// <summary>トグルのばねは従来の stiff, heavy の値を保つ。</summary>
+    [Fact]
+    public void ToggleSpringKeepsItsOriginalValues()
+    {
+        var feel = FeelPreset.StiffHeavy;
+        Assert.Equal(3, feel.Mass, 12);
+        Assert.Equal(Math.Sqrt(4.6 * 1.35), feel.Frequency, 12);
+        Assert.Equal(0.82, feel.DampingRatio, 12);
+        Assert.Equal(0.6, feel.MagnetStrength, 12);
+        Assert.Equal(735.482919969179, feel.Stiffness, 9);
+        Assert.Equal(77.03547614344518, feel.Damping, 9);
     }
 
     /// <summary>磁石の強さから二つのばねの振動数を導く。</summary>
@@ -70,17 +97,17 @@ public sealed class FeelPresetTests
     [InlineData(1.8, 1.5, 10.2)]
     public void StrengthSetsReachAndClickFrequencies(double strength, double reach, double click)
     {
-        var feel = FeelPreset.Airy.WithMagnetStrength(strength);
+        var feel = FeelPreset.Standard.WithMagnetStrength(strength);
         Assert.Equal(reach, feel.ReachFrequency, 10);
         Assert.Equal(click, feel.ClickFrequency, 10);
     }
 
-    /// <summary>惰性で止まる距離の係数は m/c。Airy は約 0.066 秒。</summary>
+    /// <summary>惰性で止まる距離の係数は m/c。Standard は約 0.047 秒。</summary>
     [Fact]
     public void CoastTimeIsMassOverDamping()
     {
-        Assert.Equal(FeelPreset.Airy.Mass / FeelPreset.Airy.Damping, FeelPreset.Airy.CoastTime, 12);
-        Assert.InRange(FeelPreset.Airy.CoastTime, 0.0657, 0.0659);
+        Assert.Equal(FeelPreset.Standard.Mass / FeelPreset.Standard.Damping, FeelPreset.Standard.CoastTime, 12);
+        Assert.InRange(FeelPreset.Standard.CoastTime, 0.0473, 0.0474);
     }
 
     /// <summary>質量は積で、0.15〜8 に収める。</summary>
@@ -136,14 +163,14 @@ public sealed class FeelPresetTests
     [InlineData(double.NaN, 0.6)]
     public void WithMagnetStrengthClamps(double strength, double expected)
     {
-        Assert.Equal(expected, FeelPreset.Airy.WithMagnetStrength(strength).MagnetStrength);
+        Assert.Equal(expected, FeelPreset.Standard.WithMagnetStrength(strength).MagnetStrength);
     }
 
     /// <summary>閉形式の階段応答は、始点が 0・終点が 1 で、不足減衰では行き過ぎが理論どおり。</summary>
     [Fact]
     public void StepPositionStartsAtZeroEndsAtOneAndOvershootsAsTheoryPredicts()
     {
-        var feel = FeelPreset.Heavy;
+        var feel = FeelPreset.Smooth;
         Assert.Equal(0, feel.StepPosition(0), 12);
         Assert.Equal(1, feel.StepPosition(30), 9);
         var peak = Enumerable.Range(0, 3000).Max(i => feel.StepPosition(i / 1000.0));

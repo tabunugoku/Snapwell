@@ -629,20 +629,18 @@ table.list tr:last-child td { border-bottom: 0; }
 .feel-card { border: 1px solid var(--border); border-radius: 8px; padding: 12px; background: var(--surface); cursor: pointer; text-align: left; }
 .feel-card[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
 .feel-card .fname { font-weight: 600; color: var(--ink); font-size: 13px; }
-.feel-card .fwords { font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
 .feel-card svg { width: 100%; height: 54px; margin-top: 8px; }
 .feel-card svg path.c { fill: none; stroke: var(--ink); stroke-width: 1.5; }
 .feel-card svg line { stroke: var(--border-strong); stroke-dasharray: 3 3; }
-.feel-state { margin-left: 8px; padding: 1px 8px; border: 1px solid var(--border-strong); border-radius: 9999px; font-weight: 500; font-size: 11.5px; color: var(--muted); }
-.feel-state.custom { border-color: var(--ink); color: var(--ink); }
+.feel-state { margin-left: 12px; font: inherit; color: inherit; }
 .feel-reset { margin-left: 8px; padding: 1px 10px; font-size: 11.5px; }
 .feel-try { border: 1px solid var(--border); border-radius: 8px; background: var(--surface); padding: 12px; }
-.feel-stage { position: relative; height: 260px; border-radius: 6px; background: var(--wall); overflow: hidden; touch-action: none; }
+.feel-stage { position: relative; height: 400px; border-radius: 6px; background: var(--wall); overflow: hidden; touch-action: none; }
 .feel-stage .fz { position: absolute; border: 1px dashed var(--cell-border); border-radius: 4px; }
 .feel-stage .fz.on { background: var(--surface-2); border-style: solid; border-color: var(--ink); }
 .feel-stage .fz-dot { position: absolute; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; background: var(--muted); opacity: .6; }
 .fs-card { position: absolute; left: 0; top: 0; display: flex; flex-direction: column; overflow: hidden; background: var(--surface); border: 1px solid var(--border-strong); border-radius: 8px; user-select: none; will-change: transform; pointer-events: none; }
-.fs-card .win-title { cursor: inherit; }
+.fs-card .win-title { cursor: inherit; height: 36px; min-height: 36px; flex-shrink: 0; }
 .fs-card:focus-visible { outline: 2px solid var(--blue-tx); outline-offset: 2px; }
 .feel-try-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
 .feel-try-hint { font-size: 12px; color: var(--muted); }
@@ -1041,7 +1039,7 @@ table.list tr:last-child td { border-bottom: 0; }
           <!-- 操作感 -->
           <div class="spage" data-page="feel">
             <h3>操作感</h3>
-            <p class="lead">投げたときの動き方です。プリセットを選ぶと、吸着半径を除く 4 つの値がその値になり、どれかを変えると「カスタム」になります。曲線は、各プリセットでキー操作したときの、止まるまでの位置の変化です。</p>
+            <p class="lead">投げたときの動き方を調整します。動きの速さと戻り方は固有振動数と減衰比で決まります。プリセットを選ぶと、吸着半径を除く 4 つの値が変わり、どれかを変えると「カスタム」になります。曲線はキー操作で止まるまでの位置の変化です。</p>
             <div class="feel-cards" id="feelCards"></div>
             <div class="group-title">試す</div>
             <div class="feel-try">
@@ -1173,7 +1171,7 @@ table.list tr:last-child td { border-bottom: 0; }
         <label class="row"><div><div class="t">ウィンドウの角</div><div class="d">Windows の既定 → 角丸を強制する</div></div><div class="ctl"><input type="checkbox" aria-label="ウィンドウの角"></div></label>
         <label class="row"><div><div class="t">分割案</div><div class="d">8 × 8 → 12 × 6</div></div><div class="ctl"><input type="checkbox" aria-label="分割案"></div></label>
         <label class="row"><div><div class="t">ウィンドウの間隔</div><div class="d">8 px → 12 px</div></div><div class="ctl"><input type="checkbox" aria-label="ウィンドウの間隔"></div></label>
-        <label class="row"><div><div class="t">操作感</div><div class="d">Airy → Heavy</div></div><div class="ctl"><input type="checkbox" aria-label="操作感"></div></label>
+        <label class="row"><div><div class="t">操作感</div><div class="d">標準 → なめらか</div></div><div class="ctl"><input type="checkbox" aria-label="操作感"></div></label>
         <label class="row"><div><div class="t">現在のモニターを整列（グリッド）</div><div class="d">Ctrl+Alt+A → Ctrl+Alt+G</div></div><div class="ctl"><input type="checkbox" aria-label="整列のキー"></div></label>
       </div>
       <p class="hint">取り込むだけでは保存されません。画面下の「保存」で確定します。</p>
@@ -1342,13 +1340,12 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 const svgNS = 'http://www.w3.org/2000/svg';
 
-// 操作感のプリセット。feel の語彙（runtime/feel.js の words()）から導いた値。magnet は磁石の強さ
-// (airy, slightly magnetic は 0.5、磁石の語がなければ 0.6)。tau は手を離したあとの惰性の係数 m/c (予測点 = x + v·tau)
+// 操作感は承認済みの数値を直接定義する。tau は手を離したあとの惰性の係数 m/c。
 const FEELS = {
-  airy: { name: 'airy', words: 'airy, slightly magnetic', m: 0.35, f: 2.2, z: 0.55, magnet: 0.5 },
-  snappy: { name: 'snappy', words: 'snappy, precise', m: 1, f: Math.sqrt(3.4 * 4.5), z: 0.91, magnet: 0.6 },
-  heavy: { name: 'heavy', words: 'heavy, settled', m: 3, f: 1.35, z: 0.74, magnet: 0.6 },
-  bouncy: { name: 'bouncy', words: 'light, playful', m: 0.45, f: Math.sqrt(3 * 2.6), z: 0.535, magnet: 0.6 },
+  Standard: { name: '標準', m: 0.6, f: 2.4, z: 0.7, magnet: 0.55 },
+  Crisp: { name: 'きびきび', m: 0.8, f: 3.2, z: 0.6, magnet: 0.6 },
+  Smooth: { name: 'なめらか', m: 1.0, f: 1.8, z: 0.8, magnet: 0.5 },
+  Bouncy: { name: 'はずむ', m: 0.5, f: 2.8, z: 0.45, magnet: 0.6 },
 };
 const springOf = (p) => {
   const k = p.m * Math.pow(2 * Math.PI * p.f, 2);
@@ -1534,7 +1531,7 @@ const snap = {
   mode: 'zones',
   sizeMode: 'land',
   gap: 8,
-  feel: 'airy',
+  feel: 'Standard',
   wins: [],
   initial: [],
 };
@@ -1749,7 +1746,7 @@ $('#snapGap').addEventListener('input', (ev) => {
   $('#snapGapOut').textContent = `${snap.gap} px`;
 });
 const feelSel = $('#snapFeel');
-feelSel.innerHTML = Object.entries(FEELS).map(([k, f]) => `<option value="${k}">${f.name} — ${f.words}</option>`).join('');
+feelSel.innerHTML = Object.entries(FEELS).map(([k, f]) => `<option value="${k}">${f.name}</option>`).join('');
 feelSel.addEventListener('change', () => { snap.feel = feelSel.value; renderParams(); });
 $('#flingBtn').addEventListener('click', () => {
   // 前面のウィンドウを、いまいる象限の対角へ弾く
@@ -1964,7 +1961,7 @@ function applySel() {
     placeWin(L.win, target);
     return;
   }
-  L.body = new WindowBody(L.win, L.win.r, target, { x: 0, y: 0 }, FEELS.snappy, {
+  L.body = new WindowBody(L.win, L.win.r, target, { x: 0, y: 0 }, FEELS.Crisp, {
     sizeMode: 'smooth',
     areaW: W,
     areaH: H,
@@ -2496,7 +2493,7 @@ function curvePath(p, w, h) {
 // 操作感の 5 つの値。範囲は feel のデモ（rig.js の dial）に合わせた: 質量 0.15–8（対数）、振動数 0.4–7 Hz（対数）、
 // 減衰比 0.1–1.6。磁石の強さ 0–2 と吸着半径 8–96 px は Snapwell の設定（feel では語彙と click radius から決まる）
 const TUNE = [
-  { key: 'm', name: '質量 m', desc: 'feel の磁石場は力が質量に比例するため、吸着の動きは変わりません。変わるのは導かれる k と c です', min: 0.15, max: 8, log: true, step: 0.01, digits: 2, unit: '', tol: 0.005 },
+  { key: 'm', name: '質量 m', desc: '固さ k と減衰 c の基準になる値です。同じ固有振動数・減衰比でも、質量を大きくすると k と c の表示値が大きくなります。', min: 0.15, max: 8, log: true, step: 0.01, digits: 2, unit: '', tol: 0.005 },
   { key: 'f', name: '固有振動数 f', desc: 'キー操作での動きの速さと、投げたあとの勢いの止まり方に効きます', min: 0.4, max: 7, log: true, step: 0.01, digits: 2, unit: 'Hz', tol: 0.005 },
   { key: 'z', name: '減衰比 ζ', desc: '大きいほど勢いを抑えます', min: 0.1, max: 1.6, log: false, step: 0.01, digits: 2, unit: '', tol: 0.005 },
   { key: 'magnet', name: '磁石の強さ', desc: '停止点へ吸い寄せる力。大きいほど強く引きます (0〜2)', min: 0, max: 2, log: false, step: 0.05, digits: 2, unit: '', tol: 0.005 },
@@ -2518,10 +2515,10 @@ function initFeelTry(getTune) {
   const stage = $('#feelStage');
   const card = $('#feelCard');
   const guideBox = $('#feelZones');
-  const CARD_W = 132;
-  const CARD_H = 88;
+  const CARD_W = 212;
+  const CARD_H = 140;
   // タイトルバーは実物より大きめにして、つかみやすくする。タッチとペンは判定を四方へ広げる（Core の FeelTrial と同じ値）
-  const TITLE_H = 30;
+  const TITLE_H = 36;
   const TOUCH_SLOP = 8;
   const GAP = 6;
   card.innerHTML = `<div class="win-title"><span class="ico"></span><span class="name">Window</span>${CAPS_SVG}</div>`
@@ -2808,12 +2805,12 @@ function initFeelPage() {
   const box = $('#feelCards');
   // 吸着半径はプリセットに含めない（本体の WithPreset と同じ）。選び直しても据え置く
   const tune = { radius: 28 };
-  let base = 'airy';
+  let base = 'Standard';
   const params = () => tune;
   initFeelTry(params);
 
   box.innerHTML = Object.entries(FEELS).map(([key, f]) => `<button type="button" class="feel-card" data-k="${key}">`
-    + `<div class="fname">${f.name}</div><div class="fwords">${f.words}</div>`
+    + `<div class="fname">${f.name}</div>`
     + `<svg viewBox="0 0 160 54" preserveAspectRatio="none"><line x1="0" x2="160" y1="12" y2="12"/>`
     + `<path class="c" d="${curvePath(f, 160, 54)}"/></svg></button>`).join('');
 
@@ -2839,7 +2836,7 @@ function initFeelPage() {
     $('#feelDerived').textContent = `k ${k.toFixed(0)} · c ${cc.toFixed(1)} · m/c ${(tune.m / cc).toFixed(2)} s`;
     const custom = isCustom();
     const state = $('#feelState');
-    state.textContent = custom ? `カスタム（${FEELS[base].name} から変更）` : `プリセット: ${FEELS[base].name}`;
+    state.textContent = custom ? 'カスタム' : `プリセット: ${FEELS[base].name}`;
     state.classList.toggle('custom', custom);
     $('#feelReset').hidden = !custom;
     $$('.feel-card', box).forEach((b) => b.setAttribute('aria-pressed', String(!custom && b.dataset.k === base)));
@@ -2875,7 +2872,7 @@ function initFeelPage() {
     if (b) select(b.dataset.k);
   });
   $('#feelReset').addEventListener('click', () => select(base));
-  select('airy');
+  select('Standard');
 }
 
 // ---------- 04 トレイ ----------

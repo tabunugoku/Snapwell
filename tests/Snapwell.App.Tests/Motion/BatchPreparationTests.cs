@@ -91,7 +91,7 @@ public sealed class BatchPreparationTests
     }
 
     private static MotionRequest Request(nint handle) => new(handle, new(100, 100, 400, 300),
-        new(8, 8, 600, 400), new(0, 0, 1920, 1040), FeelPreset.Airy, new(-1000, -200), SizeMode.Land);
+        new(8, 8, 600, 400), new(0, 0, 1920, 1040), FeelPreset.Standard, new(-1000, -200), SizeMode.Land);
 
     private static void WaitUntil(Func<bool> condition) => Assert.True(SpinWait.SpinUntil(condition, 5000));
 

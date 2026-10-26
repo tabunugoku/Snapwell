@@ -1,6 +1,6 @@
 namespace Snapwell.Core.Physics;
 
-/// <summary>feel の語彙から導いた質量・固有振動数・減衰比と、磁石の強さ。</summary>
+/// <summary>操作感を定める質量・固有振動数・減衰比と、磁石の強さ。</summary>
 public sealed record FeelPreset
 {
     /// <summary>語に磁石がないときの強さ。feel の corner-card の <c>w.magnet || 0.6</c>。</summary>
@@ -136,24 +136,24 @@ public sealed record FeelPreset
     /// <summary>プリセット名から操作感を返し、未知の名前は null を返す。名前の一覧はここだけに持つ。</summary>
     public static FeelPreset? ByName(string name) => name switch
     {
-        "Airy" => Airy,
-        "Snappy" => Snappy,
-        "Heavy" => Heavy,
+        "Standard" or "Airy" => Standard,
+        "Crisp" or "Snappy" => Crisp,
+        "Smooth" or "Heavy" => Smooth,
         "Bouncy" => Bouncy,
         _ => null,
     };
 
-    /// <summary>airy, slightly magnetic に対応する操作感。</summary>
-    public static FeelPreset Airy { get; } = FromWords("airy, slightly magnetic");
+    /// <summary>標準の操作感。</summary>
+    public static FeelPreset Standard { get; } = new(0.6, 2.4, 0.7, 0.55);
 
-    /// <summary>snappy, precise に対応する操作感。</summary>
-    public static FeelPreset Snappy { get; } = FromWords("snappy, precise");
+    /// <summary>きびきびした操作感。</summary>
+    public static FeelPreset Crisp { get; } = new(0.8, 3.2, 0.6, 0.6);
 
-    /// <summary>heavy, settled に対応する操作感。</summary>
-    public static FeelPreset Heavy { get; } = FromWords("heavy, settled");
+    /// <summary>なめらかな操作感。</summary>
+    public static FeelPreset Smooth { get; } = new(1.0, 1.8, 0.8, 0.5);
 
-    /// <summary>light, playful に対応する操作感。</summary>
-    public static FeelPreset Bouncy { get; } = FromWords("light, playful");
+    /// <summary>はずむ操作感。</summary>
+    public static FeelPreset Bouncy { get; } = new(0.5, 2.8, 0.45, 0.6);
 
     /// <summary>stiff, heavy に対応する操作感（トグルスイッチ用）。</summary>
     public static FeelPreset StiffHeavy { get; } = FromWords("stiff, heavy");

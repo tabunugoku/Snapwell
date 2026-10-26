@@ -65,7 +65,7 @@ public sealed class WindowBodyTests
     public void OnLandingKeepsSizeUntilSettle()
     {
         var target = new RectD(700, 400, 200, 150);
-        var body = new WindowBody(new(0, 0, 400, 300), target, _distantWalls, FeelPreset.Airy);
+        var body = new WindowBody(new(0, 0, 400, 300), target, _distantWalls, FeelPreset.Standard);
         for (var i = 0; i < 300; i++)
         {
             body.Step(1.0 / 240);
@@ -83,7 +83,7 @@ public sealed class WindowBodyTests
     public void RetargetPreservesStateAndVelocity()
     {
         var body = new WindowBody(new(0, 0, 100, 100), new(500, 300, 400, 300), _distantWalls,
-            FeelPreset.Airy, new(100, 200));
+            FeelPreset.Standard, new(100, 200));
         body.Step(1.0 / 240);
         var state = body.State;
         var velocity = body.Velocity;
@@ -101,7 +101,7 @@ public sealed class WindowBodyTests
     public void NonPositiveStepDoesNothing(double dt)
     {
         var body = new WindowBody(new(0, 0, 100, 100), new(500, 300, 400, 300), _distantWalls,
-            FeelPreset.Airy, velocity: new(100, 200));
+            FeelPreset.Standard, velocity: new(100, 200));
         var state = body.State;
         var velocity = body.Velocity;
         body.Step(dt);
@@ -117,7 +117,7 @@ public sealed class WindowBodyTests
     public void ExpandedWallRangeAllowsTargetsOutsideUsualBounds(double x, double y)
     {
         var body = new WindowBody(new(0, 0, 1200, 1000), new(x, y, 100, 100),
-            new(0, 0, 1000, 800), FeelPreset.Airy);
+            new(0, 0, 1000, 800), FeelPreset.Standard);
         for (var i = 0; i < 300; i++)
         {
             if (Simulator.Advance(body, 1.0 / 60))
@@ -137,7 +137,7 @@ public sealed class WindowBodyTests
     [InlineData(6000, 1)]
     public void LiftUsesSpeedAndSaturates(double speed, double expected)
     {
-        var body = new WindowBody(default, default, _distantWalls, FeelPreset.Airy, velocity: new(speed, 0));
+        var body = new WindowBody(default, default, _distantWalls, FeelPreset.Standard, velocity: new(speed, 0));
         Assert.Equal(expected, body.Lift);
     }
 
@@ -146,7 +146,7 @@ public sealed class WindowBodyTests
     public void JumpToTargetStopsAllMotionAndAppliesSize()
     {
         var body = new WindowBody(new(0, 0, 100, 100), new(500, 300, 400, 300), _distantWalls,
-            FeelPreset.Airy, new(100, 200));
+            FeelPreset.Standard, new(100, 200));
         body.JumpToTarget();
         Assert.Equal(body.Target, body.State);
         Assert.Equal(default, body.Velocity);
@@ -157,11 +157,11 @@ public sealed class WindowBodyTests
     [Fact]
     public void SettledThresholdsAreStrict()
     {
-        Assert.False(new WindowBody(default, default, _distantWalls, FeelPreset.Airy,
+        Assert.False(new WindowBody(default, default, _distantWalls, FeelPreset.Standard,
             velocity: new(4, 0)).IsSettled);
         Assert.False(new WindowBody(new(0.25, 0, 10, 10), new(0, 0, 10, 10), _distantWalls,
-            FeelPreset.Airy).IsSettled);
+            FeelPreset.Standard).IsSettled);
         Assert.True(new WindowBody(new(0.24, 0, 10, 10), new(0, 0, 10, 10), _distantWalls,
-            FeelPreset.Airy, velocity: new(3.9, 0)).IsSettled);
+            FeelPreset.Standard, velocity: new(3.9, 0)).IsSettled);
     }
 }

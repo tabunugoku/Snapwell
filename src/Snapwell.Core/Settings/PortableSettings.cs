@@ -48,7 +48,7 @@ public sealed record PortableSettings
     public WindowRule[] WindowRules { get; set; } = [];
     /// <summary>ランチャーへ表示するプリセットの ID。空の一覧も有効。</summary>
     public string[] LauncherPresets { get; set; } = [.. LauncherPreset.DefaultIds];
-    public string Feel { get; set; } = "Airy";
+    public string Feel { get; set; } = "Standard";
     public SnapMode SnapMode { get; set; } = SnapMode.Zones;
     public GridSettings Grid { get; set; } = new();
     public double Gap { get; set; } = 8;
@@ -82,7 +82,7 @@ public sealed record PortableSettings
     /// <summary>減衰比。null なら選んだプリセットの値を使う。</summary>
     public double? DampingRatio { get; set; }
 
-    /// <summary>磁石の強さ。null なら操作感の語（airy, slightly magnetic など）から決まる値を使う。</summary>
+    /// <summary>磁石の強さ。null なら選んだプリセットの値を使う。</summary>
     public double? MagnetStrength { get; set; }
 
     public double SnapRadius { get; set; } = DefaultSnapRadius;
@@ -133,7 +133,7 @@ public sealed record PortableSettings
         };
     }
 
-    private static FeelPreset BasePreset(string feel) => FeelPreset.ByName(feel) ?? FeelPreset.Airy;
+    private static FeelPreset BasePreset(string feel) => FeelPreset.ByName(feel) ?? FeelPreset.Standard;
 
     /// <summary>検証済みの分割案を返す。</summary>
     public GridPlan ToGridPlan() => new(Grid.Columns, Grid.Rows);
@@ -169,7 +169,13 @@ public sealed record PortableSettings
                     ClassName = rule.ClassName ?? string.Empty,
                     TitlePattern = rule.TitlePattern ?? string.Empty,
                 }).ToArray(),
-            Feel = Feel is not null && FeelPreset.ByName(Feel) is not null ? Feel : defaults.Feel,
+            Feel = Feel switch
+            {
+                "Airy" => "Standard",
+                "Snappy" => "Crisp",
+                "Heavy" => "Smooth",
+                _ => Feel is not null && FeelPreset.ByName(Feel) is not null ? Feel : defaults.Feel,
+            },
             SnapMode = Enum.IsDefined(SnapMode) ? SnapMode : defaults.SnapMode,
             ResizeTiming = Enum.IsDefined(ResizeTiming) ? ResizeTiming : defaults.ResizeTiming,
             Grid = new(Grid?.Columns is >= 1 and <= 64 ? Grid.Columns : 8,
