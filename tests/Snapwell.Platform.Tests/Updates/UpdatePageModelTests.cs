@@ -10,6 +10,20 @@ namespace Snapwell.Platform.Tests.Updates;
 /// <summary>WinUI を起動せず、更新画面の表示と保存結果を検証する。</summary>
 public sealed class UpdatePageModelTests
 {
+    /// <summary>手動ダウンロードは回避可能な制約だけに出し、案内なし・キャッシュ不足・更新中には出さない。</summary>
+    [Theory]
+    [InlineData(UpdateInstallBlock.None, false)]
+    [InlineData(UpdateInstallBlock.DevelopmentBuild, true)]
+    [InlineData(UpdateInstallBlock.NoOffer, false)]
+    [InlineData(UpdateInstallBlock.MissingCache, false)]
+    [InlineData(UpdateInstallBlock.ArchitectureUnsupported, true)]
+    [InlineData(UpdateInstallBlock.DownloadForbidden, true)]
+    [InlineData(UpdateInstallBlock.MissingExecutable, true)]
+    [InlineData(UpdateInstallBlock.InsufficientSpace, true)]
+    [InlineData(UpdateInstallBlock.AnotherUpdateRunning, false)]
+    public void BrowserDownloadIsOnlyOfferedForManualFallback(UpdateInstallBlock reason, bool expected) =>
+        Assert.Equal(expected, UpdatePageModel.ShowBrowserDownload(reason));
+
     /// <summary>ページを再生成しても共有保存を待ち、保存後のスイッチとスキップを初期値にする。</summary>
     [Theory]
     [InlineData(false)]

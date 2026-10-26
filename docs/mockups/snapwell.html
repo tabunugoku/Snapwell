@@ -529,6 +529,8 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
 .row .t { color: var(--ink); }
 .row .d { font-size: 12.5px; color: var(--muted); }
 .row .ctl { display: flex; align-items: center; gap: 8px; }
+.row .update-actions { flex-wrap: wrap; justify-content: flex-end; max-width: 300px; }
+.row .update-actions .btn { white-space: nowrap; }
 .row .os-det { grid-column: 1 / -1; }
 .os-det > summary { cursor: pointer; font-size: 12.5px; color: var(--muted); padding: 2px 0 8px; list-style: none; user-select: none; }
 .os-det > summary::-webkit-details-marker { display: none; }
@@ -952,6 +954,12 @@ table.list tr:last-child td { border-bottom: 0; }
             <div class="rows">
               <div class="row"><div><div class="t">サイズ固定のウィンドウも動かす</div><div class="d">サイズは変えず、区画の中で位置だけを合わせます</div></div><div class="ctl"><label class="switch"><input type="checkbox" checked aria-label="サイズ固定"><span></span></label></div></div>
               <div class="row"><div><div class="t">ポップアップとフライアウトも動かす</div><div class="d">タスクバーから開く小さなウィンドウなど。フォーカスを奪わずに、ホットキーとドラッグで動かします（整列の対象にはなりません。ドラッグで動かせないものもあります）</div></div><div class="ctl"><label class="switch"><input type="checkbox" checked aria-label="ポップアップ"><span></span></label></div></div>
+            </div>
+            <div class="group-title">更新</div>
+            <div class="rows">
+              <div class="row"><div><div class="t">更新を自動で確認する</div><div class="d">オンにすると GitHub に接続して最新版の情報だけを取得します。送るのは版を含む User-Agent だけで、識別子は送りません。既定はオフです。</div></div><div class="ctl"><label class="switch"><input type="checkbox" data-instant aria-label="更新を自動で確認する"><span></span></label></div></div>
+              <div class="row"><div><div class="t">新しい版 1.1.0 があります</div><div class="d">ランチャーの分割案の選択表示を直しました。ほか数件の修正があります。</div></div><div class="ctl update-actions"><button class="btn primary">更新して再起動</button><button class="btn">この版をスキップ</button></div></div>
+              <div class="row"><div><div class="t">今すぐ確認</div><div class="d">ボタンを押すと、1 回だけ通信して更新を確認します。</div></div><div class="ctl"><button class="btn">今すぐ確認</button></div></div>
             </div>
           </div>
 

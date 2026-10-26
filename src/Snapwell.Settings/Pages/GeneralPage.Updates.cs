@@ -35,6 +35,7 @@ public sealed partial class GeneralPage
     private byte[]? _updateManifest;
     private byte[]? _updateSignature;
     private bool _updateInstalling;
+    private bool _updateDownloading;
     private bool _updateLoading = true;
     private CancellationTokenSource? _updateInstallStop;
     private Task<UpdateStartupResult>? _updateInstallTask;
@@ -148,10 +149,10 @@ public sealed partial class GeneralPage
             && !_updateBusy && !_updateSession.IsSaving;
         UpdateAutoToggle.IsEnabled = _updateCanWrite && idle;
         UpdateBrowserDownloadButton.IsEnabled = idle && _updateOffer is not null;
-        UpdateReleaseNotesButton.IsEnabled = idle && _updateOffer is not null;
         UpdateCheckNowButton.IsEnabled = idle;
         UpdateSkipButton.IsEnabled = _updateCanWrite && idle && _updateOffer is not null;
         RefreshInstallAvailability();
+        RefreshUpdateOffer();
     }
 
     private async void UpdateAuto_Toggled(object sender, RoutedEventArgs args)
@@ -231,22 +232,28 @@ public sealed partial class GeneralPage
     private void ShowUpdateOffer(UpdateOffer? offer, bool canWrite)
     {
         _updateOffer = offer;
-        var panel = UpdatePageModel.Panel(offer, UiText.Current.Language);
-        UpdateOfferPanel.Visibility = Visibility.Visible;
+        _updateCanWrite = canWrite;
         RefreshUpdateSaveControls();
-        UpdateOfferTitle.Visibility = panel is null ? Visibility.Collapsed : Visibility.Visible;
-        if (panel is null)
-        {
-            UpdateOfferRequired.Visibility = Visibility.Collapsed;
-            UpdateOfferSummary.Visibility = Visibility.Collapsed;
-            return;
-        }
-        UpdateOfferTitle.Text = UiText.Current.Format("General_UpdateOfferTitle", ("version", panel.Version));
+    }
+
+    private void RefreshUpdateOffer()
+    {
+        var panel = UpdatePageModel.Panel(_updateOffer, UiText.Current.Language);
+        UpdateOfferPanel.Visibility = panel is null ? Visibility.Collapsed : Visibility.Visible;
+        UpdateOfferActions.Visibility = _updateInstalling ? Visibility.Collapsed : Visibility.Visible;
+        UpdateDownloadProgress.Visibility = _updateDownloading ? Visibility.Visible : Visibility.Collapsed;
+        UpdateCancelButton.Visibility = UpdateDownloadProgress.Visibility;
+        UpdateCancelButton.Content = UiText.Current.Get("Update.Cancel.Short");
+        if (panel is null) { return; }
+        var titleKey = _updateDownloading ? "Update.Downloading.Title" : "General_UpdateOfferTitle";
+        UpdateOfferTitle.Text = UiText.Current.Format(titleKey, ("version", panel.Version));
+        AutomationProperties.SetName(UpdateOfferTitle, UpdateOfferTitle.Text);
         UpdateOfferRequired.Text = UiText.Current.Get("General_UpdateOfferRequired");
-        UpdateOfferRequired.Visibility = panel.RequiresUpdate ? Visibility.Visible : Visibility.Collapsed;
+        UpdateOfferRequired.Visibility = panel.RequiresUpdate && !_updateDownloading
+            ? Visibility.Visible : Visibility.Collapsed;
         UpdateOfferSummary.Text = panel.Summary;
-        UpdateOfferSummary.Visibility = panel.Summary.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
-        UpdateSkipButton.IsEnabled = canWrite && !_updateSession.IsSaving && !_updateInstalling && !_updateBusy;
+        UpdateOfferSummary.Visibility = panel.Summary.Length > 0 && !_updateDownloading
+            ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private async void UpdateSkip_Click(object sender, RoutedEventArgs args)
@@ -281,9 +288,6 @@ public sealed partial class GeneralPage
 
     private void UpdateDownload_Click(object sender, RoutedEventArgs args) => OpenUpdateLink(_updateOffer?.Asset.Url);
 
-    private void UpdateReleaseNotes_Click(object sender, RoutedEventArgs args) =>
-        OpenUpdateLink(_updateOffer?.Manifest.ReleaseNotesUrl);
-
     private void UpdateReinstall_Click(object sender, RoutedEventArgs args) =>
         OpenUpdateLink(new Uri("https://github.com/tabunugoku/Snapwell/releases"));
 
@@ -305,7 +309,10 @@ public sealed partial class GeneralPage
         var key = UpdatePageModel.InstallBlockKey(block);
         UpdateInstallReason.Text = key is null ? "" : UiText.Current.Get(key);
         AutomationProperties.SetName(UpdateInstallReason, UpdateInstallReason.Text);
-        UpdateInstallReason.Visibility = key is null ? Visibility.Collapsed : Visibility.Visible;
+        UpdateInstallReason.Visibility = key is null || _updateDownloading
+            ? Visibility.Collapsed : Visibility.Visible;
+        UpdateBrowserDownloadButton.Visibility = UpdatePageModel.ShowBrowserDownload(block) && !_updateInstalling
+            ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void ShowInstallResult(UpdateReadResult result)
@@ -348,10 +355,11 @@ public sealed partial class GeneralPage
             using var identity = WindowsIdentity.GetCurrent();
             var request = new UpdateStartupRequest(UpdatePending, _executable, identity.User!.Value,
                 Environment.ProcessId, offer.Asset, _updateManifest!, _updateSignature!, UpdatePublicKey.Current ?? "");
-            UpdateDownloadProgress.Visibility = Visibility.Visible;
+            _updateDownloading = true;
             UpdateCancelButton.IsEnabled = true;
             UpdateProgressBar.Maximum = offer.Asset.Size;
             ShowDownloadProgress(0, offer.Asset.Size);
+            RefreshUpdateSaveControls();
             var progress = new UpdateProgressThrottle(TimeProvider.System,
                 action => DispatcherQueue.TryEnqueue(() => action()), bytes =>
             {
@@ -391,9 +399,9 @@ public sealed partial class GeneralPage
             _updateInstallTask = null;
             _updateInstallStop = null;
             _updateInstalling = false;
+            _updateDownloading = false;
             if (!pageStop.IsCancellationRequested)
             {
-                UpdateDownloadProgress.Visibility = Visibility.Collapsed;
                 RefreshUpdateSaveControls();
             }
             else { DetachUpdateWindow(); }

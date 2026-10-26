@@ -7,6 +7,29 @@ namespace Snapwell.Platform.Tests.Updates;
 /// <summary>結果の文言の分類と進捗の配送間隔を検証する。</summary>
 public sealed class UpdateInstallPresentationTests
 {
+    /// <summary>ダウンロード中の見出しと短い取り消しにも四言語の文言を用意し、読み上げ名を保つ。</summary>
+    [Theory]
+    [InlineData(UiLanguage.Japanese)]
+    [InlineData(UiLanguage.English)]
+    [InlineData(UiLanguage.ChineseSimplified)]
+    [InlineData(UiLanguage.ChineseTraditional)]
+    public void DownloadRowHasLocalizedTitleShortCancelAndAutomationName(UiLanguage language)
+    {
+        var catalog = TextCatalog.Load(language);
+        var expectedKeys = TextCatalog.Load(UiLanguage.English).Keys.Where(IsUpdateKey).Order().ToArray();
+        Assert.Equal(expectedKeys, catalog.Keys.Where(IsUpdateKey).Order());
+        foreach (var key in new[] { "Update.Downloading.Title", "Update.Cancel.Short", "Update_Cancel.AutomationName" })
+        {
+            Assert.Contains(key, catalog.Keys);
+            Assert.False(string.IsNullOrWhiteSpace(catalog.Get(key)));
+        }
+        var title = catalog.Format("Update.Downloading.Title", ("version", "1.2.0"));
+        Assert.Contains("1.2.0", title);
+        Assert.DoesNotContain("{version}", title);
+        Assert.DoesNotContain("General_UpdateReleaseNotes.Content", catalog.Keys);
+        Assert.Equal("12 / 28 MB", catalog.Format("Update.Progress", ("downloaded", 12), ("total", 28)));
+    }
+
     /// <summary>別の更新の検出は開始条件と開始直前の両方で四言語の説明を持つ。</summary>
     [Theory]
     [InlineData(UiLanguage.Japanese)]
@@ -109,6 +132,11 @@ public sealed class UpdateInstallPresentationTests
         foreach (var action in queued) { action(); }
         Assert.Equal(new long[] { 1 }, values);
     }
+
+    private static bool IsUpdateKey(string key) => key.StartsWith("Update.", StringComparison.Ordinal)
+        || key.StartsWith("Update_", StringComparison.Ordinal)
+        || key.StartsWith("General_Update", StringComparison.Ordinal)
+        || key.StartsWith("Setup_Update", StringComparison.Ordinal);
 
     private static void AssertLocalized(string key)
     {
