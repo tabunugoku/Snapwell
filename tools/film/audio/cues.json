@@ -1,0 +1,236 @@
+{
+ "duration": 30,
+ "fps": 60,
+ "cues": [
+  {
+   "t": 0.5,
+   "name": "intro-enter"
+  },
+  {
+   "t": 1.9,
+   "name": "intro-burst"
+  },
+  {
+   "t": 3.017,
+   "name": "intro-grid"
+  },
+  {
+   "t": 3.917,
+   "name": "intro-layoutB"
+  },
+  {
+   "t": 4.817,
+   "name": "intro-layoutC"
+  },
+  {
+   "t": 5.7,
+   "name": "intro-final"
+  },
+  {
+   "t": 6.5,
+   "name": "intro-hop",
+   "k": 0
+  },
+  {
+   "t": 6.6,
+   "name": "intro-hop",
+   "k": 1
+  },
+  {
+   "t": 6.7,
+   "name": "intro-hop",
+   "k": 2
+  },
+  {
+   "t": 6.8,
+   "name": "intro-hop",
+   "k": 3
+  },
+  {
+   "t": 6.9,
+   "name": "intro-hop",
+   "k": 4
+  },
+  {
+   "t": 7,
+   "name": "intro-hop",
+   "k": 5
+  },
+  {
+   "t": 7.4,
+   "name": "intro-logo"
+  },
+  {
+   "t": 8.9,
+   "name": "intro-out"
+  },
+  {
+   "t": 9.1,
+   "name": "stage-in"
+  },
+  {
+   "t": 9.917,
+   "name": "grab"
+  },
+  {
+   "t": 10.783,
+   "name": "release",
+   "speed": 1828
+  },
+  {
+   "t": 11.283,
+   "name": "land"
+  },
+  {
+   "t": 12.217,
+   "name": "grab"
+  },
+  {
+   "t": 13.083,
+   "name": "release",
+   "speed": 4270
+  },
+  {
+   "t": 13.617,
+   "name": "land"
+  },
+  {
+   "t": 14.517,
+   "name": "feel",
+   "preset": "crisp"
+  },
+  {
+   "t": 14.517,
+   "name": "grab"
+  },
+  {
+   "t": 15.383,
+   "name": "release",
+   "speed": 5526
+  },
+  {
+   "t": 15.9,
+   "name": "land"
+  },
+  {
+   "t": 16.517,
+   "name": "feel",
+   "preset": "smooth"
+  },
+  {
+   "t": 16.517,
+   "name": "grab"
+  },
+  {
+   "t": 17.383,
+   "name": "release",
+   "speed": 1493
+  },
+  {
+   "t": 17.883,
+   "name": "land"
+  },
+  {
+   "t": 18.517,
+   "name": "feel",
+   "preset": "bouncy"
+  },
+  {
+   "t": 18.517,
+   "name": "grab"
+  },
+  {
+   "t": 19.383,
+   "name": "release",
+   "speed": 3822
+  },
+  {
+   "t": 20.067,
+   "name": "land"
+  },
+  {
+   "t": 21,
+   "name": "key"
+  },
+  {
+   "t": 21.1,
+   "name": "key"
+  },
+  {
+   "t": 21.2,
+   "name": "key"
+  },
+  {
+   "t": 21.5,
+   "name": "launcher-open"
+  },
+  {
+   "t": 22.1,
+   "name": "sweep-start"
+  },
+  {
+   "t": 22.45,
+   "name": "cell"
+  },
+  {
+   "t": 22.533,
+   "name": "cell"
+  },
+  {
+   "t": 22.75,
+   "name": "cell"
+  },
+  {
+   "t": 22.983,
+   "name": "cell"
+  },
+  {
+   "t": 23.067,
+   "name": "cell"
+  },
+  {
+   "t": 23.8,
+   "name": "key"
+  },
+  {
+   "t": 23.9,
+   "name": "launcher-pick"
+  },
+  {
+   "t": 24.467,
+   "name": "land"
+  },
+  {
+   "t": 25.6,
+   "name": "key"
+  },
+  {
+   "t": 25.7,
+   "name": "key"
+  },
+  {
+   "t": 25.8,
+   "name": "key"
+  },
+  {
+   "t": 26.1,
+   "name": "arrange"
+  },
+  {
+   "t": 27,
+   "name": "land"
+  },
+  {
+   "t": 27.017,
+   "name": "land"
+  },
+  {
+   "t": 27.117,
+   "name": "land"
+  },
+  {
+   "t": 28,
+   "name": "end-in"
+  }
+ ]
+}

@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Snapwell og</title>
+<style>
+@font-face { font-family: 'Newsreader'; src: url('../../site/fonts/newsreader-500.woff2') format('woff2'); font-weight: 500; }
+html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; background: #F7F6F3; color: #111; }
+body { position: relative; font-family: 'Segoe UI Variable Text', 'Segoe UI', sans-serif;
+  background-image: radial-gradient(circle, rgba(47,52,55,.2) 1.4px, transparent 1.6px); background-size: 22px 22px; background-position: 11px 11px; }
+.c { position: absolute; left: 96px; top: 0; bottom: 0; display: flex; flex-direction: column; justify-content: center; gap: 28px; }
+.row { display: flex; align-items: center; gap: 32px; }
+.mark { width: 132px; height: 132px; display: block; }
+.name { font-family: 'Newsreader', Georgia, serif; font-weight: 500; font-size: 120px; line-height: 1; letter-spacing: -0.03em; }
+.tag { font-size: 44px; font-weight: 600; letter-spacing: -0.02em; margin: 0; }
+.sub { font-size: 26px; color: #5F5E5B; margin: 0; }
+</style></head><body>
+<div class="c"><div class="row"><span id="m"></span><span class="name">Snapwell</span></div>
+<p class="tag">Throw a window. It lands in place.</p>
+<p class="sub">A window manager for Windows 11. Native on x64 and ARM64.</p></div>
+<script src="../../site/js/brand-mark.js"></script>
+<script>document.getElementById('m').innerHTML = window.SNAP_MARK;</script>
+</body></html>

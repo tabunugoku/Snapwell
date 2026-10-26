@@ -9,12 +9,8 @@
   'use strict';
   const Feel = global.Feel;
 
-  const FEELS = {
-    airy: 'airy, slightly magnetic',
-    snappy: 'snappy, precise',
-    heavy: 'heavy, settled',
-    light: 'light, playful',
-  };
+  const P = global.SnapPresets;
+  const FEELS = P.PRESETS;
 
   const CAPS = '<span class="caps" aria-hidden="true">'
     + '<i><svg viewBox="0 0 10 10"><path d="M1 5h8" stroke="currentColor"/></svg></i>'
@@ -38,7 +34,7 @@
       this.rows = o.rows || 2;
       this.gap = o.gap ?? 8;
       this.mode = o.mode || 'zones';
-      this.feelName = o.feel || 'airy';
+      this.feelName = o.feel || 'standard';
       this.z = 10;
       this.wins = o.wins.map((def, i) => this.makeWin(def, i));
       this.measure();
@@ -47,7 +43,7 @@
       new ResizeObserver(() => { this.measure(); this.layout(); this.wins.forEach((w) => this.jump(w, w.zone)); }).observe(this.area);
     }
 
-    get words() { return Feel.words(FEELS[this.feelName] || this.feelName); }
+    get preset() { return FEELS[this.feelName] || FEELS.standard; }
 
     measure() {
       this.W = this.area.clientWidth;
@@ -78,22 +74,19 @@
         ];
       }
       this.rects = rects;
-      const p = this.words;
-      const strength = p.magnet || 0.6;
+      const p = this.preset;
       this.field = Feel.points({
         stops: rects.map((r) => ({ x: r.x, y: r.y })),
-        reachFreq: 0.6 + 0.5 * strength,
-        clickFreq: 3 + 4 * strength,
-        clickRadius: 28,
+        reachFreq: P.reachFreq(p),
+        clickFreq: P.clickFreq(p),
+        clickRadius: P.CLICK_RADIUS,
       });
-      const forces = [this.field, ...(p.friction ? [Feel.friction2d({ level: 700 * p.friction })] : [])];
+      const params = Feel.fromModal(P.modal(p));
       for (const w of this.wins) {
         for (const b of [w.body, w.bw, w.bh]) {
-          b.mass = p.params.mass; b.stiffness = p.params.stiffness; b.damping = p.params.damping;
+          b.mass = params.mass; b.stiffness = params.stiffness; b.damping = params.damping;
         }
-        w.body.forces = forces;
-        w.body.min = { x: 0, y: 0 };
-        w.body.max = { x: W - w.bw.x, y: H - w.bh.x };
+        w.body.forces = [this.field, P.wall(p, () => ({ x: this.W - w.bw.x, y: this.H - w.bh.x }))];
         if (w.zone >= rects.length) w.zone = rects.length - 1;
       }
     }
@@ -106,11 +99,11 @@
         + `<div class="win-body">${(def.lines || [78, 62, 90, 46]).map((n) => `<b style="width:${n}%"></b>`).join('')}</div>`;
       this.area.appendChild(el);
       const w = { el, def, zone: def.zone ?? i, z: ++this.z };
-      const p = this.words;
-      w.bw = new Feel.Body({ ...p.params, x: 100, target: 100, onFrame: () => this.place(w) });
-      w.bh = new Feel.Body({ ...p.params, x: 80, target: 80, onFrame: () => this.place(w) });
+      const p = Feel.fromModal(P.modal(this.preset));
+      w.bw = new Feel.Body({ ...p, x: 100, target: 100, onFrame: () => this.place(w) });
+      w.bh = new Feel.Body({ ...p, x: 80, target: 80, onFrame: () => this.place(w) });
       w.body = new Feel.Body2D({
-        ...p.params, x: 0, y: 0, target: null, forces: [],
+        ...p, x: 0, y: 0, target: null, forces: [],
         onFrame: () => this.place(w),
         onRelease: (b) => this.released(w, b),
         onSettle: () => this.settled(w),
@@ -147,8 +140,6 @@
 
     place(w) {
       const b = w.body;
-      // Walls follow the window's own size: a window can't be thrown out of the work area.
-      b.max.x = this.W - w.bw.x; b.max.y = this.H - w.bh.x;
       const lift = Math.min(1, b.speed / 3000);
       w.el.style.width = `${w.bw.x.toFixed(1)}px`;
       w.el.style.height = `${w.bh.x.toFixed(1)}px`;
@@ -199,7 +190,18 @@
       if (this.o.onThrow) this.o.onThrow({ speed, from: { x: b.x, y: b.y }, to: stop, zone, rect: r });
     }
 
+    /** Place a window at any rectangle the way a hotkey or the launcher does: a spring to a target, not a throw. */
+    placeRect(w, r) {
+      this.raise(w);
+      w.saved = w.saved || w.body.forces;
+      w.body.forces = [w.body.forces[1]]; // the wall only: no zone magnets pull on a placed window
+      w.bw.to(r.w);
+      w.bh.to(r.h);
+      w.body.to({ x: r.x, y: r.y });
+    }
+
     settled(w) {
+      if (w.saved) { w.body.forces = w.saved; w.body.target = null; w.saved = null; }
       this.clearFx();
       if (this.o.onLand) this.o.onLand(w);
     }
