@@ -52,7 +52,7 @@
   "Update.Result.IoError": "Couldn't access the update files. Check the file location, free space, and permissions.",
   "Update.Result.Busy": "Another update is running. Wait for it to finish and try again.",
   "Update.Result.Failed": "Couldn't update (code {code}).",
-  "Update.StartFailed": "Couldn't start the update coordinator. Try again.",
+  "Update.StartFailed": "Couldn't start the update. Try again.",
   "Update.Download.NetworkError": "Couldn't download the update. Check your network connection.",
   "Update.Download.Timeout": "The update download timed out. Try again.",
   "Update.Download.HttpStatus": "The download server returned an error. Try again later.",
