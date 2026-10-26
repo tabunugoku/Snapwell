@@ -6,9 +6,11 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Snapwell.Core.Localization;
 using Snapwell.Core.Settings;
+using Snapwell.Core.Setup;
 using Windows.Graphics;
 using Windows.System;
 using Windows.UI;
+using Windows.UI.ViewManagement;
 
 namespace Snapwell.Settings.Setup;
 
@@ -22,6 +24,12 @@ public sealed partial class SetupWindow : Window
     private bool _consent;
     private bool _sized;
     private readonly bool _loadFailed;
+    private readonly UISettings _uiSettings = new();
+    private bool _welcomeShown;
+    private bool _introActive;
+    private IntroScene? _intro;
+    private WelcomeStage? _welcomeStage;
+    private bool _closed;
 
     /// <summary>通常の設定画面と同じリソースと DPI の仕組みを使い、大きさは固定する。</summary>
     public SetupWindow()
@@ -60,7 +68,30 @@ public sealed partial class SetupWindow : Window
             ErrorNotice.IsOpen = true;
         }
 
-        Root.KeyboardAccelerators.Add(Accelerator(VirtualKey.Escape, Close));
+        Root.KeyboardAccelerators.Add(Accelerator(VirtualKey.Escape, () =>
+        {
+            if (_introActive) { _intro?.Skip(); }
+            else { Close(); }
+        }));
+        Root.AddHandler(UIElement.PointerPressedEvent, new PointerEventHandler((_, _) =>
+        {
+            if (_introActive) { _intro?.Skip(); }
+        }), true);
+        _uiSettings.AnimationsEnabledChanged += AnimationsEnabledChanged;
+        AppWindow.Changed += SetupWindowChanged;
+        Activated += SetupWindowActivated;
+        Closed += (_, _) =>
+        {
+            _closed = true;
+            _introActive = false;
+            _uiSettings.AnimationsEnabledChanged -= AnimationsEnabledChanged;
+            AppWindow.Changed -= SetupWindowChanged;
+            Activated -= SetupWindowActivated;
+            _welcomeStage?.Dispose();
+            _welcomeStage = null;
+            _intro?.Dispose();
+            _intro = null;
+        };
         Render();
     }
 
@@ -83,11 +114,13 @@ public sealed partial class SetupWindow : Window
         AppWindow.Resize(new SizeInt32(Math.Min((int)(820 * scale), area.Width),
             Math.Min((int)(680 * scale), area.Height)));
         FixedWindowSize.Apply(WinRT.Interop.WindowNative.GetWindowHandle(this), 820, 680);
-        NextButton.Focus(FocusState.Programmatic);
+        if (_introActive) { StartIntro(); }
+        else { NextButton.Focus(FocusState.Programmatic); }
     }
 
     private void Back_Click(object sender, RoutedEventArgs e)
     {
+        if (_introActive) { return; }
         _wizard.Back();
         ErrorNotice.IsOpen = _loadFailed;
         Render();
@@ -95,7 +128,7 @@ public sealed partial class SetupWindow : Window
 
     private void Next_Click(object sender, RoutedEventArgs e)
     {
-        if (_loadFailed)
+        if (_loadFailed || _introActive)
         {
             return;
         }
@@ -133,7 +166,11 @@ public sealed partial class SetupWindow : Window
             Steps.Children.Add(border);
         }
 
+        _welcomeStage?.Dispose();
+        _welcomeStage = null;
         PageHost.Children.Clear();
+        Heading.Visibility = Visibility.Visible;
+        Lead.Visibility = Visibility.Visible;
         switch (_wizard.Step)
         {
             case SetupStep.Welcome: ShowWelcome(); break;
@@ -143,12 +180,93 @@ public sealed partial class SetupWindow : Window
         }
         BackButton.IsEnabled = _wizard.CanGoBack;
         NextButton.IsEnabled = !_loadFailed;
-        NextButton.Content = _wizard.Step == SetupStep.Grid ? UiText.Current.Get("Setup.Done") : UiText.Current.Get("Setup.Next");
+        NextButton.Content = UiText.Current.Get(SetupPresentation.NextKey(_wizard.Step));
         Count.Text = UiText.Current.Format("Setup.Count", ("step", (int)_wizard.Step + 1));
         BodyScroll.ChangeView(null, 0, null, true);
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(Heading,
             UiText.Current.Format("Setup.HeadingName", ("count", Count.Text), ("heading", Heading.Text)));
+        if (_wizard.Step == SetupStep.Welcome)
+        {
+            var play = SetupPresentation.ShouldPlayIntro(_wizard.Step, IsMotionAllowed(), _welcomeShown);
+            _welcomeShown = true;
+            if (play)
+            {
+                _introActive = true;
+                Steps.Visibility = Visibility.Collapsed;
+                BodyScroll.Visibility = Visibility.Collapsed;
+                NavigationFooter.Visibility = Visibility.Collapsed;
+                BackButton.IsEnabled = false;
+                NextButton.IsEnabled = false;
+                IntroHost.Visibility = Visibility.Visible;
+                if (_sized) { StartIntro(); }
+            }
+        }
+        if (_introActive)
+        {
+            BackButton.IsEnabled = false;
+            NextButton.IsEnabled = false;
+        }
+        else { NextButton.Focus(FocusState.Programmatic); }
+    }
+
+    private void StartIntro()
+    {
+        if (_intro is not null) { return; }
+        _intro = new IntroScene(IsSetupVisible, FinishIntro, RevealWelcome);
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(_intro,
+            UiText.Current.Get("Setup.Intro.AutomationName"));
+        IntroHost.Children.Add(_intro);
+    }
+
+    private bool IsSetupVisible() => AppWindow.IsVisible &&
+        AppWindow.Presenter is not OverlappedPresenter { State: OverlappedPresenterState.Minimized };
+
+    private bool IsMotionAllowed() => SetupPresentation.IsMotionAllowed(_uiSettings.AnimationsEnabled,
+        !_loadFailed && _initialSettings.ReduceMotion);
+
+    private void SetupWindowChanged(AppWindow sender, AppWindowChangedEventArgs args)
+    {
+        _intro?.RefreshActivity();
+        _welcomeStage?.RefreshActivity();
+    }
+
+    private void SetupWindowActivated(object sender, WindowActivatedEventArgs args)
+    {
+        _intro?.RefreshActivity();
+        _welcomeStage?.RefreshActivity();
+    }
+
+    private void AnimationsEnabledChanged(UISettings sender, object args) => DispatcherQueue.TryEnqueue(() =>
+    {
+        if (_closed) { return; }
+        // キューに入った通知の順序によらず、最後の OS 設定を使う。
+        if (_introActive && !IsMotionAllowed()) { FinishIntro(); }
+        _welcomeStage?.RefreshActivity();
+    });
+
+    private void FinishIntro()
+    {
+        if (!_introActive) { return; }
+        _introActive = false;
+        _intro?.Dispose();
+        _intro = null;
+        IntroHost.Children.Clear();
+        IntroHost.Visibility = Visibility.Collapsed;
+        RevealWelcome(1);
+        _welcomeStage?.RefreshActivity();
+        BackButton.IsEnabled = _wizard.CanGoBack;
+        NextButton.IsEnabled = !_loadFailed;
         NextButton.Focus(FocusState.Programmatic);
+    }
+
+    private void RevealWelcome(double opacity)
+    {
+        Steps.Visibility = Visibility.Visible;
+        BodyScroll.Visibility = Visibility.Visible;
+        NavigationFooter.Visibility = Visibility.Visible;
+        Steps.Opacity = opacity;
+        BodyScroll.Opacity = opacity;
+        NavigationFooter.Opacity = opacity;
     }
 
     private Style FindStyle(string key) => (Style)(Root.Resources.TryGetValue(key, out var value)

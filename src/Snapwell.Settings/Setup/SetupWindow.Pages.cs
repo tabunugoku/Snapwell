@@ -1,5 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
+using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Documents;
 using Snapwell.Core.Commands;
@@ -111,16 +112,35 @@ public sealed partial class SetupWindow
         bool IsCurrent() => !_welcomeUpdateClosed && _welcomeUpdatePage == page &&
             _wizard.Step == SetupStep.Welcome;
 
-        SetHeading(UiText.Current.Get("Setup.Welcome.Title"),
-            UiText.Current.Get("Setup.Welcome.Lead"));
+        Heading.Visibility = Visibility.Collapsed;
+        Lead.Visibility = Visibility.Collapsed;
+        var welcome = new StackPanel { HorizontalAlignment = HorizontalAlignment.Stretch };
+        var hint = Text(UiText.Current.Get("Setup.Welcome.Hint"), "SnapwellHintTextStyle");
+        hint.FontSize = 12;
+        hint.TextAlignment = TextAlignment.Center;
+        hint.TextWrapping = TextWrapping.Wrap;
+        hint.Margin = new(0, 14, 0, 18);
+        var stage = new WelcomeStage(() => !_introActive && _wizard.Step == SetupStep.Welcome && IsSetupVisible(),
+            IsMotionAllowed, (held, touched) => hint.Text = held
+            ? UiText.Current.Get("Setup.Welcome.HintHeld") : touched
+                ? UiText.Current.Get("Setup.Welcome.HintAgain") : UiText.Current.Get("Setup.Welcome.Hint"));
+        // Render と Closed で先に破棄し、遅れて届く Unloaded でも安全に解除する。
+        _welcomeStage = stage;
+        welcome.Children.Add(stage);
+        var title = Text(UiText.Current.Get("Setup.Welcome.Title"), "SetupHeadingStyle");
+        title.FontSize = 32; title.LineHeight = 38;
+        title.TextAlignment = TextAlignment.Center;
+        title.Margin = new(0, 20, 0, 0);
+        AutomationProperties.SetHeadingLevel(title, AutomationHeadingLevel.Level1);
+        welcome.Children.Add(title);
+        var body = Text(UiText.Current.Get("Setup.Welcome.Body"), "SnapwellLeadTextStyle");
+        body.TextAlignment = TextAlignment.Center;
+        body.TextWrapping = TextWrapping.Wrap;
+        body.MaxWidth = 440; body.LineHeight = body.FontSize * 1.7; body.Margin = new(0, 8, 0, 0);
+        welcome.Children.Add(body);
+        welcome.Children.Add(hint);
+        PageHost.Children.Add(welcome);
         var rows = Rows();
-        AddRow(rows, UiText.Current.Get("Setup.Welcome.Throw"),
-            Text(UiText.Current.Get("Setup.Welcome.ThrowHint"), "SnapwellRowDescriptionStyle"));
-        AddRow(rows, UiText.Current.Get("Setup.Welcome.Drag"),
-            InlineDescription(UiText.Current.Get("Setup.Welcome.LauncherTemplate"), ("keys", ["Ctrl", "Alt", "Space"])));
-        AddRow(rows, UiText.Current.Get("Setup.Welcome.Keys"),
-            InlineDescription(UiText.Current.Get("Setup.Welcome.KeysTemplate"),
-                ("keys", ["Ctrl", "Alt"]), ("shift", ["Shift"])));
         var description = Text(UiText.Current.Get("Setup_UpdateDescription.Text"), "SnapwellRowDescriptionStyle");
         description.TextWrapping = TextWrapping.Wrap;
         var toggle = new ToggleSwitch

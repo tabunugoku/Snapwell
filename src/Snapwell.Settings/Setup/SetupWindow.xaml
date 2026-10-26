@@ -87,8 +87,9 @@
                             <StackPanel x:Name="PageHost" />
                         </StackPanel>
                     </ScrollViewer>
+                    <Grid x:Name="IntroHost" Visibility="Collapsed" Background="{ThemeResource SnapwellBackgroundBrush}" />
                     <InfoBar x:Name="ErrorNotice" Grid.Row="1" Severity="Error" IsOpen="False" Margin="20,0,20,14" />
-                    <Border Grid.Row="2" BorderBrush="{ThemeResource SnapwellBorderBrush}"
+                    <Border x:Name="NavigationFooter" Grid.Row="2" BorderBrush="{ThemeResource SnapwellBorderBrush}"
                             BorderThickness="0,1,0,0" Background="{ThemeResource SnapwellSurface2Brush}"
                             CornerRadius="0,0,12,12" Padding="20,14">
                         <Grid>
