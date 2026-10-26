@@ -724,6 +724,7 @@ table.list tr:last-child td { border-bottom: 0; }
 .wbody.welcome h3 { font-size: 32px; margin-top: 20px; }
 .wbody.welcome > p { margin: 8px auto 0; max-width: 440px; line-height: 1.7; }
 .wbody.welcome .wl-hint { font-size: 12px; margin-top: 14px; }
+.wbody.welcome .wl-update { margin: 20px auto 0; max-width: 520px; text-align: left; }
 .wl-stage { position: relative; height: 188px; max-width: 520px; margin: 0 auto; border: 1px solid var(--border); border-radius: 10px; background-color: var(--bg); overflow: hidden; touch-action: none; }
 .wl-zone { position: absolute; border: 1.5px dashed var(--border-strong); border-radius: 8px; box-sizing: border-box; transition: background-color 0.3s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.3s cubic-bezier(0.22, 1, 0.36, 1); }
 .wl-zone.on { background: var(--blue-bg); border-color: var(--blue-line); }
@@ -1346,6 +1347,7 @@ table.list tr:last-child td { border-bottom: 0; }
           <h3 id="wlTitle">ウィンドウを投げよう。</h3>
           <p id="wlBody">つかんで投げると、いちばん近い区画に吸い込まれて止まります。<br>このあと、標準機能、ホットキー、分割案の 3 つを設定します。</p>
           <p class="hint wl-hint" id="wlHint">上の窓は動かせます。つかんで投げてみてください。</p>
+          <div class="rows wl-update"><div class="row"><div><div class="t" id="wlUpT">更新を自動で確認する</div><div class="d" id="wlUpD">オンにすると GitHub に接続して最新版の情報だけを取得します。送るのは版を含む User-Agent だけで、識別子は送りません。既定はオフです。</div></div><div class="ctl"><label class="switch"><input type="checkbox" id="wlUpSw" aria-label="更新を自動で確認する"><span></span></label></div></div></div>
         </div></div>
         <div class="wstep" data-step="1"><div class="wbody">
           <h3>標準のスナップを止めますか</h3>
@@ -3151,6 +3153,7 @@ const WL = {
     hint: '上の窓は動かせます。つかんで投げてみてください。', held: '離すと、近い区画へ収まります。', again: 'もう一度どうぞ。',
     back: '戻る', next: '次へ', start: 'はじめる', done: '完了', toggle: 'English', replay: '導入アニメーションをもう一度見る (モックアップ用)',
     aria: 'ウィンドウが弾けて踊り、区画へ並んで止まる導入アニメーション',
+    upT: '更新を自動で確認する', upD: 'オンにすると GitHub に接続して最新版の情報だけを取得します。送るのは版を含む User-Agent だけで、識別子は送りません。既定はオフです。',
   },
   en: {
     steps: ['Welcome', 'Standard features', 'Hotkeys', 'Layout'], title: 'Throw a window.',
@@ -3158,6 +3161,7 @@ const WL = {
     hint: 'The window above moves. Grab it and give it a throw.', held: 'Let go and it settles into the nearest cell.', again: 'Once more.',
     back: 'Back', next: 'Next', start: 'Get started', done: 'Done', toggle: '日本語', replay: 'Replay the intro (mockup only)',
     aria: 'Windows burst, dance, and settle into zones in an intro animation',
+    upT: 'Check for updates automatically', upD: 'When enabled, Snapwell connects to GitHub to fetch only the latest version information. Only a User-Agent containing the version is sent; no identifiers are sent. Off by default.',
   },
 };
 
@@ -3655,6 +3659,9 @@ function initWizard() {
     $('#wLang').textContent = L.toggle;
     $('#wReplay').textContent = L.replay;
     $('#wIntro').setAttribute('aria-label', L.aria);
+    $('#wlUpT').textContent = L.upT;
+    $('#wlUpD').textContent = L.upD;
+    $('#wlUpSw').setAttribute('aria-label', L.upT);
     render();
   });
   let step = 0;
