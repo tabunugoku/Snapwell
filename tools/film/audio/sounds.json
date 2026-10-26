@@ -1,0 +1,39 @@
+{
+  "_note": "効果音の台本。prompt は ElevenLabs Sound Effects への指示 (英語)。duration は秒 (0.5 から 30)。使うきっかけは cue_map で対応づける。",
+  "model_id": "eleven_text_to_sound_v2",
+  "output_format": "mp3_44100_128",
+  "sounds": {
+    "whoosh": { "prompt": "A quick soft air whoosh of a light object sliding fast across a room, clean, no music, no voice", "duration": 0.8, "influence": 0.5 },
+    "burst": { "prompt": "Six small soft pops bursting outward at once, gentle bubble and plastic taps, bright and clean, no music", "duration": 1.0, "influence": 0.5 },
+    "tick": { "prompt": "A single crisp soft UI click, short wooden tick, dry, very short, no reverb", "duration": 0.5, "influence": 0.6 },
+    "tap": { "prompt": "A tiny bright glassy tap with a short soft tail, like touching a small bell, dry and clean", "duration": 0.5, "influence": 0.6 },
+    "logo": { "prompt": "A warm soft chime logo sting, two gentle notes with an airy shimmer tail, calm and modern, no voice", "duration": 2.5, "influence": 0.5 },
+    "throw": { "prompt": "A short light whoosh of a card being flicked through the air, fast and soft", "duration": 0.6, "influence": 0.5 },
+    "land": { "prompt": "A soft magnetic click as a flat object settles into place, small muted thud with a tiny snap, dry", "duration": 0.6, "influence": 0.6 },
+    "key": { "prompt": "A single laptop keyboard key press, soft and quiet, short", "duration": 0.5, "influence": 0.7 },
+    "overlay": { "prompt": "A soft airy swell as a translucent overlay fades in, subtle, clean, short", "duration": 0.8, "influence": 0.5 },
+    "cell": { "prompt": "A very small quiet tick, like a light switch detent, extremely short and dry", "duration": 0.5, "influence": 0.6 },
+    "confirm": { "prompt": "A soft positive confirmation tap with a tiny rising tone, short and clean", "duration": 0.7, "influence": 0.5 },
+    "arrange": { "prompt": "Four quick soft whooshes in a row, like cards sliding into a neat grid, followed by soft clicks, clean", "duration": 1.4, "influence": 0.5 }
+  },
+  "_cue_map_note": "cue 名は render.mjs が書く cues.json のもの。gain は dB、offset は秒のずらし。",
+  "cue_map": {
+    "intro-enter": { "sound": "whoosh", "gain": -6 },
+    "intro-burst": { "sound": "burst", "gain": -4 },
+    "intro-grid": { "sound": "tick", "gain": -6 },
+    "intro-layoutB": { "sound": "tick", "gain": -9 },
+    "intro-layoutC": { "sound": "tick", "gain": -9 },
+    "intro-final": { "sound": "tick", "gain": -6 },
+    "intro-hop": { "sound": "tap", "gain": -10 },
+    "intro-logo": { "sound": "logo", "gain": -5, "offset": 0.3 },
+    "feel": { "sound": "tick", "gain": -8 },
+    "release": { "sound": "throw", "gain": -8 },
+    "land": { "sound": "land", "gain": -6 },
+    "key": { "sound": "key", "gain": -7 },
+    "launcher-open": { "sound": "overlay", "gain": -8 },
+    "cell": { "sound": "cell", "gain": -16 },
+    "launcher-pick": { "sound": "confirm", "gain": -6 },
+    "arrange": { "sound": "arrange", "gain": -7 },
+    "end-in": { "sound": "logo", "gain": -7, "offset": 0.3 }
+  }
+}
