@@ -61,3 +61,6 @@ node audio/mix.mjs                           # 既定は site/video の無音版
 - 生成の記録: 2026-10-26、有料プランの鍵 (ユーザーが確認)、モデル `eleven_text_to_sound_v2`、12 件・指定の長さの合計 10.4 秒 (約 416 クレジット)、`tick` は無音に近かったので指示を変えて 1 件だけ作り直し (約 20 クレジット)。
 - 作った音は公開前に聞いて確かめる (第 4 条(k) は出力を確認する責任が利用者にあるとする)。生成日、プラン、使ったモデル (`eleven_text_to_sound_v2`) を PR か `audio/` に書き残す。
 - プロジェクトのライセンスとの関係: 効果音の mp3 自体はリポジトリに入れず、動画に混ぜた音だけが `site/video/` に入る。
+
+## README の画面写真とソーシャルプレビュー
+`node shots.mjs` で、モックアップから `docs/images/` の設定画面 (操作感・ホットキー) とランチャーの写真を撮り直し、GitHub のソーシャルプレビュー (1280 × 640、`social.html`) を `site/assets/social-preview.png` に書き出す。ソーシャルプレビューは API で設定できないため、リポジトリの Settings → General → Social preview に手でアップロードする。サイトの共有画像 (`og.png`、1200 × 630) は `og.html` から作る。

@@ -29,7 +29,7 @@ Grab a title bar and let go. Snapwell reads the speed at release, predicts where
 
 Motion is computed from mass, stiffness and damping. No durations or easing curves are fixed. On the Feel page of the settings window, pick one of four presets or set the values yourself.
 
-![The Feel page of the settings window, with presets and a try-it area (mockup, Japanese UI)](docs/images/settings-feel.png)
+![The Feel page of the settings window, with four presets (mockup, Japanese UI)](docs/images/settings-feel.png)
 
 ### Grid and gaps
 
@@ -43,7 +43,7 @@ Ctrl+Alt+Space opens the launcher. A grid appears over the monitor that holds th
 
 From the launcher you can also select up to nine windows and arrange them together.
 
-![The launcher: a grid and presets (mockup, Japanese UI)](docs/images/launcher.png)
+![The launcher: a grid, presets and the window list for arranging (mockup, Japanese UI)](docs/images/launcher.png)
 
 ### Arrange
 
@@ -100,8 +100,10 @@ Starting at sign-in is also not registered until you turn it on. Turning it off 
 - Settings are a JSON file, and you can share them across PCs through a sync folder of your choice, such as a OneDrive or Dropbox folder. Snapwell does not do the syncing. It reads and writes the file in that folder.
 - You can import and export settings.
 - The interface is available in Japanese and English, and follows the Windows display language by default.
-- On first launch, a setup in the settings window lets you decide the standard features, hotkeys and grid in turn.
-- By default, Snapwell does not check for updates. When you turn on automatic checks or click Check now, it checks GitHub Releases for new versions without downloading anything automatically.
+- On first launch, a setup in the settings window opens with a short intro animation and a welcome screen where you can throw a window. Then you decide the standard features, hotkeys and grid in turn. Click or press Esc to skip the intro. It is skipped on its own when Windows animation effects or Snapwell's reduce motion option are off.
+- The Feel page has an option to reduce motion. When it is on, or when Windows animation effects are off, windows move straight to their destination without animation.
+- By default, Snapwell does not check for updates. When you turn on automatic checks or click Check now, it checks GitHub Releases for new versions. Clicking Update and restart in the notice downloads the signed release package, verifies it, replaces the files and starts the new version. Nothing is downloaded until you click, and if the new version cannot be confirmed to start, Snapwell rolls back to the previous one.
+- If you turned on Start as administrator, the first launch after an update does not run as administrator. It does from the next sign-in, or after you quit Snapwell and start it again.
 
 ## Requirements
 
@@ -223,7 +225,7 @@ Snapwell は Windows 11 用のウィンドウマネージャーです。ウィ�
 
 動きは質量、剛性、減衰から計算します。継続時間やイージング曲線は決めていません。設定画面の「操作感」で、4 つのプリセットから選ぶか、値を自分で決められます。
 
-![設定画面の「操作感」ページ。プリセットと試用エリア（モックアップ、日本語の画面）](docs/images/settings-feel.png)
+![設定画面の「操作感」ページ。4 つのプリセット（モックアップ、日本語の画面）](docs/images/settings-feel.png)
 
 ### 分割と間隔
 
@@ -237,7 +239,7 @@ Ctrl+Alt+Space でランチャーを開くと、対象のウィンドウがあ�
 
 ランチャーからはウィンドウを最大 9 件選んで、まとめて整列することもできます。
 
-![ランチャー。グリッドとプリセット（モックアップ、日本語の画面）](docs/images/launcher.png)
+![ランチャー。グリッド、プリセット、整列するウィンドウの一覧（モックアップ、日本語の画面）](docs/images/launcher.png)
 
 ### 整列
 
@@ -294,7 +296,8 @@ Snapwell が OS の設定を変えるのは、利用者が同意して設定画�
 - 設定は JSON のファイルで、利用者が選んだ同期フォルダー（OneDrive や Dropbox のフォルダーなど）を通して、複数の PC で共有できます。Snapwell が同期するのではなく、そのフォルダー内のファイルを読み書きします。
 - 設定のインポートとエクスポートができます。
 - 画面の言語は日本語と英語です。既定では Windows の表示言語に合わせます。
-- 初回の起動では、設定画面のセットアップが開き、標準機能、ホットキー、分割案を順に決められます。
+- 初回の起動では、設定画面のセットアップが開きます。短い導入のアニメーションと、ウィンドウを投げて試せるようこそ画面のあとで、標準機能、ホットキー、分割案を順に決められます。導入はクリックか Esc で飛ばせます。Windows のアニメーション効果か、Snapwell の「動きを減らす」がオフのときは、自動で飛ばします。
+- 操作感のページの「動きを減らす」をオンにすると、アニメーションせずに吸着先へ直接移動します。Windows の「アニメーション効果」がオフのときも同じです。
 - 更新の確認は既定で無効です。自動確認を有効にしたときや「今すぐ確認」を押したときだけ GitHub Releases に問い合わせ、新しい版の案内を表示します。案内の「更新して再起動」を押すと、署名を検証した配布ファイルをダウンロードして置き換え、新しい版を起動します（押すまでダウンロードしません）。起動の確認ができない場合は、元の版へ戻します。
 - 「管理者として起動」を有効にしている場合、更新後の最初の起動だけは管理者権限になりません。次にサインインしたとき、または Snapwell を終了して起動し直したときから、管理者として起動します。
 
