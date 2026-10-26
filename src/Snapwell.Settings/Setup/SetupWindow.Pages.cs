@@ -120,17 +120,12 @@ public sealed partial class SetupWindow
         hint.TextAlignment = TextAlignment.Center;
         hint.TextWrapping = TextWrapping.Wrap;
         hint.Margin = new(0, 14, 0, 18);
-        var stage = new WelcomeStage(IsSetupVisible, (held, touched) => hint.Text = held
+        var stage = new WelcomeStage(() => !_introActive && _wizard.Step == SetupStep.Welcome && IsSetupVisible(),
+            IsMotionAllowed, (held, touched) => hint.Text = held
             ? UiText.Current.Get("Setup.Welcome.HintHeld") : touched
                 ? UiText.Current.Get("Setup.Welcome.HintAgain") : UiText.Current.Get("Setup.Welcome.Hint"));
-        // 再表示で古い舞台を再利用せず、Unloaded で購読とキャプチャを外す。
-        void StopWelcome(object sender, WindowEventArgs args)
-        {
-            stage.Dispose();
-            Closed -= StopWelcome;
-        }
-        Closed += StopWelcome;
-        stage.Unloaded += (_, _) => Closed -= StopWelcome;
+        // Render と Closed で先に破棄し、遅れて届く Unloaded でも安全に解除する。
+        _welcomeStage = stage;
         welcome.Children.Add(stage);
         var title = Text(UiText.Current.Get("Setup.Welcome.Title"), "SetupHeadingStyle");
         title.FontSize = 32; title.LineHeight = 38;

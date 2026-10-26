@@ -28,6 +28,8 @@ public sealed partial class SetupWindow : Window
     private bool _welcomeShown;
     private bool _introActive;
     private IntroScene? _intro;
+    private WelcomeStage? _welcomeStage;
+    private bool _closed;
 
     /// <summary>通常の設定画面と同じリソースと DPI の仕組みを使い、大きさは固定する。</summary>
     public SetupWindow()
@@ -76,10 +78,17 @@ public sealed partial class SetupWindow : Window
             if (_introActive) { _intro?.Skip(); }
         }), true);
         _uiSettings.AnimationsEnabledChanged += AnimationsEnabledChanged;
+        AppWindow.Changed += SetupWindowChanged;
+        Activated += SetupWindowActivated;
         Closed += (_, _) =>
         {
+            _closed = true;
             _introActive = false;
             _uiSettings.AnimationsEnabledChanged -= AnimationsEnabledChanged;
+            AppWindow.Changed -= SetupWindowChanged;
+            Activated -= SetupWindowActivated;
+            _welcomeStage?.Dispose();
+            _welcomeStage = null;
             _intro?.Dispose();
             _intro = null;
         };
@@ -157,6 +166,8 @@ public sealed partial class SetupWindow : Window
             Steps.Children.Add(border);
         }
 
+        _welcomeStage?.Dispose();
+        _welcomeStage = null;
         PageHost.Children.Clear();
         Heading.Visibility = Visibility.Visible;
         Lead.Visibility = Visibility.Visible;
@@ -176,7 +187,7 @@ public sealed partial class SetupWindow : Window
             UiText.Current.Format("Setup.HeadingName", ("count", Count.Text), ("heading", Heading.Text)));
         if (_wizard.Step == SetupStep.Welcome)
         {
-            var play = SetupPresentation.ShouldPlayIntro(_wizard.Step, _uiSettings.AnimationsEnabled, _welcomeShown);
+            var play = SetupPresentation.ShouldPlayIntro(_wizard.Step, IsMotionAllowed(), _welcomeShown);
             _welcomeShown = true;
             if (play)
             {
@@ -210,9 +221,21 @@ public sealed partial class SetupWindow : Window
     private bool IsSetupVisible() => AppWindow.IsVisible &&
         AppWindow.Presenter is not OverlappedPresenter { State: OverlappedPresenterState.Minimized };
 
+    private bool IsMotionAllowed() => SetupPresentation.IsMotionAllowed(_uiSettings.AnimationsEnabled,
+        !_loadFailed && _initialSettings.ReduceMotion);
+
+    private void SetupWindowChanged(AppWindow sender, AppWindowChangedEventArgs args) =>
+        _welcomeStage?.RefreshActivity();
+
+    private void SetupWindowActivated(object sender, WindowActivatedEventArgs args) =>
+        _welcomeStage?.RefreshActivity();
+
     private void AnimationsEnabledChanged(UISettings sender, object args) => DispatcherQueue.TryEnqueue(() =>
     {
-        if (_introActive && !sender.AnimationsEnabled) { FinishIntro(); }
+        if (_closed) { return; }
+        // キューに入った通知の順序によらず、最後の OS 設定を使う。
+        if (_introActive && !IsMotionAllowed()) { FinishIntro(); }
+        _welcomeStage?.RefreshActivity();
     });
 
     private void FinishIntro()
@@ -224,6 +247,7 @@ public sealed partial class SetupWindow : Window
         IntroHost.Children.Clear();
         IntroHost.Visibility = Visibility.Collapsed;
         RevealWelcome(1);
+        _welcomeStage?.RefreshActivity();
         BackButton.IsEnabled = _wizard.CanGoBack;
         NextButton.IsEnabled = !_loadFailed;
         NextButton.Focus(FocusState.Programmatic);

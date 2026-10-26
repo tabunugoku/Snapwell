@@ -7,7 +7,6 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Shapes;
 using Snapwell.Core.Setup;
-using Windows.UI.ViewManagement;
 
 namespace Snapwell.Settings.Setup;
 
@@ -15,8 +14,9 @@ namespace Snapwell.Settings.Setup;
 internal sealed partial class WelcomeStage : Grid, IDisposable
 {
     private readonly Func<bool> _visible;
+    private readonly Func<bool> _motionAllowed;
     private readonly Action<bool, bool> _hint;
-    private readonly UISettings _uiSettings = new();
+    private readonly DispatcherTimer _demoTimer = new() { Interval = TimeSpan.FromSeconds(.1) };
     private readonly Canvas _canvas = new();
     private readonly Rectangle[] _zones = Enumerable.Range(0, 3).Select(_ => new Rectangle
     {
@@ -37,10 +37,12 @@ internal sealed partial class WelcomeStage : Grid, IDisposable
     private double _last;
     private bool _rendering;
     private bool _disposed;
+    private XamlRoot? _root;
 
-    internal WelcomeStage(Func<bool> visible, Action<bool, bool> hint)
+    internal WelcomeStage(Func<bool> visible, Func<bool> motionAllowed, Action<bool, bool> hint)
     {
-        _visible = visible; _hint = hint;
+        _visible = visible; _motionAllowed = motionAllowed; _hint = hint;
+        _demoTimer.Tick += OnDemoTick;
         _palette = new(this);
         Height = 188; MaxWidth = 520; HorizontalAlignment = HorizontalAlignment.Stretch;
         CornerRadius = new(10); BorderThickness = new(1);
@@ -74,11 +76,12 @@ internal sealed partial class WelcomeStage : Grid, IDisposable
 
     private void OnLoaded(object sender, RoutedEventArgs args)
     {
-        if (_disposed || _rendering) { return; }
+        if (_disposed || _model is not null) { return; }
         _model = new(ActualWidth, ActualHeight);
         _clock.Start(); _last = _clock.Elapsed.TotalSeconds;
-        _rendering = true;
-        CompositionTarget.Rendering += OnFrame;
+        _root = XamlRoot;
+        _root.Changed += OnRootChanged;
+        RefreshActivity();
         Paint();
     }
 
@@ -89,22 +92,81 @@ internal sealed partial class WelcomeStage : Grid, IDisposable
         Release();
         _model?.Resize(args.NewSize.Width, args.NewSize.Height);
         Clip = new RectangleGeometry { Rect = new(0, 0, args.NewSize.Width, args.NewSize.Height) };
+        RefreshActivity();
         Paint();
+    }
+
+    private void OnRootChanged(XamlRoot sender, XamlRootChangedEventArgs args) => RefreshActivity();
+
+    /// <summary>表示と効果の最新状態から描画購読と巡回待ちを切り替える。</summary>
+    internal void RefreshActivity()
+    {
+        if (_disposed || _model is null) { return; }
+        var allowed = _motionAllowed();
+        var visible = _visible() && _root is { IsHostVisible: true };
+        if (!allowed)
+        {
+            var wasSettled = _model.Settled;
+            _model.Advance(0, animationsEnabled: false);
+            if (!wasSettled) { Paint(); }
+        }
+        var canRender = SetupPresentation.ShouldSubscribeWelcomeRendering(allowed,
+            _model.Touched, _model.Settled, visible);
+        // 未操作でも静止中は毎フレーム呼ばず、巡回の開始だけをタイマーに任せる。
+        SetRendering(canRender && !_model.Settled && !_model.Held);
+        var waitForDemo = canRender && !_model.Touched && _model.Settled;
+        if (waitForDemo && !_demoTimer.IsEnabled)
+        {
+            _last = _clock.Elapsed.TotalSeconds;
+            _demoTimer.Start();
+        }
+        else if (!waitForDemo && _demoTimer.IsEnabled) { _demoTimer.Stop(); }
+    }
+
+    private void SetRendering(bool rendering)
+    {
+        if (_rendering == rendering) { return; }
+        _rendering = rendering;
+        if (rendering)
+        {
+            _last = _clock.Elapsed.TotalSeconds;
+            CompositionTarget.Rendering += OnFrame;
+        }
+        else { CompositionTarget.Rendering -= OnFrame; }
+    }
+
+    private void OnDemoTick(object? sender, object args)
+    {
+        RefreshActivity();
+        if (!_demoTimer.IsEnabled || _model is null) { return; }
+        var now = _clock.Elapsed.TotalSeconds;
+        var remaining = Math.Min(.25, now - _last); _last = now;
+        // Core の刻みの上限を守り、待ち時間だけを進める。動き始めたら Rendering に渡す。
+        while (remaining > 0 && _model.Settled)
+        {
+            var dt = Math.Min(.05, remaining);
+            _model.Advance(dt, animationsEnabled: _motionAllowed());
+            remaining -= dt;
+        }
+        if (!_model.Settled) { Paint(); }
+        RefreshActivity();
     }
 
     private void OnFrame(object? sender, object args)
     {
+        RefreshActivity();
+        if (!_rendering || _model is null) { return; }
         var now = _clock.Elapsed.TotalSeconds;
         var dt = now - _last; _last = now;
-        if (_model is null || !_visible()) { return; }
         var wasSettled = _model.Settled;
-        _model.Advance(dt, animationsEnabled: _uiSettings.AnimationsEnabled);
+        _model.Advance(dt, animationsEnabled: _motionAllowed());
         if (!wasSettled || !_model.Settled) { Paint(); }
+        RefreshActivity();
     }
 
     private void OnPressed(object sender, PointerRoutedEventArgs args)
     {
-        if (_model is null || _model.Held) { return; }
+        if (_disposed || _model is null || _model.Held) { return; }
         var point = args.GetCurrentPoint(_canvas);
         if (!point.Properties.IsLeftButtonPressed && args.Pointer.PointerDeviceType ==
             Microsoft.UI.Input.PointerDeviceType.Mouse) { return; }
@@ -112,6 +174,7 @@ internal sealed partial class WelcomeStage : Grid, IDisposable
         _pointer = args.Pointer;
         _grabX = point.Position.X - _model.X; _grabY = point.Position.Y - _model.Y;
         _model.Grab();
+        RefreshActivity();
         _track.Clear();
         Record();
         _hint(true, true);
@@ -120,7 +183,7 @@ internal sealed partial class WelcomeStage : Grid, IDisposable
 
     private void OnMoved(object sender, PointerRoutedEventArgs args)
     {
-        if (_model is not { Held: true } || args.Pointer.PointerId != _pointer?.PointerId) { return; }
+        if (_disposed || _model is not { Held: true } || args.Pointer.PointerId != _pointer?.PointerId) { return; }
         var point = args.GetCurrentPoint(_canvas);
         _model.Move(point.Position.X - _grabX, point.Position.Y - _grabY);
         Record(); Paint(); args.Handled = true;
@@ -147,11 +210,12 @@ internal sealed partial class WelcomeStage : Grid, IDisposable
         var first = _track[0]; var last = _track[^1];
         var dt = last.Time - first.Time;
         _model.Release(dt > 0 ? (last.X - first.X) / dt : 0,
-            dt > 0 ? (last.Y - first.Y) / dt : 0, _uiSettings.AnimationsEnabled);
+            dt > 0 ? (last.Y - first.Y) / dt : 0, _motionAllowed());
         var pointer = _pointer; _pointer = null;
         if (pointer is not null) { _window.ReleasePointerCapture(pointer); }
         _hint(false, true);
         Paint();
+        RefreshActivity();
     }
 
     private void Paint()
@@ -175,9 +239,12 @@ internal sealed partial class WelcomeStage : Grid, IDisposable
     public void Dispose()
     {
         if (_disposed) { return; }
-        Release();
         _disposed = true;
-        CompositionTarget.Rendering -= OnFrame;
+        Release();
+        SetRendering(false);
+        _demoTimer.Stop();
+        _demoTimer.Tick -= OnDemoTick;
+        if (_root is not null) { _root.Changed -= OnRootChanged; _root = null; }
         _clock.Stop();
         _window.Dispose();
         Loaded -= OnLoaded; Unloaded -= OnUnloaded;
