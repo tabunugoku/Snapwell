@@ -1,4 +1,5 @@
-/* 動画のフレーム (1920×1080)。見た目は site/css/site.css と同じ配色。 */
+/* 動画のフレーム (1920×1080)。見た目は site/css/site.css と同じ配色と書体。動きは film.js の物理だけで、CSS の遷移は使わない */
+@font-face { font-family: 'Newsreader'; src: url('../../site/fonts/newsreader-500.woff2') format('woff2'); font-weight: 500; }
 html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); }
 .frame { position: relative; width: 1920px; height: 1080px; background: var(--bg); overflow: hidden; }
 
@@ -8,19 +9,38 @@ html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; backgro
 .cap-p { font-size: 28px; line-height: 1.45; color: var(--soft); margin: 24px 0 0; }
 .keys { display: flex; gap: 12px; margin: 34px 0 0; }
 .key { display: grid; place-items: center; min-width: 76px; height: 64px; padding: 0 20px; border-radius: 10px; background: var(--tile); color: var(--ink); font-size: 26px; font-weight: 600; }
+.key-gap { margin-left: 28px; }
 .key.down { background: var(--ink); color: var(--ink-text); }
-.film-readout { position: absolute; left: 0; top: 790px; width: 420px; font-size: 22px; opacity: 0; grid-template-columns: auto 1fr; gap: 10px 24px; }
+.film-readout { position: absolute; left: 0; top: 790px; width: 460px; font-size: 22px; opacity: 0; grid-template-columns: auto 1fr; gap: 10px 24px; }
 .film-readout dd { font-size: 22px; }
 
 .stagebox { position: absolute; left: 760px; top: 202px; width: 1080px; height: 675px; opacity: 0; }
 .stagebox .monitor { position: absolute; left: 0; top: 0; width: 800px; aspect-ratio: auto; height: 500px; transform: scale(1.35); transform-origin: 0 0; border-radius: 10px; }
 .stagebox .workarea { inset: 0 0 32px 0; }
-.cursor { position: absolute; left: 0; top: 0; z-index: 300; pointer-events: none; opacity: 0; will-change: transform; }
+.cursor { position: absolute; left: 0; top: 0; z-index: 1100; pointer-events: none; opacity: 0; will-change: transform; }
 
-.title, .end { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: var(--ink); opacity: 0; }
-.title-name { font-size: 68px; font-weight: 600; letter-spacing: -0.03em; margin: 28px 0 0; }
-.title-line { font-size: 34px; color: var(--soft); margin: 14px 0 0; }
-.end { opacity: 0; }
-.end-h { font-size: 120px; font-weight: 600; letter-spacing: -0.035em; line-height: 1; margin: 36px 0 0; }
-.end-p { font-size: 32px; color: var(--soft); margin: 22px 0 0; }
+/* ランチャー: 作業領域いっぱいに区画の格子、上にプリセットの帯 */
+.launcher { position: absolute; inset: 0; z-index: 1000; opacity: 0; background: rgba(17, 17, 17, 0.16); }
+.cell { position: absolute; background: rgba(255, 255, 255, 0.55); border: 1px solid var(--border-strong); border-radius: 4px; }
+.cell.sel { background: var(--blue-bg); border-color: var(--blue-line); }
+.lpanel { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); width: 470px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; display: grid; gap: 8px; }
+.lpanel-top { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--muted); }
+.lpanel-top b { color: var(--ink); font-weight: 600; flex: 1; }
+.presets { display: flex; flex-wrap: wrap; gap: 5px; }
+.preset { border: 1px solid var(--border); background: var(--surface-2); border-radius: 6px; padding: 3px 7px; display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--ink); }
+.preset svg { width: 18px; height: 12px; }
+.preset svg rect.bg { fill: none; stroke: var(--muted); stroke-width: 1; }
+.preset svg rect.on { fill: var(--muted); }
+
+/* 導入とロゴ (サイトのヒーローと同じ部品) */
+.opening { position: absolute; inset: 0; z-index: 50; background: var(--bg); --intro-accent: #2563EB; }
+.opening canvas { position: absolute; inset: 0; width: 1920px; height: 1080px; }
+.logo { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 28px; color: var(--ink); }
+.logo-mark svg { display: block; width: 150px; height: 150px; }
+.logo-name { font-family: var(--font-display); font-weight: 500; font-size: 150px; line-height: 1; letter-spacing: -0.03em; }
+
+.end { position: absolute; inset: 0; z-index: 60; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: var(--ink); opacity: 0; }
+.end .logo { position: static; }
+.end-h { font-size: 56px; font-weight: 600; letter-spacing: -0.03em; margin: 56px 0 0; }
+.end-p { font-size: 30px; color: var(--soft); margin: 22px 0 0; }
 .end-url { font-size: 32px; font-weight: 600; margin: 46px 0 0; }
