@@ -47,7 +47,7 @@ node audio/generate-sfx.mjs                  # audio/sfx/*.mp3 を作る (Git �
 node audio/mix.mjs                           # 既定は site/video の無音版と audio/cues.json。out/with-sound/ に音つきの mp4 と webm
 ```
 
-音つきの 2 本を `site/video/` に置き、`site/index.html` の `<video>` から `muted` を外し、注記を `30 seconds, with sound.` に直す (いまは無音版を載せているので `muted` と `no sound` になっている)。
+音つきの 2 本を `site/video/` に置く。いま載せているのは音つき版 (`<video>` に `muted` はなく、注記は `30 seconds, with sound.`)。無音に戻すときは、`render.mjs` で作り直した映像を置き、`muted` を付け、注記を `no sound` にする。mix.mjs は `site/video` の映像を入力にするので、音つきに差し替えたあとは、先に無音の映像を `render.mjs` で作り直してから重ねること。
 
 - 効果音の指示と長さ、きっかけとの対応は `audio/sounds.json`。きっかけの時刻は台本 (`film.js`) と物理の事象 (離した時刻、止まった時刻) から `cues.json` に書かれるので、映像を変えたら `render.mjs` と `audio/table.mjs` を走らせ直せば音のずれは出ない。
 - 使うエンドポイント: `POST https://api.elevenlabs.io/v1/sound-generation` (ヘッダ `xi-api-key`、本文 `text` `duration_seconds` (0.5 から 30) `prompt_influence` `model_id`)。2026-10-26 に <https://elevenlabs.io/docs/api-reference/text-to-sound-effects/convert> で確認。
@@ -58,5 +58,6 @@ node audio/mix.mjs                           # 既定は site/video の無音版
 - 利用規約 (<https://elevenlabs.io/terms-of-use>) 第 4 条: 出力 (Output) の権利は利用者が持ち、サービスの外でも使える。第 1(c) 条: **無料プランは非商用に限る。有料プランは商用に使える** (禁止事項の方針は守る)。規約に出力へのクレジット表記の義務は見当たらない。
 - 一方、同社の効果音の案内ページ (<https://elevenlabs.io/sound-effects/commercial>) は「無料プランは elevenlabs.io のクレジット表記が要る、有料プランは不要」と書く。規約と案内ページの書き方が違うので、**有料プランで生成する** のが確実 (どちらの読み方でも商用に使え、表記は要らない)。
 - 第 4 条(d): 出力は同社がサービスの改善に使える権利を持つ。第 10 条: 出力は他の利用者のものと似ることがある (独占はできない)。
+- 生成の記録: 2026-10-26、有料プランの鍵 (ユーザーが確認)、モデル `eleven_text_to_sound_v2`、12 件・指定の長さの合計 10.4 秒 (約 416 クレジット)、`tick` は無音に近かったので指示を変えて 1 件だけ作り直し (約 20 クレジット)。
 - 作った音は公開前に聞いて確かめる (第 4 条(k) は出力を確認する責任が利用者にあるとする)。生成日、プラン、使ったモデル (`eleven_text_to_sound_v2`) を PR か `audio/` に書き残す。
 - プロジェクトのライセンスとの関係: 効果音の mp3 自体はリポジトリに入れず、動画に混ぜた音だけが `site/video/` に入る。

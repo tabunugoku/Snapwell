@@ -22,6 +22,18 @@ cues.forEach((c, i) => {
   const wob = (((i * 7) % 5) - 2) * 0.5;
   hits.push({ file: resolve(here, 'sfx', `${m.sound}.mp3`), t: c.t + (m.offset || 0), gain: m.gain + wob });
 });
+// 生成された音は大きさがまちまち (最大 -70 dB から 0 dB) なので、各効果音をまず最大値 0 dB にそろえ、そのうえで cue_map の gain を掛ける
+const peakOf = (file) => {
+  const r = spawnSync('ffmpeg', ['-i', file, '-af', 'volumedetect', '-f', 'null', '-'], { encoding: 'utf8' });
+  const m = /max_volume: (-?[\d.]+) dB/.exec(r.stderr || '');
+  return m ? Number(m[1]) : 0;
+};
+const peaks = new Map();
+for (const h of hits) {
+  if (!existsSync(h.file)) continue;
+  if (!peaks.has(h.file)) peaks.set(h.file, peakOf(h.file));
+  h.gain += Math.min(24, -peaks.get(h.file));
+}
 const missing = [...new Set(hits.map((h) => h.file))].filter((f) => !existsSync(f));
 if (missing.length) {
   console.error('効果音が足りない: ' + missing.map((f) => f.split(/[\\/]/).pop()).join(', '));

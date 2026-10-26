@@ -5,7 +5,7 @@
   "sounds": {
     "whoosh": { "prompt": "A quick soft air whoosh of a light object sliding fast across a room, clean, no music, no voice", "duration": 0.8, "influence": 0.5 },
     "burst": { "prompt": "Six small soft pops bursting outward at once, gentle bubble and plastic taps, bright and clean, no music", "duration": 1.0, "influence": 0.5 },
-    "tick": { "prompt": "A single crisp soft UI click, short wooden tick, dry, very short, no reverb", "duration": 0.5, "influence": 0.6 },
+    "tick": { "prompt": "A clear short wooden click, like tapping a wooden block once with a fingernail, dry, audible, no reverb", "duration": 0.5, "influence": 0.6 },
     "tap": { "prompt": "A tiny bright glassy tap with a short soft tail, like touching a small bell, dry and clean", "duration": 0.5, "influence": 0.6 },
     "logo": { "prompt": "A warm soft chime logo sting, two gentle notes with an airy shimmer tail, calm and modern, no voice", "duration": 2.5, "influence": 0.5 },
     "throw": { "prompt": "A short light whoosh of a card being flicked through the air, fast and soft", "duration": 0.6, "influence": 0.5 },
