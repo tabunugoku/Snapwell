@@ -2747,7 +2747,8 @@ function initFeelTry(getTune) {
     const step = Math.max(150, length / coast / 16);
     let low = 0;
     let high = 151;
-    while (!accepts(resolve(t, ...velocity(high)).kind)) {
+    // 届く速さがどこにもない設定でも固めないよう、上限で打ち切る
+    while (high < 200000 && !accepts(resolve(t, ...velocity(high)).kind)) {
       low = high;
       high += step;
     }
