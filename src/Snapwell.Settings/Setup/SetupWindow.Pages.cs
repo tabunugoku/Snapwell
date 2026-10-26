@@ -119,7 +119,7 @@ public sealed partial class SetupWindow
         hint.FontSize = 12;
         hint.TextAlignment = TextAlignment.Center;
         hint.TextWrapping = TextWrapping.Wrap;
-        hint.Margin = new(0, 14, 0, 18);
+        hint.Margin = new(0, 10, 0, 14);
         var stage = new WelcomeStage(() => !_introActive && _wizard.Step == SetupStep.Welcome && IsSetupVisible(),
             IsMotionAllowed, (held, touched) => hint.Text = held
             ? UiText.Current.Get("Setup.Welcome.HintHeld") : touched
@@ -130,7 +130,7 @@ public sealed partial class SetupWindow
         var title = Text(UiText.Current.Get("Setup.Welcome.Title"), "SetupHeadingStyle");
         title.FontSize = 32; title.LineHeight = 38;
         title.TextAlignment = TextAlignment.Center;
-        title.Margin = new(0, 20, 0, 0);
+        title.Margin = new(0, 14, 0, 0);
         AutomationProperties.SetHeadingLevel(title, AutomationHeadingLevel.Level1);
         welcome.Children.Add(title);
         var body = Text(UiText.Current.Get("Setup.Welcome.Body"), "SnapwellLeadTextStyle");

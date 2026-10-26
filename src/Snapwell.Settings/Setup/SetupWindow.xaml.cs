@@ -68,6 +68,8 @@ public sealed partial class SetupWindow : Window
             ErrorNotice.IsOpen = true;
         }
 
+        // 既定だと Esc の案内が吹き出しで出て、導入の間ずっと残ることがある。
+        Root.KeyboardAcceleratorPlacementMode = KeyboardAcceleratorPlacementMode.Hidden;
         Root.KeyboardAccelerators.Add(Accelerator(VirtualKey.Escape, () =>
         {
             if (_introActive) { _intro?.Skip(); }
@@ -112,8 +114,8 @@ public sealed partial class SetupWindow : Window
         var scale = Root.XamlRoot.RasterizationScale;
         var area = DisplayArea.GetFromWindowId(AppWindow.Id, DisplayAreaFallback.Primary).WorkArea;
         AppWindow.Resize(new SizeInt32(Math.Min((int)(820 * scale), area.Width),
-            Math.Min((int)(680 * scale), area.Height)));
-        FixedWindowSize.Apply(WinRT.Interop.WindowNative.GetWindowHandle(this), 820, 680);
+            Math.Min((int)(720 * scale), area.Height)));
+        FixedWindowSize.Apply(WinRT.Interop.WindowNative.GetWindowHandle(this), 820, 720);
         if (_introActive) { StartIntro(); }
         else { NextButton.Focus(FocusState.Programmatic); }
     }

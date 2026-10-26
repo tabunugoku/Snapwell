@@ -105,27 +105,46 @@ internal sealed partial class IntroScene : Grid, IDisposable
             Stroke = new SolidColorBrush(Color.FromArgb(255, 242, 242, 240))
         };
         Canvas.SetLeft(frame, 9.88); Canvas.SetTop(frame, 9.88); _mark.Children.Add(frame);
-        // SVG の三次曲線を小区間に分け、点線の弧が根元から現れるようにする。
-        for (var i = 0; i < 20; i++)
+        // アプリアイコンの stroke-dasharray="3 3" と同じ破線にする。曲線を弧長で測り、3 進んで 3 空ける。
+        // 根元から順に現れるよう、1 本の破線をさらに小さな線分へ分ける。
+        static Vector2 Curve(double t)
         {
-            static Vector2 Curve(double t)
+            var u = 1 - t;
+            return new((float)(8 * u * u * u + 3 * 14 * u * u * t + 3 * 18 * u * t * t + 26 * t * t * t),
+                (float)(34 * u * u * u + 3 * 34 * u * u * t + 3 * 26 * u * t * t + 18 * t * t * t));
+        }
+        const int samples = 256;
+        var lengths = new double[samples + 1];
+        for (var i = 1; i <= samples; i++)
+        {
+            lengths[i] = lengths[i - 1] + Vector2.Distance(Curve((i - 1d) / samples), Curve((double)i / samples));
+        }
+        Vector2 At(double length)
+        {
+            var i = Array.FindIndex(lengths, l => l >= length);
+            if (i <= 0) { return Curve(0); }
+            var t = (length - lengths[i - 1]) / (lengths[i] - lengths[i - 1]);
+            return Curve((i - 1 + t) / samples);
+        }
+        var scale = (float)(72d / 44 * .76);
+        for (var start = 0d; start < lengths[^1]; start += 6)
+        {
+            var end = Math.Min(start + 3, lengths[^1]);
+            for (var i = 0; i < 3; i++)
             {
-                var u = 1 - t;
-                return new((float)(8 * u * u * u + 3 * 14 * u * u * t + 3 * 18 * u * t * t + 26 * t * t * t),
-                    (float)(34 * u * u * u + 3 * 34 * u * u * t + 3 * 26 * u * t * t + 18 * t * t * t));
+                var a = At(start + (end - start) * i / 3) * scale + new Vector2(8.64f);
+                var b = At(start + (end - start) * (i + 1) / 3) * scale + new Vector2(8.64f);
+                var line = new Line
+                {
+                    X1 = a.X,
+                    Y1 = a.Y,
+                    X2 = b.X,
+                    Y2 = b.Y,
+                    StrokeThickness = 2.49,
+                    Stroke = new SolidColorBrush(Color.FromArgb(255, 155, 154, 151))
+                };
+                _arc.Add(line); _mark.Children.Add(line);
             }
-            var a = Curve(i / 20d) * (float)(72d / 44 * .76) + new Vector2(8.64f);
-            var b = Curve((i + .55) / 20) * (float)(72d / 44 * .76) + new Vector2(8.64f);
-            var line = new Line
-            {
-                X1 = a.X,
-                Y1 = a.Y,
-                X2 = b.X,
-                Y2 = b.Y,
-                StrokeThickness = 2.49,
-                Stroke = new SolidColorBrush(Color.FromArgb(255, 155, 154, 151))
-            };
-            _arc.Add(line); _mark.Children.Add(line);
         }
         _square.Fill = new SolidColorBrush(Color.FromArgb(255, 140, 203, 242));
         Canvas.SetLeft(_square, 37.24); Canvas.SetTop(_square, 17.35);
@@ -230,7 +249,7 @@ internal sealed partial class IntroScene : Grid, IDisposable
         _squareTransform.TranslateX = -16 * (1 - model.LogoSquare);
         _squareTransform.TranslateY = 20 * (1 - model.LogoSquare);
         _squareTransform.ScaleX = _squareTransform.ScaleY = .5 + .5 * model.LogoSquare;
-        for (var i = 0; i < _arc.Count; i++) { _arc[i].Opacity = Reveal((t - 7.5) / .7) * 20 > i ? 1 : 0; }
+        for (var i = 0; i < _arc.Count; i++) { _arc[i].Opacity = Reveal((t - 7.5) / .7) * _arc.Count > i ? 1 : 0; }
         for (var i = 0; i < _dots.Count; i++)
         {
             var p = model.Dots[i];
