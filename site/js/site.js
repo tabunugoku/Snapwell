@@ -18,7 +18,7 @@
   }
 
   // ---- entrance: a rise with opacity, staggered by the delay of the target change ----
-  const reveals = $$('[data-reveal], .faq-list details, .tile-main > *, .foot > *, .step-then');
+  const reveals = $$('[data-reveal], .faq-list details, .tile-main > *, .step-then');
   const risers = new Map();
   for (const el of reveals) {
     const body = new Feel.Body({
