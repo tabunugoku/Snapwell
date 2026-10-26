@@ -1,6 +1,10 @@
 {
   "Feel_Title.Text": "Feel",
-  "Feel_Lead.Text": "Adjust how thrown windows move. Natural frequency and damping ratio control speed and return. A preset sets all four values except snap radius. Changing a value makes it custom. Curves show motion to rest after a key action.",
+  "Feel_Lead.Text": "Adjust how thrown windows move. Natural frequency and damping ratio control speed and return. A preset sets all four values except snap radius. Changing a value makes it custom.",
+  "Feel.StepMetrics": "Settles in {settle} s · Overshoot {overshoot}%",
+  "Feel_CurveLegend.Text": "Curve: position after moving one zone with a key (time runs left to right; the dashed line is the target).",
+  "Feel_CurveThrowNote.Text": "The same natural frequency and damping ratio also shape the speed and return of a throw.",
+  "Feel_TrialExpander.AutomationName": "Try it",
   "Feel_TrialTitle.Text": "Try it",
   "Feel_TrialCard.AutomationName": "Trial window. Throw by dragging the title bar or using arrow keys.",
   "Feel_TrialWindowLabel.Text": "Window",

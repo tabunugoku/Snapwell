@@ -17,20 +17,68 @@ public sealed partial class FeelPage
     private ManipulationModes _savedManipulation = ManipulationModes.System;
     private uint _dragPointerId;
     private readonly List<Rectangle> _zoneShapes = [];
-    private readonly Stopwatch _clock = Stopwatch.StartNew();
+    private readonly Stopwatch _clock = new();
     private FeelTrial? _trial;
     private SnapMode _trialMode = SnapMode.Zones;
     private bool _dragging;
     private bool _rendering;
+    private bool _trialOpen;
     private double _lastFrame;
 
     private void TrialStage_SizeChanged(object sender, SizeChangedEventArgs e)
     {
-        TrialStage.Clip = new RectangleGeometry { Rect = new(0, 0, e.NewSize.Width, e.NewSize.Height) };
-        _trial = new FeelTrial(e.NewSize.Width, e.NewSize.Height, _trialMode);
-        StopRendering();
+        StopTrial();
+        InitializeTrial();
+    }
+
+    private void Trial_Expanding(Expander sender, ExpanderExpandingEventArgs args)
+    {
+        _trialOpen = true;
+        // 開く前の寸法は使わず、展開後のレイアウトで初期配置する。
+        DispatcherQueue.TryEnqueue(InitializeTrial);
+    }
+
+    private void Trial_Collapsed(Expander sender, ExpanderCollapsedEventArgs args)
+    {
+        _trialOpen = false;
+        StopTrial();
+    }
+
+    private void Trial_Unloaded(object sender, RoutedEventArgs e)
+    {
+        _trialOpen = false;
+        StopTrial();
+        TrialExpander.IsExpanded = false;
+    }
+
+    private void InitializeTrial()
+    {
+        var width = TrialStage.ActualWidth;
+        var height = TrialStage.ActualHeight;
+        if (!_trialOpen || _trial is not null || width <= 0 || height <= 0)
+        {
+            return;
+        }
+
+        TrialStage.Clip = new RectangleGeometry { Rect = new(0, 0, width, height) };
+        _trial = new FeelTrial(width, height, _trialMode);
+        _clock.Restart();
         BuildTrialShapes();
         PaintTrial();
+    }
+
+    private void StopTrial()
+    {
+        StopRendering();
+        if (_dragging)
+        {
+            _dragging = false;
+            TrialStage.ManipulationMode = _savedManipulation;
+            TrialStage.ReleasePointerCaptures();
+        }
+
+        _trial = null;
+        _clock.Reset();
     }
 
     private void BuildTrialShapes()

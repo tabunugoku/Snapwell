@@ -1,6 +1,10 @@
 {
   "Feel_Title.Text": "操作感",
-  "Feel_Lead.Text": "投げたときの動き方を調整します。動きの速さと戻り方は固有振動数と減衰比で決まります。プリセットを選ぶと、吸着半径を除く 4 つの値が変わり、どれかを変えると「カスタム」になります。曲線はキー操作で止まるまでの位置の変化です。",
+  "Feel_Lead.Text": "投げたときの動き方を調整します。動きの速さと戻り方は固有振動数と減衰比で決まります。プリセットを選ぶと、吸着半径を除く 4 つの値が変わり、どれかを変えると「カスタム」になります。",
+  "Feel.StepMetrics": "落ち着くまで {settle} 秒 · 行き過ぎ {overshoot}%",
+  "Feel_CurveLegend.Text": "曲線: キー操作で 1 区画動かしたときの位置の変化（左から右へ時間、破線が目標）",
+  "Feel_CurveThrowNote.Text": "投げたときも、同じ固有振動数と減衰比で動きの速さや戻り方が決まります。",
+  "Feel_TrialExpander.AutomationName": "試す",
   "Feel_TrialTitle.Text": "試す",
   "Feel_TrialCard.AutomationName": "試すウィンドウ。タイトルバーをドラッグして投げる。矢印キーで投げる",
   "Feel_TrialWindowLabel.Text": "Window",
