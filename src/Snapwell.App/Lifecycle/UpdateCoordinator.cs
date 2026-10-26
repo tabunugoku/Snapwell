@@ -17,6 +17,8 @@ internal interface IUpdateCoordinatorEnvironment
     bool IsProtected { get; }
     IUpdateCoordinatorSignals CreateSignals();
     void StartResident();
+    /// <summary>引数の三つの親が既知の pending と一致するときだけ削除する。</summary>
+    void CleanupPending(UpdateCommandLine command);
     void WriteResult(UpdateLastResult result);
 }
 
@@ -34,7 +36,13 @@ internal sealed class UpdateCoordinator(IUpdateCoordinatorEnvironment environmen
 
     internal UpdateLastResult Run(UpdateCommandLine command, string? version)
     {
-        var result = RunSession(command, version, out var stopped, out var restart, out var helper);
+        var cleanupAttempted = false;
+        UpdateLastResult result;
+        bool stopped;
+        bool restart;
+        IUpdateHelperProcess? helper;
+        try { result = RunSession(command, version, CleanupPending, out stopped, out restart, out helper); }
+        finally { CleanupPending(); }
         helper?.Dispose();
         if (stopped && restart)
         {
@@ -48,9 +56,18 @@ internal sealed class UpdateCoordinator(IUpdateCoordinatorEnvironment environmen
         result = result with { Utc = clock.GetUtcNow() };
         environment.WriteResult(result);
         return result;
+
+        void CleanupPending()
+        {
+            if (cleanupAttempted) { return; }
+            // 削除失敗も試行済みとし、後始末で更新結果を変えない。
+            cleanupAttempted = true;
+            try { environment.CleanupPending(command); }
+            catch (Exception exception) { log.Error(exception); }
+        }
     }
 
-    private UpdateLastResult RunSession(UpdateCommandLine command, string? version,
+    private UpdateLastResult RunSession(UpdateCommandLine command, string? version, Action cleanupPending,
         out bool stopped, out bool restart, out IUpdateHelperProcess? helper)
     {
         var result = new UpdateLastResult("failed", (int)UpdateInstallResult.IoError, clock.GetUtcNow(), version);
@@ -98,6 +115,8 @@ internal sealed class UpdateCoordinator(IUpdateCoordinatorEnvironment environmen
             }
 
             restart = false;
+            // ヘルパーは作業用コピーだけを使うため、新版の起動と Ready 待機には不要。
+            cleanupPending();
             var readyStart = clock.GetTimestamp();
             try { environment.StartResident(); }
             catch (Exception exception) { log.Error(exception); }
