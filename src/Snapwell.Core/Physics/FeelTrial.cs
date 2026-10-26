@@ -21,6 +21,18 @@ public sealed class FeelTrial
     public const double TouchSlop = 8;
 
     private const double Gap = 6;
+    private const double KeyThrowSpeed = 2200;
+    private const double MaximumThrowSpeed = 200000;
+    private static readonly SnapTargetKind[] ZoneKinds =
+    [
+        SnapTargetKind.LeftHalf, SnapTargetKind.RightHalf, SnapTargetKind.TopLeft,
+        SnapTargetKind.TopRight, SnapTargetKind.BottomLeft, SnapTargetKind.BottomRight,
+    ];
+    private static readonly SnapTargetKind[] CornerKinds =
+    [
+        SnapTargetKind.CornerTopLeft, SnapTargetKind.CornerTopRight,
+        SnapTargetKind.CornerBottomRight, SnapTargetKind.CornerBottomLeft,
+    ];
 
     private WindowBody? _body;
     private SnapResult? _pending;
@@ -178,6 +190,106 @@ public sealed class FeelTrial
         }
     }
 
+    /// <summary>別の吸着先へ向かう向きと、実際の予測でそこへ届くランダムな投げの速度を返す。</summary>
+    public Vec2 RandomThrowVelocity(FeelPreset feel, double clickRadius, Random random)
+    {
+        ArgumentNullException.ThrowIfNull(random);
+        var current = CurrentKind(feel, clickRadius);
+        var targets = ThrowTargets()
+            .Where(target => target.Kind != current && (target.Center - Center).Length > 1).ToArray();
+        var target = targets[random.Next(targets.Length)];
+        return FindThrowVelocity(target.Center - Center, feel, clickRadius,
+            kind => kind != current, 1.1 + random.NextDouble() * 0.3);
+    }
+
+    /// <summary>矢印の向きにある隣の吸着先へ届く速度を返し、隣がなければ従来の速度を使う。</summary>
+    public Vec2 KeyThrowVelocity(Vec2 direction, FeelPreset feel, double clickRadius)
+    {
+        var current = CurrentKind(feel, clickRadius);
+        var targets = ThrowTargets().Where(target => target.Kind != current)
+            .Select(target => (Target: target, Delta: target.Center - Center))
+            .Where(candidate => candidate.Delta.X * direction.X + candidate.Delta.Y * direction.Y > 1)
+            .OrderBy(candidate => Math.Abs(candidate.Delta.X * direction.Y - candidate.Delta.Y * direction.X))
+            .ThenBy(candidate => candidate.Delta.Length).ToArray();
+        if (targets.Length == 0)
+        {
+            return direction * KeyThrowSpeed;
+        }
+
+        var target = targets[0].Target;
+        return FindThrowVelocity(target.Center - Center, feel, clickRadius, kind => kind == target.Kind, 1.2,
+            Mode == SnapMode.Zones ? target.Center : null);
+    }
+
+    private SnapTargetKind CurrentKind(FeelPreset feel, double clickRadius) =>
+        _pending?.Kind ?? Kind ?? Predict(new(150, 0), feel, clickRadius)!.Value.Kind;
+
+    // 最大化は上端を越える投げで選ばれるため、向きの候補には中心が異なる六区画を使う。
+    private (Vec2 Center, SnapTargetKind Kind)[] ThrowTargets() => Mode == SnapMode.Corners
+        ? CornerPoints.Select((point, index) => (point, CornerKinds[index])).ToArray()
+        : _guides.Take(6).Select((guide, index) =>
+            (new Vec2(guide.X + guide.W / 2, guide.Y + guide.H / 2), ZoneKinds[index])).ToArray();
+
+    private Vec2 FindThrowVelocity(Vec2 delta, FeelPreset feel, double clickRadius,
+        Func<SnapTargetKind, bool> accepts, double margin, Vec2? zoneCenter = null)
+    {
+        ArgumentNullException.ThrowIfNull(feel);
+        var direction = delta * (1 / delta.Length);
+        Vec2 Velocity(double speed)
+        {
+            var velocity = direction * speed;
+            if (zoneCenter is { } zone)
+            {
+                // 惰性の長いカスタム値でも次の行を飛び越さず、足切りに足りない速さは目的の側へ補う。
+                var verticalLimit = (zone.Y - Center.Y) / feel.CoastTime;
+                var y = Math.Clamp(velocity.Y, Math.Min(0, verticalLimit), Math.Max(0, verticalLimit));
+                var minimumX = Math.Sqrt(Math.Max(0, 151 * 151 - y * y));
+                var x = Math.Abs(velocity.X) >= minimumX ? velocity.X
+                    : (zone.X < _area.Width / 2.0 ? -1 : 1) * minimumX;
+                velocity = new(x, y);
+            }
+
+            return velocity;
+        }
+
+        // 惰性の距離を基準に細かく走査し、行の帯を飛び越さずに最初の成功を探す。
+        var step = Math.Max(150, delta.Length / feel.CoastTime / 16);
+        var low = 0.0;
+        var high = 151.0; // 正規化の丸めで足切りの 150 px/s を下回らないようにする。
+        // 届く速さがどこにもない設定でも、画面を固めないよう上限で打ち切る。
+        while (high < MaximumThrowSpeed && !accepts(Predict(Velocity(high), feel, clickRadius)!.Value.Kind))
+        {
+            low = high;
+            high += step;
+        }
+
+        var found = high;
+        for (var i = 0; i < 12; i++)
+        {
+            var middle = (low + high) / 2;
+            if (middle >= 151 && accepts(Predict(Velocity(middle), feel, clickRadius)!.Value.Kind))
+            {
+                high = middle;
+            }
+            else
+            {
+                low = middle;
+            }
+        }
+
+        // 余裕を足して帯や壁を越えた場合は、検証済みの速度を使う。
+        var speed = high * margin;
+        return Velocity(accepts(Predict(Velocity(speed), feel, clickRadius)!.Value.Kind) ? speed : found);
+    }
+
+    private SnapResult? Predict(Vec2 velocity, FeelPreset feel, double clickRadius, Vec2? pointer = null)
+    {
+        var current = new PixelRect((int)Math.Round(Center.X - Size.X / 2), (int)Math.Round(Center.Y - Size.Y / 2),
+            (int)Math.Round(Size.X), (int)Math.Round(Size.Y));
+        return SnapResolver.Resolve(current, velocity, feel, Mode, new Spacing(Gap, Gap),
+            [new("trial", _area, 1)], pointer: pointer, snapRadius: clickRadius);
+    }
+
     /// <summary>
     /// 離す、または投げ出す。本体の <see cref="SnapResolver"/> が吸着先を選べば、その停止点の磁石場の中を
     /// 動き始めて true を返す。速さが足りず選ばれなければその場に置き、false を返す。
@@ -196,10 +308,7 @@ public sealed class FeelTrial
         _grabbed = false;
         var left = Center.X - Size.X / 2;
         var top = Center.Y - Size.Y / 2;
-        var current = new PixelRect((int)Math.Round(left), (int)Math.Round(top), (int)Math.Round(Size.X),
-            (int)Math.Round(Size.Y));
-        var snap = SnapResolver.Resolve(current, velocity, feel, Mode, new Spacing(Gap, Gap),
-            [new("trial", _area, 1)], pointer: pointer, snapRadius: clickRadius);
+        var snap = Predict(velocity, feel, clickRadius, pointer);
         if (snap is not { } result)
         {
             return false;

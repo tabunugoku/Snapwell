@@ -13,8 +13,6 @@ namespace Snapwell.Settings.Pages;
 /// <summary>操作感を試す領域。カードの動きは Core の FeelTrial（本体と同じ磁石場）が決める。</summary>
 public sealed partial class FeelPage
 {
-    private const double KeyThrowSpeed = 2200;
-
     private VelocityTracker _velocity = new();
     private ManipulationModes _savedManipulation = ManipulationModes.System;
     private uint _dragPointerId;
@@ -127,9 +125,11 @@ public sealed partial class FeelPage
 
     private void TrialThrow_Click(object sender, RoutedEventArgs e)
     {
-        var angle = Random.Shared.NextDouble() * Math.PI * 2;
-        var speed = 1200 + Random.Shared.NextDouble() * 2400;
-        Launch(new(Math.Cos(angle) * speed, Math.Sin(angle) * speed));
+        if (_trial is not null && !_dragging)
+        {
+            Launch(_trial.RandomThrowVelocity(_session.Current.ToFeelPreset(), _session.Current.SnapRadius,
+                Random.Shared));
+        }
     }
 
     private void TrialCard_KeyDown(object sender, KeyRoutedEventArgs e)
@@ -142,10 +142,10 @@ public sealed partial class FeelPage
             Windows.System.VirtualKey.Down => new Vec2(0, 1),
             _ => default,
         };
-        if (direction != default)
+        if (direction != default && _trial is not null && !_dragging)
         {
             e.Handled = true;
-            Launch(direction * KeyThrowSpeed);
+            Launch(_trial.KeyThrowVelocity(direction, _session.Current.ToFeelPreset(), _session.Current.SnapRadius));
         }
     }
 
