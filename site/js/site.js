@@ -96,8 +96,8 @@
   // ---- stages ----
   const wins = () => [
     { title: 'Notes', color: 'var(--blue-tx)', zone: 0, lines: [82, 58, 90, 44] },
-    { title: 'Photos', color: 'var(--green-tx)', zone: 1, lines: [70, 92, 54, 76] },
-    { title: 'Mail', color: 'var(--yellow-tx)', zone: 3, lines: [88, 64, 50, 80] },
+    { title: 'Photos', color: 'var(--blue-tx)', zone: 1, lines: [70, 92, 54, 76] },
+    { title: 'Mail', color: 'var(--blue-tx)', zone: 3, lines: [88, 64, 50, 80] },
   ];
 
   // Feel panel

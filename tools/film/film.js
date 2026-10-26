@@ -35,9 +35,9 @@
   const stage = new Stage($('#monitor'), {
     wins: [
       { title: 'Notes', color: 'var(--blue-tx)', zone: 0, lines: [82, 58, 90, 44, 70] },
-      { title: 'Photos', color: 'var(--green-tx)', zone: 2, lines: [70, 92, 54, 76, 60] },
-      { title: 'Mail', color: 'var(--yellow-tx)', zone: 4, lines: [88, 64, 50, 80, 58] },
-      { title: 'Calc', color: 'var(--red-tx)', zone: 5, lines: [60, 84, 52, 72, 66] },
+      { title: 'Photos', color: 'var(--blue-tx)', zone: 2, lines: [70, 92, 54, 76, 60] },
+      { title: 'Mail', color: 'var(--blue-tx)', zone: 4, lines: [88, 64, 50, 80, 58] },
+      { title: 'Calc', color: 'var(--blue-tx)', zone: 5, lines: [60, 84, 52, 72, 66] },
     ],
     cols: 3, rows: 2, gap: 10, feel: 'standard',
     onThrow: (t) => {
@@ -201,7 +201,7 @@
       const cs = getComputedStyle(opening);
       const rgb = (c) => { const k = document.createElement('canvas').getContext('2d'); k.fillStyle = c; const v = k.fillStyle; return [1, 3, 5].map((i) => parseInt(v.slice(i, i + 2), 16)); };
       const v = (n) => cs.getPropertyValue(n).trim();
-      return { accent: rgb(v('--intro-accent')), ink: rgb(v('--text')), bg: rgb(v('--bg')), surface: v('--surface'), surface2: v('--surface-2'), borderStrong: v('--border-strong'), skeleton: v('--skeleton') };
+      return { accent: rgb(v('--blue-tx')), ink: rgb(v('--text')), bg: rgb(v('--bg')), surface: v('--surface'), surface2: v('--surface-2'), borderStrong: v('--border-strong'), skeleton: v('--skeleton') };
     })(),
     onBeat: (name, t, k) => {
       if (name === 'settle') return;

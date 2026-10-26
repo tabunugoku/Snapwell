@@ -31,7 +31,7 @@
     const cs = getComputedStyle(box);
     const v = (n) => cs.getPropertyValue(n).trim();
     return {
-      accent: toRgb(v('--intro-accent')), ink: toRgb(v('--text')), bg: toRgb(v('--bg')),
+      accent: toRgb(v('--blue-tx')), ink: toRgb(v('--text')), bg: toRgb(v('--bg')),
       surface: v('--surface'), surface2: v('--surface-2'), borderStrong: v('--border-strong'), skeleton: v('--skeleton'),
     };
   };

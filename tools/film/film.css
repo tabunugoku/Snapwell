@@ -33,7 +33,7 @@ html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; backgro
 .preset svg rect.on { fill: var(--muted); }
 
 /* 導入とロゴ (サイトのヒーローと同じ部品) */
-.opening { position: absolute; inset: 0; z-index: 50; background: var(--bg); --intro-accent: #2563EB; }
+.opening { position: absolute; inset: 0; z-index: 50; background: var(--bg); }
 .opening canvas { position: absolute; inset: 0; width: 1920px; height: 1080px; }
 .logo { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 28px; color: var(--ink); }
 .logo-mark svg { display: block; width: 150px; height: 150px; }
