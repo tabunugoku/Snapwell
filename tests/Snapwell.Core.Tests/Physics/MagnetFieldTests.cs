@@ -46,9 +46,9 @@ public sealed class MagnetFieldTests
         Assert.Equal(-(reach + click * 0.5) * 14, Acceleration(14, 28), 0.5);
     }
 
-    /// <summary>磁石場では操作感の剛性 k は力に使わない（減衰係数にだけ使う）。目標へのばねでは使う。</summary>
+    /// <summary>磁石場は減衰に合わせた遠方ばねを使い、目標へのばねはプリセットの剛性を使う。</summary>
     [Fact]
-    public void FieldIgnoresPresetStiffnessWhileTargetSpringUsesIt()
+    public void FieldUsesReachStiffnessWhileTargetSpringUsesPresetStiffness()
     {
         Assert.Equal(-_feel.Stiffness * 50 / _feel.Mass, Acceleration(50, 28, field: false), 1);
         var reach = Math.Pow(2 * Math.PI * _feel.ReachFrequency, 2);
@@ -63,19 +63,58 @@ public sealed class MagnetFieldTests
         Assert.True(Math.Abs(Acceleration(30, 60)) > Math.Abs(Acceleration(30, 28)));
     }
 
-    /// <summary>磁石を強くすると、同じ距離でより強く引く。</summary>
+    /// <summary>磁石を強くすると吸着半径の内側だけで強く引き、遠方の力は変わらない。</summary>
     [Fact]
-    public void StrongerMagnetPullsHarder()
+    public void StrongerMagnetPullsHarderOnlyInsideRadius()
     {
-        double Pull(double strength)
+        double Pull(double strength, double distance)
         {
-            var body = new WindowBody(new(10, 0, 10, 10), new(0, 0, 10, 10), _distantWalls,
+            var body = new WindowBody(new(distance, 0, 10, 10), new(0, 0, 10, 10), _distantWalls,
                 _feel.WithMagnetStrength(strength), stops: [new Vec2(0, 0)]);
             body.Step(1e-7);
             return -body.Velocity.X;
         }
 
-        Assert.True(Pull(1.5) > Pull(0.5));
+        Assert.True(Pull(1.5, 10) > Pull(0.5, 10));
+        Assert.Equal(Pull(0, 100), Pull(2, 100), 10);
+    }
+
+    /// <summary>全プリセットは 500 px の移動を速やかに終え、近傍の行き過ぎも小さく保つ。</summary>
+    [Theory]
+    [InlineData("Standard")]
+    [InlineData("Crisp")]
+    [InlineData("Smooth")]
+    [InlineData("Bouncy")]
+    public void EveryPresetReachesDistantStopPromptlyWithSmallOvershoot(string name)
+    {
+        var body = new WindowBody(new(0, 0, 100, 100), new(500, 0, 100, 100), _distantWalls,
+            FeelPreset.ByName(name)!, stops: [new Vec2(500, 0)]);
+        const double dt = 1.0 / 240;
+        var reachTime = double.PositiveInfinity;
+        var settleTime = 0.0;
+        var overshoot = 0.0;
+        for (var i = 1; i <= 240 * 5; i++)
+        {
+            body.Step(dt);
+            if (body.State.X >= 450 && double.IsPositiveInfinity(reachTime))
+            {
+                reachTime = i * dt;
+            }
+
+            // 最初に 2 px 以内を通過した時刻ではなく、その後も範囲内にとどまる時刻を測る。
+            if (Math.Abs(body.State.X - 500) >= 2)
+            {
+                settleTime = (i + 1) * dt;
+            }
+
+            overshoot = Math.Max(overshoot, body.State.X - 500);
+        }
+
+        // 旧式の reach = 0.6 + 0.5×強さでは遠方が過減衰になり、到達時間の上限で失敗する。
+        Assert.True(reachTime < 0.9, $"{name}: 90% 到達 {reachTime:F3} 秒");
+        Assert.True(settleTime < 1.6, $"{name}: 2 px 以内 {settleTime:F3} 秒");
+        Assert.True(overshoot < 12, $"{name}: 行き過ぎ {overshoot:F3} px");
+        Assert.True(body.IsSettled);
     }
 
     /// <summary>停止点が二つなら、最寄りの点に引かれる。</summary>

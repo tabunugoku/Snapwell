@@ -15,7 +15,7 @@ public sealed class WindowBody
     private const double RestSpeed = 4;
     private const double RestDistance = 0.25;
     private const double WallFrequency = 8;
-    private const double WallDampingRatio = 0.9;
+    private const double WallDampingRatio = 1.0;
     private const double MaximumStep = 1.0 / 240;
 
     private Vec2[]? _stops;
@@ -278,7 +278,7 @@ public sealed class WindowBody
             Wall(position.Y, velocity.Y, bounds.MinY, bounds.MaxY));
     }
 
-    // 遠くまで届くばねに、吸着半径の内側で滑らかに効く強いばねを足す。
+    // 減衰に合わせた遠方ばねに、磁石の強さで決まる近傍ばねを吸着半径の内側だけで滑らかに足す。
     private double MagnetStiffness(double distance)
     {
         var far = Feel.Mass * Math.Pow(2 * Math.PI * Feel.ReachFrequency, 2);
@@ -288,19 +288,19 @@ public sealed class WindowBody
 
     private static double SmoothStep(double e) => e <= 0 ? 0 : e >= 1 ? 1 : e * e * (3 - 2 * e);
 
-    // 壁の外へ出た分だけ押し返す、硬く減衰の効いたばね。押し込むときだけ減衰させ、引き留めない。
+    // 壁の外へ出た分だけ押し返す硬いばね。押し込むときも戻るときも臨界減衰させる。
     private double Wall(double position, double velocity, double minimum, double maximum)
     {
         var stiffness = Feel.Mass * Math.Pow(2 * Math.PI * WallFrequency, 2);
         var damping = 2 * WallDampingRatio * Math.Sqrt(stiffness * Feel.Mass);
         if (position < minimum)
         {
-            return -stiffness * (position - minimum) - (velocity < 0 ? damping * velocity : 0);
+            return -stiffness * (position - minimum) - damping * velocity;
         }
 
         if (position > maximum)
         {
-            return -stiffness * (position - maximum) - (velocity > 0 ? damping * velocity : 0);
+            return -stiffness * (position - maximum) - damping * velocity;
         }
 
         return 0;

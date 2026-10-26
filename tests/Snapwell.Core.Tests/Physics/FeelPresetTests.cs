@@ -89,17 +89,35 @@ public sealed class FeelPresetTests
         Assert.Equal(77.03547614344518, feel.Damping, 9);
     }
 
-    /// <summary>磁石の強さから二つのばねの振動数を導く。</summary>
+    /// <summary>磁石の強さは近傍ばねだけに効き、遠方ばねはプリセットの減衰に合わせる。</summary>
     [Theory]
-    [InlineData(0.5, 0.85, 5)]
-    [InlineData(0.6, 0.9, 5.4)]
-    [InlineData(1, 1.1, 7)]
-    [InlineData(1.8, 1.5, 10.2)]
-    public void StrengthSetsReachAndClickFrequencies(double strength, double reach, double click)
+    [InlineData(0, 3)]
+    [InlineData(0.5, 5)]
+    [InlineData(0.6, 5.4)]
+    [InlineData(1, 7)]
+    [InlineData(1.8, 10.2)]
+    [InlineData(2, 11)]
+    public void StrengthSetsOnlyClickFrequency(double strength, double click)
     {
         var feel = FeelPreset.Standard.WithMagnetStrength(strength);
-        Assert.Equal(reach, feel.ReachFrequency, 10);
+        Assert.Equal(1.512, feel.ReachFrequency, 10);
         Assert.Equal(click, feel.ClickFrequency, 10);
+    }
+
+    /// <summary>遠方ばねは ζ·f·0.9 から導き、極端なカスタム値も 0.6〜6 Hz に収める。</summary>
+    [Theory]
+    [InlineData(2.4, 0.7, 1.512)]
+    [InlineData(3.2, 0.6, 1.728)]
+    [InlineData(1.8, 0.8, 1.296)]
+    [InlineData(2.8, 0.45, 1.134)]
+    [InlineData(0.4, 0.1, 0.6)]
+    [InlineData(7, 1.6, 6)]
+    [InlineData(double.Epsilon, double.Epsilon, 0.6)]
+    [InlineData(double.MaxValue, double.MaxValue, 6)]
+    public void ReachFrequencyMatchesDampingAndStaysWithinBounds(double frequency, double zeta, double expected)
+    {
+        var feel = new FeelPreset(1, frequency, zeta);
+        Assert.Equal(expected, feel.ReachFrequency, 10);
     }
 
     /// <summary>惰性で止まる距離の係数は m/c。Standard は約 0.047 秒。</summary>

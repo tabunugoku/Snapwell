@@ -60,6 +60,38 @@ public sealed class WindowBodyTests
         Assert.InRange(body.State.Y, 0, 700);
     }
 
+    /// <summary>壁の外で離しても、戻るときの減衰で弾き出されず停止点へ収束する。</summary>
+    [Theory]
+    [InlineData("Standard", 0)]
+    [InlineData("Standard", -3000)]
+    [InlineData("Crisp", 0)]
+    [InlineData("Crisp", -3000)]
+    [InlineData("Smooth", 0)]
+    [InlineData("Smooth", -3000)]
+    [InlineData("Bouncy", 0)]
+    [InlineData("Bouncy", -3000)]
+    public void ReleaseOutsideWallReturnsWithoutLaunchingPastStop(string name, double initialVelocity)
+    {
+        var body = new WindowBody(new(-353, 100, 100, 100), new(100, 100, 100, 100),
+            new(0, 0, 2000, 1000), FeelPreset.ByName(name)!, velocity: new(initialVelocity, 0),
+            stops: [new Vec2(100, 100)]);
+        var overshoot = 0.0;
+        var maximumReturnSpeed = 0.0;
+        for (var i = 0; i < 240 * 5; i++)
+        {
+            body.Step(1.0 / 240);
+            overshoot = Math.Max(overshoot, body.State.X - 100);
+            maximumReturnSpeed = Math.Max(maximumReturnSpeed, body.Velocity.X);
+        }
+
+        // 押し込むときだけ減衰する旧実装では、353 px 分のばねのエネルギーで弾き出され両上限を超える。
+        // 静止からでも硬い壁の復元で加速するため、戻りの速さには 6500 px/s の余裕を認める。
+        Assert.True(overshoot < 20, $"{name}: 行き過ぎ {overshoot:F3} px");
+        Assert.True(maximumReturnSpeed < Math.Abs(initialVelocity) + 6500,
+            $"{name}: 戻りの最大速度 {maximumReturnSpeed:F3} px/s");
+        Assert.True(body.IsSettled);
+    }
+
     /// <summary>着地時変更では静止の確定までサイズを保つ。</summary>
     [Fact]
     public void OnLandingKeepsSizeUntilSettle()

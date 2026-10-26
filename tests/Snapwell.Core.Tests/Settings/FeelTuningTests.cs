@@ -34,7 +34,7 @@ public sealed class FeelTuningTests : IDisposable
         Assert.Equal(FeelPreset.Smooth.Mass, feel.Mass);
         Assert.Equal(FeelPreset.Smooth.Frequency, feel.Frequency);
         Assert.Equal(FeelPreset.Smooth.DampingRatio, feel.DampingRatio);
-        Assert.Equal(0.6 + 0.5 * 1.4, feel.ReachFrequency, 10);
+        Assert.Equal(1.296, feel.ReachFrequency, 10);
         Assert.Equal(3 + 4 * 1.4, feel.ClickFrequency, 10);
     }
 
