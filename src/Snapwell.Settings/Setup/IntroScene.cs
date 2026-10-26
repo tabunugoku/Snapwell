@@ -63,9 +63,13 @@ internal sealed partial class IntroScene : Grid, IDisposable
         _name.RenderTransform = _nameTransform;
         BuildMark();
         Children.Add(_logo);
-        Loaded += OnLoaded;
+        Loaded += (_, _) => Initialize();
         Unloaded += OnUnloaded;
-        SizeChanged += (_, _) => Clip = new RectangleGeometry { Rect = new(0, 0, ActualWidth, ActualHeight) };
+        SizeChanged += (_, _) =>
+        {
+            Clip = new RectangleGeometry { Rect = new(0, 0, ActualWidth, ActualHeight) };
+            Initialize();
+        };
         AutomationProperties.SetAccessibilityView(_windowsHost, AccessibilityView.Raw);
         AutomationProperties.SetAccessibilityView(_logo, AccessibilityView.Raw);
         Opacity = 1;
@@ -130,9 +134,10 @@ internal sealed partial class IntroScene : Grid, IDisposable
         _mark.Children.Add(_square);
     }
 
-    private void OnLoaded(object sender, RoutedEventArgs args)
+    /// <summary>台本は大きさが決まってから作る。Loaded の時点では 0 のことがあり、そのまま作ると点も窓も左上の 1 点に潰れる。</summary>
+    private void Initialize()
     {
-        if (_disposed || _model is not null) { return; }
+        if (_disposed || _model is not null || XamlRoot is null || ActualWidth <= 0 || ActualHeight <= 0) { return; }
         _model = new(ActualWidth, ActualHeight);
         var compositor = ElementCompositionPreview.GetElementVisual(this).Compositor;
         _field = compositor.CreateContainerVisual();
@@ -295,7 +300,7 @@ internal sealed partial class IntroScene : Grid, IDisposable
         _disposed = true;
         SetRendering(false);
         if (_root is not null) { _root.Changed -= OnRootChanged; _root = null; }
-        Loaded -= OnLoaded; Unloaded -= OnUnloaded;
+        Unloaded -= OnUnloaded;
         foreach (var window in _windows) { window.Dispose(); }
         foreach (var dot in _dots) { dot.Visual.Dispose(); dot.Geometry.Dispose(); dot.Brush.Dispose(); }
         _field?.Dispose();
