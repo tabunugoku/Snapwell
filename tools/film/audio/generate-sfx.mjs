@@ -4,6 +4,7 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { spawnSync } from 'node:child_process';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const args = process.argv.slice(2);
@@ -11,7 +12,13 @@ const flag = (n) => args.includes(`--${n}`);
 const only = (() => { const i = args.indexOf('--only'); return i >= 0 ? args[i + 1].split(',') : null; })();
 const cfg = JSON.parse(readFileSync(resolve(here, 'sounds.json'), 'utf8'));
 const outDir = resolve(here, 'sfx');
-const key = process.env.ELEVENLABS_API_KEY;
+// 実行中のシェルに鍵が渡っていないとき (設定した直後の古いセッションなど) は、Windows のユーザー環境変数から読む。値は表示しない
+function userKey() {
+  if (process.platform !== 'win32') return undefined;
+  const r = spawnSync('powershell', ['-NoProfile', '-Command', "[Environment]::GetEnvironmentVariable('ELEVENLABS_API_KEY','User')"], { encoding: 'utf8' });
+  return r.status === 0 ? r.stdout.trim() || undefined : undefined;
+}
+const key = process.env.ELEVENLABS_API_KEY || (flag('dry-run') ? undefined : userKey());
 
 const list = Object.entries(cfg.sounds).filter(([n]) => !only || only.includes(n));
 const seconds = list.reduce((s, [, v]) => s + v.duration, 0);
