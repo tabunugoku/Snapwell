@@ -55,7 +55,8 @@ internal sealed class UpdateCheckService : IDisposable
     private Task? _worker;
     private Task<UpdateCheckResponse>? _inFlight;
     private TimeSpan? _lastAttempt;
-    private TimeSpan? _lastSuccess;
+    private TimeSpan? _lastRegularCheck;
+    private long _checkGeneration;
     private bool _retryPending;
     private bool _disposed;
 
@@ -116,12 +117,12 @@ internal sealed class UpdateCheckService : IDisposable
 
     private void RestoreCachedOffer()
     {
-        if (_current is null || _current.IsDevelopmentBuild || _package.IsPackaged || _publicKey is null) { return; }
+        if (UpdateOfferResolver.UnavailableOutcome(_current, _publicKey, _package.IsPackaged) is not null) { return; }
         try
         {
             var loaded = ReadState();
             if (loaded.IsReadOnly) { return; }
-            var offer = UpdateOfferResolver.Resolve(loaded.Value, _current.ToString(), _publicKey,
+            var offer = UpdateOfferResolver.Resolve(loaded.Value, _current!.ToString(), _publicKey,
                 _architecture, _package.IsPackaged);
             _stop.Token.ThrowIfCancellationRequested();
             if (offer is not null) { _notifier.Notify(offer); }
@@ -134,32 +135,40 @@ internal sealed class UpdateCheckService : IDisposable
     internal async Task<UpdateCheckResponse?> RunScheduledCheckAsync()
     {
         // 確認できない配布では、周期の確認を始めない。CheckNowAsync の結果は変わらない。
-        if (_current is null || _current.IsDevelopmentBuild || _package.IsPackaged || _publicKey is null) { return null; }
-        Task<UpdateCheckResponse> pending;
+        if (UpdateOfferResolver.UnavailableOutcome(_current, _publicKey, _package.IsPackaged) is not null) { return null; }
+        long generation;
         lock (_gate)
         {
             if (_disposed || _inFlight is { IsCompleted: false }) { return null; }
-            try
+            generation = _checkGeneration;
+        }
+        SettingsLoadResult<DeviceState> loaded;
+        try { loaded = ReadState(); }
+        catch (Exception exception)
+        {
+            lock (_gate)
             {
-                var loaded = ReadState();
-                var now = _clock.Uptime;
-                if (loaded.IsReadOnly || !loaded.Value.UpdateCheckEnabled
-                    || now < UpdateCheckPolicy.StartupDelay
-                    || (_lastAttempt is { } attempt && now - attempt < _pollInterval)) { return null; }
-                // 失敗は単調な一時間で再試行し、成功後は時計が巻き戻っても一日に一度とする。
-                var due = _retryPending || (_lastSuccess is { } success
-                    ? now - success >= UpdateCheckPolicy.CheckInterval
-                    : UpdateCheckPolicy.IsDue(_clock.UtcNow, loaded.Value.LastUpdateCheckUtc, now));
-                if (!due) { return null; }
-                pending = BeginCheck();
-            }
-            catch (Exception exception)
-            {
+                if (_disposed || generation != _checkGeneration) { return null; }
                 _lastAttempt = _clock.Uptime;
-                _retryPending = true;
-                Log(exception);
-                return new(UpdateCheckOutcome.Failed, Reason: "Device state could not be read.");
             }
+            Log(exception);
+            return new(UpdateCheckOutcome.Failed, Reason: "Device state could not be read.", Retryable: true);
+        }
+        Task<UpdateCheckResponse> pending;
+        lock (_gate)
+        {
+            // 読み取り中に明示確認が始まった場合は、完了済みでも古い設定から再び開始しない。
+            if (_disposed || generation != _checkGeneration) { return null; }
+            var now = _clock.Uptime;
+            if (loaded.IsReadOnly || !loaded.Value.UpdateCheckEnabled
+                || now < UpdateCheckPolicy.StartupDelay
+                || (_lastAttempt is { } attempt && now - attempt < _pollInterval)) { return null; }
+            // 一時的な失敗だけ一時間で再試行し、成功と恒久的な失敗は通常の周期で確認する。
+            var due = _retryPending || (_lastRegularCheck is { } regular
+                ? now - regular >= UpdateCheckPolicy.CheckInterval
+                : UpdateCheckPolicy.IsDue(_clock.UtcNow, loaded.Value.LastUpdateCheckUtc, now));
+            if (!due) { return null; }
+            pending = BeginCheck();
         }
         return await pending.ConfigureAwait(false);
     }
@@ -186,6 +195,7 @@ internal sealed class UpdateCheckService : IDisposable
     // 共有する確認は、最初の呼び出し元の取り消しに左右されない。待つ側だけが WaitAsync で抜ける。
     private Task<UpdateCheckResponse> BeginCheck()
     {
+        _checkGeneration++;
         _lastAttempt = _clock.Uptime;
         _inFlight = Task.Run(() => CheckCoreAsync(_stop.Token));
         return _inFlight;
@@ -197,26 +207,19 @@ internal sealed class UpdateCheckService : IDisposable
             _architecture, _package.IsPackaged);
         var response = await checker.CheckAsync(cancellationToken, () => _clock.UtcNow,
             _notifier.Notify).ConfigureAwait(false);
-        if (response.Outcome == UpdateCheckOutcome.Failed) { return Failure(response.Reason!); }
-        if (response.Outcome is UpdateCheckOutcome.Available or UpdateCheckOutcome.Skipped or UpdateCheckOutcome.UpToDate)
+        if (response.Reason is { } reason) { Log(new InvalidOperationException(reason)); }
+        lock (_gate)
         {
-            lock (_gate)
+            _retryPending = response.Outcome == UpdateCheckOutcome.Failed && response.Retryable;
+            if (!_retryPending)
             {
-                _retryPending = false;
-                _lastSuccess = _clock.Uptime;
+                _lastRegularCheck = _clock.Uptime;
             }
         }
         return response;
     }
 
     private SettingsLoadResult<DeviceState> ReadState() => _store.TryReload() ?? _store.Load();
-
-    private UpdateCheckResponse Failure(string reason)
-    {
-        lock (_gate) { _retryPending = true; }
-        Log(new InvalidOperationException(reason));
-        return new(UpdateCheckOutcome.Failed, Reason: reason);
-    }
 
     private void Log(Exception exception)
     {

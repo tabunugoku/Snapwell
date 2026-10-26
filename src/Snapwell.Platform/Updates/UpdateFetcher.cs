@@ -1,3 +1,4 @@
+using System.Net;
 using Snapwell.Core.Updates;
 
 namespace Snapwell.Platform.Updates;
@@ -14,10 +15,15 @@ public enum UpdateFetchFailure { NetworkError, Timeout, HttpStatus, TooLarge, In
 
 /// <summary>未検証のバイト列、または開発者向けの失敗診断。</summary>
 public sealed record UpdateFetchResult(byte[]? Manifest = null, byte[]? Signature = null,
-    UpdateFetchFailure? Failure = null, string? Diagnostic = null)
+    UpdateFetchFailure? Failure = null, string? Diagnostic = null, HttpStatusCode? StatusCode = null)
 {
     /// <summary>二つのファイルを取得できたか。</summary>
     public bool IsSuccess => Failure is null && Manifest is not null && Signature is not null;
+
+    /// <summary>通信障害、タイムアウト、429、5xx だけを短い間隔の再試行対象にする。</summary>
+    public bool IsTransient => Failure is UpdateFetchFailure.NetworkError or UpdateFetchFailure.Timeout
+        || (Failure == UpdateFetchFailure.HttpStatus
+            && (StatusCode == HttpStatusCode.TooManyRequests || (int?)StatusCode is >= 500 and <= 599));
 }
 
 /// <summary>認証と Cookie を使わず HTTPS の GET だけで情報を取得する。</summary>
@@ -54,7 +60,10 @@ public sealed class UpdateFetcher : IUpdateFetcher, IDisposable
             var signature = await GetAsync(UpdateEndpoints.Signature, 1024, timeout.Token).ConfigureAwait(false);
             return new(manifest, signature);
         }
-        catch (UpdateHttpException exception) { return new(Failure: exception.Failure, Diagnostic: exception.Message); }
+        catch (UpdateHttpException exception)
+        {
+            return new(Failure: exception.Failure, Diagnostic: exception.Message, StatusCode: exception.StatusCode);
+        }
         catch (OperationCanceledException)
         {
             return cancellationToken.IsCancellationRequested

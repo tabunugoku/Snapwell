@@ -14,19 +14,26 @@ public sealed class UpdateChecker(IUpdateFetcher fetcher, ISettingsStore<DeviceS
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
-            if (!ReleaseVersion.TryParse(currentVersion, out var current) || current!.IsDevelopmentBuild)
+            ReleaseVersion.TryParse(currentVersion, out var current);
+            if (UpdateOfferResolver.UnavailableOutcome(current, publicKey, isPackaged) is { } unavailable)
             {
-                return new(UpdateCheckOutcome.DevelopmentBuild);
+                return new(unavailable, Reason: unavailable == UpdateCheckOutcome.Failed
+                    ? "Packaged applications do not check for updates." : null);
             }
-            if (isPackaged) { return Failed("Packaged applications do not check for updates."); }
-            if (publicKey is null) { return new(UpdateCheckOutcome.NoPublicKey); }
             var fetched = await fetcher.FetchAsync(cancellationToken).ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();
-            if (!fetched.IsSuccess) { return Failed(fetched.Diagnostic ?? "Update fetch failed."); }
+            if (!fetched.IsSuccess) { return FetchFailed(fetched); }
             // 署名を検証するまでは内容を解釈しない。
-            if (!ManifestSignature.Verify(fetched.Manifest!, fetched.Signature!, publicKey))
+            if (!ManifestSignature.Verify(fetched.Manifest!, fetched.Signature!, publicKey!))
             {
-                return Failed("Manifest signature verification failed.");
+                // 公開の切り替わりによる組のずれを考慮し、両方を一回だけ取り直す。
+                fetched = await fetcher.FetchAsync(cancellationToken).ConfigureAwait(false);
+                cancellationToken.ThrowIfCancellationRequested();
+                if (!fetched.IsSuccess) { return FetchFailed(fetched); }
+                if (!ManifestSignature.Verify(fetched.Manifest!, fetched.Signature!, publicKey!))
+                {
+                    return Failed("Manifest signature verification failed.");
+                }
             }
             var parsed = UpdateManifestParser.Parse(fetched.Manifest!);
             if (parsed.Manifest is not { } manifest) { return Failed(parsed.Error ?? "Invalid manifest."); }
@@ -48,26 +55,39 @@ public sealed class UpdateChecker(IUpdateFetcher fetcher, ISettingsStore<DeviceS
             });
             if (replay) { return Failed("Manifest replay was rejected."); }
             ReleaseVersion.TryParse(state.SkippedVersion, out var skipped);
-            var evaluation = UpdateCheckPolicy.Evaluate(current, manifest, skipped);
+            var evaluation = UpdateCheckPolicy.Evaluate(current!, manifest, skipped);
             UpdateOffer? offer = evaluation.Status == UpdateCheckStatus.Available
                 ? new(manifest, asset, evaluation.RequiresUpdate) : null;
             cancellationToken.ThrowIfCancellationRequested();
             if (offer is not null) { notify?.Invoke(offer); }
             cancellationToken.ThrowIfCancellationRequested();
-            DeviceStateChanges.Update(store, latest => latest with
+            string? diagnostic = null;
+            try
             {
-                LastUpdateCheckUtc = (utcNow ?? (() => DateTimeOffset.UtcNow))(),
-            });
+                DeviceStateChanges.Update(store, latest => latest with
+                {
+                    LastUpdateCheckUtc = (utcNow ?? (() => DateTimeOffset.UtcNow))(),
+                });
+            }
+            catch (Exception exception)
+            {
+                // 案内と最高受理版は保存済みなので、日時だけの保存失敗で結果を失わせない。
+                diagnostic = "Last update check time could not be saved: " + exception.Message;
+            }
             return new(evaluation.Status switch
             {
                 UpdateCheckStatus.Available => UpdateCheckOutcome.Available,
                 UpdateCheckStatus.Skipped => UpdateCheckOutcome.Skipped,
                 _ => UpdateCheckOutcome.UpToDate,
-            }, offer);
+            }, offer, diagnostic);
         }
         catch (OperationCanceledException) { return Failed("Update check was cancelled."); }
-        catch (Exception exception) { return Failed("Update check failed: " + exception.Message); }
+        catch (Exception exception) { return Failed("Update check failed: " + exception.Message, retryable: true); }
     }
 
-    private static UpdateCheckResponse Failed(string reason) => new(UpdateCheckOutcome.Failed, Reason: reason);
+    private static UpdateCheckResponse FetchFailed(UpdateFetchResult result) =>
+        Failed(result.Diagnostic ?? "Update fetch failed.", result.IsTransient);
+
+    private static UpdateCheckResponse Failed(string reason, bool retryable = false) =>
+        new(UpdateCheckOutcome.Failed, Reason: reason, Retryable: retryable);
 }
