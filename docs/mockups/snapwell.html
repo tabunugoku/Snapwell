@@ -700,6 +700,38 @@ table.list tr:last-child td { border-bottom: 0; }
 .tray-ico { width: 20px; height: 20px; border-radius: 4px; display: grid; place-items: center; outline: 1px solid var(--blue-line); outline-offset: 3px; }
 
 /* 初回セットアップ */
+/* 導入: メニューなしで流れ、終わるとようこそへ。アクセントはこの導入だけの色 */
+.wizard { --wl-accent: #2563EB; --wl-accent-soft: rgba(37, 99, 235, 0.12); --wl-accent-line: rgba(37, 99, 235, 0.6); }
+:root[data-theme="dark"] .wizard { --wl-accent: #6AA8FF; --wl-accent-soft: rgba(106, 168, 255, 0.16); --wl-accent-line: rgba(106, 168, 255, 0.7); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .wizard { --wl-accent: #6AA8FF; --wl-accent-soft: rgba(106, 168, 255, 0.16); --wl-accent-line: rgba(106, 168, 255, 0.7); } }
+.wizard-frame { position: relative; min-height: 420px; }
+.wizard.intro .steps { visibility: hidden; }
+.wintro { position: absolute; inset: 0; z-index: 10; background: var(--bg); overflow: hidden; cursor: pointer; transition: opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1); }
+.wintro.off { display: none; }
+.wintro.out { opacity: 0; pointer-events: none; }
+.wi-logo { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 20px; pointer-events: none; }
+.wi-mark { opacity: 0; transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1); }
+.wi-sq { transform-box: fill-box; transform-origin: center; transform: translate(-16px, 20px) scale(0.5); opacity: 0; }
+.wi-arc { stroke-dashoffset: 40; }
+.wi-name { font-family: var(--font-display); font-weight: 500; font-size: 64px; line-height: 1; letter-spacing: -0.03em; color: var(--ink); opacity: 0; transform: translateY(20px); }
+.wi-logo.on .wi-mark { opacity: 1; }
+.wi-logo.on .wi-arc { stroke-dashoffset: 0; transition: stroke-dashoffset 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.1s; }
+.wi-logo.on .wi-sq { transform: none; opacity: 1; transition: transform 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) 0.45s, opacity 0.3s linear 0.45s; }
+.wi-logo.on .wi-name { opacity: 1; transform: none; transition: opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.35s, transform 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.35s; }
+.wi-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+/* ようこそ: 実装と同じ「ばね + 磁石」で窓が区画へ収まる。装飾は区画と窓だけにとどめる */
+.wbody.welcome { text-align: center; padding-top: 24px; }
+.wbody.welcome h3 { font-size: 32px; margin-top: 20px; }
+.wbody.welcome > p { margin: 8px auto 0; max-width: 440px; line-height: 1.7; }
+.wbody.welcome .wl-hint { font-size: 12px; margin-top: 14px; }
+.wl-stage { position: relative; height: 188px; max-width: 520px; margin: 0 auto; border: 1px solid var(--border); border-radius: 10px; background-color: var(--bg); overflow: hidden; touch-action: none; }
+.wl-zone { position: absolute; border: 1.5px dashed var(--border-strong); border-radius: 8px; box-sizing: border-box; transition: background-color 0.3s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.3s cubic-bezier(0.22, 1, 0.36, 1); }
+.wl-zone.on { background: var(--blue-bg); border-color: var(--blue-line); }
+.wl-win { position: absolute; left: 0; top: 0; display: flex; flex-direction: column; gap: 6px; padding: 0 0 8px; border: 1.5px solid var(--border-strong); border-radius: 8px; background: var(--surface); box-shadow: 0 6px 18px rgba(var(--shadow-lift), 0.14); overflow: hidden; cursor: grab; will-change: transform; box-sizing: border-box; }
+.wl-win.held { cursor: grabbing; box-shadow: 0 12px 28px rgba(var(--shadow-lift), 0.22); }
+.wl-win i { display: block; height: 16px; flex: none; border-bottom: 1px solid var(--border); background: var(--surface-2); }
+.wl-win b { display: block; height: 6px; margin: 0 8px; border-radius: 3px; background: var(--skeleton); flex: none; }
+.wl-win b + b { width: 60%; }
 .wizard { max-width: 760px; margin: 0 auto; }
 .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 0 0 16px; }
 .steps div { border-top: 2px solid var(--border); padding-top: 8px; font-size: 12px; color: var(--muted); }
@@ -1291,15 +1323,29 @@ table.list tr:last-child td { border-bottom: 0; }
     </div>
     <div class="wizard">
       <div class="steps" id="wSteps"><div>ようこそ</div><div>標準機能</div><div>ホットキー</div><div>分割案</div></div>
-      <div class="app-frame">
-        <div class="wstep" data-step="0"><div class="wbody">
-          <h3>Snapwell へようこそ</h3>
-          <p>ウィンドウを投げると、近い区画に吸い込まれて止まります。ホットキーとランチャーでも配置できます。</p>
-          <div class="rows">
-            <div class="row"><div><div class="t">投げて配置</div><div class="d">タイトルバーをつかんで、置きたい方向へ投げます</div></div></div>
-            <div class="row"><div><div class="t">なぞって配置</div><div class="d"><kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Space</kbd>、またはトレイのメニューでランチャーを開きます</div></div></div>
-            <div class="row"><div><div class="t">キーで配置</div><div class="d"><kbd>Ctrl</kbd> <kbd>Alt</kbd> + 矢印で半分、<kbd>Shift</kbd> を足すと 1 区画ずつ拡大・縮小</div></div></div>
+      <div class="app-frame wizard-frame">
+        <div class="wintro off" id="wIntro" role="img" aria-label="ウィンドウが弾けて踊り、区画へ並んで止まる導入アニメーション">
+          <canvas class="wi-canvas" id="wiCanvas" aria-hidden="true"></canvas>
+          <div class="wi-logo" id="wiLogo" aria-hidden="true">
+            <svg class="wi-mark" width="72" height="72" viewBox="0 0 44 44">
+              <rect width="44" height="44" rx="10" fill="#1B1B1A"/>
+              <g transform="translate(5.28 5.28) scale(0.76)">
+                <rect x="1" y="1" width="42" height="42" rx="9" fill="none" stroke="#F2F2F0" stroke-width="3.29"/>
+                <path class="wi-arc" d="M8 34 C 14 34, 18 26, 26 18" fill="none" stroke="#9B9A97" stroke-width="2" stroke-dasharray="3 3"/>
+                <rect class="wi-sq" x="23" y="7" width="14" height="14" rx="3" fill="#8CCBF2"/>
+              </g>
+            </svg>
+            <span class="wi-name">Snapwell</span>
           </div>
+        </div>
+        <div class="wstep" data-step="0"><div class="wbody welcome">
+          <div class="wl-stage" id="wlStage" aria-hidden="true">
+            <i class="wl-zone" data-z="0"></i><i class="wl-zone" data-z="1"></i><i class="wl-zone" data-z="2"></i>
+            <div class="wl-win" id="wlWin"><i></i><b></b><b></b></div>
+          </div>
+          <h3 id="wlTitle">ウィンドウを投げよう。</h3>
+          <p id="wlBody">つかんで投げると、いちばん近い区画に吸い込まれて止まります。<br>このあと、標準機能、ホットキー、分割案の 3 つを設定します。</p>
+          <p class="hint wl-hint" id="wlHint">上の窓は動かせます。つかんで投げてみてください。</p>
         </div></div>
         <div class="wstep" data-step="1"><div class="wbody">
           <h3>標準のスナップを止めますか</h3>
@@ -1336,6 +1382,7 @@ table.list tr:last-child td { border-bottom: 0; }
           <button class="btn primary" type="button" id="wNext">次へ</button>
         </div>
       </div>
+      <p class="hint" style="text-align: center; margin-top: 12px"><button class="btn" type="button" id="wLang">English</button> <button class="btn" type="button" id="wReplay">導入アニメーションをもう一度見る (モックアップ用)</button></p>
     </div>
   </section>
 </div>
@@ -3095,7 +3142,521 @@ function initTray() {
 }
 
 // ---------- 05 初回セットアップ ----------
+// 文言。英語は src/Snapwell.Core/Localization/Strings/setup/en.json の用語に合わせる(ようこそ画面の本文はモックアップ用の案)
+let wLang = 'ja';
+const WL = {
+  ja: {
+    steps: ['ようこそ', '標準機能', 'ホットキー', '分割案'], title: 'ウィンドウを投げよう。',
+    body: 'つかんで投げると、いちばん近い区画に吸い込まれて止まります。<br>このあと、標準機能、ホットキー、分割案の 3 つを設定します。',
+    hint: '上の窓は動かせます。つかんで投げてみてください。', held: '離すと、近い区画へ収まります。', again: 'もう一度どうぞ。',
+    back: '戻る', next: '次へ', start: 'はじめる', done: '完了', toggle: 'English', replay: '導入アニメーションをもう一度見る (モックアップ用)',
+    aria: 'ウィンドウが弾けて踊り、区画へ並んで止まる導入アニメーション',
+  },
+  en: {
+    steps: ['Welcome', 'Standard features', 'Hotkeys', 'Layout'], title: 'Throw a window.',
+    body: 'Grab a window and throw it. It is pulled into the nearest cell and stops there.<br>Next, you will set up standard features, hotkeys, and layout.',
+    hint: 'The window above moves. Grab it and give it a throw.', held: 'Let go and it settles into the nearest cell.', again: 'Once more.',
+    back: 'Back', next: 'Next', start: 'Get started', done: 'Done', toggle: '日本語', replay: 'Replay the intro (mockup only)',
+    aria: 'Windows burst, dance, and settle into zones in an intro animation',
+  },
+};
+
+// ようこその窓: 実装と同じ標準の操作感(質量・周波数・減衰・磁石)で、つかんで投げた窓が区画へ収まる
+function initWelcome() {
+  const stage = $('#wlStage');
+  const win = $('#wlWin');
+  const zoneEls = $$('.wl-zone', stage);
+  const f = FEELS.Standard;
+  const sp = springOf(f);
+  const wallK = f.m * Math.pow(2 * Math.PI * 8, 2);
+  const wallC = 2 * Math.sqrt(wallK * f.m);
+  const GAP = 8;
+  let W = 0;
+  let H = 0;
+  let zones = [];
+  const layout = () => {
+    W = stage.clientWidth;
+    H = stage.clientHeight;
+    const cw = (W - GAP * 3) / 2;
+    const ch = (H - GAP * 3) / 2;
+    zones = [
+      { x: GAP, y: GAP, w: cw, h: H - GAP * 2 },
+      { x: GAP * 2 + cw, y: GAP, w: cw, h: ch },
+      { x: GAP * 2 + cw, y: GAP * 2 + ch, w: cw, h: ch },
+    ];
+    zoneEls.forEach((el, i) => {
+      const z = zones[i];
+      el.style.cssText = `left:${z.x}px;top:${z.y}px;width:${z.w}px;height:${z.h}px`;
+    });
+  };
+  layout();
+  const s = { x: 0, y: 0, w: 120, h: 76, vx: 0, vy: 0, vw: 0, vh: 0 };
+  let target = 1;
+  let held = false;
+  let raf = 0;
+  let last = 0;
+  let touched = false;
+  let track = [];
+  let grab = { x: 0, y: 0 };
+  const render = () => {
+    win.style.width = `${s.w}px`;
+    win.style.height = `${s.h}px`;
+    win.style.transform = `translate(${s.x}px, ${s.y}px)`;
+  };
+  const setTarget = (i) => {
+    target = i;
+    zoneEls.forEach((el, j) => el.classList.toggle('on', j === i));
+  };
+  const snapTo = (i) => {
+    setTarget(i);
+    const z = zones[i];
+    Object.assign(s, { x: z.x, y: z.y, w: z.w, h: z.h, vx: 0, vy: 0, vw: 0, vh: 0 });
+    render();
+  };
+  const nearest = (cx, cy) => {
+    let best = 0;
+    let bd = Infinity;
+    zones.forEach((z, i) => {
+      const d = Math.hypot(cx - (z.x + z.w / 2), cy - (z.y + z.h / 2));
+      if (d < bd) { bd = d; best = i; }
+    });
+    return best;
+  };
+  const stepOnce = (h) => {
+    const z = zones[target];
+    // 窓の中心を区画の中心へ引く磁石のばね。サイズは行き過ぎない臨界減衰
+    const cx = s.x + s.w / 2;
+    const cy = s.y + s.h / 2;
+    s.vx += ((-sp.k * (cx - (z.x + z.w / 2)) - sp.c * s.vx) / sp.m) * h;
+    s.vy += ((-sp.k * (cy - (z.y + z.h / 2)) - sp.c * s.vy) / sp.m) * h;
+    const sizeC = 2 * Math.sqrt(sp.k * sp.m);
+    s.vw += ((-sp.k * (s.w - z.w) - sizeC * s.vw) / sp.m) * h;
+    s.vh += ((-sp.k * (s.h - z.h) - sizeC * s.vh) / sp.m) * h;
+    // 外壁は臨界減衰: 作業領域の外へは出さず、跳ね返さない
+    const wall = (pos, vel, lo, hi) => {
+      if (pos < lo) return (-wallK * (pos - lo) - wallC * vel) / sp.m;
+      if (pos > hi) return (-wallK * (pos - hi) - wallC * vel) / sp.m;
+      return 0;
+    };
+    s.vx += wall(s.x, s.vx, 0, W - s.w) * h;
+    s.vy += wall(s.y, s.vy, 0, H - s.h) * h;
+    s.x += s.vx * h;
+    s.y += s.vy * h;
+    s.w += s.vw * h;
+    s.h += s.vh * h;
+  };
+  const tick = (t) => {
+    const dt = Math.min(0.05, (t - last) / 1000);
+    last = t;
+    for (let acc = dt; acc > 1e-6;) {
+      const h = Math.min(1 / 240, acc);
+      acc -= h;
+      stepOnce(h);
+    }
+    render();
+    const z = zones[target];
+    const rest = Math.hypot(s.x - z.x, s.y - z.y, s.w - z.w, s.h - z.h) < 0.4 && Math.hypot(s.vx, s.vy) < 3;
+    if (rest) { raf = 0; snapTo(target); } else raf = requestAnimationFrame(tick);
+  };
+  const run = () => {
+    if (!raf) { last = performance.now(); raf = requestAnimationFrame(tick); }
+  };
+  const throwTo = (i, vx, vy) => {
+    if (reducedMotion()) { snapTo(i); return; }
+    setTarget(i);
+    s.vx = vx;
+    s.vy = vy;
+    run();
+  };
+  win.addEventListener('pointerdown', (ev) => {
+    held = true;
+    touched = true;
+    win.classList.add('held');
+    win.setPointerCapture(ev.pointerId);
+    const r = stage.getBoundingClientRect();
+    grab = { x: ev.clientX - r.left - s.x, y: ev.clientY - r.top - s.y };
+    s.vx = 0;
+    s.vy = 0;
+    track = [{ t: performance.now(), x: s.x, y: s.y }];
+    if (raf) cancelAnimationFrame(raf);
+    raf = 0;
+    $('#wlHint').textContent = WL[wLang].held;
+  });
+  win.addEventListener('pointermove', (ev) => {
+    if (!held) return;
+    const r = stage.getBoundingClientRect();
+    s.x = Math.min(Math.max(ev.clientX - r.left - grab.x, 0), W - s.w);
+    s.y = Math.min(Math.max(ev.clientY - r.top - grab.y, 0), H - s.h);
+    const now = performance.now();
+    track.push({ t: now, x: s.x, y: s.y });
+    track = track.filter((p) => p.t > now - 80);
+    setTarget(nearest(s.x + s.w / 2, s.y + s.h / 2));
+    render();
+  });
+  const release = () => {
+    if (!held) return;
+    held = false;
+    win.classList.remove('held');
+    const a = track[0];
+    const b = track[track.length - 1];
+    const dt = a && b && b.t > a.t ? (b.t - a.t) / 1000 : 0;
+    const vx = dt ? (b.x - a.x) / dt : 0;
+    const vy = dt ? (b.y - a.y) / dt : 0;
+    // 行き先は実装と同じく「位置 + 速度 × 惰性の時間」に最も近い区画
+    const i = nearest(s.x + s.w / 2 + vx * f.tau, s.y + s.h / 2 + vy * f.tau);
+    $('#wlHint').textContent = WL[wLang].again;
+    throwTo(i, vx, vy);
+  };
+  win.addEventListener('pointerup', release);
+  win.addEventListener('pointercancel', release);
+  // 触られないあいだは、ひとりでに区画をめぐって見せる
+  snapTo(1);
+  const demo = () => {
+    const visible = $('#screen-setup').classList.contains('active') && $('.wstep[data-step="0"]').classList.contains('active');
+    if (!touched && visible && !reducedMotion() && !document.hidden) {
+      const next = (target + 1) % 3;
+      const z = zones[next];
+      const dx = z.x + z.w / 2 - (s.x + s.w / 2);
+      const dy = z.y + z.h / 2 - (s.y + s.h / 2);
+      throwTo(next, dx * 1.2, dy * 1.2);
+    }
+    setTimeout(demo, 2600);
+  };
+  setTimeout(demo, 1600);
+  new ResizeObserver(() => {
+    if (stage.clientWidth && stage.clientWidth !== W) { layout(); snapTo(target); }
+  }).observe(stage);
+}
+
+// 導入アニメーション: メニューも文字もなく、窓だけで見せる。1 枚の窓が飛び込み、6 枚に弾けて踊り、
+// 区画へ並び、並びを組み替え、最後にそろって止まる。窓の動きはすべて実装と同じばね(質量・周波数・減衰)
+function playIntro() {
+  const wiz = $('.wizard');
+  const intro = $('#wIntro');
+  const cv = $('#wiCanvas');
+  const token = (playIntro.token = (playIntro.token || 0) + 1);
+  const alive = () => playIntro.token === token;
+  const finish = () => {
+    $('#wiLogo').classList.remove('on');
+    wiz.classList.remove('intro');
+    intro.classList.remove('on');
+    intro.classList.add('off');
+  };
+  if (reducedMotion()) { finish(); return; }
+  wiz.classList.add('intro');
+  $('#wiLogo').classList.remove('on');
+  intro.classList.remove('off', 'out');
+  intro.classList.add('on');
+
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const W = intro.clientWidth;
+  const H = intro.clientHeight;
+  cv.width = Math.round(W * dpr);
+  cv.height = Math.round(H * dpr);
+  const g = cv.getContext('2d');
+  g.scale(dpr, dpr);
+  const cs = getComputedStyle($('.wizard'));
+  const css = (n, d) => cs.getPropertyValue(n).trim() || d;
+  const toRgb = (c) => {
+    const k = document.createElement('canvas').getContext('2d');
+    k.fillStyle = c;
+    const v = k.fillStyle;
+    if (v[0] === '#') return [1, 3, 5].map((i) => parseInt(v.slice(i, i + 2), 16));
+    const m = /rgba?\(([^)]+)\)/.exec(v);
+    return m ? m[1].split(',').slice(0, 3).map((x) => Number(x)) : [37, 99, 235];
+  };
+  const A = toRgb(css('--wl-accent', '#2563EB'));
+  const I = toRgb(css('--text', '#2F3437'));
+  const rgba = (c, a) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
+  const surface = css('--surface', '#fff');
+  const surface2 = css('--surface-2', '#f9f9f8');
+  const borderStrong = css('--border-strong', '#dadad7');
+  const skeleton = css('--skeleton', '#efeeeb');
+
+  const standard = springOf(FEELS.Standard);
+  const bouncy = springOf(FEELS.Bouncy);
+  const M = 28;
+  const GAP = 8;
+  const SW = W - M * 2;
+  const SH = H - M * 2;
+  // 並びの案。各行は [左, 上, 幅, 高さ] を舞台に対する割合で表す
+  const LAYOUTS = [
+    [[0, 0, 1 / 3, 0.5], [1 / 3, 0, 1 / 3, 0.5], [2 / 3, 0, 1 / 3, 0.5], [0, 0.5, 1 / 3, 0.5], [1 / 3, 0.5, 1 / 3, 0.5], [2 / 3, 0.5, 1 / 3, 0.5]],
+    [[0, 0, 0.4, 0.5], [0, 0.5, 0.4, 0.5], [0.4, 0, 0.35, 0.5], [0.75, 0, 0.25, 0.5], [0.4, 0.5, 0.3, 0.5], [0.7, 0.5, 0.3, 0.5]],
+    [[0, 0, 0.5, 1 / 3], [0.5, 0, 0.5, 1 / 3], [0, 1 / 3, 0.5, 1 / 3], [0.5, 1 / 3, 0.5, 1 / 3], [0, 2 / 3, 0.5, 1 / 3], [0.5, 2 / 3, 0.5, 1 / 3]],
+    [[0, 0, 0.5, 1], [0.5, 0, 0.5, 0.5], [0.5, 0.5, 1 / 6, 0.5], [2 / 3, 0.5, 1 / 6, 0.5], [5 / 6, 0.5, 1 / 6, 0.25], [5 / 6, 0.75, 1 / 6, 0.25]],
+  ];
+  const rectOf = (L, i) => {
+    const [l, t, w, h] = LAYOUTS[L][i];
+    const x = M + l * SW + GAP / 2;
+    const y = M + t * SH + GAP / 2;
+    const ww = w * SW - GAP;
+    const hh = h * SH - GAP;
+    return { x: x + ww / 2, y: y + hh / 2, w: ww, h: hh };
+  };
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  const N = 6;
+  const cellW = SW / 3 - GAP;
+  const cellH = SH / 2 - GAP;
+  const wins = Array.from({ length: N }, (_, i) => ({
+    x: -cellW, y: H * 0.55, w: cellW * 1.15, h: cellH * 1.15, r: 0,
+    vx: 0, vy: 0, vw: 0, vh: 0, vr: 0,
+    tx: W / 2, ty: H / 2, tw: cellW, th: cellH, tr: 0,
+    sp: standard, flash: 0, settled: true, hop: 0, show: i === 0, trail: [], idx: i,
+  }));
+  const dots = [];
+  const STEP = 22;
+  for (let y = STEP / 2; y < H; y += STEP) {
+    for (let x = STEP / 2; x < W; x += STEP) dots.push({ x, y, dx: 0, dy: 0, vx: 0, vy: 0 });
+  }
+  const waves = [];
+  const KD = 140;
+  const CD = 2 * 0.55 * Math.sqrt(KD);
+  const ease = (x) => 1 - Math.pow(1 - Math.min(1, Math.max(0, x)), 3);
+
+  const aim = (w, r, feel, vx, vy) => {
+    w.tx = r.x; w.ty = r.y; w.tw = r.w; w.th = r.h; w.tr = r.r || 0;
+    w.sp = feel;
+    if (vx !== undefined) { w.vx = vx; w.vy = vy; }
+    w.settled = false;
+  };
+  // 時刻つきの振り付け。once で 1 回ずつ実行する
+  const script = [];
+  const at = (t, fn) => script.push({ t, fn, done: false });
+  // 1. 1 枚が左から飛び込み、中央で止まる
+  at(0.5, () => {
+    const w = wins[0];
+    w.show = true;
+    aim(w, { x: W / 2, y: H / 2, w: cellW * 1.5, h: cellH * 1.5 }, standard, 1500, -200);
+  });
+  // 2. 6 枚に弾けて、あちこちへ浮かぶ
+  at(1.9, () => {
+    wins.forEach((w, i) => {
+      w.show = true;
+      if (i > 0) { w.x = wins[0].x; w.y = wins[0].y; w.w = wins[0].w; w.h = wins[0].h; }
+      const a = (i / N) * Math.PI * 2 + 0.4;
+      const rr = Math.min(SW, SH) * 0.36;
+      aim(w, { x: W / 2 + Math.cos(a) * rr * 1.5, y: H / 2 + Math.sin(a) * rr * 0.9, w: cellW * 0.62, h: cellH * 0.62, r: rnd(-0.28, 0.28) }, bouncy,
+        Math.cos(a) * 900, Math.sin(a) * 700);
+      w.vr = rnd(-6, 6);
+    });
+    waves.push({ x: W / 2, y: H / 2, t0: 1.9, amp: 18, speed: 420, w: 60, life: 2 });
+  });
+  // 3. 並ぶ(3 x 2)
+  at(3.0, () => wins.forEach((w, i) => aim(w, rectOf(0, i), standard, rnd(-250, 250), rnd(-250, 250))));
+  // 4. 並びを組み替える。1 枚ずつ時間差で動かして波のように見せる
+  [[3.9, 1], [4.8, 2]].forEach(([t, L]) => wins.forEach((w, i) => at(t + i * 0.07, () => aim(w, rectOf(L, i), standard))));
+  // 5. 最後の並びへ。同時に左から順に跳ねて、はずむ
+  wins.forEach((w, i) => at(5.7 + i * 0.07, () => aim(w, rectOf(3, i), standard)));
+  [0, 1, 2, 3, 4, 5].forEach((k) => at(6.5 + k * 0.1, () => {
+    const w = wins[k];
+    w.vy = -520;
+    w.flash = 1;
+    waves.push({ x: w.tx, y: w.ty, t0: 6.5 + k * 0.1, amp: 8, speed: 260, w: 40, life: 1.4 });
+  }));
+  let out = false;
+  const bgc = toRgb(css('--bg', '#F7F6F3'));
+  at(7.4, () => $('#wiLogo').classList.add('on'));
+
+  const t0 = performance.now();
+  let last = t0;
+  const frame = (now) => {
+    if (!alive()) return;
+    const t = (now - t0) / 1000;
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    script.forEach((s) => { if (!s.done && t >= s.t) { s.done = true; s.fn(); } });
+
+    for (const w of wins) {
+      if (!w.show) continue;
+      const k = w.sp.k;
+      const c = w.sp.c;
+      const m = w.sp.m;
+      const kc = 2 * Math.sqrt(k * m);
+      for (let acc = dt; acc > 1e-6;) {
+        const h = Math.min(1 / 240, acc);
+        acc -= h;
+        w.vx += ((-k * (w.x - w.tx) - c * w.vx) / m) * h;
+        w.vy += ((-k * (w.y - w.ty) - c * w.vy) / m) * h;
+        w.vr += ((-k * 0.5 * (w.r - w.tr) - c * 0.6 * w.vr) / m) * h;
+        w.vw += ((-k * (w.w - w.tw) - kc * w.vw) / m) * h;
+        w.vh += ((-k * (w.h - w.th) - kc * w.vh) / m) * h;
+        w.x += w.vx * h; w.y += w.vy * h; w.r += w.vr * h; w.w += w.vw * h; w.h += w.vh * h;
+      }
+      w.flash = Math.max(0, w.flash - dt * 1.3);
+      w.trail.push([w.x, w.y]);
+      if (w.trail.length > 40) w.trail.shift();
+      const dist = Math.hypot(w.x - w.tx, w.y - w.ty) + Math.abs(w.w - w.tw) + Math.abs(w.h - w.th);
+      const spd = Math.hypot(w.vx, w.vy);
+      if (!w.settled && dist < 1.6 && spd < 10) {
+        w.settled = true;
+        w.flash = 1;
+        waves.push({ x: w.tx, y: w.ty, t0: t, amp: 9, speed: 250, w: 36, life: 1.4 });
+      }
+    }
+    for (let i = waves.length - 1; i >= 0; i--) if (t - waves[i].t0 > waves[i].life) waves.splice(i, 1);
+
+    // 点の場: 波と、窓の中心の近くでだけ反応する
+    for (const p of dots) {
+      let tx = 0;
+      let ty = 0;
+      for (const w of waves) {
+        const wx = p.x - w.x;
+        const wy = p.y - w.y;
+        const r = Math.hypot(wx, wy) || 1;
+        const age = t - w.t0;
+        const kk = w.amp * Math.exp(-age * 1.5) * Math.exp(-Math.pow((r - w.speed * age) / w.w, 2));
+        tx += (wx / r) * kk;
+        ty += (wy / r) * kk;
+      }
+      for (let acc = dt; acc > 1e-6;) {
+        const h = Math.min(1 / 120, acc);
+        acc -= h;
+        p.vx += (KD * (tx - p.dx) - CD * p.vx) * h;
+        p.vy += (KD * (ty - p.dy) - CD * p.vy) * h;
+        p.dx += p.vx * h;
+        p.dy += p.vy * h;
+      }
+    }
+
+    g.clearRect(0, 0, W, H);
+    const reveal = t * 700;
+    for (const p of dots) {
+      const rv = ease((reveal - Math.hypot(p.x - W / 2, p.y - H / 2)) / 160);
+      if (rv <= 0) continue;
+      const heat = Math.min(1, Math.hypot(p.dx, p.dy) / 10);
+      g.fillStyle = heat > 0.1 ? rgba(A, (0.25 + heat * 0.65) * rv) : rgba(I, 0.2 * rv);
+      g.beginPath();
+      g.arc(p.x + p.dx, p.y + p.dy, (1.3 + heat * 1.8) * (0.5 + rv * 0.5), 0, Math.PI * 2);
+      g.fill();
+    }
+    for (const wv of waves) {
+      const age = t - wv.t0;
+      g.strokeStyle = rgba(A, 0.45 * Math.exp(-age * 1.8));
+      g.lineWidth = 1.5;
+      g.beginPath();
+      g.arc(wv.x, wv.y, wv.speed * age, 0, Math.PI * 2);
+      g.stroke();
+    }
+    // 先頭の 1 枚の尾
+    const lead = wins[0];
+    if (lead.show && t < 2.2) {
+      for (let i = 1; i < lead.trail.length; i++) {
+        const q = i / lead.trail.length;
+        g.strokeStyle = rgba(A, q * 0.5);
+        g.lineWidth = 1 + q * 5;
+        g.lineCap = 'round';
+        g.beginPath();
+        g.moveTo(lead.trail[i - 1][0], lead.trail[i - 1][1]);
+        g.lineTo(lead.trail[i][0], lead.trail[i][1]);
+        g.stroke();
+      }
+    }
+    // 窓。前に出てきたものほど手前に描く(動いている窓を上に)
+    const order = wins.filter((w) => w.show).sort((a, b) => (a.settled - b.settled));
+    for (const w of order) {
+      const speed = Math.hypot(w.vx, w.vy);
+      const lift = Math.min(1, speed / 700);
+      g.save();
+      g.translate(w.x, w.y);
+      g.rotate(w.r);
+      g.shadowColor = `rgba(0,0,0,${0.12 + lift * 0.2})`;
+      g.shadowBlur = 8 + lift * 26;
+      g.shadowOffsetY = 2 + lift * 12;
+      g.fillStyle = surface;
+      g.beginPath();
+      g.roundRect(-w.w / 2, -w.h / 2, w.w, w.h, 9);
+      g.fill();
+      g.shadowColor = 'transparent';
+      // タイトルバー
+      g.save();
+      g.beginPath();
+      g.roundRect(-w.w / 2, -w.h / 2, w.w, w.h, 9);
+      g.clip();
+      // Windows 11 のタイトルバー: 左にアイコンとタイトル、右に最小化・最大化・閉じる
+      const tb = 24;
+      const left = -w.w / 2;
+      const top = -w.h / 2;
+      g.fillStyle = surface2;
+      g.fillRect(left, top, w.w, tb);
+      g.fillStyle = rgba(A, 0.9);
+      g.beginPath();
+      g.roundRect(left + 8, top + 7, 10, 10, 2.5);
+      g.fill();
+      g.fillStyle = skeleton;
+      g.beginPath();
+      g.roundRect(left + 24, top + 9.5, Math.min(w.w * 0.28, 70), 5, 2.5);
+      g.fill();
+      g.strokeStyle = rgba(I, 0.55);
+      g.lineWidth = 1;
+      const bw = 28;
+      const cx0 = left + w.w - bw * 3;
+      g.beginPath();
+      g.moveTo(cx0 + bw / 2 - 4, top + 12.5);
+      g.lineTo(cx0 + bw / 2 + 4, top + 12.5);
+      g.stroke();
+      g.strokeRect(cx0 + bw + bw / 2 - 3.5, top + 8.5, 7, 7);
+      const xc = cx0 + bw * 2 + bw / 2;
+      g.beginPath();
+      g.moveTo(xc - 4, top + 8.5);
+      g.lineTo(xc + 4, top + 16.5);
+      g.moveTo(xc + 4, top + 8.5);
+      g.lineTo(xc - 4, top + 16.5);
+      g.stroke();
+      g.fillStyle = rgba(I, 0.08);
+      g.fillRect(left, top + tb - 1, w.w, 1);
+      // 中身の骨組み
+      g.fillStyle = skeleton;
+      const bars = [0.7, 0.48, 0.58, 0.4];
+      for (let i = 0; i < bars.length; i++) {
+        const by = -w.h / 2 + 38 + i * 14;
+        if (by + 7 > w.h / 2 - 8) break;
+        g.beginPath();
+        g.roundRect(-w.w / 2 + 12, by, (w.w - 24) * bars[i], 7, 3.5);
+        g.fill();
+      }
+      g.restore();
+      // 枠は中身の上に最後に描く。先に描くとタイトルバーの塗りが枠の内側を覆い、光の幅が部位で違って見える
+      g.lineWidth = 1.5;
+      g.strokeStyle = w.flash > 0.02 ? rgba(A, 0.35 + w.flash * 0.65) : borderStrong;
+      g.beginPath();
+      g.roundRect(-w.w / 2, -w.h / 2, w.w, w.h, 9);
+      g.stroke();
+      g.restore();
+    }
+    const veil = ease((t - 7.1) / 0.7) * 0.97;
+    if (veil > 0) {
+      g.fillStyle = rgba(bgc, veil);
+      g.fillRect(0, 0, W, H);
+    }
+    if (t > 9.6 && !out) {
+      out = true;
+      intro.classList.add('out');
+      setTimeout(() => { if (alive()) finish(); }, 900);
+    }
+    if (t < 11) requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
+  // 画面のどこかを押すと飛ばせる(モックアップ上の便宜)
+  intro.onclick = () => { playIntro.token += 1; finish(); };
+}
+
 function initWizard() {
+  initWelcome();
+  $('#wReplay').addEventListener('click', () => { step = 0; render(); playIntro(); });
+  $('#wLang').addEventListener('click', () => {
+    wLang = wLang === 'ja' ? 'en' : 'ja';
+    const L = WL[wLang];
+    document.documentElement.lang = wLang;
+    $$('#wSteps div').forEach((d, i) => { d.textContent = L.steps[i]; });
+    $('#wlTitle').textContent = L.title;
+    $('#wlBody').innerHTML = L.body;
+    $('#wlHint').textContent = L.hint;
+    $('#wLang').textContent = L.toggle;
+    $('#wReplay').textContent = L.replay;
+    $('#wIntro').setAttribute('aria-label', L.aria);
+    render();
+  });
   let step = 0;
   const total = 4;
   const plans = [[8, 8, 'おすすめ。半分・四分割・1/4 を作れます'], [12, 6, '1/3 や 2/3 も作れます'], [6, 4, '大きな区画で手早く']];
@@ -3127,7 +3688,8 @@ function initWizard() {
       d.className = i < step ? 'done' : (i === step ? 'now' : '');
     });
     $('#wBack').disabled = step === 0;
-    $('#wNext').textContent = step === total - 1 ? '完了' : '次へ';
+    $('#wNext').textContent = step === total - 1 ? WL[wLang].done : (step === 0 ? WL[wLang].start : WL[wLang].next);
+    $('#wBack').textContent = WL[wLang].back;
     $('#wCount').textContent = `${step + 1} / ${total}`;
   };
   $('#wBack').addEventListener('click', () => { step = Math.max(0, step - 1); render(); });
@@ -3137,6 +3699,7 @@ function initWizard() {
     render();
   });
   render();
+  playIntro();
 }
 
 // ---------- 画面の切り替えと配色 ----------
