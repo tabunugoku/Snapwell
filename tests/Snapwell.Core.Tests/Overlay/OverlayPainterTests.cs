@@ -175,6 +175,72 @@ public sealed class OverlayPainterTests
         Assert.Equal(0, Pixel(frame, coveredPixels, 15)[3]);
     }
 
+    /// <summary>分割案の矢印は各 DPI で中央にそろい、連続した左右対称の三角形になる。</summary>
+    [Theory]
+    [InlineData(1, 9, 5)]
+    [InlineData(1.25, 11, 6)]
+    [InlineData(1.5, 15, 8)]
+    [InlineData(1.75, 17, 9)]
+    [InlineData(2, 19, 10)]
+    [InlineData(3, 27, 15)]
+    public void PlanArrowHasSymmetricContinuousRows(double scale, int expectedWidth, int expectedHeight)
+    {
+        var area = new PixelRect(-2000, -301, (int)(640 * scale), (int)(480 * scale));
+        var selection = new ZoneSelection(area, new(8, 8), new(8, 8));
+        var layout = LauncherPanelLayout.Create(selection, scale);
+        Assert.True(layout.Plan.Width > 0);
+        foreach (var theme in new[] { OverlayTheme.Light, OverlayTheme.Dark })
+        {
+            var frame = OverlayPainter.Create(area.Width, area.Height);
+            OverlayPainter.Panel(frame, selection, layout, theme, scale);
+            var panel = OverlayPainter.CreatePanelLayer(area, layout, theme, scale);
+            var expectedColor = Composite(OverlayPalette.For(theme).Text);
+            foreach (var layer in new[] { new LauncherPanelLayer(area, frame), panel })
+            {
+                // 文字の描画を省いた面では、Text 色の画素は矢印だけになる。
+                var pixels = Enumerable.Range(0, layer.Frame.Width * layer.Frame.Height)
+                    .Where(index => layer.Frame.Pixels.AsSpan(index * 4, 4).SequenceEqual(expectedColor))
+                    .Select(index => (X: layer.Bounds.X + index % layer.Frame.Width,
+                        Y: layer.Bounds.Y + index / layer.Frame.Width)).ToArray();
+                Assert.NotEmpty(pixels);
+                Assert.All(pixels, point => Assert.True(layout.Plan.Contains(new Vec2(point.X, point.Y))));
+                var rows = pixels.GroupBy(point => point.Y).OrderBy(row => row.Key).ToArray();
+                Assert.Equal(expectedHeight, rows.Length);
+                Assert.Equal(expectedWidth, rows[0].Count());
+                Assert.Single(rows[^1]);
+                var axis = rows[0].Min(point => point.X) + rows[0].Max(point => point.X);
+                Assert.InRange(Math.Abs((axis + 1) / 2.0 - (layout.Plan.Right - 14 * scale)), 0, 1);
+                Assert.InRange(Math.Abs((rows[0].Key + rows[^1].Key + 1) / 2.0 - layout.Plan.Center.Y), 0, .5);
+                var previousWidth = expectedWidth;
+                for (var row = 0; row < rows.Length; row++)
+                {
+                    var xs = rows[row].Select(point => point.X).Order().ToArray();
+                    Assert.Equal(rows[0].Key + row, rows[row].Key);
+                    Assert.Equal(xs[^1] - xs[0] + 1, xs.Length);
+                    Assert.Equal(1, xs.Length % 2);
+                    Assert.InRange(xs.Length, 1, previousWidth);
+                    Assert.Equal(axis, xs[0] + xs[^1]);
+                    Assert.All(xs, x => Assert.Contains(axis - x, xs));
+                    previousWidth = xs.Length;
+                }
+            }
+        }
+    }
+
+    /// <summary>分割案の幅が零なら矢印の画素も描かない。</summary>
+    [Fact]
+    public void PanelWithoutPlanDoesNotPaintArrow()
+    {
+        var selection = new ZoneSelection(new(-100, -80, 100, 100), new(2, 2), new(0, 0));
+        var layout = LauncherPanelLayout.Create(selection);
+        Assert.Equal(0, layout.Plan.Width);
+        var frame = OverlayPainter.Create(100, 100);
+        OverlayPainter.Panel(frame, selection, layout);
+        var arrowColor = Composite(OverlayPalette.For(OverlayTheme.Light).Text);
+        Assert.DoesNotContain(Enumerable.Range(0, frame.Width * frame.Height),
+            index => frame.Pixels.AsSpan(index * 4, 4).SequenceEqual(arrowColor));
+    }
+
     private static byte[] Composite(OverlayColor color, byte[]? destination = null)
     {
         destination ??= new byte[4];
