@@ -1,6 +1,6 @@
 {
   "Feel_Title.Text": "操作感",
-  "Feel_Lead.Text": "投げたときの動き方です。プリセットを選ぶと、吸着半径を除く 4 つの値がその値になり、どれかを変えると「カスタム」になります。曲線は、各プリセットでキー操作したときの、止まるまでの位置の変化です。",
+  "Feel_Lead.Text": "投げたときの動き方です。プリセットを選ぶと、吸着半径を除く 4 つの値がプリセットの値に変わり、どれかを変えると「カスタム」になります。曲線は、各プリセットでキー操作したときの、止まるまでの位置の変化です。",
   "Feel_CardAiry.AutomationName": "airy — airy, slightly magnetic",
   "Feel_AiryDescription.Text": "airy, slightly magnetic",
   "Feel_CardSnappy.AutomationName": "snappy — snappy, precise",

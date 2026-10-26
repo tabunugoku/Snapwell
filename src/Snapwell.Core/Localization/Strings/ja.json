@@ -41,7 +41,7 @@
   "General.Startup.TaskFailed": "タスク スケジューラに登録できませんでした。",
   "General.Startup.AdminNextSignIn": "次のサインインから管理者として起動します。",
   "General.Startup.Failed": "自動起動の登録を読み書きできませんでした。アクセス権を確認してください。",
-  "General.Language.Future": "新しい版の端末状態のため、言語を変更できません。Snapwell を更新してください。",
+  "General.Language.Future": "この PC の設定が新しい版で保存されているため、言語を変更できません。Snapwell を更新してください。",
   "General.Language.SaveFailed": "言語を保存できませんでした。ファイルの場所とアクセス権を確認してください。",
   "Language.Auto": "自動（OS に合わせる）",
   "Language.Japanese": "日本語",

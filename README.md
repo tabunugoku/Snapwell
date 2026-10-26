@@ -19,7 +19,7 @@ The Japanese original of this page is folded at the bottom. 日本語の原文�
 - From the speed you let go with, Snapwell predicts where a window would stop, then carries it to a zone or a corner with a spring, a magnet and walls.
 - Work with hotkeys, a launcher and a tray menu.
 - Native on x64 and ARM64. There is no x86 build.
-- Network access is only for an optional update check, and no DLL is injected into other apps.
+- Network access is limited to the optional update check and, only when you click "Update and restart", the download of the signed release package. No DLL is injected into other apps.
 
 ## Features in detail
 
@@ -213,7 +213,7 @@ Snapwell は Windows 11 用のウィンドウマネージャーです。ウィ�
 - 離した速さから止まる位置を予測し、ばね、磁石、壁でウィンドウを区画や四隅に運びます。
 - ホットキー、ランチャー、トレイのメニューで操作します。
 - x64 と ARM64 のネイティブ版です。x86 は対象外です。
-- 通信は利用者が有効にした更新の確認だけで、DLL を他のアプリに差し込むこともしません。
+- 通信は、利用者が有効にした更新の確認と、「更新して再起動」を押したときの署名つきの配布ファイルのダウンロードだけです。DLL を他のアプリに差し込むこともしません。
 
 ## 機能の詳細
 

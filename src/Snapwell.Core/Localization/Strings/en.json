@@ -41,7 +41,7 @@
   "General.Startup.TaskFailed": "Couldn't register with Task Scheduler.",
   "General.Startup.AdminNextSignIn": "Snapwell will start as administrator at your next sign-in.",
   "General.Startup.Failed": "Couldn't read or write auto-start registration. Check permissions.",
-  "General.Language.Future": "Can't change the language because the device state is from a newer version. Update Snapwell.",
+  "General.Language.Future": "Can't change the language because this PC's settings were saved by a newer version. Update Snapwell.",
   "General.Language.SaveFailed": "Couldn't save the language. Check the file location and permissions.",
   "Language.Auto": "Auto (match Windows)",
   "Language.Japanese": "日本語",
