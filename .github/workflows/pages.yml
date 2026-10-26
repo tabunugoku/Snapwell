@@ -1,9 +1,12 @@
 name: Pages
 
 # site/ を GitHub Pages に公開する。公開元は、リポジトリの Settings → Pages で「GitHub Actions」を選ぶ
-# 公開は v1.0.0 のリリースと同じ日にそろえる (ダウンロードのボタンはそれまで 404)。それまでは手動で実行する。
-# リリース後に自動にするなら、push の節 (branches: [main] と paths: ['site/**', '.github/workflows/pages.yml']) を足す
+# main の site/** の変更で自動に公開する (手動の実行もできる)。ダウンロードのボタンは v1.0.0 のリリースが公開されるまで 404 なので、
+# この変更は v1.0.0 のリリースを公開する日にマージする
 on:
+  push:
+    branches: [main]
+    paths: ['site/**', '.github/workflows/pages.yml']
   workflow_dispatch:
 
 concurrency:
