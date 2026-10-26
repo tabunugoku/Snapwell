@@ -9,7 +9,8 @@ using Snapwell.Platform.Updates;
 namespace Snapwell.App.Lifecycle;
 
 /// <summary>進行役の待機と通常権限での本体起動を OS へ接続する。</summary>
-internal sealed class UpdateEnvironment(string sid, string executablePath, IAdminTaskService tasks)
+internal sealed class UpdateEnvironment(string sid, string executablePath, IAdminTaskService tasks,
+    string? localAppDataRoot = null)
     : IUpdateCoordinatorEnvironment
 {
     private readonly UpdateSignalNames _names = new(sid);
@@ -44,6 +45,21 @@ internal sealed class UpdateEnvironment(string sid, string executablePath, IAdmi
     public IUpdateCoordinatorSignals CreateSignals() => new CoordinatorSignals(_names);
 
     public void StartResident() => UpdateResidentLauncher.Start(executablePath, tasks);
+
+    /// <summary>三つの入力の親が LocalAppData の既知の pending と一致するときだけ再帰削除する。</summary>
+    public void CleanupPending(UpdateCommandLine command)
+    {
+        var pending = Path.GetFullPath(Path.Combine(localAppDataRoot
+            ?? Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "Snapwell", "update", "pending"));
+        // 引数の親を削除対象にせず、三つとも一致した場合だけ既知のパスを使う。
+        foreach (var path in new[] { command.Manifest, command.Signature, command.Zip })
+        {
+            if (!string.Equals(Path.GetDirectoryName(Path.GetFullPath(path)), pending,
+                StringComparison.OrdinalIgnoreCase)) { return; }
+        }
+        if (Directory.Exists(pending)) { Directory.Delete(pending, recursive: true); }
+    }
 
     public void WriteResult(UpdateLastResult result) => UpdateResultFile.Write(ResultPath, result);
 

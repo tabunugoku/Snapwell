@@ -17,7 +17,7 @@ public sealed class UpdateCoordinatorTests
         var result = fixture.Run();
         Assert.Equal("installed", result.Result);
         Assert.Equal(0, result.Code);
-        Assert.Equal(["signals", "quit", "pid:42", "helper:True", "applied", "start", "ready",
+        Assert.Equal(["signals", "quit", "pid:42", "helper:True", "applied", "cleanup", "start", "ready",
             "signals.dispose", "helper.dispose", "write:installed"], fixture.Calls);
         Assert.Equal(_command.HelperArguments, fixture.Launcher.Arguments);
         Assert.Equal("2.0.0", fixture.Environment.Saved!.Version);
@@ -200,6 +200,135 @@ public sealed class UpdateCoordinatorTests
         Assert.Equal((int)UpdateInstallResult.IoError, fixture.Environment.Saved!.Code);
     }
 
+    /// <summary>セッションの開始前やヘルパーの起動中の例外でも pending を片付ける。</summary>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void SessionExceptionCleansPending(bool beforeSignals)
+    {
+        var fixture = new Fixture();
+        if (beforeSignals) { fixture.Environment.SignalsException = new IOException(); }
+        else { fixture.Launcher.StartException = new IOException(); }
+        Assert.Equal("failed", fixture.Run().Result);
+    }
+
+    /// <summary>新版を起動できなくても Ready を待ち、削除の試行を繰り返さない。</summary>
+    [Fact]
+    public void FailedNewResidentStartStillWaitsReadyAfterCleanup()
+    {
+        var fixture = new Fixture();
+        fixture.Environment.Signals.Ready = false;
+        fixture.Launcher.Process.Code = (int)UpdateInstallResult.ReadyTimeoutRolledBack;
+        fixture.Environment.StartAction = () => throw new IOException();
+        Assert.Equal("failed", fixture.Run().Result);
+        Assert.True(fixture.Calls.IndexOf("cleanup") < fixture.Calls.IndexOf("start"));
+        Assert.True(fixture.Calls.IndexOf("start") < fixture.Calls.IndexOf("ready"));
+    }
+
+    /// <summary>Ready もヘルパー終了も時間切れになった場合も削除は一度だけ試みる。</summary>
+    [Fact]
+    public void ReadyAndHelperTimeoutCleansPendingOnce()
+    {
+        var fixture = new Fixture();
+        fixture.Environment.Signals.Ready = false;
+        fixture.Launcher.Process.Exits = false;
+        Assert.Equal("failed", fixture.Run().Result);
+    }
+
+    /// <summary>削除に失敗しても成功・失敗の結果と起動確認の順序を変えない。</summary>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void CleanupFailureOnlyLogs(bool applied)
+    {
+        var fixture = new Fixture();
+        fixture.Environment.Signals.Applied = applied;
+        fixture.Launcher.Process.Code = (int)UpdateInstallResult.SignatureInvalid;
+        var exception = new IOException("Pending is locked.");
+        fixture.Environment.CleanupAction = () => throw exception;
+        var result = fixture.Run();
+        Assert.Equal(applied ? "installed" : "failed", result.Result);
+        Assert.Equal(applied ? 0 : (int)UpdateInstallResult.SignatureInvalid, result.Code);
+        Assert.Same(exception, Assert.Single(fixture.Log.Errors));
+    }
+
+    /// <summary>実体の削除後も新版の起動と Ready 待機が進み、結果ファイルだけが残る。</summary>
+    [Fact]
+    public void RealCleanupLeavesOnlyLastResultBeforeNewResidentStarts()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "snapwell-pending-" + Guid.NewGuid().ToString("N"));
+        var pending = Path.Combine(root, "Snapwell", "update", "pending");
+        var resultPath = Path.Combine(root, "Snapwell", "update", "last-result.json");
+        var command = CreatePending(pending);
+        var environment = new UpdateEnvironment(command.Sid, @"C:\Snapwell.exe", new FakeTasks(), root);
+        var fixture = new Fixture();
+        fixture.Environment.CleanupAction = () => environment.CleanupPending(command with
+        {
+            Manifest = command.Manifest.ToUpperInvariant(),
+            Signature = Path.Combine(pending, "nested", "..", "manifest.sig"),
+        });
+        fixture.Environment.StartAction = () => Assert.False(Directory.Exists(pending));
+        fixture.Environment.WriteAction = result => UpdateResultFile.Write(resultPath, result);
+        try
+        {
+            Assert.Equal("installed", fixture.Run().Result);
+            Assert.Equal([resultPath], Directory.GetFileSystemEntries(Path.GetDirectoryName(resultPath)!));
+            environment.CleanupPending(command);
+            Assert.True(File.Exists(resultPath));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    /// <summary>三つの親が既知の pending と一致しなければ、どちらのフォルダーも消さない。</summary>
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    public void RealCleanupPreservesUnexpectedParents(int outsideIndex)
+    {
+        var root = Path.Combine(Path.GetTempPath(), "snapwell-pending-" + Guid.NewGuid().ToString("N"));
+        var pending = Path.Combine(root, "Snapwell", "update", "pending");
+        var command = CreatePending(pending);
+        var environment = new UpdateEnvironment(command.Sid, @"C:\Snapwell.exe", new FakeTasks(), root);
+        try
+        {
+            foreach (var other in new[] { pending + "-other", Path.Combine(pending, "child"),
+                Path.GetDirectoryName(pending)! })
+            {
+                var outside = CreatePending(other);
+                environment.CleanupPending(command with
+                {
+                    Manifest = outsideIndex is -1 or 0 ? outside.Manifest : command.Manifest,
+                    Signature = outsideIndex is -1 or 1 ? outside.Signature : command.Signature,
+                    Zip = outsideIndex is -1 or 2 ? outside.Zip : command.Zip,
+                });
+                foreach (var path in new[] { command.Manifest, command.Signature, command.Zip,
+                    outside.Manifest, outside.Signature, outside.Zip })
+                {
+                    Assert.True(File.Exists(path));
+                }
+            }
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    private static UpdateCommandLine CreatePending(string pending)
+    {
+        Directory.CreateDirectory(pending);
+        var command = _command with
+        {
+            Manifest = Path.Combine(pending, "manifest.json"),
+            Signature = Path.Combine(pending, "manifest.sig"),
+            Zip = Path.Combine(pending, "package.zip"),
+        };
+        foreach (var path in new[] { command.Manifest, command.Signature, command.Zip })
+        {
+            File.WriteAllText(path, "pending");
+        }
+        return command;
+    }
+
     [Fact]
     public void LastResultIsAtomicJsonWithUtcVersionAndNull()
     {
@@ -231,13 +360,19 @@ public sealed class UpdateCoordinatorTests
         internal FakeClock Clock { get; } = new();
         internal FakeEnvironment Environment { get; }
         internal FakeLauncher Launcher { get; }
+        internal FakeLog Log { get; } = new();
         internal Fixture()
         {
             Environment = new(Calls, Clock);
             Launcher = new(Calls);
         }
-        internal UpdateLastResult Run() => new UpdateCoordinator(Environment, Launcher, Clock, new FakeLog())
-            .Run(_command, "2.0.0");
+        internal UpdateLastResult Run()
+        {
+            var result = new UpdateCoordinator(Environment, Launcher, Clock, Log).Run(_command, "2.0.0");
+            Assert.Single(Calls, call => call == "cleanup");
+            Assert.True(Calls.IndexOf("cleanup") < Calls.IndexOf("write:" + result.Result));
+            return result;
+        }
     }
 
     private sealed class FakeClock : TimeProvider
@@ -256,6 +391,8 @@ public sealed class UpdateCoordinatorTests
         internal UpdateLastResult? Saved;
         internal Action? StartAction;
         internal Action<UpdateLastResult>? WriteAction;
+        internal Action? CleanupAction;
+        internal Exception? SignalsException;
         internal FakeSignals Signals { get; } = new(calls, clock);
         public bool IsProtected { get; set; } = true;
         public bool QuitAndWait(TimeSpan timeout)
@@ -265,8 +402,20 @@ public sealed class UpdateCoordinatorTests
             return Quit;
         }
         public bool WaitProcess(int? pid, TimeSpan timeout) { calls.Add("pid:" + pid); return ProcessExit; }
-        public IUpdateCoordinatorSignals CreateSignals() { calls.Add("signals"); return Signals; }
+        public IUpdateCoordinatorSignals CreateSignals()
+        {
+            calls.Add("signals");
+            if (SignalsException is not null) { throw SignalsException; }
+            return Signals;
+        }
         public void StartResident() { calls.Add("start"); StartAction?.Invoke(); }
+        /// <summary>削除要求の引数と順序を記録し、実体の削除や失敗を注入する。</summary>
+        public void CleanupPending(UpdateCommandLine command)
+        {
+            Assert.Same(_command, command);
+            calls.Add("cleanup");
+            CleanupAction?.Invoke();
+        }
         public void WriteResult(UpdateLastResult result)
         {
             Saved = result;
@@ -299,11 +448,13 @@ public sealed class UpdateCoordinatorTests
     private sealed class FakeLauncher(List<string> calls) : IUpdateHelperLauncher
     {
         internal string? Arguments;
+        internal Exception? StartException;
         internal FakeProcess Process { get; } = new(calls);
         public IUpdateHelperProcess Start(string arguments, bool elevate)
         {
             calls.Add("helper:" + elevate);
             Arguments = arguments;
+            if (StartException is not null) { throw StartException; }
             return Process;
         }
     }
@@ -338,6 +489,7 @@ public sealed class UpdateCoordinatorTests
 
     private sealed class FakeLog : IAppLog
     {
-        public void Error(Exception exception) { }
+        internal List<Exception> Errors { get; } = [];
+        public void Error(Exception exception) => Errors.Add(exception);
     }
 }
