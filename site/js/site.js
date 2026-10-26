@@ -100,9 +100,6 @@
     { title: 'Mail', color: 'var(--yellow-tx)', zone: 3, lines: [88, 64, 50, 80] },
   ];
 
-  const heroStage = new Stage($('#heroMonitor'), { wins: wins(), cols: 2, rows: 2, gap: 8, feel: 'airy' });
-  $('#heroThrow').addEventListener('click', () => heroStage.fling());
-
   // Feel panel
   const R = (k) => $(`[data-r="${k}"]`);
   const names2 = ['top left', 'top right', 'bottom left', 'bottom right'];
@@ -113,18 +110,18 @@
     return `${r === 0 ? 'top' : 'bottom'} ${cols[c]}`;
   };
   const feelStage = new Stage($('#feelMonitor'), {
-    wins: wins(), cols: 2, rows: 2, gap: 8, feel: 'airy',
+    wins: wins(), cols: 2, rows: 2, gap: 8, feel: 'standard',
     onThrow: (t) => {
       R('throw').textContent = `${Math.round(t.speed)} px/s → ${zoneName(feelStage, t.zone)}`;
     },
   });
   function showFeel() {
-    const w = feelStage.words;
-    const m = Feel.metrics(w.params);
-    R('words').textContent = w.words.join(', ');
-    R('mass').textContent = w.params.mass.toFixed(2);
-    R('freq').textContent = `${m.freq.toFixed(2)} Hz`;
-    R('zeta').textContent = m.zeta.toFixed(2);
+    const p = feelStage.preset;
+    const m = Feel.metrics(Feel.fromModal(SnapPresets.modal(p)));
+    R('words').textContent = p.label;
+    R('mass').textContent = p.m.toFixed(2);
+    R('freq').textContent = `${p.f.toFixed(2)} Hz`;
+    R('zeta').textContent = p.z.toFixed(2);
     R('over').textContent = `${(m.overshoot * 100).toFixed(1)} %`;
   }
   showFeel();
@@ -153,7 +150,7 @@
   const stepLabels = ['Grab', 'Release', 'Settled'];
   const howStage = new Stage($('#howMonitor'), {
     wins: [{ title: 'Notes', color: 'var(--blue-tx)', zone: 0, lines: [82, 58, 90, 44, 70] }],
-    cols: 2, rows: 2, gap: 8, feel: 'airy',
+    cols: 2, rows: 2, gap: 8, feel: 'standard',
     onThrow: (t) => {
       H('speed').textContent = `${Math.round(t.speed)} px/s`;
       H('zone').textContent = zoneName(howStage, t.zone);

@@ -7,6 +7,18 @@
 <meta name="description" content="Throw a window and a spring and a magnet pull it into the nearest zone. Snapwell snaps, arranges and resizes windows on Windows 11, natively on x64 and ARM64.">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="canonical" href="https://tabunugoku.github.io/Snapwell/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Snapwell · Window manager for Windows 11">
+<meta property="og:description" content="Throw a window and a spring and a magnet pull it into the nearest zone. Native on x64 and ARM64.">
+<meta property="og:url" content="https://tabunugoku.github.io/Snapwell/">
+<meta property="og:image" content="https://tabunugoku.github.io/Snapwell/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The Snapwell app icon beside the name Snapwell, with the line Throw a window. It lands in place.">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preload" href="fonts/newsreader-500.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="css/site.css">
 <script>document.documentElement.classList.add('js');</script>
 </head>
@@ -14,12 +26,8 @@
 
 <header class="bar">
   <a class="brand" href="#top" aria-label="Snapwell, top of page">
-    <svg width="28" height="28" viewBox="0 0 44 44" aria-hidden="true">
-      <rect x="1.5" y="1.5" width="41" height="41" rx="9" fill="none" stroke="currentColor" stroke-width="3"/>
-      <rect x="23" y="7" width="14" height="14" rx="3" fill="currentColor"/>
-      <path d="M8 34 C 14 34, 18 26, 26 18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-dasharray="3 3" opacity=".55"/>
-    </svg>
-    <span>Snapwell</span>
+    <img src="assets/favicon.svg" width="32" height="32" alt="">
+    <span class="wordmark">Snapwell</span>
   </a>
   <nav class="bar-links" aria-label="Page">
     <a href="#film">Film</a>
@@ -44,16 +52,13 @@
     <p class="small soft" data-reveal>Windows 11 · native on x64 and ARM64 · network only for an optional update check</p>
   </div>
   <div class="hero-stage" data-reveal>
-    <div class="monitor" data-ui id="heroMonitor">
-      <div class="workarea"></div>
-      <div class="taskbar" aria-hidden="true">
-        <i class="tb-app start"></i><i class="tb-app"></i><i class="tb-app"></i><i class="tb-app"></i>
-        <span class="clock">10:24<br>2026/10/22</span>
-      </div>
+    <div class="intro" id="intro" role="img" aria-label="Six windows burst apart, dance, and settle into a grid. The Snapwell logo ends the piece.">
+      <canvas id="introCanvas" aria-hidden="true"></canvas>
+      <div class="logo" id="introLogo" aria-hidden="true"><span class="logo-mark"></span><span class="logo-name">Snapwell</span></div>
     </div>
     <p class="stage-note small soft">
-      <span>Drag a title bar and let go. Faster throws fly farther.</span>
-      <button class="text-btn" type="button" id="heroThrow" data-fx>Throw one for me</button>
+      <span>Click the stage and the dots ripple.</span>
+      <button class="text-btn" type="button" id="introReplay" data-fx>Play it again</button>
     </p>
   </div>
 </section>
@@ -64,10 +69,10 @@
     <video controls muted playsinline preload="metadata" poster="video/poster.jpg" width="1920" height="1080">
       <source src="video/snapwell.webm" type="video/webm">
       <source src="video/snapwell.mp4" type="video/mp4">
-      A 26-second film: windows are thrown into zones, then arranged with one key.
+      A 30-second film: windows burst into a grid, are thrown into zones, placed from the launcher, and arranged with one key.
     </video>
   </div>
-  <p class="small soft film-note" data-reveal>26 seconds, no sound. Each frame is drawn from the same spring and magnet model as the demos on this page. It shows a mockup of the interface, not a screen recording.</p>
+  <p class="small soft film-note" data-reveal>30 seconds, no sound. Each frame is drawn from the same spring and magnet model as the demos on this page. It shows a mockup of the interface, not a screen recording.</p>
 </section>
 
 <section class="features" id="features" aria-labelledby="h-features">
@@ -107,7 +112,7 @@
     <div class="band-in">
       <div class="band-text">
         <p class="band-line">Drag across a grid to place.</p>
-        <p class="band-then">The launcher shows your zones. Sweep over any span of them and the window takes exactly that area.</p>
+        <p class="band-then">Ctrl+Alt+Space opens the launcher over your zones. Sweep across any span and the window takes exactly that area, or pick one of the preset layouts.</p>
       </div>
       <button class="switch" type="button" role="switch" aria-checked="false" aria-label="Show: drag across a grid to place"><span class="track"><span class="thumb"></span></span></button>
     </div>
@@ -127,7 +132,7 @@
 <section class="feel" id="feel" aria-labelledby="h-feel">
   <div class="feel-head">
     <h2 id="h-feel">Tune the feel</h2>
-    <p class="lead" data-reveal>Choose how a window moves: light or heavy, loose or magnetic. Every motion comes from mass, stiffness and damping, never from a duration.</p>
+    <p class="lead" data-reveal>Choose how a window moves: Standard, Crisp, Smooth or Bouncy, or set mass, frequency and damping yourself. Every motion comes from mass, stiffness and damping, never from a duration.</p>
   </div>
   <div class="panel" data-reveal>
     <div class="panel-demo">
@@ -161,14 +166,14 @@
       <div class="row">
         <span class="row-name" id="l-feel">Feel</span>
         <div class="seg seg-4" role="group" aria-labelledby="l-feel" id="ctlFeel">
-          <button type="button" data-v="airy" aria-pressed="true">Airy</button>
-          <button type="button" data-v="snappy" aria-pressed="false">Snappy</button>
-          <button type="button" data-v="heavy" aria-pressed="false">Heavy</button>
-          <button type="button" data-v="light" aria-pressed="false">Light</button>
+          <button type="button" data-v="standard" aria-pressed="true">Standard</button>
+          <button type="button" data-v="crisp" aria-pressed="false">Crisp</button>
+          <button type="button" data-v="smooth" aria-pressed="false">Smooth</button>
+          <button type="button" data-v="bouncy" aria-pressed="false">Bouncy</button>
         </div>
       </div>
       <dl class="readout" id="readout">
-        <dt>Words</dt><dd data-r="words">—</dd>
+        <dt>Preset</dt><dd data-r="words">—</dd>
         <dt>Mass</dt><dd data-r="mass">—</dd>
         <dt>Frequency</dt><dd data-r="freq">—</dd>
         <dt>Damping ratio</dt><dd data-r="zeta">—</dd>
@@ -235,7 +240,7 @@
     </details>
     <details name="faq">
       <summary>Does it send anything anywhere?</summary>
-      <p>No. There is no telemetry, no account and no update check. Settings sync is only a file in a folder you pick, such as one that OneDrive or Dropbox already syncs.</p>
+      <p>No telemetry and no account. The one exception is the update check, which is off until you turn it on; Check now only runs when you press it. Settings sync is only a file in a folder you pick, such as one that OneDrive or Dropbox already syncs.</p>
     </details>
     <details name="faq">
       <summary>Does it inject code into my apps?</summary>
@@ -247,7 +252,7 @@
     </details>
     <details name="faq">
       <summary>Can I change how windows move?</summary>
-      <p>Yes. Pick one of four presets, or set mass, natural frequency, damping ratio and magnet strength yourself. The page above uses the same model.</p>
+      <p>Yes. Pick Standard, Crisp, Smooth or Bouncy, or set mass, natural frequency, damping ratio and magnet strength yourself. The page above uses the same model.</p>
     </details>
     <details name="faq">
       <summary>Where do I set it up?</summary>
@@ -283,7 +288,12 @@
 </footer>
 
 <script src="js/feel.js"></script>
+<script src="js/presets.js"></script>
+<script src="js/brand-mark.js"></script>
+<script src="js/brand.js"></script>
 <script src="js/stage.js"></script>
+<script src="js/intro.js"></script>
+<script src="js/hero.js"></script>
 <script src="js/site.js"></script>
 </body>
 </html>
