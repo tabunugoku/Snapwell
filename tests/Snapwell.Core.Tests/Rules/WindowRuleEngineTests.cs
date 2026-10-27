@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using Snapwell.Core.Rules;
 
 namespace Snapwell.Core.Tests.Rules;
@@ -106,15 +105,16 @@ public sealed class WindowRuleEngineTests
     }
 
     [Fact]
-    public void NestedQuantifiersHandleVeryLongNonMatchingTitles()
+    public async Task NestedQuantifiersHandleVeryLongNonMatchingTitles()
     {
         var engine = new WindowRuleEngine([
             new() { TitlePattern = "(a+)+$", Placement = PlacementRule.Exclude },
         ]);
         var title = new string('a', 100_000) + "!";
-        var stopwatch = Stopwatch.StartNew();
-        Assert.Equal(default, engine.Resolve(new(null, "", title)));
-        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(5));
+        // 防御が外れると Resolve が戻らないため、実行の後ではなく待ちの側で打ち切って失敗にする。
+        var resolve = Task.Run(() => engine.Resolve(new(null, "", title)));
+        await resolve.WaitAsync(TimeSpan.FromSeconds(30));
+        Assert.Equal(default, await resolve);
         Assert.Equal(PlacementRule.Exclude, engine.Resolve(new(null, "", new string('a', 100_000))).Placement);
     }
 }

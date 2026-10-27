@@ -89,3 +89,4 @@ QueryFullProcessImageNameW
 GetProcessTimes
 GetUserDefaultUILanguage
 LCIDToLocaleName
+GetAsyncKeyState

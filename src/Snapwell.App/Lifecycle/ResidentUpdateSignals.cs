@@ -28,7 +28,12 @@ internal sealed class ResidentUpdateSignals(string sid) : IResidentUpdateSignals
     public void Dispose()
     {
         // コールバックは Post だけで待たない。解除後に到着した Post は AppHost の終了状態で抑止する。
-        _wait?.Unregister(null);
+        // 実行中のコールバックが _quit を触らないよう、解除の完了を待ってから破棄する。
+        if (_wait is not null)
+        {
+            using var done = new ManualResetEvent(false);
+            if (_wait.Unregister(done)) { done.WaitOne(TimeSpan.FromSeconds(1)); }
+        }
         _wait = null;
         _quit?.Dispose();
         _quit = null;

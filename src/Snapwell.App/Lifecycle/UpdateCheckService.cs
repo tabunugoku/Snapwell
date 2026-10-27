@@ -107,7 +107,10 @@ internal sealed class UpdateCheckService : IDisposable
             await _clock.DelayAsync(UpdateCheckPolicy.StartupDelay, _stop.Token).ConfigureAwait(false);
             while (!_stop.IsCancellationRequested)
             {
-                await RunScheduledCheckAsync().ConfigureAwait(false);
+                try { await RunScheduledCheckAsync().ConfigureAwait(false); }
+                catch (OperationCanceledException) when (_stop.IsCancellationRequested) { throw; }
+                // 想定外の失敗でも定期確認を止めず、次の周期へ進む。
+                catch (Exception exception) { Log(exception); }
                 await _clock.DelayAsync(_pollInterval, _stop.Token).ConfigureAwait(false);
             }
         }

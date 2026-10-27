@@ -105,6 +105,13 @@ public sealed partial class BackupPage
             return;
         }
 
+        // 確認中に同期などで値が置き換わったときは、古い値を基にした差分で上書きしない。
+        if (!ReferenceEquals(current, session.Current))
+        {
+            ShowNotice(UiText.Current.Get("Backup.Transfer.Failed"), InfoBarSeverity.Error);
+            return;
+        }
+
         session.Update(SettingsTransfer.Apply(current, preview,
             choice == ContentDialogResult.Primary ? null : dialog.SelectedKeys));
         ShowNotice(UiText.Current.Get("Backup.Transfer.Imported"), InfoBarSeverity.Success);

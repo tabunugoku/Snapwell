@@ -1,3 +1,4 @@
+using Snapwell.Core.Commands;
 using Snapwell.Core.Geometry;
 using Snapwell.Core.Layout;
 using Snapwell.Core.Physics;
@@ -44,7 +45,7 @@ public static class SnapResolver
 
         var predicted = new Vec2(current.X, current.Y) + velocity * feel.CoastTime;
         var center = predicted + new Vec2(current.Width / 2.0, current.Height / 2.0);
-        var monitor = SelectMonitor(monitors, center);
+        var monitor = CommandPlanner.SelectMonitorAt(center, monitors);
         var physicalSpacing = spacing.ToPhysical(monitor.Scale);
         var pointerBand = mode == SnapMode.Zones ? SelectPointerBand(monitor, monitors, pointer) : null;
         var clickRadius = snapRadius * monitor.Scale;
@@ -65,30 +66,6 @@ public static class SnapResolver
             : [new Vec2(selection.Target.X, selection.Target.Y)];
         return new(selection.Target, selection.Kind, monitor.Id, predicted,
             selection.Target.Width != current.Width || selection.Target.Height != current.Height, stops, clickRadius);
-    }
-
-    private static MonitorArea SelectMonitor(IReadOnlyList<MonitorArea> monitors, Vec2 center)
-    {
-        var best = monitors[0];
-        var bestDistance = double.PositiveInfinity;
-        foreach (var monitor in monitors)
-        {
-            if (monitor.WorkArea.Contains(center))
-            {
-                return monitor;
-            }
-
-            // 画面外やモニター間の空白では、作業領域の最寄りの辺までの距離を使う。
-            var nearest = ClampCenter(center, monitor.WorkArea);
-            var distance = (nearest - center).Length;
-            if (distance < bestDistance)
-            {
-                bestDistance = distance;
-                best = monitor;
-            }
-        }
-
-        return best;
     }
 
     // 時計回りに左上・右上・右下・左下。

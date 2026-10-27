@@ -122,12 +122,8 @@ internal sealed class LauncherWindowListRenderer
                         var roleWidth = row.Selected ? row.Bounds.Right - role.X : 0;
                         var titleBounds = new PixelRect(check.Right + Px(8), row.Bounds.Y,
                             Math.Max(0, row.Bounds.Right - Px(8) - roleWidth - check.Right - Px(8)), row.Bounds.Height);
-                        var title = row.Window.Title;
-                        while (title.Length > 0 && text.Measure(title, 12, false) * scale > titleBounds.Width)
-                        {
-                            var elements = System.Globalization.StringInfo.ParseCombiningCharacters(title.TrimEnd('…'));
-                            title = elements.Length <= 1 ? "" : title[..elements[^1]] + "…";
-                        }
+                        var title = LauncherPanelLayout.Ellipsize(row.Window.Title, titleBounds.Width / scale,
+                            candidate => text.Measure(candidate, 12, false));
                         text.Draw(frame, clipped, new(title, titleBounds, 12), palette.Text);
                         if (row.Selected)
                         {

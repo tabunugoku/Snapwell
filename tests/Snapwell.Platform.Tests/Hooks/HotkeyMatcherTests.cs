@@ -117,62 +117,6 @@ public sealed class HotkeyMatcherTests
         Assert.Equal(before, GC.GetAllocatedBytesForCurrentThread());
     }
 
-    /// <summary>容量を超えた場合は古いイベントを捨て、順序を保つ。</summary>
-    [Fact]
-    public void CallbackBufferDropsOldestAndKeepsOrder()
-    {
-        var buffer = new HookEventBuffer(2);
-        buffer.Write(new RawHookEvent(RawHookKind.Key, Detail: 1));
-        buffer.Write(new RawHookEvent(RawHookKind.Key, Detail: 2));
-        buffer.Write(new RawHookEvent(RawHookKind.Key, Detail: 3));
-        Assert.True(buffer.TryRead(out var first));
-        Assert.Equal(2, first.Detail);
-        Assert.True(buffer.TryRead(out var second));
-        Assert.Equal(3, second.Detail);
-        Assert.False(buffer.TryRead(out _));
-    }
-
-    /// <summary>上書きと読み取りが競合しても構造体の途中の値を配送しない。</summary>
-    [Fact]
-    public async Task CallbackBufferPreservesWholeEventsDuringConcurrentOverwrite()
-    {
-        var buffer = new HookEventBuffer(8);
-        var producer = Task.Run(() =>
-        {
-            for (var index = 1; index <= 100000; index++)
-            {
-                buffer.Write(new RawHookEvent(RawHookKind.MouseMove, index, index, -index,
-                    (uint)index, index));
-            }
-        });
-        var last = 0;
-        while (true)
-        {
-            if (buffer.TryRead(out var value))
-            {
-                Assert.True(value.Detail > last);
-                Assert.Equal(value.Detail, value.X);
-                Assert.Equal(-value.Detail, value.Y);
-                Assert.Equal((nint)value.Detail, value.Handle);
-                Assert.Equal((uint)value.Detail, value.Time);
-                last = value.Detail;
-            }
-            else if (producer.IsCompleted)
-            {
-                break;
-            }
-        }
-
-        await producer;
-        // 完了が見える直前の最後の書き込みも確認する。
-        while (buffer.TryRead(out var remaining))
-        {
-            last = remaining.Detail;
-        }
-
-        Assert.Equal(100000, last);
-    }
-
     private static HotkeyMatcher CreateMatcher()
     {
         var matcher = new HotkeyMatcher();

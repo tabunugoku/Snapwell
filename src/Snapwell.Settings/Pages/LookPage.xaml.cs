@@ -41,18 +41,21 @@ public sealed partial class LookPage : Page
     private void Refresh()
     {
         _refreshing = true;
-        IsEnabled = !_session.IsReadOnly;
-        CornerBox.SelectedIndex = _session.Current.CornerPreference switch
+        try
         {
-            WindowCornerPreference.Round => 0,
-            WindowCornerPreference.RoundSmall => 1,
-            WindowCornerPreference.DoNotRound => 2,
-            _ => 3,
-        };
-        ZonePreviewToggle.IsOn = _session.Current.ShowZonePreview;
-        ZoneLinesToggle.IsOn = _session.Current.ShowZoneLines;
-        PredictionLineToggle.IsOn = _session.Current.ShowPredictionLine;
-        _refreshing = false;
+            IsEnabled = !_session.IsReadOnly;
+            CornerBox.SelectedIndex = _session.Current.CornerPreference switch
+            {
+                WindowCornerPreference.Round => 0,
+                WindowCornerPreference.RoundSmall => 1,
+                WindowCornerPreference.DoNotRound => 2,
+                _ => 3,
+            };
+            ZonePreviewToggle.IsOn = _session.Current.ShowZonePreview;
+            ZoneLinesToggle.IsOn = _session.Current.ShowZoneLines;
+            PredictionLineToggle.IsOn = _session.Current.ShowPredictionLine;
+        }
+        finally { _refreshing = false; }
         UpdateCornerCards();
         UpdateOverlayFigure();
     }

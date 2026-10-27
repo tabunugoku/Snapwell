@@ -31,7 +31,8 @@ public static class WindowRuleValidator
         {
             return WindowRuleError.NoEffect;
         }
-        if (!string.IsNullOrEmpty(rule.TitlePattern))
+        // 長すぎるパターンは構築せず、下の長さの検査で弾く。
+        if (!string.IsNullOrEmpty(rule.TitlePattern) && rule.TitlePattern.Length <= MaximumConditionLength)
         {
             try
             {

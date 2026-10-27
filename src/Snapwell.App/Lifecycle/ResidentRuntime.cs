@@ -146,10 +146,11 @@ internal sealed class ResidentRuntime : IAppRuntime
                     _launcher?.HandleForegroundChanged(foreground);
                 }
 
-                _drag.Enabled = _enabled && _launcher?.IsOpen != true;
+                var dragAllowed = _enabled && _launcher?.IsOpen != true;
+                _drag.Enabled = dragAllowed;
                 _drag.Handle(value);
 
-                _resize?.Handle(value, _enabled && _launcher?.IsOpen != true);
+                _resize?.Handle(value, dragAllowed);
             }
 
             _drag.Enabled = _enabled && _launcher?.IsOpen != true;

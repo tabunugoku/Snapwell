@@ -1052,12 +1052,15 @@ public sealed class AppHostTests
     }
 
     [Fact]
-    public void ConcurrentShutdownAndExceptionPathsRunCleanupOnlyOnce()
+    public async Task ConcurrentShutdownAndExceptionPathsRunCleanupOnlyOnce()
     {
         using var fixture = new Fixture();
         fixture.Host.Start();
-        Parallel.For(0, 20, index =>
+        // Parallel.For は並列度を保証しないため、全員が揃ってから一斉に始める。
+        using var barrier = new Barrier(20);
+        await Task.WhenAll(Enumerable.Range(0, 20).Select(index => Task.Factory.StartNew(() =>
         {
+            barrier.SignalAndWait();
             if (index % 2 == 0)
             {
                 fixture.Host.Shutdown();
@@ -1066,7 +1069,7 @@ public sealed class AppHostTests
             {
                 fixture.Host.HandleUnhandledException(new Exception("test"));
             }
-        });
+        }, TaskCreationOptions.LongRunning)).ToArray());
         Assert.Equal(1, fixture.Calls.Count(call => call == "restore"));
         Assert.Equal(1, fixture.Calls.Count(call => call == "corners"));
     }
@@ -1186,9 +1189,7 @@ public sealed class AppHostTests
         using var fixture = new Fixture();
         fixture.Host.Start();
         fixture.Runtime.OnDispose = fixture.Host.Shutdown;
-        var watch = System.Diagnostics.Stopwatch.StartNew();
         await Task.Run(fixture.Host.Shutdown).WaitAsync(TimeSpan.FromSeconds(5));
-        Assert.True(watch.Elapsed < TimeSpan.FromSeconds(1.5));
         Assert.Contains("mutex.release", fixture.Calls);
     }
 

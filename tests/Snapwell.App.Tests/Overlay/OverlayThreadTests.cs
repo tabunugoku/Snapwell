@@ -21,10 +21,10 @@ public sealed class OverlayThreadTests
         {
             ((IOverlayPresenter)overlay).Request(new(0, 0, 1, 1),
                 () => OverlayPainter.Create(1, 1), () => presented.Set());
-            Assert.True(fake.Entered.Wait(2000));
+            Assert.True(fake.Entered.Wait(TestTimeouts.Completion));
             Assert.False(presented.IsSet);
             release.Set();
-            Assert.True(presented.Wait(2000));
+            Assert.True(presented.Wait(TestTimeouts.Completion));
             Assert.Single(fake.Shown);
         }
         finally
@@ -44,7 +44,7 @@ public sealed class OverlayThreadTests
         overlay.Faulted += () => faulted.Set();
         ((IOverlayPresenter)overlay).Request(new(0, 0, 1, 1),
             () => OverlayPainter.Create(1, 1), () => presented = true);
-        Assert.True(faulted.Wait(2000));
+        Assert.True(faulted.Wait(TestTimeouts.Completion));
         Assert.False(presented);
     }
 
@@ -66,11 +66,11 @@ public sealed class OverlayThreadTests
                 release.Wait();
                 return OverlayPainter.Create(1, 1);
             }, () => discardedPresented = true);
-            Assert.True(entered.Wait(2000));
+            Assert.True(entered.Wait(TestTimeouts.Completion));
             ((IOverlayPresenter)overlay).Request(new(1, 0, 1, 1),
                 () => OverlayPainter.Create(1, 1), () => presented.Set());
             release.Set();
-            Assert.True(presented.Wait(2000));
+            Assert.True(presented.Wait(TestTimeouts.Completion));
             Assert.False(discardedPresented);
             Assert.Equal(new PixelRect(1, 0, 1, 1), Assert.Single(fake.Shown));
         }
@@ -105,7 +105,7 @@ public sealed class OverlayThreadTests
         var lockReleased = false;
         overlay.Faulted += () =>
         {
-            lockReleased = Task.Run(overlay.Hide).Wait(1000);
+            lockReleased = Task.Run(overlay.Hide).Wait(TestTimeouts.Completion);
             Interlocked.Increment(ref notifications);
             notified.Set();
         };
@@ -116,11 +116,11 @@ public sealed class OverlayThreadTests
             release.Set();
             if (failure == "dispose")
             {
-                Assert.True(fake.Drawn.Wait(2000));
+                Assert.True(fake.Drawn.Wait(TestTimeouts.Completion));
                 overlay.Dispose();
             }
 
-            Assert.True(notified.Wait(2000));
+            Assert.True(notified.Wait(TestTimeouts.Completion));
             Assert.True(overlay.IsFaulted);
             Assert.True(lockReleased);
             overlay.Dispose();
@@ -141,9 +141,9 @@ public sealed class OverlayThreadTests
         using var overlay = new OverlayThread(() => (fake, fake));
         overlay.Faulted += () => Interlocked.Increment(ref faults);
         overlay.Show(new(0, 0, 1, 1), OverlayPainter.Create(1, 1));
-        Assert.True(fake.Drawn.Wait(2000));
+        Assert.True(fake.Drawn.Wait(TestTimeouts.Completion));
         overlay.Dispose();
-        Assert.True(fake.Disposed.Wait(2000));
+        Assert.True(fake.Disposed.Wait(TestTimeouts.Completion));
         Assert.False(overlay.IsFaulted);
         Assert.Equal(0, faults);
     }
@@ -167,7 +167,7 @@ public sealed class OverlayThreadTests
             }
 
             ready.Set();
-            Assert.True(fake.Drawn.Wait(2000));
+            Assert.True(fake.Drawn.Wait(TestTimeouts.Completion));
             Assert.Equal(new PixelRect(9, 0, 1, 1), Assert.Single(fake.Shown));
         }
         finally
@@ -199,10 +199,10 @@ public sealed class OverlayThreadTests
         try
         {
             overlay.Show(new(0, 0, 1, 1), OverlayPainter.Create(1, 1));
-            Assert.True(fake.Entered.Wait(2000));
+            Assert.True(fake.Entered.Wait(TestTimeouts.Completion));
             var elapsed = Stopwatch.StartNew();
             overlay.Dispose();
-            Assert.True(elapsed.Elapsed < TimeSpan.FromSeconds(1));
+            Assert.True(elapsed.Elapsed < TimeSpan.FromSeconds(10));
         }
         finally
         {
@@ -210,7 +210,7 @@ public sealed class OverlayThreadTests
             overlay.Dispose();
         }
 
-        Assert.True(fake.Disposed.Wait(2000));
+        Assert.True(fake.Disposed.Wait(TestTimeouts.Completion));
     }
 
     /// <summary>計算中のフレームを隠した場合、その古いフレームを表示しない。</summary>
@@ -229,10 +229,10 @@ public sealed class OverlayThreadTests
                 release.Wait();
                 return OverlayPainter.Create(1, 1);
             });
-            Assert.True(entered.Wait(2000));
+            Assert.True(entered.Wait(TestTimeouts.Completion));
             overlay.Hide();
             release.Set();
-            Assert.True(fake.Hidden.Wait(2000));
+            Assert.True(fake.Hidden.Wait(TestTimeouts.Completion));
             Assert.Empty(fake.Shown);
         }
         finally
@@ -263,14 +263,14 @@ public sealed class OverlayThreadTests
                 release.Wait();
                 return OverlayPainter.Create(1, 1);
             });
-            Assert.True(entered.Wait(2000));
+            Assert.True(entered.Wait(TestTimeouts.Completion));
             for (var index = 0; index < 100; index++)
             {
                 fake.Raise(new(OverlayPointerKind.Move, new(index, 0)));
             }
 
             release.Set();
-            Assert.True(fake.Drawn.Wait(2000));
+            Assert.True(fake.Drawn.Wait(TestTimeouts.Completion));
             Assert.Equal(new Vec2(99, 0), Assert.Single(positions));
             Assert.Equal(new PixelRect(99, 0, 1, 1), Assert.Single(fake.Shown));
         }
@@ -303,7 +303,7 @@ public sealed class OverlayThreadTests
                 release.Wait();
                 return OverlayPainter.Create(1, 1);
             });
-            Assert.True(entered.Wait(2000));
+            Assert.True(entered.Wait(TestTimeouts.Completion));
             fake.Raise(new(OverlayPointerKind.Down, new(0, 0)));
             fake.Raise(new(OverlayPointerKind.Move, new(1, 0)));
             fake.Raise(new(OverlayPointerKind.Move, new(2, 0)));

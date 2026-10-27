@@ -249,7 +249,11 @@ public sealed class SettingsSync
             bytes = memory.ToArray();
             modified = File.GetLastWriteTimeUtc(path);
         }
-        catch (FileNotFoundException) { return new(null, default); }
+        // 新しい PC では設定のフォルダー自体がまだ無い。書き込み側が作るので、未存在として扱う。
+        catch (Exception exception) when (exception is FileNotFoundException or DirectoryNotFoundException)
+        {
+            return new(null, default);
+        }
         try
         {
             var json = bytes.AsMemory();

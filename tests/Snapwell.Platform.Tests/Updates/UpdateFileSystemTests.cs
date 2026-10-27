@@ -37,7 +37,8 @@ public sealed class UpdateFileSystemTests
         Directory.CreateDirectory(root);
         try
         {
-            var fs = new UpdateFileSystem(TimeSpan.FromSeconds(1));
+            // 再試行の間隔を上限より十分長くし、1 回でも待てば確実に上限を超えるようにする。
+            var fs = new UpdateFileSystem(TimeSpan.FromSeconds(5));
             var timer = Stopwatch.StartNew();
             if (operation == "rename")
             {
@@ -49,7 +50,7 @@ public sealed class UpdateFileSystemTests
                 fs.DeleteFile(Path.Combine(root, "missing"));
                 Assert.Throws<DirectoryNotFoundException>(() => fs.DeleteFile(Path.Combine(root, "missing/file")));
             }
-            Assert.True(timer.Elapsed < TimeSpan.FromSeconds(3), "Missing paths must not enter the retry delay.");
+            Assert.True(timer.Elapsed < TimeSpan.FromSeconds(2), "Missing paths must not enter the retry delay.");
         }
         finally
         {

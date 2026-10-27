@@ -307,7 +307,14 @@ public sealed class HookThread : IDisposable
             PInvoke.EVENT_OBJECT_DESTROY => RawHookKind.WindowDestroyed,
             _ => RawHookKind.Foreground,
         };
-        owner.Enqueue(new RawHookEvent(kind, (nint)window.Value, Time: time));
+        try
+        {
+            owner.Enqueue(new RawHookEvent(kind, (nint)window.Value, Time: time));
+        }
+        catch
+        {
+            // アンマネージドの呼び出し元へ例外を出さない。イベントを一つ落とすだけにとどめる。
+        }
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
@@ -316,38 +323,50 @@ public sealed class HookThread : IDisposable
         var owner = _current;
         if (code >= 0 && owner is not null && data.Value != 0)
         {
-            var mouse = (MSLLHOOKSTRUCT*)data.Value;
-            var messageId = (uint)message.Value;
-            if (messageId == PInvoke.WM_MOUSEMOVE)
+            try
             {
-                if (Volatile.Read(ref owner._mouseTracking) != 0)
-                {
-                    owner.Enqueue(new RawHookEvent(RawHookKind.MouseMove,
-                        X: mouse->pt.X, Y: mouse->pt.Y, Time: mouse->time));
-                }
+                OnMouseCore(owner, message, data);
             }
-            else
+            catch
             {
-                var button = messageId switch
-                {
-                    PInvoke.WM_LBUTTONDOWN or PInvoke.WM_LBUTTONUP => (int)MouseButtonKind.Left,
-                    PInvoke.WM_RBUTTONDOWN or PInvoke.WM_RBUTTONUP => (int)MouseButtonKind.Right,
-                    PInvoke.WM_MBUTTONDOWN or PInvoke.WM_MBUTTONUP => (int)MouseButtonKind.Middle,
-                    PInvoke.WM_XBUTTONDOWN or PInvoke.WM_XBUTTONUP =>
-                        (mouse->mouseData >> 16) == 1 ? (int)MouseButtonKind.X1 : (int)MouseButtonKind.X2,
-                    _ => -1,
-                };
-                if (button >= 0)
-                {
-                    var isDown = messageId is PInvoke.WM_LBUTTONDOWN or PInvoke.WM_RBUTTONDOWN or
-                        PInvoke.WM_MBUTTONDOWN or PInvoke.WM_XBUTTONDOWN;
-                    owner.Enqueue(new RawHookEvent(RawHookKind.MouseButton,
-                        X: mouse->pt.X, Y: mouse->pt.Y, Time: mouse->time, Detail: button, IsDown: isDown));
-                }
+                // アンマネージドの呼び出し元へ例外を出さず、次のフックへ渡す。
             }
         }
 
         return PInvoke.CallNextHookEx(default(HHOOK), code, message, data);
+    }
+
+    private static unsafe void OnMouseCore(HookThread owner, WPARAM message, LPARAM data)
+    {
+        var mouse = (MSLLHOOKSTRUCT*)data.Value;
+        var messageId = (uint)message.Value;
+        if (messageId == PInvoke.WM_MOUSEMOVE)
+        {
+            if (Volatile.Read(ref owner._mouseTracking) != 0)
+            {
+                owner.Enqueue(new RawHookEvent(RawHookKind.MouseMove,
+                    X: mouse->pt.X, Y: mouse->pt.Y, Time: mouse->time));
+            }
+        }
+        else
+        {
+            var button = messageId switch
+            {
+                PInvoke.WM_LBUTTONDOWN or PInvoke.WM_LBUTTONUP => (int)MouseButtonKind.Left,
+                PInvoke.WM_RBUTTONDOWN or PInvoke.WM_RBUTTONUP => (int)MouseButtonKind.Right,
+                PInvoke.WM_MBUTTONDOWN or PInvoke.WM_MBUTTONUP => (int)MouseButtonKind.Middle,
+                PInvoke.WM_XBUTTONDOWN or PInvoke.WM_XBUTTONUP =>
+                    (mouse->mouseData >> 16) == 1 ? (int)MouseButtonKind.X1 : (int)MouseButtonKind.X2,
+                _ => -1,
+            };
+            if (button >= 0)
+            {
+                var isDown = messageId is PInvoke.WM_LBUTTONDOWN or PInvoke.WM_RBUTTONDOWN or
+                    PInvoke.WM_MBUTTONDOWN or PInvoke.WM_XBUTTONDOWN;
+                owner.Enqueue(new RawHookEvent(RawHookKind.MouseButton,
+                    X: mouse->pt.X, Y: mouse->pt.Y, Time: mouse->time, Detail: button, IsDown: isDown));
+            }
+        }
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
@@ -360,10 +379,19 @@ public sealed class HookThread : IDisposable
             var messageId = (uint)message.Value;
             if (messageId is PInvoke.WM_KEYDOWN or PInvoke.WM_SYSKEYDOWN or PInvoke.WM_KEYUP or PInvoke.WM_SYSKEYUP)
             {
-                if (owner.ProcessKey(key->vkCode, messageId is PInvoke.WM_KEYDOWN or PInvoke.WM_SYSKEYDOWN,
-                    (key->flags & KBDLLHOOKSTRUCT_FLAGS.LLKHF_INJECTED) != 0))
+                try
                 {
-                    return new LRESULT(1);
+                    // 自分のダミーキーだけを除く。他のツールが注入したキーは通常の入力として扱う。
+                    var own = (key->flags & KBDLLHOOKSTRUCT_FLAGS.LLKHF_INJECTED) != 0 &&
+                        key->dwExtraInfo == Win32DummyKeySender.ExtraInfo;
+                    if (owner.ProcessKey(key->vkCode, messageId is PInvoke.WM_KEYDOWN or PInvoke.WM_SYSKEYDOWN, own))
+                    {
+                        return new LRESULT(1);
+                    }
+                }
+                catch
+                {
+                    // アンマネージドの呼び出し元へ例外を出さず、キーは握りつぶさずに通す。
                 }
             }
         }

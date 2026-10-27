@@ -3,6 +3,7 @@ using Snapwell.App.Motion;
 using Snapwell.Core.Geometry;
 using Snapwell.Core.Physics;
 using Snapwell.Platform.Windows;
+using static Snapwell.App.Tests.TestTimeouts;
 
 namespace Snapwell.App.Tests.Motion;
 
@@ -773,7 +774,7 @@ public sealed class LiveResizeTests
         rig.Mover.OnAsyncPrepare = () =>
         {
             entered.Set();
-            Assert.True(release.Wait(5000));
+            Assert.True(release.Wait(TestTimeouts.Completion));
             Volatile.Write(ref preparationFinished, 1);
         };
         rig.Engine.Request(Request());
@@ -781,7 +782,7 @@ public sealed class LiveResizeTests
         rig.Frames.Advance(16);
         try
         {
-            Assert.True(entered.Wait(5000));
+            Assert.True(entered.Wait(TestTimeouts.Completion));
             switch (operation)
             {
                 case 0:
@@ -845,7 +846,7 @@ public sealed class LiveResizeTests
             if (++inspections == 4)
             {
                 entered.Set();
-                Assert.True(release.Wait(5000));
+                Assert.True(release.Wait(TestTimeouts.Completion));
                 Volatile.Write(ref inspectionFinished, 1);
             }
         };
@@ -856,7 +857,7 @@ public sealed class LiveResizeTests
         frames.Advance(16);
         try
         {
-            Assert.True(entered.Wait(5000));
+            Assert.True(entered.Wait(TestTimeouts.Completion));
             switch (operation)
             {
                 case 0:
@@ -1018,8 +1019,6 @@ public sealed class LiveResizeTests
     private static MotionRequest Request() => new(1, new(-400, -300, 400, 300),
         new(300, 200, 800, 600), new(-1920, -1080, 3840, 2160), FeelPreset.Standard,
         new(200, 100), SizeMode.Live);
-
-    private static void WaitUntil(Func<bool> condition) => Assert.True(SpinWait.SpinUntil(condition, 5000));
 
     private sealed class Rig : IDisposable
     {

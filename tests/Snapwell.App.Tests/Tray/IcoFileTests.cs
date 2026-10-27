@@ -25,7 +25,9 @@ public sealed class IcoFileTests
     [Fact]
     public void ShippedTrayIconsHaveEveryDpiSize()
     {
-        foreach (var path in Directory.GetFiles(FindAssets(), "tray-*.ico"))
+        var paths = Directory.GetFiles(FindAssets(), "tray-*.ico");
+        Assert.NotEmpty(paths);
+        foreach (var path in paths)
         {
             Assert.Equal([16, 20, 24, 32], IcoFile.Parse(File.ReadAllBytes(path)).Select(frame => frame.Size).Order());
         }

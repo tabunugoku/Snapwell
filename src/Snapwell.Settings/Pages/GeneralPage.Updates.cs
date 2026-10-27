@@ -54,6 +54,8 @@ public sealed partial class GeneralPage
     private async void Updates_Loaded(object sender, RoutedEventArgs args)
     {
         var stop = new CancellationTokenSource();
+        // 離脱で Dispose されたあとに Token を読むと例外になるため、先に取っておく。
+        var token = stop.Token;
         _updatePageStop = stop;
         _updateLoading = true;
         _updateWindow = AppWindow.GetFromWindowId(XamlRoot.ContentIslandEnvironment.AppWindowId);
@@ -67,7 +69,7 @@ public sealed partial class GeneralPage
         {
             var resultPath = Path.Combine(UpdateRoot, "last-result.json");
             var lastResult = await Task.Run(() =>
-                (Exists: File.Exists(resultPath), Result: UpdateResultReader.Read(resultPath)), stop.Token);
+                (Exists: File.Exists(resultPath), Result: UpdateResultReader.Read(resultPath)), token);
             if (stop.IsCancellationRequested) { return; }
             if (lastResult.Result is { } result) { ShowInstallResult(result); }
             // 表示後に消す。読み取れなかった壊れた結果も、次回に持ち越さない。
@@ -75,7 +77,7 @@ public sealed partial class GeneralPage
             {
                 await Task.Run(() => UpdateResultReader.TryDelete(resultPath));
             }
-            var restored = await session.ReadAsync(ReadUpdateState, stop.Token);
+            var restored = await session.ReadAsync(ReadUpdateState, token);
             if (!session.CanApply(restored.Generation, stop.IsCancellationRequested)) { return; }
             ApplyUpdateState(restored.Value.State, restored.Value.Offer);
         }
@@ -125,7 +127,8 @@ public sealed partial class GeneralPage
         ShowUpdateOffer(offer, !loaded.IsReadOnly);
         if (loaded.IsReadOnly) { ReportEnabledFailure(UiText.Current.Get("General.Device.Unreadable")); }
         UpdateLastChecked.Text = loaded.Value.LastUpdateCheckUtc is { } time
-            ? UiText.Current.Format("General_UpdateStatusLastChecked", ("time", time.ToLocalTime().ToString("yyyy/MM/dd HH:mm", CultureInfo.InvariantCulture)))
+            ? UiText.Current.Format("General_UpdateStatusLastChecked",
+                ("time", time.ToLocalTime().ToString("yyyy/MM/dd HH:mm", CultureInfo.InvariantCulture)))
             : "";
         UpdateLastChecked.Visibility = UpdateLastChecked.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
     }
@@ -291,19 +294,24 @@ public sealed partial class GeneralPage
     private void UpdateReinstall_Click(object sender, RoutedEventArgs args) =>
         OpenUpdateLink(new Uri("https://github.com/tabunugoku/Snapwell/releases"));
 
-    private void RefreshInstallAvailability()
+    private UpdateInstallBlock EvaluateInstall()
     {
-        UpdateInstallBlock block;
         try
         {
-            block = UpdateInstallPlanner.Evaluate(_updateVersion, _updateOffer, _updateManifest, _updateSignature,
+            return UpdateInstallPlanner.Evaluate(_updateVersion, _updateOffer, _updateManifest, _updateSignature,
                 _updateArchitecture, _executable, UpdatePending, File.Exists,
                 path => new DriveInfo(Path.GetPathRoot(path)!).AvailableFreeSpace, IsAnotherUpdateRunning);
         }
-        catch (Exception exception) when (UpdatePageModel.IsSaveFailure(exception))
+        // UNC のルートでは DriveInfo が ArgumentException になる。空き容量を取れないものは不足として扱う。
+        catch (Exception exception) when (UpdatePageModel.IsSaveFailure(exception) || exception is ArgumentException)
         {
-            block = UpdateInstallBlock.InsufficientSpace;
+            return UpdateInstallBlock.InsufficientSpace;
         }
+    }
+
+    private void RefreshInstallAvailability()
+    {
+        var block = EvaluateInstall();
         UpdateInstallButton.IsEnabled = block == UpdateInstallBlock.None && _updateCanWrite
             && !_updateLoading && !_updateClosePending && !_updateInstalling && !_updateBusy && !_updateSession.IsSaving;
         var key = UpdatePageModel.InstallBlockKey(block);
@@ -341,9 +349,7 @@ public sealed partial class GeneralPage
             var restored = await _updateSession.ReadAsync(ReadUpdateState, stop.Token);
             if (!_updateSession.CanApply(restored.Generation, stop.IsCancellationRequested)) { return; }
             ApplyUpdateState(restored.Value.State, restored.Value.Offer);
-            var block = UpdateInstallPlanner.Evaluate(_updateVersion, _updateOffer, _updateManifest, _updateSignature,
-                _updateArchitecture, _executable, UpdatePending, File.Exists,
-                path => new DriveInfo(Path.GetPathRoot(path)!).AvailableFreeSpace, IsAnotherUpdateRunning);
+            var block = EvaluateInstall();
             if (block != UpdateInstallBlock.None || !_updateCanWrite) { return; }
             // 更新後に設定画面を閉じるため、編集中の設定を先に保存する。
             if (_session.HasChanges && !_session.TrySave(out var message))

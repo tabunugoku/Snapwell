@@ -63,19 +63,25 @@ internal sealed partial class IntroScene : Grid, IDisposable
         _name.RenderTransform = _nameTransform;
         BuildMark();
         Children.Add(_logo);
-        Loaded += (_, _) => Initialize();
+        Loaded += OnLoaded;
         Unloaded += OnUnloaded;
-        SizeChanged += (_, _) =>
-        {
-            Clip = new RectangleGeometry { Rect = new(0, 0, ActualWidth, ActualHeight) };
-            Initialize();
-        };
+        SizeChanged += OnSizeChanged;
         AutomationProperties.SetAccessibilityView(_windowsHost, AccessibilityView.Raw);
         AutomationProperties.SetAccessibilityView(_logo, AccessibilityView.Raw);
         Opacity = 1;
     }
 
     protected override AutomationPeer OnCreateAutomationPeer() => new IntroPeer(this);
+
+    private void OnLoaded(object sender, RoutedEventArgs args) => Initialize();
+
+    /// <summary>レイアウトが途中の大きさで届いたあとに確定した大きさへ変わったときは、台本を作り直す。</summary>
+    private void OnSizeChanged(object sender, SizeChangedEventArgs args)
+    {
+        Clip = new RectangleGeometry { Rect = new(0, 0, ActualWidth, ActualHeight) };
+        if (_model is not null && (_model.Width != ActualWidth || _model.Height != ActualHeight)) { ReleaseScene(); }
+        Initialize();
+    }
 
     private sealed partial class IntroPeer(IntroScene owner) : FrameworkElementAutomationPeer(owner)
     {
@@ -121,7 +127,8 @@ internal sealed partial class IntroScene : Grid, IDisposable
         }
         Vector2 At(double length)
         {
-            var i = Array.FindIndex(lengths, l => l >= length);
+            var i = Array.BinarySearch(lengths, length);
+            if (i < 0) { i = ~i; }
             if (i <= 0) { return Curve(0); }
             var t = (length - lengths[i - 1]) / (lengths[i] - lengths[i - 1]);
             return Curve((i - 1 + t) / samples);
@@ -212,7 +219,10 @@ internal sealed partial class IntroScene : Grid, IDisposable
     /// <summary>何度呼ばれても同じ 0.8 秒のフェードを一度だけ始める。</summary>
     internal void Skip()
     {
-        if (!_disposed && _model is not { Elapsed: >= 9.6 }) { _skipElapsed ??= 0; }
+        if (_disposed) { return; }
+        // 台本ができる前は描画購読がなく OnFrame で終われないため、そのまま終える。
+        if (_model is null) { _finished(); return; }
+        if (_model is not { Elapsed: >= 9.6 }) { _skipElapsed ??= 0; }
     }
 
     private void OnFrame(object? sender, object args)
@@ -318,10 +328,22 @@ internal sealed partial class IntroScene : Grid, IDisposable
         if (_disposed) { return; }
         _disposed = true;
         SetRendering(false);
+        Loaded -= OnLoaded; Unloaded -= OnUnloaded; SizeChanged -= OnSizeChanged;
+        ReleaseScene();
+    }
+
+    /// <summary>点と窓の描画資源を解放し、次の Initialize で作り直せる状態に戻す。</summary>
+    private void ReleaseScene()
+    {
         if (_root is not null) { _root.Changed -= OnRootChanged; _root = null; }
-        Unloaded -= OnUnloaded;
         foreach (var window in _windows) { window.Dispose(); }
+        _windows.Clear(); _windowsHost.Children.Clear();
         foreach (var dot in _dots) { dot.Visual.Dispose(); dot.Geometry.Dispose(); dot.Brush.Dispose(); }
+        _dots.Clear();
+        // 要素ツリーに残したまま解放しない。
+        ElementCompositionPreview.SetElementChildVisual(_dotsHost, null);
         _field?.Dispose();
+        _field = null;
+        _model = null;
     }
 }

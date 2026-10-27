@@ -33,7 +33,7 @@ public sealed class OverlayResourceLifetimeTests
             for (var generation = 0; generation < surfaces.Length; generation++)
             {
                 launcher.Open();
-                Assert.True(surfaces[generation].Entered.Wait(3000));
+                Assert.True(surfaces[generation].Entered.Wait(TestTimeouts.Completion));
                 if (generation < surfaces.Length - 1)
                 {
                     launcher.SetEnabled(false);
@@ -45,10 +45,10 @@ public sealed class OverlayResourceLifetimeTests
             }
 
             var newest = surfaces[2];
-            Assert.True(newest.Drawn.Wait(3000));
+            Assert.True(newest.Drawn.Wait(TestTimeouts.Completion));
             newest.Drawn.Reset();
             launcher.Handle(new((int)LauncherInput.Right));
-            Assert.True(newest.Drawn.Wait(3000));
+            Assert.True(newest.Drawn.Wait(TestTimeouts.Completion));
             for (var old = 0; old < 2; old++)
             {
                 for (var next = old + 1; next < surfaces.Length; next++)
@@ -67,7 +67,7 @@ public sealed class OverlayResourceLifetimeTests
             session.Dispose();
             foreach (var surface in surfaces)
             {
-                Assert.True(surface.Disposed.Wait(3000));
+                Assert.True(surface.Disposed.Wait(TestTimeouts.Completion));
                 Assert.Equal(0, surface.Renderer!.RetainedPixelBytes);
                 Assert.Equal(surface.OwnerThread, surface.DisposeThread);
             }
@@ -82,20 +82,20 @@ public sealed class OverlayResourceLifetimeTests
         using var session = new OverlaySession(true, _ => new(() => (surface, surface)));
         using var launcher = CreateLauncher(session);
         launcher.Open();
-        Assert.True(surface.Drawn.Wait(3000));
+        Assert.True(surface.Drawn.Wait(TestTimeouts.Completion));
         var renderer = surface.Renderer!;
         var frame = surface.Frame!;
         var expected = (byte[])frame.Pixels.Clone();
         Assert.True(renderer.RetainedPixelBytes > frame.Pixels.LongLength);
         launcher.Handle(new((int)LauncherInput.Cancel));
-        Assert.True(surface.Hidden.Wait(3000));
+        Assert.True(surface.Hidden.Wait(TestTimeouts.Completion));
         Assert.Equal(0, renderer.RetainedPixelBytes);
         Assert.Equal(0, surface.RetainedPixelBytes);
         Assert.Equal(surface.OwnerThread, surface.HideThread);
 
         surface.Drawn.Reset();
         launcher.Open();
-        Assert.True(surface.Drawn.Wait(3000));
+        Assert.True(surface.Drawn.Wait(TestTimeouts.Completion));
         Assert.NotSame(renderer, surface.Renderer);
         Assert.NotSame(frame.Pixels, surface.Frame!.Pixels);
         Assert.Equal(expected, surface.Frame.Pixels);
@@ -115,15 +115,15 @@ public sealed class OverlayResourceLifetimeTests
         try
         {
             overlay.Request(selection.WorkArea, Paint);
-            Assert.True(surface.Entered.Wait(3000));
+            Assert.True(surface.Entered.Wait(TestTimeouts.Completion));
             var renderer = surface.Renderer!;
             var frame = surface.Frame!;
             var expected = surface.Snapshot;
             overlay.Hide();
             overlay.Request(selection.WorkArea, Paint);
             release.Set();
-            Assert.True(surface.Hidden.Wait(3000));
-            Assert.True(SpinWait.SpinUntil(() => surface.ShowCount == 2, 3000));
+            Assert.True(surface.Hidden.Wait(TestTimeouts.Completion));
+            Assert.True(SpinWait.SpinUntil(() => surface.ShowCount == 2, TestTimeouts.CompletionMs));
             Assert.Equal(0, renderer.RetainedPixelBytes);
             Assert.NotSame(renderer, surface.Renderer);
             Assert.NotSame(frame.Pixels, surface.Frame!.Pixels);
@@ -145,16 +145,16 @@ public sealed class OverlayResourceLifetimeTests
         var preview = new ZonePreview(overlay, new FakeMonitors(), () => OverlayTheme.Dark);
         var target = new PixelRect(8, 8, 600, 400);
         preview.Show(target);
-        Assert.True(surface.Drawn.Wait(3000));
+        Assert.True(surface.Drawn.Wait(TestTimeouts.Completion));
         var frame = surface.Frame!;
         var expected = (byte[])frame.Pixels.Clone();
         preview.Hide();
-        Assert.True(surface.Hidden.Wait(3000));
+        Assert.True(surface.Hidden.Wait(TestTimeouts.Completion));
         Assert.Equal(0, surface.RetainedPixelBytes);
         Assert.Equal(surface.OwnerThread, surface.HideThread);
         surface.Drawn.Reset();
         preview.Show(target);
-        Assert.True(surface.Drawn.Wait(3000));
+        Assert.True(surface.Drawn.Wait(TestTimeouts.Completion));
         Assert.NotSame(frame.Pixels, surface.Frame!.Pixels);
         Assert.Equal(expected, surface.Frame.Pixels);
     }

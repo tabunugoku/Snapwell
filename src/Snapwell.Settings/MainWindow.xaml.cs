@@ -213,6 +213,11 @@ public sealed partial class MainWindow : Window
                 Close();
             }
         }
+        catch (Exception exception) when (exception is System.Runtime.InteropServices.COMException or
+            InvalidOperationException)
+        {
+            // 別のダイアログが開いていると確認を出せない。終了は取り消したまま、編集中の値を守る。
+        }
         finally
         {
             _closeDialogOpen = false;

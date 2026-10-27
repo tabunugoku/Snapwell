@@ -67,7 +67,8 @@ public static class TrayMenuModel
         }
 
         if (!layout.ItemsViewport.Contains(point)) { return -1; }
-        for (var index = 0; index < items.Count; index++)
+        // 項目数が増えた直後はレイアウトの行数とずれうるので、短い方で回す。
+        for (var index = 0; index < Math.Min(items.Count, layout.Rows.Count); index++)
         {
             if (items[index].Enabled && layout.Rows[index].Contains(point))
             {

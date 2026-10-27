@@ -15,6 +15,7 @@ public interface IProcessNameSource
 /// <summary>公開 API で名前を取得し、開始時刻を照合してプロセス ID の再利用を区別する。</summary>
 public sealed class Win32ProcessNameSource : IProcessNameSource
 {
+    private const int MaxCachedProcesses = 1024;
     private readonly object _gate = new();
     private readonly IProcessNameApi _api;
     private readonly Dictionary<uint, (ulong StartTime, string Name)> _cache = [];
@@ -54,6 +55,8 @@ public sealed class Win32ProcessNameSource : IProcessNameSource
 
                 if (start is { } startTime)
                 {
+                    // 終了済みの PID は消えないため、増えすぎたら捨てて引き直す。
+                    if (_cache.Count >= MaxCachedProcesses) { _cache.Clear(); }
                     _cache[processId] = (startTime, name);
                 }
 
@@ -89,8 +92,13 @@ internal sealed unsafe class Win32ProcessNameApi : IProcessNameApi
 
     public unsafe string? GetImagePath(nint handle)
     {
-        // Win32 の拡張パスも切り詰めず取得する。
-        var buffer = new char[32768];
+        // 多くは短いのでスタックで足り、足りないときだけ拡張パスの上限まで確保する。
+        Span<char> small = stackalloc char[1024];
+        return Query(handle, small) ?? Query(handle, new char[32768]);
+    }
+
+    private static string? Query(nint handle, Span<char> buffer)
+    {
         var length = (uint)buffer.Length;
         fixed (char* path = buffer)
         {

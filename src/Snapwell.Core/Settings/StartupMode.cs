@@ -49,7 +49,21 @@ public sealed class StartupController(
     private readonly AutoStart _normal = new(runKey, executablePath);
 
     /// <summary>タスクがなく、元の Run の復元だけが残っている状態を返す。</summary>
-    public bool HasPendingRunRestore => memory.Read() is not null && tasks.ReadCommand() is null;
+    public bool HasPendingRunRestore
+    {
+        get
+        {
+            try
+            {
+                return memory.Read() is not null && tasks.ReadCommand() is null;
+            }
+            catch (IOException)
+            {
+                // 壊れた退避は読めないが、元の登録が残っている可能性があるので復元待ちとして知らせる。
+                return true;
+            }
+        }
+    }
 
     /// <summary>管理者の登録を優先して現在の方式と登録先を返す。</summary>
     public (StartupMode Mode, AutoStartState State) Read()
@@ -73,16 +87,16 @@ public sealed class StartupController(
         if (saveOriginal)
         {
             // 昇格後に画面が閉じても、元の登録を失わないよう先に退避する。
-            var backup = new StartupRunBackup(runKey.Read(AutoStart.ValueName));
             try
             {
+                var backup = new StartupRunBackup(runKey.Read(AutoStart.ValueName));
                 memory.Write(backup);
                 if (memory.Read() != backup)
                 {
                     return StartupChangeResult.Failed;
                 }
             }
-            catch (IOException)
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
             {
                 return StartupChangeResult.Failed;
             }
@@ -97,7 +111,14 @@ public sealed class StartupController(
         {
             if (saveOriginal)
             {
-                memory.Write(previous);
+                try
+                {
+                    memory.Write(previous);
+                }
+                catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+                {
+                    // 戻せなくても、元の例外を隠さない。
+                }
             }
 
             throw;

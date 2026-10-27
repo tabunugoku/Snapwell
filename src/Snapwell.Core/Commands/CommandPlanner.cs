@@ -101,8 +101,12 @@ public static class CommandPlanner
 
     /// <summary>中心を含むモニター、なければ中心から作業領域までが最も近いものを返す。</summary>
     public static MonitorArea SelectMonitor(PixelRect current, IReadOnlyList<MonitorArea> monitors) =>
-        monitors.FirstOrDefault(value => value.WorkArea.Contains(current.Center)) ??
-        monitors.MinBy(value => Distance(current.Center, value.WorkArea))!;
+        SelectMonitorAt(current.Center, monitors);
+
+    /// <summary>点を含むモニター、なければ点から作業領域までが最も近いものを返す。</summary>
+    public static MonitorArea SelectMonitorAt(Vec2 point, IReadOnlyList<MonitorArea> monitors) =>
+        monitors.FirstOrDefault(value => value.WorkArea.Contains(point)) ??
+        monitors.MinBy(value => Distance(point, value.WorkArea))!;
 
     private static double Distance(Vec2 point, PixelRect area) =>
         (new Vec2(Math.Clamp(point.X, area.X, area.Right), Math.Clamp(point.Y, area.Y, area.Bottom)) - point).Length;

@@ -52,6 +52,20 @@ public sealed partial class FeelPage : Page
         ShowStepMetrics(SmoothMetrics, FeelPreset.Smooth);
         ShowStepMetrics(BouncyMetrics, FeelPreset.Bouncy);
         Unloaded += Trial_Unloaded;
+        // 保存時に新しい版が見つかって読み取り専用になっても、表示を合わせる。
+        Loaded += (_, _) =>
+        {
+            _session.Changed += Session_Changed;
+            IsEnabled = !_session.IsReadOnly;
+        };
+        Unloaded += (_, _) => _session.Changed -= Session_Changed;
+        // 試す領域のブラシはテーマごとに引くため、テーマが変わったら作り直す。
+        ActualThemeChanged += (_, _) =>
+        {
+            if (_trial is null) { return; }
+            BuildTrialShapes();
+            PaintTrial();
+        };
 
         var value = session.Current;
         IsEnabled = !session.IsReadOnly;
@@ -69,6 +83,9 @@ public sealed partial class FeelPage : Page
         ShowValues();
         _refreshing = false;
     }
+
+    // 編集中のスライダーを動かし直さないよう、値の表示は更新しない。
+    private void Session_Changed(object? sender, EventArgs e) => IsEnabled = !_session.IsReadOnly;
 
     private static void BuildCurve(Polyline polyline, FeelPreset preset)
     {

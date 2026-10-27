@@ -267,11 +267,14 @@ public sealed class UpdateCoordinatorTests
             Manifest = command.Manifest.ToUpperInvariant(),
             Signature = Path.Combine(pending, "nested", "..", "manifest.sig"),
         });
-        fixture.Environment.StartAction = () => Assert.False(Directory.Exists(pending));
+        // 製品側は StartResident の例外を握りつぶすため、アサートは呼び出しの外で行う。
+        bool? pendingExistedAtStart = null;
+        fixture.Environment.StartAction = () => pendingExistedAtStart = Directory.Exists(pending);
         fixture.Environment.WriteAction = result => UpdateResultFile.Write(resultPath, result);
         try
         {
             Assert.Equal("installed", fixture.Run().Result);
+            Assert.False(pendingExistedAtStart);
             Assert.Equal([resultPath], Directory.GetFileSystemEntries(Path.GetDirectoryName(resultPath)!));
             environment.CleanupPending(command);
             Assert.True(File.Exists(resultPath));

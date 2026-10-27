@@ -36,7 +36,8 @@ internal sealed class StartupMemory : IStartupMemory
         {
             if (value is null)
             {
-                File.Delete(_path);
+                // 親フォルダーが無いと File.Delete は DirectoryNotFoundException になる。消す対象が無いので何もしない。
+                if (Directory.Exists(Path.GetDirectoryName(_path))) { File.Delete(_path); }
                 return;
             }
 

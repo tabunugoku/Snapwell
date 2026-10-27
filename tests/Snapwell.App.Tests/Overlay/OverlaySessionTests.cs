@@ -43,12 +43,12 @@ public sealed class OverlaySessionTests
             launcher.Open();
             Assert.True(launcher.IsOpen);
             fail.Set();
-            Assert.True(SpinWait.SpinUntil(() => !launcher.IsOpen, 2000));
+            Assert.True(SpinWait.SpinUntil(() => !launcher.IsOpen, TestTimeouts.CompletionMs));
             Assert.Equal(normal, applied);
             launcher.Handle(new((int)LauncherInput.Accept));
             Assert.Equal(0, placements);
             launcher.Open();
-            Assert.True(recovered.Drawn.Wait(2000));
+            Assert.True(recovered.Drawn.Wait(TestTimeouts.Completion));
             Assert.True(launcher.IsOpen);
             Assert.Equal(2, attempts);
             Assert.Equal(new PixelRect(0, 0, 1920, 1040), Assert.Single(recovered.Shown));
@@ -75,9 +75,9 @@ public sealed class OverlaySessionTests
         });
         session.Request(new(0, 0, 1, 1), () => surfaceFault ? OverlayPainter.Create(1, 1) :
             throw new InvalidOperationException());
-        Assert.True(broken.Disposed.Wait(2000));
+        Assert.True(broken.Disposed.Wait(TestTimeouts.Completion));
         session.Request(new(1, 2, 1, 1), () => OverlayPainter.Create(1, 1));
-        Assert.True(recovered.Drawn.Wait(2000));
+        Assert.True(recovered.Drawn.Wait(TestTimeouts.Completion));
         Assert.Equal(2, attempts);
         Assert.Equal(new PixelRect(1, 2, 1, 1), Assert.Single(recovered.Shown));
     }
@@ -106,7 +106,7 @@ public sealed class OverlaySessionTests
         for (var index = 0; index < 20; index++)
         {
             launcher.Open();
-            Assert.True(SpinWait.SpinUntil(() => !launcher.IsOpen, 2000));
+            Assert.True(SpinWait.SpinUntil(() => !launcher.IsOpen, TestTimeouts.CompletionMs));
             Assert.Equal(normal, applied);
         }
 
@@ -121,7 +121,7 @@ public sealed class OverlaySessionTests
         using var session = new OverlaySession(true, _ =>
         {
             var thread = new OverlayThread(() => throw new InvalidOperationException());
-            failedBeforeSubscription = SpinWait.SpinUntil(() => thread.IsFaulted, 2000);
+            failedBeforeSubscription = SpinWait.SpinUntil(() => thread.IsFaulted, TestTimeouts.CompletionMs);
             return thread;
         });
         var normal = HotkeyBindingsBuilder.Build(new PortableSettings().Hotkeys).Bindings;
@@ -167,7 +167,7 @@ public sealed class OverlaySessionTests
                 {
                     // Open が Launcher のロックを持つ間に描画スレッドから通知を始める。
                     fail.Set();
-                    Assert.True(faultEntered.Wait(2000));
+                    Assert.True(faultEntered.Wait(TestTimeouts.Completion));
                 }
             }, normal, 999);
         session.Faulted += faultFinished.Set;
@@ -176,8 +176,8 @@ public sealed class OverlaySessionTests
             launcher.Open();
             launcher.Close();
             race = true;
-            await Task.Run(launcher.Open).WaitAsync(TimeSpan.FromSeconds(3));
-            Assert.True(faultFinished.Wait(2000));
+            await Task.Run(launcher.Open).WaitAsync(TestTimeouts.Completion);
+            Assert.True(faultFinished.Wait(TestTimeouts.Completion));
             Assert.True(launcher.IsOpen);
         }
         finally
@@ -188,7 +188,7 @@ public sealed class OverlaySessionTests
             {
                 launcher.Dispose();
                 session.Dispose();
-            }).WaitAsync(TimeSpan.FromSeconds(3));
+            }).WaitAsync(TestTimeouts.Completion);
         }
     }
 
@@ -227,14 +227,14 @@ public sealed class OverlaySessionTests
         {
             launcher.Open();
             fail.Set();
-            Assert.True(entered.Wait(2000));
+            Assert.True(entered.Wait(TestTimeouts.Completion));
             Assert.True(launcher.IsOpen);
             Assert.False(session.IsAvailable);
             launcher.Open();
-            Assert.True(recovered.Drawn.Wait(3000));
+            Assert.True(recovered.Drawn.Wait(TestTimeouts.Completion));
             Assert.True(launcher.IsOpen);
             release.Set();
-            Assert.True(delivered.Wait(2000));
+            Assert.True(delivered.Wait(TestTimeouts.Completion));
             Assert.True(launcher.IsOpen);
             Assert.Equal(2, attempts);
         }
@@ -280,12 +280,12 @@ public sealed class OverlaySessionTests
         {
             launcher.Open();
             fail.Set();
-            Assert.True(entered.Wait(2000));
+            Assert.True(entered.Wait(TestTimeouts.Completion));
             launcher.Close();
             launcher.Open();
-            Assert.True(recovered.Drawn.Wait(3000));
+            Assert.True(recovered.Drawn.Wait(TestTimeouts.Completion));
             release.Set();
-            Assert.True(delivered.Wait(2000));
+            Assert.True(delivered.Wait(TestTimeouts.Completion));
             Assert.True(launcher.IsOpen);
         }
         finally
@@ -310,12 +310,12 @@ public sealed class OverlaySessionTests
         }, (_, state, _) => diagnostics.Enqueue(state));
         using var launcher = CreateLauncher(session);
         launcher.Open();
-        Assert.True(broken.Drawn.Wait(3000));
+        Assert.True(broken.Drawn.Wait(TestTimeouts.Completion));
         broken.ThrowNextWake = true;
         launcher.Handle(new((int)LauncherInput.Right));
         Assert.False(launcher.IsOpen);
         launcher.Open();
-        Assert.True(recovered.Drawn.Wait(3000));
+        Assert.True(recovered.Drawn.Wait(TestTimeouts.Completion));
         Assert.True(launcher.IsOpen);
         Assert.Contains("request-failed", diagnostics);
         Assert.Contains("recovery-requested", diagnostics);
@@ -344,7 +344,7 @@ public sealed class OverlaySessionTests
             session, (_, _, _) => placements++, value => applied = value, normal, 999,
             () => OverlayTheme.Light);
         launcher.Open();
-        Assert.True(broken.Drawn.Wait(3000));
+        Assert.True(broken.Drawn.Wait(TestTimeouts.Completion));
         broken.ThrowNextWake = true;
         var exception = Record.Exception(() =>
         {
@@ -366,9 +366,9 @@ public sealed class OverlaySessionTests
         Assert.Equal(normal, applied);
         Assert.Equal(operation == "accept" ? 1 : 0, placements);
         Assert.False(session.IsAvailable);
-        Assert.True(broken.Disposed.Wait(2000));
+        Assert.True(broken.Disposed.Wait(TestTimeouts.Completion));
         launcher.Open();
-        Assert.True(recovered.Drawn.Wait(3000));
+        Assert.True(recovered.Drawn.Wait(TestTimeouts.Completion));
         Assert.True(launcher.IsOpen);
         Assert.Equal(2, attempts);
         Assert.Contains(applied, binding => binding.Id == (int)LauncherInput.Accept);
@@ -383,14 +383,14 @@ public sealed class OverlaySessionTests
         var notifications = 0;
         session.Faulted += () =>
         {
-            Assert.True(Task.Run(session.Hide).Wait(1000));
+            Assert.True(Task.Run(session.Hide).Wait(TestTimeouts.Completion));
             notifications++;
         };
         session.Request(new(0, 0, 1, 1), () => OverlayPainter.Create(1, 1));
-        Assert.True(fake.Drawn.Wait(2000));
+        Assert.True(fake.Drawn.Wait(TestTimeouts.Completion));
         fake.ThrowNextWake = true;
         session.Hide();
-        Assert.True(fake.Disposed.Wait(2000));
+        Assert.True(fake.Disposed.Wait(TestTimeouts.Completion));
         Assert.Equal(1, notifications);
     }
 
@@ -406,7 +406,7 @@ public sealed class OverlaySessionTests
         using var launcher = new LauncherController(new FakeInspector(), new FakeMonitors(), () => new(),
             session, (_, _, _) => { }, value => applied = value, normal, 999, () => OverlayTheme.Light);
         launcher.Open();
-        Assert.True(fake.Drawn.Wait(3000));
+        Assert.True(fake.Drawn.Wait(TestTimeouts.Completion));
         fake.ThrowNextWake = true;
         Assert.Throws<InvalidOperationException>(launcher.Close);
         Assert.False(launcher.IsOpen);
@@ -443,16 +443,16 @@ public sealed class OverlaySessionTests
         try
         {
             launcher.Open();
-            Assert.True(entered.Wait(2000));
+            Assert.True(entered.Wait(TestTimeouts.Completion));
             launcher.SetEnabled(false);
             session.SetEnabled(false);
             Assert.Contains("stop-timeout", diagnostics);
             session.SetEnabled(true);
             launcher.SetEnabled(true);
             launcher.Open();
-            Assert.True(recovered.Drawn.Wait(3000));
+            Assert.True(recovered.Drawn.Wait(TestTimeouts.Completion));
             release.Set();
-            Assert.True(finished.Wait(2000));
+            Assert.True(finished.Wait(TestTimeouts.Completion));
             Assert.True(launcher.IsOpen);
         }
         finally

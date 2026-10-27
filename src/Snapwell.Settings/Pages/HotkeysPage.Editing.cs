@@ -23,6 +23,7 @@ public sealed partial class HotkeysPage
     private KeyChordSpec? _pendingChord;
     private readonly HashSet<VirtualKey> _consumedKeys = [];
     private UIElement? _root;
+    private PointerEventHandler? _pointerPressed;
     private InputActivationListener? _activation;
     // ウィンドウ移動ではなく、モックアップの取り込み・確定表示の周期に合わせる。
     private const double CapturePulseSeconds = 1.2;
@@ -46,7 +47,9 @@ public sealed partial class HotkeysPage
     private void Page_Loaded(object sender, RoutedEventArgs e)
     {
         _root = XamlRoot.Content;
-        _root.AddHandler(PointerPressedEvent, new PointerEventHandler(Root_PointerPressed), true);
+        // RemoveHandler には Add と同じデリゲートの実体が要るため、保持して使い回す。
+        _pointerPressed = new PointerEventHandler(Root_PointerPressed);
+        _root.AddHandler(PointerPressedEvent, _pointerPressed, true);
         _activation = InputActivationListener.GetForWindowId(XamlRoot.ContentIslandEnvironment.AppWindowId);
         _activation.InputActivationChanged += Activation_Changed;
         _session.Changed += Session_Changed;
@@ -62,7 +65,8 @@ public sealed partial class HotkeysPage
         _animationSettings.AnimationsEnabledChanged -= AnimationsEnabled_Changed;
         _session.Changed -= Session_Changed;
         _consumedKeys.Clear();
-        _root?.RemoveHandler(PointerPressedEvent, new PointerEventHandler(Root_PointerPressed));
+        if (_pointerPressed is not null) { _root?.RemoveHandler(PointerPressedEvent, _pointerPressed); }
+        _pointerPressed = null;
         _root = null;
         if (_activation is not null)
         {
@@ -216,14 +220,13 @@ public sealed partial class HotkeysPage
         if (!busy)
         {
             var swap = UiText.Current.Get("Hotkeys.Capture.Swap");
-            buttons.Children.Add(ActionButton(swap, swap, !_session.IsReadOnly,
-                () => AssignPending(AssignMode.Swap)));
+            buttons.Children.Add(TextActionButton(swap, !_session.IsReadOnly, () => AssignPending(AssignMode.Swap)));
         }
         var keep = busy ? UiText.Current.Get("Hotkeys.Capture.UseKey")
             : UiText.Current.Get("Hotkeys.Capture.KeepDuplicate");
-        buttons.Children.Add(ActionButton(keep, keep, !_session.IsReadOnly, () => AssignPending(AssignMode.Keep)));
+        buttons.Children.Add(TextActionButton(keep, !_session.IsReadOnly, () => AssignPending(AssignMode.Keep)));
         var cancel = UiText.Current.Get("Hotkeys.Capture.Cancel");
-        buttons.Children.Add(ActionButton(cancel, cancel, true, () =>
+        buttons.Children.Add(TextActionButton(cancel, true, () =>
         {
             StopEditing();
             _keyButtons[command].Focus(FocusState.Programmatic);

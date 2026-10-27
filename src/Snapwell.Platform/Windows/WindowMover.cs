@@ -51,16 +51,35 @@ public interface IWindowPositionApi
 /// <summary>枠の補正と最大化の解除を調整する移動サービス。</summary>
 public sealed class WindowMover(IWindowInspector inspector, IWindowPositionApi api) : IWindowMover
 {
+    // 連続フレームの間は大きさと枠が変わらないので、直前の調査を短時間だけ使い回す。
+    private const long MoveCacheMilliseconds = 100;
+    private MoveCache? _moveCache;
+
     /// <summary>毎フレーム使う位置だけの移動を行う。</summary>
     public bool MoveVisual(nint handle, int x, int y)
     {
-        if (!TryPrepare(handle, out var window))
+        var now = Environment.TickCount64;
+        var cache = Volatile.Read(ref _moveCache);
+        WindowSnapshot? window;
+        if (cache is not null && cache.Handle == handle && now - cache.At < MoveCacheMilliseconds)
         {
+            window = cache.Window;
+        }
+        else if (!TryPrepare(handle, out window))
+        {
+            Volatile.Write(ref _moveCache, null);
             return false;
         }
 
+        Volatile.Write(ref _moveCache, new MoveCache(handle, window, now));
         var visual = new PixelRect(x, y, window.VisualBounds.Width, window.VisualBounds.Height);
-        return api.SetBounds(handle, window.Insets.ToWindowBounds(visual), true);
+        if (api.SetBounds(handle, window.Insets.ToWindowBounds(visual), true))
+        {
+            return true;
+        }
+
+        Volatile.Write(ref _moveCache, null);
+        return false;
     }
 
     /// <summary>適用後にアプリの最小・最大サイズを反映した矩形を取得する。</summary>
@@ -130,6 +149,8 @@ public sealed class WindowMover(IWindowInspector inspector, IWindowPositionApi a
         failedHandles = failed;
         return corrected.Count == 0 || api.ApplyBatch(corrected, positionOnly);
     }
+
+    private sealed record MoveCache(nint Handle, WindowSnapshot Window, long At);
 
     private bool TryInspectForRequest(nint handle, [NotNullWhen(true)] out WindowSnapshot? window) =>
         inspector.TryInspect(handle, out window) && !window.IsMaximized;
