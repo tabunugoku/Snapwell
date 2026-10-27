@@ -220,14 +220,13 @@ public sealed partial class HotkeysPage
         if (!busy)
         {
             var swap = UiText.Current.Get("Hotkeys.Capture.Swap");
-            buttons.Children.Add(ActionButton(swap, swap, !_session.IsReadOnly,
-                () => AssignPending(AssignMode.Swap)));
+            buttons.Children.Add(TextActionButton(swap, !_session.IsReadOnly, () => AssignPending(AssignMode.Swap)));
         }
         var keep = busy ? UiText.Current.Get("Hotkeys.Capture.UseKey")
             : UiText.Current.Get("Hotkeys.Capture.KeepDuplicate");
-        buttons.Children.Add(ActionButton(keep, keep, !_session.IsReadOnly, () => AssignPending(AssignMode.Keep)));
+        buttons.Children.Add(TextActionButton(keep, !_session.IsReadOnly, () => AssignPending(AssignMode.Keep)));
         var cancel = UiText.Current.Get("Hotkeys.Capture.Cancel");
-        buttons.Children.Add(ActionButton(cancel, cancel, true, () =>
+        buttons.Children.Add(TextActionButton(cancel, true, () =>
         {
             StopEditing();
             _keyButtons[command].Focus(FocusState.Programmatic);

@@ -243,6 +243,14 @@ public sealed partial class HotkeysPage : Page
         return button;
     }
 
+    /// <summary>確認の選択肢に使う文字入りのボタン。28 px 角のアイコンボタンでは文字が収まらない。</summary>
+    private static Button TextActionButton(string text, bool enabled, Action action)
+    {
+        var button = new Button { Content = text, Style = AppStyle("SnapwellActionButtonStyle"), IsEnabled = enabled };
+        button.Click += (_, _) => action();
+        return button;
+    }
+
     private void UpdateKeyButton(WindowCommand command, string? captureText = null, bool error = false)
     {
         StopCapturePulse();
