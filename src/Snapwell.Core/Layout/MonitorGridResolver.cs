@@ -111,9 +111,7 @@ public static class MonitorGridResolver
 
         var feel = settings.ToFeelPreset();
         var center = current.Center + velocity * feel.CoastTime;
-        var monitor = monitors.FirstOrDefault(area => area.WorkArea.Contains(center)) ?? monitors.MinBy(area =>
-            (new Vec2(Math.Clamp(center.X, area.WorkArea.X, area.WorkArea.Right),
-                Math.Clamp(center.Y, area.WorkArea.Y, area.WorkArea.Bottom)) - center).Length)!;
+        var monitor = CommandPlanner.SelectMonitorAt(center, monitors);
         var spacing = Spacing(settings, monitor.Id);
         try
         {

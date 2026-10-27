@@ -82,7 +82,10 @@ public sealed class FeelTrial
     /// <summary>舞台の大きさが変わったとき、案内を作り直してカードを中央へ戻す。</summary>
     public void Layout(double width, double height)
     {
-        _area = new(0, 0, Math.Max(1, (int)Math.Round(width)), Math.Max(1, (int)Math.Round(height)));
+        // 余白と間隔の各 6px を引いても二つの区画が一ピクセル以上残る最小の寸法。これ未満だと GridLayout が失敗する。
+        const int minimumStage = 20;
+        _area = new(0, 0, Math.Max(minimumStage, (int)Math.Round(width)),
+            Math.Max(minimumStage, (int)Math.Round(height)));
         _body = null;
         _pending = null;
         if (Mode == SnapMode.Zones)
@@ -197,6 +200,12 @@ public sealed class FeelTrial
         var current = CurrentKind(feel, clickRadius);
         var targets = ThrowTargets()
             .Where(target => target.Kind != current && (target.Center - Center).Length > 1).ToArray();
+        if (targets.Length == 0)
+        {
+            // 行き先が無いときは投げない。速度ゼロは足切りで選ばれず、その場に置かれる。
+            return default;
+        }
+
         var target = targets[random.Next(targets.Length)];
         return FindThrowVelocity(target.Center - Center, feel, clickRadius,
             kind => kind != current, 1.1 + random.NextDouble() * 0.3);
