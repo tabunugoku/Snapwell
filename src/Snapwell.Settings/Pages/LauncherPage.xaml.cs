@@ -57,6 +57,19 @@ public sealed partial class LauncherPage : Page
             Groups.Children.Add(section);
         }
 
+        // 保存時に新しい版が見つかって読み取り専用になっても、表示を設定に合わせる。
+        Loaded += (_, _) =>
+        {
+            _session.Changed += Session_Changed;
+            Session_Changed(this, EventArgs.Empty);
+        };
+        Unloaded += (_, _) => _session.Changed -= Session_Changed;
+        Refresh();
+    }
+
+    private void Session_Changed(object? sender, EventArgs e)
+    {
+        IsEnabled = !_session.IsReadOnly;
         Refresh();
     }
 
@@ -85,33 +98,36 @@ public sealed partial class LauncherPage : Page
     private void Refresh(bool updateChoices = true)
     {
         _refreshing = true;
-        var ids = _session.Current.LauncherPresets;
-        foreach (var (id, choice) in _choices)
+        try
         {
-            if (updateChoices)
+            var ids = _session.Current.LauncherPresets;
+            foreach (var (id, choice) in _choices)
             {
-                choice.IsChecked = ids.Contains(id);
+                if (updateChoices)
+                {
+                    choice.IsChecked = ids.Contains(id);
+                }
+                _borders[id].Style = (Style)Resources[
+                    choice.IsChecked == true ? "PresetOptionSelectedBorder" : "PresetOptionBorder"];
             }
-            _borders[id].Style = (Style)Resources[
-                choice.IsChecked == true ? "PresetOptionSelectedBorder" : "PresetOptionBorder"];
-        }
-        Count.Text = UiText.Current.Plural("Launcher.Showing", ids.Length, ("total", LauncherPreset.All.Count));
-        _preview.Children.Clear();
-        foreach (var preset in LauncherPreset.All.Where(preset => ids.Contains(preset.Id)))
-        {
-            _preview.Children.Add(new Button
+            Count.Text = UiText.Current.Plural("Launcher.Showing", ids.Length, ("total", LauncherPreset.All.Count));
+            _preview.Children.Clear();
+            foreach (var preset in LauncherPreset.All.Where(preset => ids.Contains(preset.Id)))
             {
-                Content = ContentFor(preset),
-                Style = (Style)Application.Current.Resources["SnapwellButtonStyle"],
-                Padding = new(8, 4, 8, 4),
-                FontSize = 12,
-                Margin = new(0, 0, 6, 6),
-                IsEnabled = preset.KeepSize || preset.RangeFor(GridPlan.EightByEight) is not null,
-            });
-        }
+                _preview.Children.Add(new Button
+                {
+                    Content = ContentFor(preset),
+                    Style = (Style)Application.Current.Resources["SnapwellButtonStyle"],
+                    Padding = new(8, 4, 8, 4),
+                    FontSize = 12,
+                    Margin = new(0, 0, 6, 6),
+                    IsEnabled = preset.KeepSize || preset.RangeFor(GridPlan.EightByEight) is not null,
+                });
+            }
 
-        EmptyHint.Visibility = ids.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
-        _refreshing = false;
+            EmptyHint.Visibility = ids.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
+        }
+        finally { _refreshing = false; }
     }
 
     private void SetPresets(IEnumerable<string> ids, bool updateChoices = true)

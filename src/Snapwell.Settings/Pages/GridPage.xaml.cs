@@ -90,7 +90,7 @@ public sealed partial class GridPage : Page
         if (!_refreshing && MonitorBox.SelectedItem is GridMonitorChoice choice)
         {
             _monitorId = choice.Id;
-            _linkedEdge = DisplayGrid.Gap == DisplayGrid.Edge;
+            _linkedEdge = Math.Abs(DisplayGrid.Gap!.Value - DisplayGrid.Edge!.Value) < 0.001;
             Refresh();
         }
     }
@@ -117,31 +117,34 @@ public sealed partial class GridPage : Page
     private void Refresh()
     {
         _refreshing = true;
-        var value = PreviewSettings;
-        IsEnabled = !_session.IsReadOnly;
-        SnapAfterResizeToggle.IsOn = value.SnapAfterResize;
-        ColumnsBox.Value = value.Grid.Columns;
-        RowsBox.Value = value.Grid.Rows;
-        GapBox.Value = value.Gap;
-        EdgeBox.Value = value.Edge;
-        GapSlider.Value = Math.Clamp(value.Gap, GapSlider.Minimum, GapSlider.Maximum);
-        EdgeSlider.Value = Math.Clamp(value.Edge, EdgeSlider.Minimum, EdgeSlider.Maximum);
-        GapOutputText.Text = value.Gap.ToString("0.#", CultureInfo.InvariantCulture) + " px";
-        EdgeOutputText.Text = value.Edge.ToString("0.#", CultureInfo.InvariantCulture) + " px";
-        LinkEdgeCheck.IsChecked = _linkedEdge;
-        EdgeSlider.IsEnabled = !_session.IsReadOnly && !_linkedEdge;
-        PlanBox.SelectedIndex = value.Grid switch
+        try
         {
-            { Columns: 8, Rows: 8 } => 0,
-            { Columns: 12, Rows: 6 } => 1,
-            { Columns: 6, Rows: 4 } => 2,
-            _ => 3,
-        };
-        ResizeStepBox.SelectedIndex = value.ToResizeSettings().Step - ResizeSettings.MinStep;
-        ResizeAnchorBox.SelectedIndex = (int)value.ToResizeSettings().Anchor;
-        UpdateChips(value.Grid);
-        RenderPreview(value);
-        _refreshing = false;
+            var value = PreviewSettings;
+            IsEnabled = !_session.IsReadOnly;
+            SnapAfterResizeToggle.IsOn = value.SnapAfterResize;
+            ColumnsBox.Value = value.Grid.Columns;
+            RowsBox.Value = value.Grid.Rows;
+            GapBox.Value = value.Gap;
+            EdgeBox.Value = value.Edge;
+            GapSlider.Value = Math.Clamp(value.Gap, GapSlider.Minimum, GapSlider.Maximum);
+            EdgeSlider.Value = Math.Clamp(value.Edge, EdgeSlider.Minimum, EdgeSlider.Maximum);
+            GapOutputText.Text = value.Gap.ToString("0.#", CultureInfo.InvariantCulture) + " px";
+            EdgeOutputText.Text = value.Edge.ToString("0.#", CultureInfo.InvariantCulture) + " px";
+            LinkEdgeCheck.IsChecked = _linkedEdge;
+            EdgeSlider.IsEnabled = !_session.IsReadOnly && !_linkedEdge;
+            PlanBox.SelectedIndex = value.Grid switch
+            {
+                { Columns: 8, Rows: 8 } => 0,
+                { Columns: 12, Rows: 6 } => 1,
+                { Columns: 6, Rows: 4 } => 2,
+                _ => 3,
+            };
+            ResizeStepBox.SelectedIndex = value.ToResizeSettings().Step - ResizeSettings.MinStep;
+            ResizeAnchorBox.SelectedIndex = (int)value.ToResizeSettings().Anchor;
+            UpdateChips(value.Grid);
+            RenderPreview(value);
+        }
+        finally { _refreshing = false; }
     }
 
     private void UpdateChips(GridSettings grid)

@@ -39,7 +39,8 @@ public static class Loc
     private static void Apply(DependencyObject element, string uid)
     {
         var catalog = UiText.Current;
-        foreach (var key in catalog.Keys.Where(key => key.StartsWith(uid + ".", StringComparison.Ordinal)))
+        var prefix = uid + ".";
+        foreach (var key in catalog.Keys.Where(key => key.StartsWith(prefix, StringComparison.Ordinal)))
         {
             var value = catalog.Get(key);
             switch (key[(uid.Length + 1)..], element)

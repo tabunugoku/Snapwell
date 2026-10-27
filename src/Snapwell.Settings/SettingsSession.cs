@@ -17,7 +17,7 @@ public sealed class SettingsSession
     private readonly DispatcherQueue _dispatcher = DispatcherQueue.GetForCurrentThread();
     private FileSystemWatcher? _watcher;
     private Timer? _reloadTimer;
-    private bool _reloading;
+    private Task? _reloadTask;
     private bool _reloadAgain;
     private bool _refreshing;
 
@@ -130,10 +130,17 @@ public sealed class SettingsSession
     }
 
     /// <summary>取り込み後の値を読み直し、編集中の値があれば保存時の上書きを知らせる。</summary>
-    public async Task ReloadAfterSyncAsync()
+    public Task ReloadAfterSyncAsync()
     {
-        if (_reloading) { _reloadAgain = true; return; }
-        _reloading = true;
+        // 読み込み中の呼び出しは、反映済みと誤解させないよう進行中の Task を待たせる。
+        if (_reloadTask is { } running) { _reloadAgain = true; return running; }
+        var task = ReloadCoreAsync();
+        if (!task.IsCompleted) { _reloadTask = task; }
+        return task;
+    }
+
+    private async Task ReloadCoreAsync()
+    {
         try
         {
             var loaded = await Task.Run(_store.TryReload);
@@ -176,7 +183,7 @@ public sealed class SettingsSession
         }
         finally
         {
-            _reloading = false;
+            _reloadTask = null;
             if (_reloadAgain) { _reloadAgain = false; _ = ReloadAfterSyncAsync(); }
         }
     }

@@ -18,6 +18,7 @@ public sealed partial class FeelPage
     private uint _dragPointerId;
     private readonly List<Rectangle> _zoneShapes = [];
     private readonly Stopwatch _clock = new();
+    private readonly Windows.UI.ViewManagement.UISettings _animationSettings = new();
     private FeelTrial? _trial;
     private SnapMode _trialMode = SnapMode.Zones;
     private bool _dragging;
@@ -317,7 +318,7 @@ public sealed partial class FeelPage
     private void StartFlight()
     {
         // アプリの設定か OS のアニメーション設定のどちらかが削減を求めれば、止まる先へ直ちに確定する
-        if (_session.Current.ReduceMotion || !new Windows.UI.ViewManagement.UISettings().AnimationsEnabled)
+        if (_session.Current.ReduceMotion || !_animationSettings.AnimationsEnabled)
         {
             _trial!.Settle();
             PaintTrial();
