@@ -57,9 +57,9 @@ Actions では秘密鍵を署名の手順だけに渡す。未登録なら処理
 - **ランナーの前提**: NativeAOT のリンクには Visual Studio の C++ ツール（x64・ARM64）が要る。`windows-latest` のイメージに入っている前提で、初回の実行で確かめること（入っていなければ手順を足す）
 
 ## ホームページ（GitHub Pages）
-- `site/` が公開元。main の `site/**` の変更で `.github/workflows/pages.yml` が自動で公開する (手動の実行もできる。ダウンロードのボタンはリリースの公開まで 404 なので、自動にする変更は v1.0.0 を公開する日にマージする)。URL は `https://tabunugoku.github.io/Snapwell/`
+- `site/` が公開元。main の `site/**` の変更と、リリースの公開で `.github/workflows/pages.yml` が自動で公開する (手動の実行もできる)。URL は `https://tabunugoku.github.io/Snapwell/`
 - 初回だけ、リポジトリの Settings → Pages の Source を「GitHub Actions」にする
 - リポジトリは公開済みなので、プランの制約はない
-- ダウンロードのボタンは `releases/download/v1.0.0/Snapwell-1.0.0-win-<rid>.zip` を直接指す。v1.0.0 のリリースを公開するまでは 404 になる。公開は、ページと同じ日にそろえる
+- `site/index.html` の版は `{{VERSION}}` と書き、公開の直前に、最新の正式版（下書きと pre-release を除く）の版へ置き換える。ダウンロードのボタンは `releases/download/v<版>/Snapwell-<版>-win-<rid>.zip` を直接指す。リリースを下書きから公開に切り替えると、ページも自動で追従する
 - 動きは feel のランタイムで動かしている（`site/js/feel.js`、`THIRD_PARTY_NOTICES.md` に記載）。`transition` や `cubic-bezier` を足さない
 - 紹介動画（`site/video/`）は `tools/film/` で作る。feel のモデルを偽の時計で 1 コマずつ進めて撮る（実時間に依存しないので、毎回同じ映像になる）。作り直すときは `cd tools/film && npm install && node render.mjs`（ffmpeg と Chrome か Edge が要る）。できた `out/snapwell.mp4`・`snapwell.webm`・`poster.jpg` を `site/video/` に置く。実アプリの録画ではなく、モックアップ相当の画面なので、ページにもそう書いてある
