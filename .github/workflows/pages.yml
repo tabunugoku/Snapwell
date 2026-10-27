@@ -1,12 +1,14 @@
 name: Pages
 
 # site/ を GitHub Pages に公開する。公開元は、リポジトリの Settings → Pages で「GitHub Actions」を選ぶ
-# main の site/** の変更で自動に公開する (手動の実行もできる)。ダウンロードのボタンは v1.0.0 のリリースが公開されるまで 404 なので、
-# この変更は v1.0.0 のリリースを公開する日にマージする
+# main の site/** の変更と、リリースの公開で自動に公開する (手動の実行もできる)。
+# index.html の {{VERSION}} は、公開済みの最新の正式版 (下書きと pre-release を除く) の版に置き換える
 on:
   push:
     branches: [main]
     paths: ['site/**', '.github/workflows/pages.yml']
+  release:
+    types: [published]
   workflow_dispatch:
 
 concurrency:
@@ -29,6 +31,16 @@ jobs:
       - uses: actions/checkout@v7
 
       - uses: actions/configure-pages@v5
+
+      - name: Fill in the latest version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag=$(gh api "repos/${{ github.repository }}/releases/latest" --jq .tag_name)
+          version="${tag#v}"
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "unexpected tag: $tag"; exit 1; }
+          sed -i "s/{{VERSION}}/$version/g" site/index.html
+          ! grep -q '{{VERSION}}' site/index.html
 
       - uses: actions/upload-pages-artifact@v3
         with:
