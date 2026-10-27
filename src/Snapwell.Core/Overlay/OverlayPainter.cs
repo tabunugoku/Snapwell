@@ -141,12 +141,14 @@ public static class OverlayPainter
                 Math.Max(1, 1.5 * scale), centered: true, dashScale: scale);
         }
 
-        if (showPredictionLine && origin is { } start)
+        if (showPredictionLine && origin is { } start && double.IsFinite(start.X) && double.IsFinite(start.Y) &&
+            double.IsFinite((prediction ?? target.Center).X) && double.IsFinite((prediction ?? target.Center).Y))
         {
             var end = prediction ?? target.Center;
             PredictionLine(frame, workArea, start, end, palette.BlueLine, scale);
             var radius = Math.Max(1, (int)Math.Round(4 * scale));
-            FillRounded(frame, new((int)end.X - workArea.X - radius, (int)end.Y - workArea.Y - radius,
+            FillRounded(frame, new((int)Math.Floor(end.X) - workArea.X - radius,
+                (int)Math.Floor(end.Y) - workArea.Y - radius,
                 2 * radius, 2 * radius), palette.BlueText, 4, scale);
         }
 
@@ -170,7 +172,19 @@ public static class OverlayPainter
         var bottom = (int)Math.Clamp(Math.Ceiling(Math.Max(start.Y, end.Y) + radius), area.Y, area.Bottom);
         for (var y = top; y < bottom; y++)
         {
-            for (var x = left; x < right; x++)
+            // 線の幅に入る x だけを行ごとに求め、外接矩形の全画素を走査しない。
+            var rowStart = left;
+            var rowEnd = right;
+            if (Math.Abs(delta.Y) > 1e-9)
+            {
+                var centerX = (y + 0.5 - start.Y) * delta.X;
+                var from = (centerX - radius * length) / delta.Y;
+                var to = (centerX + radius * length) / delta.Y;
+                rowStart = (int)Math.Clamp(Math.Floor(start.X + Math.Min(from, to)) - 1, left, right);
+                rowEnd = (int)Math.Clamp(Math.Ceiling(start.X + Math.Max(from, to)) + 1, left, right);
+            }
+
+            for (var x = rowStart; x < rowEnd; x++)
             {
                 var offset = new Vec2(x + 0.5, y + 0.5) - start;
                 var along = (offset.X * delta.X + offset.Y * delta.Y) / length;
@@ -288,6 +302,11 @@ public static class OverlayPainter
         var right = Math.Min(workArea.Right, layout.Panel.Right + padding);
         var bottom = Math.Min(workArea.Bottom, Math.Max(layout.Panel.Bottom + padding + (int)Math.Ceiling(8 * scale),
             layout.Options.Select(option => option.Bottom).DefaultIfEmpty(0).Max()));
+        if (right <= left || bottom <= top)
+        {
+            return new(new(workArea.X, workArea.Y, 1, 1), Create(1, 1));
+        }
+
         var bounds = new PixelRect(left, top, right - left, bottom - top);
         var layer = Create(bounds.Width, bounds.Height) with { Blends = [] };
         PaintPanelContents(layer, bounds, layout, theme, scale, drawText, shadow);
@@ -324,6 +343,11 @@ public static class OverlayPainter
         foreach (var button in layout.Presets)
         {
             var rect = Local(button.Bounds, area);
+            if (rect.Width <= 0 || rect.Height <= 0)
+            {
+                continue;
+            }
+
             // disabled の opacity は背景も含むボタン全体にかけ、下の面へ合成する。
             var layer = Create(rect.Width, rect.Height);
             var full = new PixelRect(0, 0, rect.Width, rect.Height);
@@ -335,7 +359,11 @@ public static class OverlayPainter
             var on = button.IconFill;
             PaintRounded(layer, on.X - button.Bounds.X, on.Y - button.Bounds.Y, on.Width, on.Height,
                 .5 * scale, palette.Muted);
-            drawText?.Invoke(layer, button.Bounds, layout.Text.First(text => button.Bounds.Contains(text.Bounds)));
+            if (drawText is not null && layout.Text.FirstOrDefault(text => button.Bounds.Contains(text.Bounds)) is { } label)
+            {
+                drawText(layer, button.Bounds, label);
+            }
+
             Composite(frame, layer, rect.X, rect.Y, button.Enabled ? 1 : .4);
         }
 
@@ -344,7 +372,8 @@ public static class OverlayPainter
             Box(key, 4, palette.Surface2, palette.BorderStrong);
         }
 
-        foreach (var text in layout.Text.Skip(1).Where(text => !layout.Options.Contains(text.Bounds) &&
+        var optionBounds = layout.Options.ToHashSet();
+        foreach (var text in layout.Text.Skip(1).Where(text => !optionBounds.Contains(text.Bounds) &&
             !layout.Presets.Any(button => button.Bounds.Contains(text.Bounds))))
         {
             drawText?.Invoke(frame, area, text);
@@ -529,6 +558,11 @@ public static class OverlayPainter
                     (relative.X * direction.X + relative.Y * direction.Y) / lengthSquared, 0, 1);
                 var distance = (point - (start + direction * along)).Length;
                 var alpha = (byte)Math.Round(color.Alpha * Math.Clamp(radius + .5 - distance, 0, 1));
+                if (alpha == 0)
+                {
+                    continue;
+                }
+
                 var index = (y * frame.Width + x) * 4;
                 BlendPixel(frame, index, new(Premultiply(color.Blue, alpha), Premultiply(color.Green, alpha),
                     Premultiply(color.Red, alpha), alpha));
