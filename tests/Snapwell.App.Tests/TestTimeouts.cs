@@ -8,4 +8,7 @@ internal static class TestTimeouts
 
     /// <summary>ミリ秒を受け取る API（SpinWait.SpinUntil など）向け。</summary>
     internal static int CompletionMs => (int)Completion.TotalMilliseconds;
+
+    /// <summary>条件が成り立つまで待ち、上限を超えたら失敗にする。</summary>
+    internal static void WaitUntil(Func<bool> condition) => Assert.True(SpinWait.SpinUntil(condition, CompletionMs));
 }

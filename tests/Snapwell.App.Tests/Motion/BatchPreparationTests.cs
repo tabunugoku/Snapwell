@@ -4,6 +4,7 @@ using Snapwell.App.Motion;
 using Snapwell.Core.Geometry;
 using Snapwell.Core.Physics;
 using Snapwell.Platform.Windows;
+using static Snapwell.App.Tests.TestTimeouts;
 
 namespace Snapwell.App.Tests.Motion;
 
@@ -27,7 +28,7 @@ public sealed class BatchPreparationTests
         frames.Advance();
         try
         {
-            Assert.True(api.Entered.Wait(5000));
+            Assert.True(api.Entered.Wait(TestTimeouts.Completion));
             await Task.Run(() =>
             {
                 if (retarget)
@@ -38,7 +39,7 @@ public sealed class BatchPreparationTests
                 {
                     engine.Cancel(changed);
                 }
-            }).WaitAsync(TimeSpan.FromSeconds(2));
+            }).WaitAsync(TestTimeouts.Completion);
         }
         finally
         {
@@ -72,8 +73,8 @@ public sealed class BatchPreparationTests
         frames.Advance();
         try
         {
-            Assert.True(api.Entered.Wait(5000));
-            await Task.Run(engine.Dispose).WaitAsync(TimeSpan.FromSeconds(2));
+            Assert.True(api.Entered.Wait(TestTimeouts.Completion));
+            await Task.Run(engine.Dispose).WaitAsync(TestTimeouts.Completion);
         }
         finally
         {
@@ -92,8 +93,6 @@ public sealed class BatchPreparationTests
 
     private static MotionRequest Request(nint handle) => new(handle, new(100, 100, 400, 300),
         new(8, 8, 600, 400), new(0, 0, 1920, 1040), FeelPreset.Standard, new(-1000, -200), SizeMode.Land);
-
-    private static void WaitUntil(Func<bool> condition) => Assert.True(SpinWait.SpinUntil(condition, 5000));
 
     private sealed class Inspector(BlockingPositionApi api) : IWindowInspector
     {

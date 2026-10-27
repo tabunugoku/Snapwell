@@ -276,8 +276,8 @@ public sealed class HotkeyTests
     {
         using var fixture = new BlockingRestoreFixture();
         await Task.Run(() => fixture.Executor.Handle(new((int)WindowCommand.LeftHalf)))
-            .WaitAsync(TimeSpan.FromSeconds(1));
-        Assert.True(fixture.Entered.Wait(5000));
+            .WaitAsync(TestTimeouts.Completion);
+        Assert.True(fixture.Entered.Wait(TestTimeouts.Completion));
         Assert.True(fixture.RestoreThread!.IsBackground);
         Assert.StartsWith("Snapwell restore ", fixture.RestoreThread.Name);
         fixture.Executor.Handle(new((int)WindowCommand.RightHalf));
@@ -298,7 +298,7 @@ public sealed class HotkeyTests
     {
         using var fixture = new BlockingRestoreFixture();
         fixture.Executor.Handle(new((int)WindowCommand.LeftHalf));
-        Assert.True(fixture.Entered.Wait(5000));
+        Assert.True(fixture.Entered.Wait(TestTimeouts.Completion));
         await Task.Run(() =>
         {
             if (stop)
@@ -309,7 +309,7 @@ public sealed class HotkeyTests
             {
                 Volatile.Write(ref fixture.Enabled, false);
             }
-        }).WaitAsync(TimeSpan.FromSeconds(1));
+        }).WaitAsync(TestTimeouts.Completion);
         fixture.CompleteRestore();
         Assert.Empty(fixture.Requests);
     }
@@ -396,7 +396,7 @@ public sealed class HotkeyTests
 
         internal void CompleteRestore()
         {
-            Assert.True(Entered.Wait(5000));
+            Assert.True(Entered.Wait(TestTimeouts.Completion));
             _continue.Set();
             Assert.True(RestoreThread!.Join(TimeSpan.FromSeconds(5)));
         }

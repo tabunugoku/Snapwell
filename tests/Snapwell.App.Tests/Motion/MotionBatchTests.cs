@@ -1,6 +1,7 @@
 using Snapwell.App.Motion;
 using Snapwell.Core.Geometry;
 using Snapwell.Core.Physics;
+using static Snapwell.App.Tests.TestTimeouts;
 
 namespace Snapwell.App.Tests.Motion;
 
@@ -271,7 +272,7 @@ public sealed class MotionBatchTests
         engine.Request(Request(1));
         engine.Request(Request(2));
         frames.Advance();
-        Assert.True(entered.Wait(5000));
+        Assert.True(entered.Wait(TestTimeouts.Completion));
         try
         {
             await Task.Run(() =>
@@ -281,14 +282,14 @@ public sealed class MotionBatchTests
                 Assert.True(engine.IsMoving(3));
                 engine.CancelAll();
                 engine.Dispose();
-            }).WaitAsync(TimeSpan.FromSeconds(2));
+            }).WaitAsync(TestTimeouts.Completion);
         }
         finally
         {
             release.Set();
         }
 
-        Assert.True(returned.Wait(5000));
+        Assert.True(returned.Wait(TestTimeouts.Completion));
         engine.Dispose();
         Assert.Single(mover.Batches);
         Assert.Empty(mover.Moves);
@@ -313,7 +314,7 @@ public sealed class MotionBatchTests
         engine.Request(Request(99));
         try
         {
-            Assert.True(entered.Wait(5000));
+            Assert.True(entered.Wait(TestTimeouts.Completion));
             foreach (var request in requests)
             {
                 engine.Request(request);
@@ -339,5 +340,4 @@ public sealed class MotionBatchTests
         Velocity = default,
     };
 
-    private static void WaitUntil(Func<bool> condition) => Assert.True(SpinWait.SpinUntil(condition, 5000));
 }
