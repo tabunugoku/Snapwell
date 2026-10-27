@@ -381,7 +381,7 @@ public sealed partial class GeneralPage
             if (result.Failure is null)
             {
                 // 起動後は取り消さず、進行役が待っている設定画面の PID を終了させる。
-                if (!_updateClosePending) { window?.Destroy(); }
+                if (!_updateClosePending) { DestroyAndExit(window); }
                 return;
             }
             if (!pageStop.IsCancellationRequested)
@@ -462,7 +462,14 @@ public sealed partial class GeneralPage
         _updateClosePending = true;
         _updateInstallStop?.Cancel();
         await task;
-        sender.Destroy();
+        DestroyAndExit(sender);
+    }
+
+    /// <summary>Destroy だけでは Window の Closed が起きず、プロセスが残る。進行役が終了を待つため Exit も呼ぶ。</summary>
+    private static void DestroyAndExit(AppWindow? window)
+    {
+        window?.Destroy();
+        Application.Current.Exit();
     }
 
     private void DetachUpdateWindow()
