@@ -139,6 +139,14 @@ internal sealed class SettingsSyncService : ISettingsSyncService
                 result = new(SettingsSyncKind.Failed);
                 serviceFailed = true;
             }
+            catch (Exception exception)
+            {
+                // 想定外の例外でも _running を戻せるよう、ここで止めて失敗として扱う。
+                try { _log.Error(exception); }
+                catch (Exception) { }
+                result = new(SettingsSyncKind.Failed);
+                serviceFailed = true;
+            }
             if (result is null) { continue; }
             lock (_gate)
             {

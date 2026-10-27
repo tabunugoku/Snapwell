@@ -491,7 +491,15 @@ internal sealed class AppHost
             }
 
             // 初期状態での配送を防ぐため、有効状態の確定後に公開する。
-            replacement.SetEnabled(_enabled && _hooksStarted);
+            try { replacement.SetEnabled(_enabled && _hooksStarted); }
+            catch (Exception exception)
+            {
+                // 旧は破棄済みで戻せない。破棄済みを指したままにしないよう、停止した状態の新を公開する。
+                Cleanup(() => replacement.SetEnabled(false));
+                Volatile.Write(ref _runtime, replacement);
+                ReportReloadFailure(exception);
+                return;
+            }
             Volatile.Write(ref _runtime, replacement);
             _portable = settings;
             _reloadStatusKey = null;
