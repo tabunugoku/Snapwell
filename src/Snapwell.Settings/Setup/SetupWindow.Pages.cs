@@ -15,7 +15,6 @@ public sealed partial class SetupWindow
     private object? _welcomeUpdatePage;
     private Task<UpdateToggleResult?>? _welcomeUpdateSave;
     private bool _welcomeUpdateEnabled;
-    private bool _welcomeUpdateClosed;
 
     private void SetHeading(string title, string lead)
     {
@@ -102,14 +101,10 @@ public sealed partial class SetupWindow
 
     private async void ShowWelcome()
     {
-        if (_welcomeUpdatePage is null)
-        {
-            Closed += (_, _) => _welcomeUpdateClosed = true;
-        }
         var page = new object();
         _welcomeUpdatePage = page;
         var session = UpdatePageSession.Shared;
-        bool IsCurrent() => !_welcomeUpdateClosed && _welcomeUpdatePage == page &&
+        bool IsCurrent() => !_closed && _welcomeUpdatePage == page &&
             _wizard.Step == SetupStep.Welcome;
 
         Heading.Visibility = Visibility.Collapsed;
@@ -284,9 +279,9 @@ public sealed partial class SetupWindow
         var defaults = DefaultHotkeys.Create();
         if (commands.Length == 1 && hotkeys.TryGetValue(commands[0], out var chord))
         {
-            controls.Children.Add(Keys(HotkeyCatalog.FormatChord(chord).Split('+')));
+            controls.Children.Add(Keys(HotkeyCatalog.FormatChordParts(chord).ToArray()));
         }
-        else if (commands.Length == 8 && commands.All(command =>
+        else if (commands.Length > 1 && commands.All(command =>
             hotkeys.TryGetValue(command, out var value) && defaults.TryGetValue(command, out var expected) && value == expected))
         {
             controls.Children.Add(InlineDescription(UiText.Current.Get("Setup.Hotkeys.ArrowsTemplate"),

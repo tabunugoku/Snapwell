@@ -30,6 +30,7 @@ public sealed partial class SetupWindow : Window
     private IntroScene? _intro;
     private WelcomeStage? _welcomeStage;
     private bool _closed;
+    private const int WizardWidth = 820, WizardHeight = 720;
 
     /// <summary>通常の設定画面と同じリソースと DPI の仕組みを使い、大きさは固定する。</summary>
     public SetupWindow()
@@ -68,7 +69,8 @@ public sealed partial class SetupWindow : Window
             ErrorNotice.IsOpen = true;
         }
 
-        // 既定だと Esc の案内が吹き出しで出て、導入の間ずっと残ることがある。
+        // 既定だと Esc の案内が吹き出しで出て、導入の間ずっと残ることがあった（原因は推測。再現できておらず、
+        // 効果は実機未確認）。Root 以外の要素のアクセラレーターには効かない。
         Root.KeyboardAcceleratorPlacementMode = KeyboardAcceleratorPlacementMode.Hidden;
         Root.KeyboardAccelerators.Add(Accelerator(VirtualKey.Escape, () =>
         {
@@ -113,9 +115,11 @@ public sealed partial class SetupWindow : Window
         _sized = true;
         var scale = Root.XamlRoot.RasterizationScale;
         var area = DisplayArea.GetFromWindowId(AppWindow.Id, DisplayAreaFallback.Primary).WorkArea;
-        AppWindow.Resize(new SizeInt32(Math.Min((int)(820 * scale), area.Width),
-            Math.Min((int)(720 * scale), area.Height)));
-        FixedWindowSize.Apply(WinRT.Interop.WindowNative.GetWindowHandle(this), 820, 720);
+        // 作業領域より大きいときは、Resize と固定サイズの両方を同じ大きさに切り詰める。
+        var width = Math.Min(WizardWidth, (int)(area.Width / scale));
+        var height = Math.Min(WizardHeight, (int)(area.Height / scale));
+        AppWindow.Resize(new SizeInt32((int)(width * scale), (int)(height * scale)));
+        FixedWindowSize.Apply(WinRT.Interop.WindowNative.GetWindowHandle(this), width, height);
         if (_introActive) { StartIntro(); }
         else { NextButton.Focus(FocusState.Programmatic); }
     }
@@ -282,8 +286,7 @@ public sealed partial class SetupWindow : Window
         {
             return;
         }
-        var dark = Root.ActualTheme == ElementTheme.Dark || Root.ActualTheme == ElementTheme.Default &&
-            Application.Current.RequestedTheme == ApplicationTheme.Dark;
+        var dark = Root.ActualTheme == ElementTheme.Dark;
         var foreground = dark ? Color.FromArgb(255, 230, 230, 227) : Color.FromArgb(255, 47, 52, 55);
         var muted = dark ? Color.FromArgb(255, 155, 154, 151) : Color.FromArgb(255, 120, 119, 116);
         var hover = dark ? Color.FromArgb(255, 37, 37, 36) : Color.FromArgb(255, 249, 249, 248);

@@ -14,6 +14,7 @@ namespace Snapwell.Settings.Setup;
 internal sealed partial class WelcomeStage : Grid, IDisposable
 {
     private const double ZoneInset = 3;
+    private readonly SolidColorBrush _clear = new(Microsoft.UI.Colors.Transparent);
     private readonly Func<bool> _visible;
     private readonly Func<bool> _motionAllowed;
     private readonly Action<bool, bool> _hint;
@@ -62,8 +63,10 @@ internal sealed partial class WelcomeStage : Grid, IDisposable
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
         SizeChanged += OnSizeChanged;
-        ActualThemeChanged += (_, _) => Paint();
+        ActualThemeChanged += OnThemeChanged;
     }
+
+    private void OnThemeChanged(FrameworkElement sender, object args) => Paint();
 
     // 子の骨組みも支援技術の読み上げ対象にしない。
     protected override AutomationPeer OnCreateAutomationPeer() => new StagePeer(this);
@@ -232,7 +235,7 @@ internal sealed partial class WelcomeStage : Grid, IDisposable
             var selected = i == _model.Target;
             shape.Stroke = selected ? _palette.AccentBrush : _palette.Border;
             shape.Fill = selected ? new SolidColorBrush(_palette.Accent) { Opacity = _palette.Dark ? .16 : .12 }
-                : new SolidColorBrush(Microsoft.UI.Colors.Transparent);
+                : _clear;
         }
         _window.Paint(_model.X, _model.Y, _model.Width, _model.Height, 0, _model.Held ? .7 : .2, 0, _palette);
     }
@@ -249,6 +252,11 @@ internal sealed partial class WelcomeStage : Grid, IDisposable
         if (_root is not null) { _root.Changed -= OnRootChanged; _root = null; }
         _clock.Stop();
         _window.Dispose();
-        Loaded -= OnLoaded; Unloaded -= OnUnloaded;
+        Loaded -= OnLoaded; Unloaded -= OnUnloaded; SizeChanged -= OnSizeChanged; ActualThemeChanged -= OnThemeChanged;
+        _window.PointerPressed -= OnPressed;
+        _window.PointerMoved -= OnMoved;
+        _window.PointerReleased -= OnReleased;
+        _window.PointerCanceled -= OnReleased;
+        _window.PointerCaptureLost -= OnReleased;
     }
 }

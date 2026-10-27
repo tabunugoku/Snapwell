@@ -59,6 +59,7 @@ public sealed class WelcomeThrowModelTests
     [InlineData(0, 0)]
     [InlineData(1, 2)]
     [InlineData(320, 188)]
+    [InlineData(520, 156)]
     public void ReducedMotionAndResizeSnapWithoutPhysics(double width, double height)
     {
         var model = new WelcomeThrowModel(520, 188);
