@@ -83,6 +83,8 @@ public sealed class SettingsSyncServiceTests : IDisposable
         using var service = Create();
         service.Configure(On);
         Assert.Contains("書き出し済み", await _log.Next());
+        // 時計の粒度内の再書き込みを検出できるよう、既知の過去の時刻にしておく。
+        File.SetLastWriteTimeUtc(Remote, new DateTime(2000, 1, 1, 0, 0, 0, DateTimeKind.Utc));
         var originalTime = File.GetLastWriteTimeUtc(Remote);
         service.Request();
         Assert.Contains("変更なし", await _log.Next());
@@ -95,6 +97,7 @@ public sealed class SettingsSyncServiceTests : IDisposable
         watcher.Notify();
         Assert.Contains("取り込み済み", await _log.Next());
         Assert.Equal(30, SettingsStores.Portable(Local).Load().Value.Gap);
+        File.SetLastWriteTimeUtc(Local, new DateTime(2000, 1, 1, 0, 0, 0, DateTimeKind.Utc));
         var afterPull = File.GetLastWriteTimeUtc(Local);
         service.Request();
         watcher.Notify();

@@ -85,6 +85,7 @@ public sealed class HotkeyTests
     {
         var result = HotkeyBindingsBuilder.Build(new PortableSettings().Hotkeys);
         Assert.Empty(result.Dropped);
+        Assert.NotEmpty(result.Bindings);
         Assert.All(result.Bindings, binding =>
         {
             Assert.False(binding.Modifiers.HasFlag(KeyModifiers.Win));
