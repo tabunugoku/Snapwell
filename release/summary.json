@@ -1,7 +1,7 @@
 {
   "summary": {
-    "ja": "初めての公開版です。ウィンドウを投げると、ばねと磁石の動きで、いちばん近い区画に収まります。",
-    "en": "The first public release. Throw a window and it settles into the nearest zone, driven by spring and magnet physics."
+    "ja": "保守版です。ロック画面のあとにホットキーが残る不具合や、設定画面・同期・オーバーレイの端の場合の不具合を直しました。",
+    "en": "A maintenance release. It fixes hotkeys that could stay stuck after a lock screen, plus edge cases in the settings window, sync and the overlay."
   },
   "minimumSupported": null
 }
