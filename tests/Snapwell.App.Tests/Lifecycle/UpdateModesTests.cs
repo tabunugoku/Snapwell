@@ -99,13 +99,19 @@ public sealed class UpdateModesTests
                     return UpdateInstallResult.Success;
                 });
             }
-            catch (Exception exception) { failure = exception; }
+            catch (Exception exception)
+            {
+                failure = exception;
+                entered.Set();
+            }
         })
         { IsBackground = true };
         thread.Start();
+        var joined = false;
         try
         {
-            Assert.True(entered.Wait(TimeSpan.FromSeconds(10)));
+            Assert.True(entered.Wait(TestTimeouts.Completion));
+            Assert.True(failure is null, failure?.ToString());
             var second = UpdateModes.RunWithInstallLock(install, new UpdateInstallLock(false), () =>
             {
                 Assert.Fail("The second helper must not create a work directory or session.");
@@ -115,9 +121,11 @@ public sealed class UpdateModesTests
         }
         finally
         {
+            // finally で Assert すると、先に起きた失敗を上書きして隠す。
             release.Set();
-            Assert.True(thread.Join(TimeSpan.FromSeconds(10)));
+            joined = thread.Join(TestTimeouts.Completion);
         }
+        Assert.True(joined);
         Assert.Null(failure);
         Assert.Equal(UpdateInstallResult.Success, first);
         Assert.Equal(UpdateInstallResult.Success, UpdateModes.RunWithInstallLock(install,

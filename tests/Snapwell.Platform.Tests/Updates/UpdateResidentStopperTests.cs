@@ -69,17 +69,26 @@ public sealed class UpdateResidentStopperTests
             RedirectStandardOutput = true,
             RedirectStandardError = true,
         })!;
-        Assert.False(process.HasExited);
+        if (process.HasExited)
+        {
+            process.Dispose();
+            Assert.Fail("起動した ping.exe がすぐに終了した。");
+        }
         return process;
     }
 
+    // 後始末では失敗を投げない。投げると finally に並ぶ残りのプロセスが止まらず、ディレクトリも消せない。
     private static void StopAndDispose(Process? process)
     {
         if (process is null) { return; }
         try
         {
             if (!process.HasExited) { process.Kill(); }
-            Assert.True(process.WaitForExit(5000));
+            process.WaitForExit(5000);
+        }
+        catch (Exception exception) when (exception is InvalidOperationException or System.ComponentModel.Win32Exception)
+        {
+            // 判定と Kill の間に終了した場合。
         }
         finally { process.Dispose(); }
     }

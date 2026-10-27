@@ -12,7 +12,7 @@ public sealed class TrayArrangementTests
     [Fact]
     public void LauncherSelectionRechecksAvailabilityPauseAndRemoval()
     {
-        var tray = new TrayIcon(new NoLog(), SettingsStores.Device());
+        var tray = new TrayIcon(new NoLog(), TempDeviceStore());
         var calls = new List<nint>();
         tray.LauncherRequested += (target, _) => calls.Add(target);
         tray.SelectMenuItem(7);
@@ -37,7 +37,7 @@ public sealed class TrayArrangementTests
     [Fact]
     public void LauncherSelectionIncludesCurrentTickCount()
     {
-        var tray = new TrayIcon(new NoLog(), SettingsStores.Device());
+        var tray = new TrayIcon(new NoLog(), TempDeviceStore());
         tray.Update(new(true, false, LauncherAvailable: true));
         var calls = new List<uint>();
         tray.LauncherRequested += (_, timeMs) => calls.Add(timeMs);
@@ -54,7 +54,7 @@ public sealed class TrayArrangementTests
     [Fact]
     public void SelectingArrangementRaisesExactlyOneEvent()
     {
-        var tray = new TrayIcon(new NoLog(), SettingsStores.Device());
+        var tray = new TrayIcon(new NoLog(), TempDeviceStore());
         var calls = 0;
         tray.ArrangeRequested += () => calls++;
 
@@ -67,7 +67,7 @@ public sealed class TrayArrangementTests
     [Fact]
     public void SelectionRechecksPauseAndRemovalAfterMenuWasOpened()
     {
-        var tray = new TrayIcon(new NoLog(), SettingsStores.Device());
+        var tray = new TrayIcon(new NoLog(), TempDeviceStore());
         var calls = 0;
         tray.ArrangeRequested += () => calls++;
         tray.Update(new(false, false));
@@ -80,6 +80,11 @@ public sealed class TrayArrangementTests
         tray.SelectMenuItem(6);
         Assert.Equal(1, calls);
     }
+
+    // 利用者の実際の device.json に触れないよう、使い捨ての保存先を渡す。
+    private static ISettingsStore<DeviceState> TempDeviceStore() =>
+        SettingsStores.Device(Path.Combine(Path.GetTempPath(), "snapwell-tray-" + Guid.NewGuid().ToString("N"),
+            "device.json"));
 
     private sealed class NoLog : IAppLog
     {
