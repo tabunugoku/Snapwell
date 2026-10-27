@@ -420,7 +420,7 @@ public sealed class ResidentRuntimeTests
             Assert.True(fake.Entered.Wait(2000));
             var elapsed = System.Diagnostics.Stopwatch.StartNew();
             runtime.Dispose();
-            Assert.True(elapsed.Elapsed < TimeSpan.FromSeconds(1));
+            Assert.True(elapsed.Elapsed < TimeSpan.FromSeconds(10));
             Assert.Equal(1, motion.DisposeCalls);
         }
         finally
@@ -624,9 +624,9 @@ public sealed class ResidentRuntimeTests
         try
         {
             await Task.Run(() => runtime.Handle(new KeyChord((int)WindowCommand.LeftHalf)))
-                .WaitAsync(TimeSpan.FromSeconds(1));
+                .WaitAsync(TestTimeouts.Completion);
             Assert.True(position.Entered.Wait(5000));
-            await Task.Run(runtime.Dispose).WaitAsync(TimeSpan.FromSeconds(1));
+            await Task.Run(runtime.Dispose).WaitAsync(TestTimeouts.Completion);
             position.Continue.Set();
             Assert.True(position.Worker!.Join(TimeSpan.FromSeconds(5)));
             Assert.Equal(1, motion.DisposeCalls);

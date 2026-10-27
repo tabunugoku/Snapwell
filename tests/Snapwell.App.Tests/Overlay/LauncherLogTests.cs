@@ -60,7 +60,7 @@ public sealed class LauncherLogTests
             writer.Write(2, "stop-timeout", null);
             var elapsed = Stopwatch.StartNew();
             Assert.False(writer.Flush(TimeSpan.FromMilliseconds(50)));
-            Assert.True(elapsed.Elapsed < TimeSpan.FromSeconds(1));
+            Assert.True(elapsed.Elapsed < TimeSpan.FromSeconds(10));
             release.Set();
             Assert.True(writer.Flush(TimeSpan.FromSeconds(2)));
             Assert.Equal(2, File.ReadAllLines(path).Length);

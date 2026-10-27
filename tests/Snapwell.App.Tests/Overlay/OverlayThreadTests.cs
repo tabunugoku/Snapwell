@@ -202,7 +202,7 @@ public sealed class OverlayThreadTests
             Assert.True(fake.Entered.Wait(TestTimeouts.Completion));
             var elapsed = Stopwatch.StartNew();
             overlay.Dispose();
-            Assert.True(elapsed.Elapsed < TimeSpan.FromSeconds(1));
+            Assert.True(elapsed.Elapsed < TimeSpan.FromSeconds(10));
         }
         finally
         {

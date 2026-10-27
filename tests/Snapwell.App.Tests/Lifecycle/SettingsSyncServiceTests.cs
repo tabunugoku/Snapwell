@@ -138,7 +138,7 @@ public sealed class SettingsSyncServiceTests : IDisposable
         using var service = Create(() => { Interlocked.Increment(ref runs); return new(kind); });
         service.Configure(On);
         await _log.Next();
-        Assert.Equal(TimeSpan.FromSeconds(30), await _time.Timer!.Scheduled.Reader.ReadAsync());
+        Assert.Equal(TimeSpan.FromSeconds(30), await _time.Timer!.NextScheduled());
         _time.Advance(29);
         Assert.Equal(1, runs);
         _time.Advance(1);
@@ -158,7 +158,7 @@ public sealed class SettingsSyncServiceTests : IDisposable
         using var service = new SettingsSyncService(Local, Path.Combine(_root, "backups"), _store, _log, _time);
         service.Configure(On);
         Assert.Contains("失敗", await _log.Next());
-        await _time.Timer!.Scheduled.Reader.ReadAsync();
+        await _time.Timer!.NextScheduled();
         Assert.False(Directory.Exists(Path.GetDirectoryName(Remote)));
         _time.Advance(30);
         Assert.Contains("失敗", await _log.Next());
@@ -171,7 +171,7 @@ public sealed class SettingsSyncServiceTests : IDisposable
         var service = Create(() => { Interlocked.Increment(ref runs); return new(SettingsSyncKind.Failed); });
         service.Configure(On);
         await _log.Next();
-        await _time.Timer!.Scheduled.Reader.ReadAsync();
+        await _time.Timer!.NextScheduled();
         service.Dispose();
         _time.Advance(30);
         _time.Timer.FireLate();
@@ -186,10 +186,10 @@ public sealed class SettingsSyncServiceTests : IDisposable
         using var service = Create(() => { Interlocked.Increment(ref runs); return new(SettingsSyncKind.Failed); });
         service.Configure(On);
         await _log.Next();
-        await _time.Timer!.Scheduled.Reader.ReadAsync();
+        await _time.Timer!.NextScheduled();
         _time.Advance(10);
         _time.Timer.FireLate();
-        Assert.Equal(TimeSpan.FromSeconds(20), await _time.Timer.Scheduled.Reader.ReadAsync());
+        Assert.Equal(TimeSpan.FromSeconds(20), await _time.Timer.NextScheduled());
         Assert.Equal(1, runs);
         _time.Advance(20);
         await _log.Next();
@@ -326,6 +326,11 @@ public sealed class SettingsSyncServiceTests : IDisposable
         private DateTimeOffset? _due;
         internal bool Disposed;
         internal Channel<TimeSpan> Scheduled { get; } = Channel.CreateUnbounded<TimeSpan>();
+
+        // 予約されない回帰でテスト全体が止まらないよう、待ちには期限を付ける。
+        internal Task<TimeSpan> NextScheduled() =>
+            Scheduled.Reader.ReadAsync().AsTask().WaitAsync(TestTimeouts.Completion);
+
         public bool Change(TimeSpan dueTime, TimeSpan period)
         {
             _due = dueTime == Timeout.InfiniteTimeSpan ? null : time.GetUtcNow() + dueTime;
