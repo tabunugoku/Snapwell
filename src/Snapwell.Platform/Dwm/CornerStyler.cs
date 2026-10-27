@@ -90,10 +90,27 @@ public sealed class CornerStyler
         _log = log;
         if (statePath is not null && File.Exists(statePath))
         {
-            foreach (var state in JsonSerializer.Deserialize(File.ReadAllText(statePath),
-                CornerStateJsonContext.Default.ListCornerState) ?? [])
+            try
             {
-                _modified[state.Handle] = state;
+                foreach (var state in JsonSerializer.Deserialize(File.ReadAllText(statePath),
+                    CornerStateJsonContext.Default.ListCornerState) ?? [])
+                {
+                    _modified[state.Handle] = state;
+                }
+            }
+            catch (Exception exception) when (exception is JsonException or IOException or UnauthorizedAccessException)
+            {
+                // 壊れた退避ファイルで起動を止めない。調べられるよう .broken へ隔離し、記録は捨てる。
+                _modified.Clear();
+                _log?.Invoke($"角設定の退避ファイルを読めないため隔離: {exception.Message}");
+                try
+                {
+                    File.Move(statePath, statePath + ".broken", overwrite: true);
+                }
+                catch (Exception moveError) when (moveError is IOException or UnauthorizedAccessException)
+                {
+                    _log?.Invoke($"角設定の退避ファイルを隔離できない: {moveError.Message}");
+                }
             }
         }
     }

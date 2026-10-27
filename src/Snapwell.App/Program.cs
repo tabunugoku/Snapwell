@@ -56,7 +56,15 @@ internal static class Program
         var capture = new HotkeyCaptureMutex(HotkeyCaptureSession.MutexName(
             // i18n-keep: 画面に出さない開発者向けの例外・ログ。
             captureIdentity.User?.Value ?? throw new InvalidOperationException("ユーザーの SID を取得できない。")));
-        var matcher = new HotkeyMatcher(() => capture.IsCapturing);
+        // 入力スレッドだけが呼ぶ。キーごとのカーネル呼び出しを避けるため、確認は 50ms に一度にとどめる。
+        long capturePolledAt = 0;
+        var capturing = false;
+        var matcher = new HotkeyMatcher(() =>
+        {
+            var now = Environment.TickCount64;
+            if (now - capturePolledAt >= 50) { capturing = capture.IsCapturing; capturePolledAt = now; }
+            return capturing;
+        }, HotkeyMatcher.IsKeyDownInOs);
         var hooks = new HookService(new HookThread(matcher), log);
         var deviceStore = SettingsStores.Device();
         var tray = new TrayIcon(log, deviceStore);

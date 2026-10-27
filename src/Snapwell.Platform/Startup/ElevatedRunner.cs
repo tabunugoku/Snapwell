@@ -14,6 +14,11 @@ namespace Snapwell.Platform.Startup;
 /// <summary>通常権限の画面から専用ヘルパーだけを runas で起動する。</summary>
 public sealed class ElevatedRunner(string executablePath) : IElevatedRunner
 {
+    private const uint SeeMaskNoCloseProcess = 0x00000040;
+    private const uint SeeMaskFlagDdeWait = 0x00000100;
+    private const uint SeeMaskFlagNoUi = 0x00000400;
+    private static readonly TimeSpan _helperTimeout = TimeSpan.FromMinutes(5);
+
     /// <summary>UI を止めずに UAC と終了を待ち、OS のキャンセルを区別する。</summary>
     public Task<StartupChangeResult> RunAsync(bool enabled)
     {
@@ -33,8 +38,8 @@ public sealed class ElevatedRunner(string executablePath) : IElevatedRunner
         {
             return StartupChangeResult.Failed;
         }
-        // 既存の登録経路は終了まで待つ。新しい待機 API に無限値を渡さない。
-        while (!process.WaitForExit(TimeSpan.FromMinutes(1))) { }
+        // ヘルパーが止まっても保存が終わらなくならないよう、待つのは上限まで。
+        if (!process.WaitForExit(_helperTimeout)) { return StartupChangeResult.Failed; }
         return process.ExitCode switch
         {
             0 => StartupChangeResult.Success,
@@ -75,7 +80,7 @@ public sealed class ElevatedRunner(string executablePath) : IElevatedRunner
             {
                 cbSize = (uint)sizeof(SHELLEXECUTEINFOW),
                 // ハンドルを保持して終了を待つ。Shell の非同期処理と既定のエラー画面は使わない。
-                fMask = 0x00000040 | 0x00000100 | 0x00000400,
+                fMask = SeeMaskNoCloseProcess | SeeMaskFlagDdeWait | SeeMaskFlagNoUi,
                 lpVerb = new PCWSTR(verb),
                 lpFile = new PCWSTR(file),
                 lpParameters = new PCWSTR(parameters),

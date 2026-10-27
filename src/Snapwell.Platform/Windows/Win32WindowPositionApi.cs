@@ -39,18 +39,20 @@ public sealed class Win32WindowPositionApi : IWindowPositionApi
     /// <summary>DeferWindowPos が失敗した場合は無効になったバッチを使わない。</summary>
     public bool ApplyBatch(IReadOnlyList<NativeWindowPlacement> placements, bool positionOnly)
     {
-        if (placements.Count == 0)
+        // 準備の後に閉じたウィンドウ一つで、バッチ全体が無効にならないよう先に除く。
+        var alive = placements.Where(placement => PInvoke.IsWindow(new HWND(placement.Handle))).ToList();
+        if (alive.Count == 0)
         {
             return true;
         }
 
-        var batch = PInvoke.BeginDeferWindowPos(placements.Count);
+        var batch = PInvoke.BeginDeferWindowPos(alive.Count);
         if (batch.IsNull)
         {
             return false;
         }
 
-        foreach (var placement in placements)
+        foreach (var placement in alive)
         {
             var bounds = placement.WindowBounds;
             batch = PInvoke.DeferWindowPos(batch, new HWND(placement.Handle), default,

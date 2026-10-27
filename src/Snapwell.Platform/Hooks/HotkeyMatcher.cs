@@ -1,3 +1,4 @@
+using Windows.Win32;
 using Windows.Win32.UI.Input.KeyboardAndMouse;
 
 namespace Snapwell.Platform.Hooks;
@@ -23,7 +24,9 @@ public readonly record struct HotkeyMatch(bool Matched, int Id, bool Suppress, b
 /// <summary>単一の入力スレッドでキー状態を追い、設定だけを別スレッドから差し替える。</summary>
 public sealed class HotkeyMatcher
 {
+    private static readonly uint[] _modifierKeys = [0x11, 0xA2, 0xA3, 0x12, 0xA4, 0xA5, 0x10, 0xA0, 0xA1, 0x5B, 0x5C];
     private readonly Func<bool>? _isCapturing;
+    private readonly Func<uint, bool>? _isPhysicallyDown;
     private HotkeyBinding[] _bindings = [];
     private readonly bool[] _suppressedKeys = new bool[256];
     private readonly bool[] _downKeys = new bool[256];
@@ -32,7 +35,14 @@ public sealed class HotkeyMatcher
     private bool _dummyRequestedForWinPress;
 
     /// <summary>取り込みの確認は、開いたハンドルの即時確認だけを行う関数で受け取る。</summary>
-    public HotkeyMatcher(Func<bool>? isCapturing = null) => _isCapturing = isCapturing;
+    public HotkeyMatcher(Func<bool>? isCapturing = null, Func<uint, bool>? isPhysicallyDown = null)
+    {
+        _isCapturing = isCapturing;
+        _isPhysicallyDown = isPhysicallyDown;
+    }
+
+    /// <summary>OS が見ているキーの押下状態。ロック画面などで解放を取り逃した状態の補正に使う。</summary>
+    public static bool IsKeyDownInOs(uint virtualKey) => (PInvoke.GetAsyncKeyState((int)virtualKey) & 0x8000) != 0;
 
     /// <summary>列挙元から独立した不変の設定スナップショットを公開する。</summary>
     public void SetBindings(IEnumerable<HotkeyBinding> bindings)
@@ -92,6 +102,7 @@ public sealed class HotkeyMatcher
 
         if (_captureKeys[virtualKey]) { return default; }
 
+        DropStaleState(virtualKey);
         var modifiers = GetModifiers();
         var repeated = _downKeys[virtualKey];
         _downKeys[virtualKey] = true;
@@ -127,6 +138,19 @@ public sealed class HotkeyMatcher
         Array.Clear(_suppressedKeys);
         Array.Clear(_downKeys);
         Array.Clear(_captureKeys);
+    }
+
+    /// <summary>ロック画面や UAC で解放が届かなかった修飾キーと押下記録を、OS の状態に合わせて捨てる。</summary>
+    private void DropStaleState(uint virtualKey)
+    {
+        if (_isPhysicallyDown is null) { return; }
+        foreach (var key in _modifierKeys)
+        {
+            var bit = GetModifierBit(key);
+            if ((_pressedModifiers & bit) != 0 && !_isPhysicallyDown(key)) { _pressedModifiers &= ~bit; }
+        }
+
+        if (_downKeys[virtualKey] && !_isPhysicallyDown(virtualKey)) { _downKeys[virtualKey] = false; }
     }
 
     private KeyModifiers GetModifiers()
