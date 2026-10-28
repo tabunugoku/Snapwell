@@ -47,7 +47,7 @@ await og.goto(pathToFileURL(resolve(here, 'social.html')).href);
 await og.evaluate(() => document.fonts.load('500 64px Newsreader'));
 await og.evaluate(() => document.fonts.ready);
 await og.waitForTimeout(300);
-await og.screenshot({ path: resolve(root, 'site/assets/social-preview.png') });
+await og.screenshot({ path: resolve(root, 'tools/film/social-preview.png') });
 
 await browser.close();
 console.log('done');

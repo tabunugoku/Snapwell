@@ -42,8 +42,11 @@
     const set = (v) => all.forEach((b) => b.jump(v));
     set(0);
     return {
-      /** staggered: arc, then the square, then the name, each as its own spring */
-      show(delay = (fn, s) => setTimeout(fn, s * 1000)) {
+      /**
+       * staggered: arc, then the square, then the name, each as its own spring.
+       * delay(fn, s) は呼び出し側の時計で s 秒後に fn を呼ぶ（動画は偽の時計、ホームページは導入のシミュレーション時刻）
+       */
+      show(delay) {
         fade.to(100); draw.to(100);
         delay(() => pop.to(100), 0.45);
         delay(() => rise.to(100), 0.35);

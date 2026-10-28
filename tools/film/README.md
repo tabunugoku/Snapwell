@@ -6,6 +6,7 @@
 | ファイル | 役割 |
 |---|---|
 | `film.html` `film.css` `film.js` | 台本。導入 (`site/js/intro.js`)、投げる、操作感のプリセット、ランチャー、Ctrl+Alt+A の整列、終わりのロゴ |
+| `lib/site.css` | 動画の配色と書体。旧ホームページの CSS をここに移した (いまのホームページは `site/css/home.css` を使う) |
 | `render.mjs` | 映像 (`snapwell.mp4` `snapwell.webm` `poster.jpg`) と、効果音のきっかけ `cues.json` を `out/` に書く |
 | `brand.mjs` | ロゴとアイコンの素材を 1 つの元から作る (下記) |
 | `audio/` | 効果音の台本、生成、重ね合わせ、タイミング表 |
@@ -29,7 +30,7 @@ node render.mjs            # out/ に snapwell.mp4, snapwell.webm, poster.jpg, c
 - アプリのアイコン: `assets/icons/app-large.svg`
 - ワードマークの書体: `site/fonts/newsreader-500.woff2` (Newsreader、SIL OFL 1.1。`tools/subset-wordmark-font.py` で切り出す。`THIRD_PARTY_NOTICES.md` に記載)
 
-`node brand.mjs` が `site/assets/icon.svg` (app-large)、`favicon.svg` (app-32。ヘッダの 32 px もこれ)、`apple-touch-icon.png`、`og.png`、`site/js/brand-mark.js` を作る。
+`node brand.mjs` が `site/assets/favicon.svg` (app-32。ヘッダの 32 px もこれ)、`apple-touch-icon.png`、`og.png`、`site/js/brand-mark.js` を作る。
 ホームページのヘッダとヒーロー、動画の導入と終わり、favicon、OGP はこれらだけを使う。アイコンを直したら `node brand.mjs` を走らせて同じコミットに入れる。
 `node brand.mjs --check` は PNG 以外が元とずれていないかを見る (ずれていれば終了コード 1)。
 
@@ -63,4 +64,4 @@ node audio/mix.mjs                           # 既定は site/video の無音版
 - プロジェクトのライセンスとの関係: 効果音の mp3 自体はリポジトリに入れず、動画に混ぜた音だけが `site/video/` に入る。
 
 ## README の画面写真とソーシャルプレビュー
-`node shots.mjs` で、モックアップから `docs/images/` の設定画面 (操作感・ホットキー) とランチャーの写真を撮り直し、GitHub のソーシャルプレビュー (1280 × 640、`social.html`) を `site/assets/social-preview.png` に書き出す。ソーシャルプレビューは API で設定できないため、リポジトリの Settings → General → Social preview に手でアップロードする。サイトの共有画像 (`og.png`、1200 × 630) は `og.html` から作る。
+`node shots.mjs` で、モックアップから `docs/images/` の設定画面 (操作感・ホットキー) とランチャーの写真を撮り直し、GitHub のソーシャルプレビュー (1280 × 640、`social.html`) を `tools/film/social-preview.png` に書き出す (ホームページでは使わないので `site/` には置かない)。ソーシャルプレビューは API で設定できないため、リポジトリの Settings → General → Social preview に手でアップロードする。サイトの共有画像 (`og.png`、1200 × 630) は `og.html` から作る。

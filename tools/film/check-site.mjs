@@ -29,15 +29,16 @@ for (const c of cases) {
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
   await page.goto(url);
   await page.evaluate(() => document.fonts.ready);
-  await page.waitForTimeout(c.reducedMotion ? 800 : 9500); // 導入が終わるまで待つ
+  // 導入の重ね板 (html.intro) が外れ、ヒーローの入場が終わるまで待つ
+  await page.waitForFunction(() => !document.documentElement.classList.contains('intro'), null, { timeout: 10000 });
+  await page.waitForTimeout(c.reducedMotion ? 800 : 2500);
   await page.screenshot({ path: resolve(out, `${c.name}-hero.png`) });
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
-  const logo = await page.evaluate(() => {
-    const n = document.querySelector('#introLogo .logo-name');
-    const s = document.querySelector('#introLogo svg');
-    return { name: n && getComputedStyle(n).opacity, mark: s && getComputedStyle(s).opacity, family: n && getComputedStyle(n).fontFamily.slice(0, 30) };
+  const hero = await page.evaluate(() => {
+    const h = document.querySelector('#h1 .line-in');
+    return { opacity: h && getComputedStyle(h).opacity, family: h && getComputedStyle(h).fontFamily.slice(0, 30) };
   });
-  console.log(c.name, JSON.stringify({ overflowPx: overflow, logo, external, errors }));
+  console.log(c.name, JSON.stringify({ overflowPx: overflow, hero, external, errors }));
   if (overflow > 0 || external.length || errors.length) bad++;
   await page.screenshot({ path: resolve(out, `${c.name}-full.png`), fullPage: true });
   await ctx.close();

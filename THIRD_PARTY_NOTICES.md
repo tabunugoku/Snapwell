@@ -34,7 +34,7 @@ SOFTWARE.
 ## Newsreader
 
 - https://github.com/productiontype/Newsreader (Production Type)
-- ホームページ（`site/`）と紹介動画のワードマーク「Snapwell」に使う。太さ 500 と ASCII だけに切り出した `site/fonts/newsreader-500.woff2` を同梱する（切り出しは `tools/subset-wordmark-font.py`）。
+- ホームページ（`site/`）と紹介動画のワードマーク「Snapwell」と、ホームページの英語の見出しに使う。太さ 500 と ASCII（ほかに ’ — · の 3 字）だけに切り出した `site/fonts/newsreader-500.woff2` を同梱する（切り出しは `tools/subset-wordmark-font.py`）。日本語の見出しはこの書体に字がないので、OS の明朝体で表示する。
 - SIL Open Font License 1.1。全文は `site/fonts/OFL-Newsreader.txt`。
 
 Copyright 2020 The Newsreader Project Authors (http://github.com/productiontype/Newsreader)

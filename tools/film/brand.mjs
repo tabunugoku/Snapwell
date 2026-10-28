@@ -1,6 +1,6 @@
 // ブランドの素材を 1 つの元から作る: node brand.mjs [--check]
 // 元: assets/icons/app-large.svg (アプリのアイコン) と site/fonts/newsreader-500.woff2 (ワードマークの書体)。
-// 作るもの: site/assets/icon.svg (app-large と同じ)、site/assets/favicon.svg (app-32 と同じ。アプリも小さいサイズは枠を太くして弧を省く)、
+// 作るもの: site/assets/favicon.svg (app-32 と同じ。アプリも小さいサイズは枠を太くして弧を省く)、
 //   site/js/brand-mark.js (サイトと動画が差し込むアイコンの SVG。弧と正方形に動かす印を付ける)、
 //   site/assets/apple-touch-icon.png (180)、site/assets/og.png (1200×630)。
 // --check は PNG 以外を作り直して差を見るだけで、ずれていれば終了コード 1 で止まる。
@@ -27,7 +27,6 @@ mark = mark.replace(sq, '<rect class="mark-sq" x="23" y="7" width="14" height="1
 const markJs = `// 生成物: tools/film/brand.mjs が assets/icons/app-large.svg から作る。直接は直さない。\nwindow.SNAP_MARK = ${JSON.stringify(mark)};\n`;
 
 const texts = {
-  'site/assets/icon.svg': icon,
   'site/assets/favicon.svg': small,
   'site/js/brand-mark.js': markJs,
 };
