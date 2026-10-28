@@ -146,6 +146,8 @@ public sealed class HotkeyMatcher
         if (_isPhysicallyDown is null) { return; }
         foreach (var key in _modifierKeys)
         {
+            // 低レベルフックは OS が押下状態を更新する前に呼ばれる。今押された修飾キー自身は「未押下」に見える。
+            if (key == virtualKey) { continue; }
             var bit = GetModifierBit(key);
             if ((_pressedModifiers & bit) != 0 && !_isPhysicallyDown(key)) { _pressedModifiers &= ~bit; }
         }
