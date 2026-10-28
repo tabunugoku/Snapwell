@@ -116,12 +116,12 @@
       <span class="line"><span class="line-in dim" data-rise><span data-l="en">It lands in place.</span><span data-l="ja">ぴたりと収まる。</span></span></span>
     </h1>
     <div class="hero-side">
-      <p class="lead" data-rise><span data-l="en">Let go mid-drag and a spring, a magnet and the screen's walls carry the window into the nearest zone of your grid. Every motion is computed from mass, stiffness and damping.</span><span data-l="ja">ドラッグの途中で手を離すと、ばねと磁石と画面の壁が、ウィンドウをグリッドのいちばん近い区画へ運びます。動きはすべて質量・剛性・減衰から計算しています。</span></p>
+      <p class="lead" data-rise><span data-l="en">Let go mid-drag and a spring, a magnet and the screen's walls carry the window into the nearest zone of your grid. Every motion is computed from mass, stiffness and damping.</span><span data-l="ja">ドラッグの途中で手を離すと、ばねと磁石と画面の壁がウィンドウをグリッドのいちばん近い区画へ運びます。動きはすべて質量・剛性・減衰から計算しています。</span></p>
       <p class="actions" data-rise>
         <a class="btn btn-primary" href="#download" data-mag><span data-l="en">Download v{{VERSION}}</span><span data-l="ja">v{{VERSION}} をダウンロード</span><i class="btn-icon" aria-hidden="true"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M8 2v11M3.5 8.5 8 13l4.5-4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i></a>
         <a class="btn btn-action" href="#film" data-mag><span data-l="en">Watch the film</span><span data-l="ja">映像を見る</span></a>
       </p>
-      <p class="meta" data-rise><span data-l="en">Native x64 and ARM64 · Free and open source</span><span data-l="ja">x64 と ARM64 のネイティブ版 · 無料・オープンソース</span></p>
+      <p class="meta" data-rise><span data-l="en">Native x64 and ARM64 · Free and open source</span><span data-l="ja">x64 と ARM64 のネイティブ版 · 無料のオープンソース</span></p>
     </div>
   </div>
 
@@ -143,13 +143,13 @@
         </div>
         <dl class="readout" aria-live="polite">
           <div><dt><span data-l="en">Release</span><span data-l="ja">離した速さ</span></dt><dd id="roSpeed">—</dd></div>
-          <div><dt><span data-l="en">Lands in</span><span data-l="ja">着地</span></dt><dd id="roZone">—</dd></div>
+          <div><dt><span data-l="en">Lands in</span><span data-l="ja">着地先</span></dt><dd id="roZone">—</dd></div>
           <div class="ro-wide"><dt><span data-l="en">Spring</span><span data-l="ja">ばね</span></dt><dd id="roSpring">—</dd></div>
         </dl>
         <button class="btn btn-action" type="button" id="heroThrow" data-mag><span data-l="en">Throw one for me</span><span data-l="ja">自動で投げる</span></button>
       </div>
     </div>
-    <p class="stage-note"><span data-l="en">Drag a title bar and let go, or focus one and press the arrow keys. A mockup of the interface, running the app's presets and force law.</span><span data-l="ja">タイトルバーをつかんで投げてください。タイトルバーにフォーカスして矢印キーを押しても動きます。画面はモックアップで、プリセットと力の式はアプリと同じです。</span></p>
+    <p class="stage-note"><span data-l="en">Drag a title bar and let go, or focus one and press the arrow keys. A mockup of the interface, running the app's presets and force law.</span><span data-l="ja">タイトルバーをつかんで投げてください。フォーカスして矢印キーを押しても動きます。画面はモックアップで、プリセットと力の式はアプリと同じです。</span></p>
   </div>
 </section>
 
@@ -173,7 +173,7 @@
       <p class="index" data-rise>02 <span class="rule" aria-hidden="true"></span> <span data-l="en">Feel</span><span data-l="ja">動き</span></p>
       <h2 id="h-feel" data-rise><span data-l="en">Motion from mass,<br>not milliseconds.</span><span data-l="ja">動きは、ミリ秒ではなく<br>質量から。</span></h2>
     </div>
-    <p class="lead" data-rise><span data-l="en">Four presets, each a mass, a natural frequency and a damping ratio. Or set your own, along with the magnet's strength. No motion in Snapwell runs on a fixed duration.</span><span data-l="ja">4 つのプリセットはそれぞれ質量・固有振動数・減衰比の組です。磁石の強さと合わせて、自分で値を決めることもできます。Snapwell の動きに、決まった再生時間はありません。</span></p>
+    <p class="lead" data-rise><span data-l="en">Four presets, each a mass, a natural frequency and a damping ratio. Or set your own, along with the magnet's strength. No motion in Snapwell runs on a fixed duration.</span><span data-l="ja">4 つのプリセットはそれぞれ質量・固有振動数・減衰比の組です。磁石の強さと合わせて、自分で値を決めることもできます。Snapwell の動きに、決まった継続時間はありません。</span></p>
   </div>
   <div class="cards" id="feelCards">
     <button class="card" type="button" data-v="standard" aria-pressed="true" data-rise>
@@ -197,7 +197,7 @@
       <span class="card-nums"></span>
     </button>
   </div>
-  <p class="note" data-rise><span data-l="en">Each curve is one keyboard move of a single zone from rest, over 1.4 s; the dashed line is the target. A throw uses the same frequency and damping, but it is a different motion. Pick a card to try it in the stage above.</span><span data-l="ja">曲線は静止からキー操作で 1 区画動かしたときの位置です（横軸 1.4 秒、破線が目標）。投げるときも同じ固有振動数と減衰比を使いますが、曲線とは別の運動です。カードを選ぶと、上の画面で試せます。</span></p>
+  <p class="note" data-rise><span data-l="en">Each curve is one keyboard move of a single zone from rest, over 1.4 s; the dashed line is the target. A throw uses the same frequency and damping, but it is a different motion. Pick a card to try it in the stage above.</span><span data-l="ja">曲線は、静止した状態からキー操作で 1 区画動かしたときの位置の変化を表します。横軸は 1.4 秒、破線は目標です。投げるときも同じ固有振動数と減衰比を使いますが、曲線とは別の運動です。カードを選ぶと、上の画面で試せます。</span></p>
 </section>
 
 <section class="features" id="features" aria-labelledby="h-features">
@@ -208,12 +208,12 @@
   <ol class="rows">
     <li class="row" data-rise><span class="row-n">01</span><h3><span data-l="en">Zones and corners</span><span data-l="ja">区画と四隅</span></h3><p><span data-l="en">Throw toward a grid zone or a corner. A spring, a magnet and the walls pull the window in.</span><span data-l="ja">グリッドの区画か画面の四隅へ投げると、ばね・磁石・壁がウィンドウを引き込みます。</span></p><i class="row-line" aria-hidden="true"></i></li>
     <li class="row" data-rise><span class="row-n">02</span><h3><span data-l="en">A grid per monitor</span><span data-l="ja">モニターごとのグリッド</span></h3><p><span data-l="en">Each monitor keeps its own grid and its own gap, from 0 to 200 px.</span><span data-l="ja">モニターごとに、グリッドと間隔（0〜200 px）を別々に持てます。</span></p><i class="row-line" aria-hidden="true"></i></li>
-    <li class="row" data-rise><span class="row-n">03</span><h3><span data-l="en">The launcher</span><span data-l="ja">ランチャー</span></h3><p><span data-l="en">Ctrl+Alt+Space opens your zones. Drag across any span, or pick halves, quarters, thirds, center or maximize.</span><span data-l="ja">Ctrl+Alt+Space で区画を開き、なぞった範囲にウィンドウを置きます。半分・4 分割・3 分割・中央・最大化のプリセットもあります。</span></p><i class="row-line" aria-hidden="true"></i></li>
+    <li class="row" data-rise><span class="row-n">03</span><h3><span data-l="en">The launcher</span><span data-l="ja">ランチャー</span></h3><p><span data-l="en">Ctrl+Alt+Space opens your zones. Drag across any span, or pick halves, quarters, thirds, center or maximize.</span><span data-l="ja">Ctrl+Alt+Space でランチャーを開き、なぞった範囲にウィンドウを置きます。半分・4 分割・3 分割・中央・最大化のプリセットもあります。</span></p><i class="row-line" aria-hidden="true"></i></li>
     <li class="row" data-rise><span class="row-n">04</span><h3><span data-l="en">Arrange</span><span data-l="ja">整列</span></h3><p><span data-l="en">Grid, row, column, or one main window beside a stack. For the current monitor, every monitor, or up to nine windows you pick.</span><span data-l="ja">グリッド・横並び・縦並び・メインとスタックの 4 方式。対象は今のモニター、すべてのモニター、または選んだ 9 枚までのウィンドウです。</span></p><i class="row-line" aria-hidden="true"></i></li>
     <li class="row" data-rise><span class="row-n">05</span><h3><span data-l="en">Neighbours and monitors</span><span data-l="ja">隣とモニター</span></h3><p><span data-l="en">Snap a window against its neighbour, or send it to another monitor.</span><span data-l="ja">隣のウィンドウにぴたりと寄せたり、別のモニターへ送ったりできます。</span></p><i class="row-line" aria-hidden="true"></i></li>
     <li class="row" data-rise><span class="row-n">06</span><h3><span data-l="en">Your keys, your rules</span><span data-l="ja">キーも規則も自分で</span></h3><p><span data-l="en">Every hotkey can be changed, and rules can be set for individual apps.</span><span data-l="ja">ホットキーはすべて変えられます。アプリごとの規則も作れます。</span></p><i class="row-line" aria-hidden="true"></i></li>
-    <li class="row" data-rise><span class="row-n">07</span><h3><span data-l="en">Windows' snapping, replaced if you like</span><span data-l="ja">標準のスナップを置き換える（任意）</span></h3><p><span data-l="en">Optionally take over the built-in snapping. The settings it changes for this are put back.</span><span data-l="ja">Windows 標準のスナップを置き換えることもできます。そのために変えた設定は元に戻します。</span></p><i class="row-line" aria-hidden="true"></i></li>
-    <li class="row" data-rise><span class="row-n">08</span><h3><span data-l="en">Settings that travel</span><span data-l="ja">持ち運べる設定</span></h3><p><span data-l="en">A first-run tour, import and export, sync through a folder you choose, Japanese and English, and an option to reduce motion.</span><span data-l="ja">初回のツアー、書き出しと読み込み、選んだフォルダーでの同期、日本語と英語、動きを減らすオプション。</span></p><i class="row-line" aria-hidden="true"></i></li>
+    <li class="row" data-rise><span class="row-n">07</span><h3><span data-l="en">Windows' snapping, replaced if you like</span><span data-l="ja">標準のスナップの置き換え</span></h3><p><span data-l="en">Optionally take over the built-in snapping. The settings it changes for this are put back.</span><span data-l="ja">Windows 標準のスナップを置き換えることもできます。そのために変えた設定は元に戻します。</span></p><i class="row-line" aria-hidden="true"></i></li>
+    <li class="row" data-rise><span class="row-n">08</span><h3><span data-l="en">Settings that travel</span><span data-l="ja">持ち運べる設定</span></h3><p><span data-l="en">A first-run tour, import and export, sync through a folder you choose, Japanese and English, and an option to reduce motion.</span><span data-l="ja">初回のツアーがあり、設定の書き出しと読み込み、選んだフォルダーでの同期ができます。日本語と英語に対応し、動きを減らすこともできます。</span></p><i class="row-line" aria-hidden="true"></i></li>
   </ol>
 </section>
 
@@ -222,7 +222,7 @@
     <div class="launch-copy">
       <p class="index" data-rise>04 <span class="rule" aria-hidden="true"></span> <span data-l="en">Launcher</span><span data-l="ja">ランチャー</span></p>
       <h2 id="h-launch" data-rise><span data-l="en">Sweep to place.</span><span data-l="ja">なぞって、置く。</span></h2>
-      <p class="lead" data-rise><span data-l="en">In the app, <kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Space</kbd> opens the launcher over your zones. Here, sweep across the cells or pick a preset, then pick again. The window springs on from wherever it is, as often as you like.</span><span data-l="ja">アプリでは <kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Space</kbd> で区画の上にランチャーが開きます。ここでは、セルをなぞるかプリセットを選び、続けて何度でも選び直せます。ウィンドウはいまいる場所から、ばねで次の位置へ移ります。</span></p>
+      <p class="lead" data-rise><span data-l="en">In the app, <kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Space</kbd> opens the launcher over your zones. Here, sweep across the cells or pick a preset, then pick again. The window springs on from wherever it is, as often as you like.</span><span data-l="ja">アプリでは <kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Space</kbd> で区画の上にランチャーが開きます。ここでは、セルをなぞるかプリセットを選べます。選んだあとも何度でも選び直せて、ウィンドウはいまの位置から、ばねで次の位置へ移ります。</span></p>
       <div class="presets" id="launchPresets" data-rise>
         <div class="preset-row" role="group" data-aria-en="Halves" data-aria-ja="半分" aria-label="Halves">
           <span class="preset-label"><span data-l="en">Halves</span><span data-l="ja">半分</span></span>
@@ -268,28 +268,28 @@
           <button class="btn btn-action" type="button" id="launchReset"><span data-l="en">Reset</span><span data-l="ja">元に戻す</span></button>
         </div>
       </div>
-      <p class="stage-note" id="launchHelp"><span data-l="en">Illustrative 4 × 3 grid; in the app the cells follow your own grid. Keyboard: focus the cells, move with the arrow keys, hold Shift to stretch the span, press Enter to place.</span><span data-l="ja">セルは説明用の 4 × 3 です。アプリでは、自分で決めたグリッドがセルになります。キーボードでは、セルにフォーカスして矢印キーで動かし、Shift を押しながら範囲を広げ、Enter で置きます。</span></p>
+      <p class="stage-note" id="launchHelp"><span data-l="en">Illustrative 4 × 3 grid; in the app the cells follow your own grid. Keyboard: focus the cells, move with the arrow keys, hold Shift to stretch the span, press Enter to place.</span><span data-l="ja">セルは説明用の 4 × 3 です。アプリでは、自分で決めたグリッドがセルになります。キーボードではセルにフォーカスし、矢印キーでセルを移動し、Shift を押しながら範囲を広げ、Enter で置きます。</span></p>
     </div>
   </div></section>
 
 <section class="quiet" id="quiet" aria-labelledby="h-quiet">
   <div class="sec-head">
     <p class="index" data-rise>05 <span class="rule" aria-hidden="true"></span> <span data-l="en">Built quietly</span><span data-l="ja">静かなつくり</span></p>
-    <h2 id="h-quiet" data-rise><span data-l="en">Nothing hidden underneath.</span><span data-l="ja">見えないところも、正直に。</span></h2>
+    <h2 id="h-quiet" data-rise><span data-l="en">Nothing hidden underneath.</span><span data-l="ja">見えないところも、隠しません。</span></h2>
   </div>
   <ul class="facts">
     <li data-rise><h3><span data-l="en">Native x64 and ARM64</span><span data-l="ja">x64 と ARM64 のネイティブ</span></h3><p><span data-l="en">Two native builds. No x86 build, and nothing runs through emulation.</span><span data-l="ja">2 つのネイティブ版だけを出しています。x86 版はなく、エミュレーションでは動かしません。</span></p></li>
     <li data-rise><h3><span data-l="en">No DLL injection</span><span data-l="ja">DLL を注入しない</span></h3><p><span data-l="en">Only documented out-of-process and low-level hooks. It never loads code into another program.</span><span data-l="ja">文書化されたプロセス外のフックと低レベルフックだけを使い、ほかのプログラムにコードを読み込ませません。</span></p></li>
     <li data-rise><h3><span data-l="en">No analytics, no tracking</span><span data-l="ja">解析も追跡もしない</span></h3><p><span data-l="en">The update check is off until you turn it on. Sync is a file in a folder you pick.</span><span data-l="ja">更新の確認はオンにするまで動きません。同期は選んだフォルダーにファイルを置くだけです。</span></p></li>
-    <li data-rise><h3><span data-l="en">Settings put back</span><span data-l="ja">設定は元に戻す</span></h3><p><span data-l="en">If you let it replace Windows' snapping, every setting it changed is put back when you switch it off, quit, or start again after a crash.</span><span data-l="ja">標準のスナップの置き換えを選んだときは、機能を切ったとき、終了したとき、異常終了のあと起動したときに、変えた設定を元へ戻します。</span></p></li>
+    <li data-rise><h3><span data-l="en">Settings put back</span><span data-l="ja">設定は元に戻す</span></h3><p><span data-l="en">If you let it replace Windows' snapping, every setting it changed is put back when you switch it off, quit, or start again after a crash.</span><span data-l="ja">標準のスナップの置き換えを選んだ場合、変えた設定は、機能を切ったとき・終了したとき・異常終了後の起動時に元に戻します。</span></p></li>
   </ul>
 </section>
 
 <section class="get" id="download" aria-labelledby="h-get">
   <div class="get-panel" data-rise>
     <img class="get-mark" src="assets/favicon.svg" width="64" height="64" alt="">
-    <h2 id="h-get"><span data-l="en">Get Snapwell {{VERSION}}</span><span data-l="ja">Snapwell {{VERSION}} を入手</span></h2>
-    <p class="lead"><span data-l="en">A portable zip: unpack it anywhere and run Snapwell.exe. Pick the build that matches your PC.</span><span data-l="ja">持ち運べる zip です。好きな場所に展開して Snapwell.exe を実行してください。PC に合う版を選んでください。</span></p>
+    <h2 id="h-get"><span data-l="en">Get Snapwell {{VERSION}}</span><span data-l="ja">Snapwell {{VERSION}} をダウンロード</span></h2>
+    <p class="lead"><span data-l="en">A portable zip: unpack it anywhere and run Snapwell.exe. Pick the build that matches your PC.</span><span data-l="ja">インストール不要の zip です。好きな場所に展開し、Snapwell.exe を実行します。お使いの PC に合う版を選んでください。</span></p>
     <p class="actions center">
       <a class="btn btn-primary" href="https://github.com/tabunugoku/Snapwell/releases/download/v{{VERSION}}/Snapwell-{{VERSION}}-win-x64.zip" data-mag><span data-l="en">Download for x64</span><span data-l="ja">x64 版をダウンロード</span></a>
       <a class="btn btn-action" href="https://github.com/tabunugoku/Snapwell/releases/download/v{{VERSION}}/Snapwell-{{VERSION}}-win-arm64.zip" data-mag><span data-l="en">Download for ARM64</span><span data-l="ja">ARM64 版をダウンロード</span></a>
@@ -297,9 +297,9 @@
     <p class="small"><a href="https://github.com/tabunugoku/Snapwell/releases/tag/v{{VERSION}}"><span data-l="en">Release notes and checksums</span><span data-l="ja">リリースノートとチェックサム</span></a></p>
     <div class="notice" role="note">
       <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" focusable="false"><path d="M10 2.5 18 17H2z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M10 8v4.2M10 14.4v.1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-      <p><span data-l="en">The v{{VERSION}} builds are not code-signed yet, so Windows SmartScreen may warn you. Choose More info, then Run anyway. A SHA-256 checksum file sits beside each zip so you can check the download first.</span><span data-l="ja">v{{VERSION}} はまだコード署名をしていないため、Windows の SmartScreen が警告を出すことがあります。「詳細情報」を押してから「実行」を選んでください。zip ごとに SHA-256 のチェックサムのファイルを置いているので、先にダウンロードを確かめられます。</span></p>
+      <p><span data-l="en">The v{{VERSION}} builds are not code-signed yet, so Windows SmartScreen warns you. Choose More info, then Run anyway. Once you have chosen to trust it yourself, the warning no longer appears. A SHA-256 checksum file sits beside each zip so you can check the download first.</span><span data-l="ja">v{{VERSION}} はまだコード署名をしていないため、Windows の SmartScreen が警告を出します。「詳細情報」を選んでから「実行」を選んでください。自分で信頼して実行すれば、そのあとは警告が出ません。zip ごとに SHA-256 のチェックサムファイルを置いているので、先にダウンロードしたファイルを確かめられます。</span></p>
     </div>
-    <p class="small soft sign"><span data-l="en">Free code signing provided by <a href="https://about.signpath.io/">SignPath.io</a>, certificate by <a href="https://signpath.org/">SignPath Foundation</a>. Builds are signed under the <a href="https://github.com/tabunugoku/Snapwell#code-signing-policy">code signing policy</a> once the application is approved; until then they are unsigned.</span><span data-l="ja">無償のコード署名は <a href="https://about.signpath.io/">SignPath.io</a>、証明書は <a href="https://signpath.org/">SignPath Foundation</a> の提供です。申請が承認されたあとは、<a href="https://github.com/tabunugoku/Snapwell#code-signing-policy">コード署名のポリシー</a>に沿って署名します。それまでは署名なしです。</span></p>
+    <p class="small soft sign"><span data-l="en">We plan to apply for free code signing from <a href="https://about.signpath.io/">SignPath.io</a>, with a certificate from <a href="https://signpath.org/">SignPath Foundation</a>. Once the application is approved, builds will be signed under the <a href="https://github.com/tabunugoku/Snapwell#code-signing-policy">code signing policy</a>; until then they are unsigned.</span><span data-l="ja">無償のコード署名を <a href="https://about.signpath.io/">SignPath.io</a>、証明書を <a href="https://signpath.org/">SignPath Foundation</a> に申請する予定です。承認されたあとは、<a href="https://github.com/tabunugoku/Snapwell#code-signing-policy">コード署名のポリシー</a>に沿って署名します。それまでは署名なしです。</span></p>
   </div>
 </section>
 
@@ -315,11 +315,11 @@
     </details>
     <details name="faq" data-rise>
       <summary><span data-l="en">Will SmartScreen warn me?</span><span data-l="ja">SmartScreen の警告は出ますか？</span></summary>
-      <p><span data-l="en">For now, yes. The builds are not code-signed yet. Choose More info, then Run anyway, and check the SHA-256 file beside each zip if you want to verify the download.</span><span data-l="ja">今は出ます。まだコード署名をしていないためです。「詳細情報」から「実行」を選んでください。ダウンロードを確かめたいときは、zip の横にある SHA-256 のファイルを使ってください。</span></p>
+      <p><span data-l="en">For now, yes. The builds are not code-signed yet. Choose More info, then Run anyway; once you have chosen to trust it yourself, the warning no longer appears. Check the SHA-256 file beside each zip if you want to verify the download.</span><span data-l="ja">今は出ます。まだコード署名をしていないためです。「詳細情報」を選んでから「実行」を選んでください。自分で信頼して実行すれば、そのあとは警告が出ません。ダウンロードしたファイルを確かめたいときは、zip と同じ場所にある SHA-256 のファイルを使ってください。</span></p>
     </details>
     <details name="faq" data-rise>
       <summary><span data-l="en">Does it send anything anywhere?</span><span data-l="ja">どこかへ何かを送りますか？</span></summary>
-      <p><span data-l="en">No analytics and no tracking. The one exception is the update check, which is off until you turn it on. Settings sync is only a file in a folder you pick, such as one that OneDrive or Dropbox already syncs.</span><span data-l="ja">解析も追跡もしません。例外は更新の確認だけで、オンにするまでは動きません。設定の同期は、OneDrive や Dropbox などで同期しているフォルダーにファイルを置くだけです。</span></p>
+      <p><span data-l="en">No analytics and no tracking. The only exception is updating. The update check is off until you turn it on, and the signed download from GitHub happens only when you choose Update and restart. Settings sync is only a file in a folder you pick, such as one that OneDrive or Dropbox already syncs.</span><span data-l="ja">解析も追跡もしません。例外は更新だけです。更新の確認はオンにするまで動きません。「更新して再起動」を押したときだけ、署名つきの配布ファイルを GitHub からダウンロードします。設定の同期は、OneDrive や Dropbox などで同期しているフォルダーにファイルを置くだけです。</span></p>
     </details>
     <details name="faq" data-rise>
       <summary><span data-l="en">Does it inject code into my apps?</span><span data-l="ja">アプリにコードを注入しますか？</span></summary>
@@ -327,7 +327,7 @@
     </details>
     <details name="faq" data-rise>
       <summary><span data-l="en">Does it change Windows settings?</span><span data-l="ja">Windows の設定を変えますか？</span></summary>
-      <p><span data-l="en">Only if you ask it to replace Windows' own snapping. It remembers the original values and puts them back when you switch it off, quit, or start again after a crash. Starting with Windows is also off until you turn it on.</span><span data-l="ja">標準のスナップの置き換えを選んだときだけです。元の値を覚えておき、機能を切ったとき、終了したとき、異常終了のあと起動したときに戻します。Windows の起動時に始める設定も、オンにするまでは無効です。</span></p>
+      <p><span data-l="en">Only if you ask it to replace Windows' own snapping. It remembers the original values and puts them back when you switch it off, quit, or start again after a crash. Starting with Windows is also off until you turn it on.</span><span data-l="ja">標準のスナップの置き換えを選んだ場合だけです。元の値を覚えておき、機能を切ったとき・終了したとき・異常終了後の起動時に元に戻します。Windows の起動時に始める設定も、オンにするまでは無効です。</span></p>
     </details>
     <details name="faq" data-rise>
       <summary><span data-l="en">Can I change how windows move?</span><span data-l="ja">動き方は変えられますか？</span></summary>
@@ -351,9 +351,9 @@
     <a href="https://github.com/tabunugoku/Snapwell"><svg class="gh" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>GitHub</a>
     <a href="https://github.com/tabunugoku/Snapwell/issues"><span data-l="en">Issues</span><span data-l="ja">Issues（不具合と要望）</span></a>
     <a href="https://github.com/tabunugoku/Snapwell/blob/main/LICENSE"><span data-l="en">MIT License</span><span data-l="ja">MIT ライセンス</span></a>
-    <a href="https://github.com/tabunugoku/Snapwell/blob/main/THIRD_PARTY_NOTICES.md"><span data-l="en">Third-party notices</span><span data-l="ja">サードパーティーの表示</span></a>
+    <a href="https://github.com/tabunugoku/Snapwell/blob/main/THIRD_PARTY_NOTICES.md"><span data-l="en">Third-party notices</span><span data-l="ja">サードパーティーのライセンス表示</span></a>
   </nav>
-  <p class="foot-end soft">2026 · <span data-l="en">Motion by</span><span data-l="ja">動きは</span> <a href="https://github.com/diip3sh/feel">feel</a><span data-l="ja"> による</span> · <button class="text-btn" type="button" id="introReplay"><span data-l="en">Replay intro</span><span data-l="ja">オープニングをもう一度見る</span></button></p>
+  <p class="foot-end soft">2026 · <span data-l="en">Motion by</span><span data-l="ja">動きは</span> <a href="https://github.com/diip3sh/feel">feel</a><span data-l="ja"> をもとにしています</span> · <button class="text-btn" type="button" id="introReplay"><span data-l="en">Replay intro</span><span data-l="ja">オープニングをもう一度見る</span></button></p>
 </footer>
 
 <script src="js/feel.js"></script>

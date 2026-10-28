@@ -48,7 +48,8 @@
         if (isHira(prev) && !isHira(cur) && !AFTER.test(cur.t)) {
           cut = prev.t !== 'の' && (run >= 2 || PARTICLE.includes(prev.t));
         } else if (!prev.keep && AFTER.test(prev.t) && !AFTER.test(cur.t)) {
-          cut = true;
+          // 閉じ括弧に助詞が続くとき（「実行」を）は、助詞の前では切らない
+          cut = !(/[」』）]/.test(prev.t) && isHira(cur));
         } else if (!cur.keep && OPEN.test(cur.t) && !OPEN.test(prev.t)) {
           cut = true;
         }
