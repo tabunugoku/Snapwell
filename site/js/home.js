@@ -48,7 +48,7 @@
   // ---------------------------------------------------------------- 言語
   const ZONES = {
     en: { 6: ['top left', 'top middle', 'top right', 'bottom left', 'bottom middle', 'bottom right'], 4: ['top left', 'top right', 'bottom left', 'bottom right'] },
-    ja: { 6: ['左上', '中央上', '右上', '左下', '中央下', '右下'], 4: ['左上', '右上', '左下', '右下'] },
+    ja: { 6: ['左上', '上中央', '右上', '左下', '下中央', '右下'], 4: ['左上', '右上', '左下', '右下'] },
   };
   const WIN_NAMES = { en: ['Notes', 'Photos', 'Mail', 'Browser'], ja: ['メモ', 'フォト', 'メール', 'ブラウザー'] };
   const TITLES = { en: 'Snapwell · Window manager for Windows 11', ja: 'Snapwell · Windows 11 のウィンドウマネージャー' };
