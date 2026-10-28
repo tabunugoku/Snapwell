@@ -1,7 +1,7 @@
 {
   "summary": {
-    "ja": "保守版です。ロック画面のあとにホットキーが残る不具合や、設定画面・同期・オーバーレイの端の場合の不具合を直しました。",
-    "en": "A maintenance release. It fixes hotkeys that could stay stuck after a lock screen, plus edge cases in the settings window, sync and the overlay."
+    "ja": "保守版です。1.0.1 で、修飾キーを含むホットキーがすべて反応しなかった不具合を直しました。",
+    "en": "A maintenance release. It fixes a bug in 1.0.1 where no hotkey that includes a modifier key responded."
   },
   "minimumSupported": null
 }
