@@ -38,13 +38,17 @@
   class Intro {
     /**
      * @param {HTMLCanvasElement} canvas
-     * @param {object} o  { width, height, dpr, colors, seed, veilMax, onBeat(name, t) }
+     * @param {object} o  { width, height, dpr, colors, seed, veilMax, onBeat(name, t), beats, tail }
      * colors: { accent:[r,g,b], ink:[r,g,b], bg:[r,g,b], surface, surface2, borderStrong, skeleton }
+     * beats: この回だけ BEATS の代わりに使う（ホームページは短い版を流す）。layoutB・layoutC が null なら、その並べ替えを省く
+     * tail: logo の拍から done までの秒数（既定 2.4）
      */
     constructor(canvas, o) {
       this.cv = canvas;
       this.o = o;
       this.rand = seeded(o.seed ?? 7);
+      this.B = o.beats || BEATS;
+      this.tail = o.tail ?? 2.4;
       this.t = 0;
       this.setSize(o.width, o.height, o.dpr || 1);
       this.colors = o.colors;
@@ -100,7 +104,8 @@
         w.settled = false;
       };
       const wins = this.wins;
-      const beat = (name, fn) => at(BEATS[name], () => { fn(); if (this.o.onBeat) this.o.onBeat(name, BEATS[name]); });
+      const B = this.B;
+      const beat = (name, fn) => at(B[name], () => { fn(); if (this.o.onBeat) this.o.onBeat(name, B[name]); });
       const rnd = (a, b) => a + this.rand() * (b - a);
       beat('enter', () => {
         const w = wins[0];
@@ -117,22 +122,22 @@
             Math.cos(a) * 900, Math.sin(a) * 700);
           w.vr = rnd(-6, 6);
         });
-        this.waves.push({ x: W / 2, y: H / 2, t0: BEATS.burst, amp: 18, speed: 420, w: 60, life: 2 });
+        this.waves.push({ x: W / 2, y: H / 2, t0: B.burst, amp: 18, speed: 420, w: 60, life: 2 });
       });
       beat('grid', () => wins.forEach((w, i) => aim(w, this.rectOf(0, i), this.standard, rnd(-250, 250), rnd(-250, 250))));
-      [['layoutB', 1], ['layoutC', 2]].forEach(([name, L]) => {
-        wins.forEach((w, i) => at(BEATS[name] + i * 0.07, () => aim(w, this.rectOf(L, i), this.standard)));
-        at(BEATS[name], () => { if (this.o.onBeat) this.o.onBeat(name, BEATS[name]); });
+      [['layoutB', 1], ['layoutC', 2]].filter(([name]) => B[name] != null).forEach(([name, L]) => {
+        wins.forEach((w, i) => at(B[name] + i * 0.07, () => aim(w, this.rectOf(L, i), this.standard)));
+        at(B[name], () => { if (this.o.onBeat) this.o.onBeat(name, B[name]); });
       });
-      wins.forEach((w, i) => at(BEATS.final + i * 0.07, () => aim(w, this.rectOf(3, i), this.standard)));
-      at(BEATS.final, () => { if (this.o.onBeat) this.o.onBeat('final', BEATS.final); });
-      wins.forEach((w, k) => at(BEATS.hop + k * 0.1, () => {
+      wins.forEach((w, i) => at(B.final + i * 0.07, () => aim(w, this.rectOf(3, i), this.standard)));
+      at(B.final, () => { if (this.o.onBeat) this.o.onBeat('final', B.final); });
+      wins.forEach((w, k) => at(B.hop + k * 0.1, () => {
         w.vy = -520;
         w.flash = 1;
-        this.waves.push({ x: w.tx, y: w.ty, t0: BEATS.hop + k * 0.1, amp: 8, speed: 260, w: 40, life: 1.4 });
-        if (this.o.onBeat) this.o.onBeat('hop', BEATS.hop + k * 0.1, k);
+        this.waves.push({ x: w.tx, y: w.ty, t0: B.hop + k * 0.1, amp: 8, speed: 260, w: 40, life: 1.4 });
+        if (this.o.onBeat) this.o.onBeat('hop', B.hop + k * 0.1, k);
       }));
-      at(BEATS.logo, () => { if (this.o.onBeat) this.o.onBeat('logo', BEATS.logo); });
+      at(B.logo, () => { if (this.o.onBeat) this.o.onBeat('logo', B.logo); });
     }
 
     /** Jump to the finished picture: every window in the last arrangement, at rest, the logo's veil in place. */
@@ -158,9 +163,9 @@
       if (best && bd < Math.max(best.w, best.h)) { best.vy = -520; best.flash = 1; }
     }
 
-    get done() { return this.t > BEATS.logo + 2.4; }
+    get done() { return this.t > this.B.logo + this.tail; }
     get busy() {
-      return this.t < BEATS.logo + 2.4 || this.waves.length > 0
+      return this.t < this.B.logo + this.tail || this.waves.length > 0
         || this.wins.some((w) => !w.settled || Math.hypot(w.vx, w.vy) > 1);
     }
 
@@ -169,7 +174,7 @@
       const t = this.t;
       // The logo's veil is a spring toward its level, not a timed fade.
       const vs = this.standard;
-      const goal = t >= BEATS.veil ? this.veilMax : 0;
+      const goal = t >= this.B.veil ? this.veilMax : 0;
       for (let acc = dt; acc > 1e-6;) {
         const h = Math.min(1 / 240, acc);
         acc -= h;
@@ -252,7 +257,7 @@
         g.stroke();
       }
       const lead = this.wins[0];
-      if (lead.show && t < 2.2) {
+      if (lead.show && t < this.B.burst + 0.3) {
         for (let i = 1; i < lead.trail.length; i++) {
           const q = i / lead.trail.length;
           g.strokeStyle = rgba(C.accent, q * 0.5);

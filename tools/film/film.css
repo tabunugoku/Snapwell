@@ -1,4 +1,4 @@
-/* 動画のフレーム (1920×1080)。見た目は site/css/site.css と同じ配色と書体。動きは film.js の物理だけで、CSS の遷移は使わない */
+/* 動画のフレーム (1920×1080)。見た目は lib/site.css (旧ホームページの CSS) と同じ配色と書体。動きは film.js の物理だけで、CSS の遷移は使わない */
 @font-face { font-family: 'Newsreader'; src: url('../../site/fonts/newsreader-500.woff2') format('woff2'); font-weight: 500; }
 html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); }
 .frame { position: relative; width: 1920px; height: 1080px; background: var(--bg); overflow: hidden; }

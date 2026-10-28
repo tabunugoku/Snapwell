@@ -65,7 +65,7 @@
 
 @font-face {
   font-family: 'Newsreader';
-  src: url('../fonts/newsreader-500.woff2') format('woff2');
+  src: url('../../../site/fonts/newsreader-500.woff2') format('woff2');
   font-weight: 500;
   font-style: normal;
   font-display: swap;
