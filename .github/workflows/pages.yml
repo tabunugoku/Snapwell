@@ -21,7 +21,19 @@ permissions:
   id-token: write
 
 jobs:
+  # リリースの公開はタグを ref に動くが、github-pages の環境は main だけを許す。main で再実行を頼む
+  dispatch:
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run pages.yml --repo "${{ github.repository }}" --ref main
+
   deploy:
+    if: github.event_name != 'release'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:
