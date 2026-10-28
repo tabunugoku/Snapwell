@@ -117,6 +117,35 @@ public sealed class HotkeyMatcherTests
         Assert.Equal(before, GC.GetAllocatedBytesForCurrentThread());
     }
 
+    /// <summary>OS の押下状態は、フックが今処理しているキーについてはまだ更新されていない。</summary>
+    [Fact]
+    public void ModifiersAreKeptWhileOsStateLagsBehindTheCurrentKey()
+    {
+        var down = new HashSet<uint>();
+        var matcher = new HotkeyMatcher(isPhysicallyDown: down.Contains);
+        matcher.SetBindings([new(42, KeyModifiers.Control | KeyModifiers.Alt, 0x0D)]);
+        foreach (var key in new uint[] { 0xA2, 0xA4 })
+        {
+            matcher.ProcessKey(key, true);
+            down.Add(key);
+        }
+
+        Assert.Equal(new HotkeyMatch(true, 42, true), matcher.ProcessKey(0x0D, true));
+    }
+
+    /// <summary>ロック画面などで解放を取り逃した修飾キーは、次の入力で OS の状態に合わせて捨てる。</summary>
+    [Fact]
+    public void ModifierReleasedWhileUnobservedIsDroppedOnNextKey()
+    {
+        var down = new HashSet<uint> { 0xA2 };
+        var matcher = new HotkeyMatcher(isPhysicallyDown: down.Contains);
+        matcher.SetBindings([new(42, KeyModifiers.Control | KeyModifiers.Alt, 0x0D)]);
+        matcher.ProcessKey(0xA2, true);
+        matcher.ProcessKey(0xA4, true);
+        down.Remove(0xA4);
+        Assert.False(matcher.ProcessKey(0x0D, true).Matched);
+    }
+
     private static HotkeyMatcher CreateMatcher()
     {
         var matcher = new HotkeyMatcher();
