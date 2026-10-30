@@ -8,8 +8,8 @@
 ## 出す手順
 1. `docs/MANUAL_TEST.md` の「実機未確認」を見て、出す版で確かめ終えるものを確かめる（ARM64 はこの PC、x64 は Prism または実機）
 2. main が CI で緑であることを確かめる
-3. `release/summary.json` の日本語・英語の要約を今回の変更点に書き換える。必要なら `minimumSupported` にサポートする最も古い版を入れる（指定しないときは `null`）。変更をコミットしてから、タグを打って push する: `git tag v0.1.0 && git push origin v0.1.0`
-4. Actions の `Release` が終わると、下書きのリリースができる。zip を展開して起動を確かめ、リリースノートを直して公開する
+3. `release/summary.json` の日本語・英語の要約を今回の変更点に書き換える。必要なら `minimumSupported` にサポートする最も古い版を入れる（指定しないときは `null`）。変更をコミットしてから、タグを打って push する: `git tag v1.0.3 && git push origin v1.0.3`（版はタグから決まる。版を書いたファイルは無い）
+4. Actions の `Release` が終わると、下書きのリリースができる。zip を展開して起動を確かめる。リリースノート（英語を表に、日本語を `<details>` で畳む）は `gh release edit <tag> --title "Snapwell <版>" --notes-file <ファイル>` で先に入れてから、`gh release edit <tag> --draft=false --latest` で公開する（順序を逆にすると自動生成の本文のまま公開される）。公開すると `pages.yml` が main で再実行され、ホームページの版が追従する
 5. 試すだけのときは、Actions の `Release` を `workflow_dispatch`（version を入力）で実行する。リリースは作らず、アーティファクトに zip が出る
 
 ## 更新の確認用ファイル
@@ -32,8 +32,8 @@ Actions では秘密鍵を署名の手順だけに渡す。未登録なら処理
 
 確認先は `https://github.com/tabunugoku/Snapwell/releases/latest/download/latest.json`（署名は同じ場所の `latest.json.sig`）とする。公開済みの最新の正式版にだけ転送され、下書きのうちは確認先に出ない。`v1.0.0-rc.1` のようなタグも生成・署名できるが、公開時に GitHub の **pre-release** として指定すること。GitHub の latest は prerelease を除外するため、この確認先には出ない。
 
-## 1.0.0 のブロッカー（実機で確かめる項目）
-`docs/MANUAL_TEST.md` は全件（約 380）を 1.0.0 の条件にしない。次の項目を確かめ終えてから出す。確かめたら MANUAL_TEST の該当の項目を `[x]` にする。OS の設定を変える項目は、同意を得てから行い、終わったら戻す。
+## 1.0.0 のブロッカー（実機で確かめる項目。1.0.0〜1.0.2 は未署名のまま公開し、このうち x64 実機・DPI・複数モニターなどの確認は薄い）
+`docs/MANUAL_TEST.md` は全件を公開の条件にしない。次の項目を、確かめ終えるほど優先して消していく。確かめたら MANUAL_TEST の該当の項目を `[x]` にする。OS の設定を変える項目は、同意を得てから行い、終わったら戻す。
 
 1. **OS の設定の復元**（OS を壊さないための最優先）: 「Platform: 標準スナップ」の元がオン・オフの両方、正常終了と強制終了後の次回起動での復元、状態ファイルが壊れたとき。「標準機能ページ」の「標準の動作に戻す」。
 2. **入力フック**: 「Platform: フック」の登録・解除・別スレッドからの停止、ホットキーの握りつぶし、Win キーを含む割り当てでスタートメニューが開かないこと。「Win + 矢印の置き換え」の、オン・オフ・一時停止と連打。別の低レベルフックのアプリと同時に動くこと。
@@ -57,7 +57,7 @@ Actions では秘密鍵を署名の手順だけに渡す。未登録なら処理
 - **ランナーの前提**: NativeAOT のリンクには Visual Studio の C++ ツール（x64・ARM64）が要る。`windows-latest` のイメージに入っている前提で、初回の実行で確かめること（入っていなければ手順を足す）
 
 ## ホームページ（GitHub Pages）
-- `site/` が公開元。main の `site/**` の変更と、リリースの公開で `.github/workflows/pages.yml` が自動で公開する (手動の実行もできる)。URL は `https://tabunugoku.github.io/Snapwell/`
+- `site/` が公開元。main の `site/**` の変更と、リリースの公開で `.github/workflows/pages.yml` が自動で公開する (手動の実行もできる)。リリースのイベントはタグの ref で動き、github-pages 環境がタグを許さず失敗するため、`dispatch` ジョブが `workflow_dispatch` で main から再実行を頼む。URL は `https://tabunugoku.github.io/Snapwell/`
 - 初回だけ、リポジトリの Settings → Pages の Source を「GitHub Actions」にする
 - リポジトリは公開済みなので、プランの制約はない
 - `site/index.html` の版は `{{VERSION}}` と書き、公開の直前に、最新の正式版（下書きと pre-release を除く）の版へ置き換える。ダウンロードのボタンは `releases/download/v<版>/Snapwell-<版>-win-<rid>.zip` を直接指す。リリースを下書きから公開に切り替えると、ページも自動で追従する
