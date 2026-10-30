@@ -56,7 +56,7 @@ public sealed class LauncherPresetLocalizationTests : IDisposable
     [InlineData("r3", "右 1/3", "Right third", "左右の 1/3", "Side thirds")]
     [InlineData("l23", "左 2/3", "Left two-thirds", "左右の 2/3", "Two-thirds")]
     [InlineData("r23", "右 2/3", "Right two-thirds", "左右の 2/3", "Two-thirds")]
-    [InlineData("c3", "中央 1/3", "Center third", "左右中央の 1/3", "Center third")]
+    [InlineData("c3", "中央 1/3", "Center third", "中央の 1/3", "Center third")]
     [InlineData("center", "中央", "Center", "中央", "Center")]
     [InlineData("centerKeep", "中央（サイズ維持）", "Center (keep size)", "中央", "Center")]
     [InlineData("max", "最大化", "Maximize", "最大化", "Maximize")]

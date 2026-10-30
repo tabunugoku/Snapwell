@@ -243,7 +243,7 @@
 | 重複 {n} 件 | {count} duplicate(s) | {count} 处重复 | {count} 處重複 | |
 | 〜のとき（説明の補足） | (when … is on) | （开启“…”时） | （開啟「…」時） | 例:（区画のプレビューがオンのとき）→ “(when Zone preview is on)” |
 | 〜できませんでした。ファイルの場所とアクセス権を確認してください。 | Couldn't … Check the file location and permissions. | 无法…。请检查文件位置和访问权限。 | 無法…。請檢查檔案位置和存取權限。 | 失敗の定型 |
-| 新しい版の設定のため、〜できません。Snapwell を更新してください。 | These settings are from a newer version, so … Update Snapwell. | 这些设置来自更新的版本，因此无法…。请更新 Snapwell。 | 這些設定來自較新的版本，因此無法…。請更新 Snapwell。 | 定型 |
+| 新しいバージョンの設定のため、〜できません。Snapwell を更新してください。 | These settings are from a newer version, so … Update Snapwell. | 这些设置来自更新的版本，因此无法…。请更新 Snapwell。 | 這些設定來自較新的版本，因此無法…。請更新 Snapwell。 | 定型 |
 | 保存すると、起動中の Snapwell に反映されます | Saving applies the changes to the running Snapwell | 保存后将应用到正在运行的 Snapwell | 儲存後會套用到執行中的 Snapwell | |
 | ファイル | File | 文件 | 檔案 | |
 | フォルダー | folder | 文件夹 | 資料夾 | |

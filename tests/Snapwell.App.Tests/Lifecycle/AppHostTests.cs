@@ -86,7 +86,7 @@ public sealed class AppHostTests
     /// <summary>保持した状態は次の障害を待たず、端末の言語変更だけで再翻訳する。</summary>
     [Theory]
     [InlineData("reset", "壊れた設定を退避し、既定値で起動しました", "Damaged settings backed up; using defaults.")]
-    [InlineData("future", "新しい版の設定を保護しています", "Protecting settings from a newer version")]
+    [InlineData("future", "新しいバージョンの設定を保護しています", "Protecting settings from a newer version")]
     [InlineData("hooks", "入力フックを開始できません。Windows 標準のスナップを使用します", "Couldn't start input hooks. Using Windows Snap.")]
     [InlineData("restore", "Windows 標準のスナップを復元できませんでした。再起動時に再試行します", "Couldn't restore Windows Snap. Will retry on restart.")]
     [InlineData("reload", "設定を反映できませんでした。前の設定を使用しています", "Couldn't apply settings. Using the previous settings.")]
@@ -1296,7 +1296,7 @@ public sealed class AppHostTests
         Assert.True(fixture.Host.Start());
         var startupState = fixture.Tray.State;
         Assert.NotNull(startupState);
-        Assert.Equal(readOnly ? "新しい版の設定を保護しています" : null, startupState.Status);
+        Assert.Equal(readOnly ? "新しいバージョンの設定を保護しています" : null, startupState.Status);
         Assert.Empty(fixture.Log.Errors);
         Assert.Single(fixture.Tray.Posted);
 
@@ -1435,7 +1435,7 @@ public sealed class AppHostTests
         }
         fixture.Tray.Flush();
         Assert.Single(fixture.Created);
-        Assert.Equal("新しい版の設定を保護しています", fixture.Tray.State!.Status);
+        Assert.Equal("新しいバージョンの設定を保護しています", fixture.Tray.State!.Status);
         Assert.Empty(fixture.Log.Errors);
         fixture.Portable.ReloadResult = new(new());
         fixture.Watcher.Notify();

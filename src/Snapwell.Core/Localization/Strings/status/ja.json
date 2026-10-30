@@ -2,7 +2,7 @@
   "Status.SyncAccessFailure": "同期フォルダーまたは端末状態を読み書きできません。",
   "Status.SnapRestoreFailure": "Windows 標準のスナップを復元できませんでした。再起動時に再試行します",
   "Status.SettingsReset": "壊れた設定を退避し、既定値で起動しました",
-  "Status.FutureSettings": "新しい版の設定を保護しています",
+  "Status.FutureSettings": "新しいバージョンの設定を保護しています",
   "Status.HookFailure": "入力フックを開始できません。Windows 標準のスナップを使用します",
   "Status.DeviceReloadRetry": "端末状態を再読み込みできません。再試行しています",
   "Status.DeviceReloadFailure": "端末状態を再読み込みできませんでした。次の変更で再試行します",
