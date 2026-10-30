@@ -36,7 +36,7 @@
   "Setup.Plan.8x8": "おすすめ。半分・四分割を作れます",
   "Setup.Plan.12x6": "1/3 や 2/3 も作れます",
   "Setup.Plan.6x4": "大きな区画で手早く",
-  "Setup.Error.Load": "設定を読み書きできません。ファイルの場所とアクセス権、Snapwell の版を確認して開き直してください。",
+  "Setup.Error.Load": "設定を読み書きできません。ファイルの場所とアクセス権、Snapwell のバージョンを確認して開き直してください。",
   "Setup.Error.SaveFallback": "保存できませんでした。",
   "Setup.Error.ReadOnly": "この設定は読み取り専用のため、保存できません。Snapwell を更新して開き直してください。",
   "Setup.Error.Save": "保存できませんでした。ファイルの場所とアクセス権を確認して、もう一度保存してください。",
