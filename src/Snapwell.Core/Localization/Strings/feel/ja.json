@@ -11,7 +11,7 @@
   "Feel_TrialZonesButton.Content": "区画",
   "Feel_TrialCornersButton.Content": "四隅",
   "Feel_TrialThrowButton.Content": "ランダムに投げる",
-  "Feel_TrialHint.Text": "ウィンドウのタイトルバーをつかんで投げます（ウィンドウの中をつかんでも動きません）。いまの 5 つの値で動き、止まる先は Snapwell 本体と同じ規則で決まります（離した速さが 150 px/s 未満だと吸着しません。「区画」では、中央から上へ強く投げると最大化になります）",
+  "Feel_TrialHint.Text": "ウィンドウのタイトルバーをつかんで投げます（ウィンドウの中をつかんでも動きません）。いまの 5 つの値で動き、止まる先は Snapwell 本体と同じルールで決まります（離した速さが 150 px/s 未満だと吸着しません。「区画」では、中央から上へ強く投げると最大化になります）",
   "Feel_DetailsTitle.Text": "詳細",
   "Feel_FeelResetButton.Content": "プリセットに戻す",
   "Feel_ModeTitle.Text": "吸着の方式",

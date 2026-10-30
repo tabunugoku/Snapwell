@@ -1,7 +1,7 @@
 {
   "summary": {
-    "ja": "保守版です。1.0.1 で、修飾キーを含むホットキーがすべて反応しなかった不具合を直しました。",
-    "en": "A maintenance release. It fixes a bug in 1.0.1 where no hotkey that includes a modifier key responded."
+    "ja": "日本語の表示を見直した保守版です。用語をそろえ、「版」を「バージョン」に改めました。機能の追加と削除はありません。",
+    "en": "A maintenance release that polishes the Japanese text. Wording is now consistent, and the Japanese UI says \"バージョン\" instead of \"版\". No features were added or removed."
   },
   "minimumSupported": null
 }
