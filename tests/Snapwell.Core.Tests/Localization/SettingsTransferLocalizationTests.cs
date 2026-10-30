@@ -83,7 +83,7 @@ public sealed class SettingsTransferLocalizationTests : IDisposable
         Assert.Equal("12.5 px", japanese[SettingsField.Gap].ImportedValue);
         Assert.Equal("2 区画", japanese[SettingsField.ResizeStep].ImportedValue);
         Assert.Equal("操作感に従う", japanese[SettingsField.MagnetStrength].CurrentValue);
-        Assert.Equal("カスタム（なめらか から。質量 2、振動数 プリセットのまま、減衰比 プリセットのまま）",
+        Assert.Equal("カスタム（基準: なめらか、質量 2、固有振動数 プリセットのまま、減衰比 プリセットのまま）",
             japanese[SettingsField.Feel].ImportedValue);
         Assert.Equal("DISPLAY1: 6 × 4, 間隔 10, 余白 プリセットのまま",
             japanese[SettingsField.MonitorGrids].ImportedValue);

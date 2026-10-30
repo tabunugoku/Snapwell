@@ -9,7 +9,7 @@
   "Session.Save.InvalidRules": "アプリごとのルールに保存できないものがあります。「アプリのルール」で条件を直すか、削除してください。",
   "Session.Save.Failed": "保存できませんでした。ファイルの場所とアクセス権を確認して、もう一度保存してください。",
   "Session.Sync.Future": "新しい版の設定のため同期できません。Snapwell を更新してください。",
-  "Session.Sync.KeepEdits": "同期先の設定を取り込みました。未保存の変更は、保存すると取り込んだ内容を上書きします。",
+  "Session.Sync.KeepEdits": "同期先の設定を取り込みました。未保存の変更をそのまま保存すると、取り込んだ内容を上書きします。",
   "Session.Sync.Imported": "同期先の設定を取り込みました。",
   "Session.Sync.ReloadFailed": "取り込んだ設定を再読み込みできませんでした。画面を開き直してください。"
 }

@@ -61,7 +61,7 @@ public sealed class SetupWizardLocalizationTests : IDisposable
     public void PlansAndTemplatesFollowCurrentLanguage()
     {
         UiText.Use(UiLanguage.Japanese);
-        Assert.Equal(["おすすめ。半分・四分割・1/4 を作れます", "1/3 や 2/3 も作れます", "大きな区画で手早く"],
+        Assert.Equal(["おすすめ。半分・四分割を作れます", "1/3 や 2/3 も作れます", "大きな区画で手早く"],
             SetupWizard.Plans.Select(plan => plan.Description));
         var japanese = UiText.Current.Get("Setup.Welcome.LauncherTemplate");
         Assert.StartsWith("{keys}、", japanese);

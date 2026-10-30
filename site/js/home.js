@@ -365,7 +365,7 @@
   launchWallOnly();
   const LAUNCH_NAMES = {
     en: { 'left-half': 'Left half', 'right-half': 'Right half', 'q-tl': 'Top-left quarter', 'q-tr': 'Top-right quarter', 'q-bl': 'Bottom-left quarter', 'q-br': 'Bottom-right quarter', 't-l': 'Left third', 't-m': 'Middle third', 't-r': 'Right third', center: 'Center', max: 'Maximize', start: 'Start', cells: (w, h) => `${w} × ${h} cells` },
-    ja: { 'left-half': '左半分', 'right-half': '右半分', 'q-tl': '左上の 4 分の 1', 'q-tr': '右上の 4 分の 1', 'q-bl': '左下の 4 分の 1', 'q-br': '右下の 4 分の 1', 't-l': '左の 3 分の 1', 't-m': '中央の 3 分の 1', 't-r': '右の 3 分の 1', center: '中央', max: '最大化', start: '最初の位置', cells: (w, h) => `${w} × ${h} セル` },
+    ja: { 'left-half': '左半分', 'right-half': '右半分', 'q-tl': '左上の 4 分の 1', 'q-tr': '右上の 4 分の 1', 'q-bl': '左下の 4 分の 1', 'q-br': '右下の 4 分の 1', 't-l': '左の 3 分の 1', 't-m': '中央の 3 分の 1', 't-r': '右の 3 分の 1', center: '中央', max: '最大化', start: '最初の位置', cells: (w, h) => `${w} × ${h} 区画` },
   };
   const PRESET_RECTS = {
     'left-half': (W, H, g) => ({ x: g, y: g, w: (W - 3 * g) / 2, h: H - 2 * g }),

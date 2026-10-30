@@ -47,7 +47,7 @@
   "Transfer.Value.Grid": "{columns} × {rows}",
   "Transfer.Value.Rule": "{enabled}: {process}, {class}, {pattern}, {placement}, {corner}",
   "Transfer.Value.Monitor": "{name}: {columns} × {rows}, 間隔 {gap}, 余白 {edge}",
-  "Transfer.Value.CustomFeel": "カスタム（{feel} から。質量 {mass}、振動数 {frequency}、減衰比 {damping}）",
+  "Transfer.Value.CustomFeel": "カスタム（基準: {feel}、質量 {mass}、固有振動数 {frequency}、減衰比 {damping}）",
   "Transfer.Value.Pixels": "{value} px",
   "Transfer_Dialog.Title": "取り込む設定の確認",
   "Transfer_Dialog.PrimaryButtonText": "全体を置き換える",
