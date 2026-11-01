@@ -7,6 +7,7 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Shapes;
 using Snapwell.Core.Setup;
+using Windows.UI;
 
 namespace Snapwell.Settings.Setup;
 
@@ -25,7 +26,7 @@ internal sealed partial class WelcomeStage : Grid, IDisposable
         RadiusX = 8,
         RadiusY = 8,
         StrokeThickness = 1.5,
-        StrokeDashArray = [4, 3],
+        StrokeDashArray = [4, 4],
         IsHitTestVisible = false,
     }).ToArray();
     private readonly IntroWindowVisual _window = new(welcome: true);
@@ -226,6 +227,11 @@ internal sealed partial class WelcomeStage : Grid, IDisposable
     {
         if (_model is null || _disposed) { return; }
         Background = _palette.Background; BorderBrush = _palette.Border;
+        var accent = _palette.Accent;
+        var zoneFill = new SolidColorBrush(Color.FromArgb(
+            _palette.Dark ? (byte)41 : (byte)46, accent.R, accent.G, accent.B));
+        var accentLine = new SolidColorBrush(Color.FromArgb(
+            _palette.Dark ? (byte)166 : (byte)153, accent.R, accent.G, accent.B));
         for (var i = 0; i < _zones.Length; i++)
         {
             var z = _model.Cells[i]; var shape = _zones[i];
@@ -233,9 +239,8 @@ internal sealed partial class WelcomeStage : Grid, IDisposable
             shape.Width = Math.Max(0, z.Width - ZoneInset * 2); shape.Height = Math.Max(0, z.Height - ZoneInset * 2);
             Canvas.SetLeft(shape, z.X + ZoneInset); Canvas.SetTop(shape, z.Y + ZoneInset);
             var selected = i == _model.Target;
-            shape.Stroke = selected ? _palette.AccentBrush : _palette.Border;
-            shape.Fill = selected ? new SolidColorBrush(_palette.Accent) { Opacity = _palette.Dark ? .16 : .12 }
-                : _clear;
+            shape.Stroke = selected ? accentLine : _palette.Border;
+            shape.Fill = selected ? zoneFill : _clear;
         }
         _window.Paint(_model.X, _model.Y, _model.Width, _model.Height, 0, _model.Held ? .7 : .2, 0, _palette);
     }
