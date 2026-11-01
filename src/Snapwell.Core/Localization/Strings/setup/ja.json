@@ -3,7 +3,7 @@
   "Setup.Step.StandardFeatures": "標準機能",
   "Setup.Step.Hotkeys": "ホットキー",
   "Setup.Step.Grid": "分割案",
-  "Setup.Welcome.Title": "ウィンドウを投げよう。",
+  "Setup.Welcome.Title": "ウィンドウを投げよう",
   "Setup.Welcome.Body": "つかんで投げると、いちばん近い区画に吸い込まれて止まります。\nこのあと、標準機能、ホットキー、分割案の 3 つを設定します。",
   "Setup.Welcome.Hint": "上のウィンドウは動かせます。つかんで投げてみてください。",
   "Setup.Welcome.HintHeld": "離すと、近い区画へ収まります。",

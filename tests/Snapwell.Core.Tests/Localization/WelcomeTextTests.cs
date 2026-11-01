@@ -37,8 +37,8 @@ public sealed class WelcomeTextTests
 
     /// <summary>指定された日英の文言と cell の用語を保つ。</summary>
     [Theory]
-    [InlineData(UiLanguage.Japanese, "ウィンドウを投げよう。", "はじめる", "もう一度どうぞ。")]
-    [InlineData(UiLanguage.English, "Throw a window.", "Get started", "Once more.")]
+    [InlineData(UiLanguage.Japanese, "ウィンドウを投げよう", "はじめる", "もう一度どうぞ。")]
+    [InlineData(UiLanguage.English, "Throw a window", "Get started", "Once more.")]
     public void WelcomeLabelsMatchApprovedCopy(UiLanguage language, string title, string start, string again)
     {
         var catalog = TextCatalog.Load(language);

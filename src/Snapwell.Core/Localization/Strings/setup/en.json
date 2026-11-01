@@ -3,7 +3,7 @@
   "Setup.Step.StandardFeatures": "Windows features",
   "Setup.Step.Hotkeys": "Hotkeys",
   "Setup.Step.Grid": "Grid",
-  "Setup.Welcome.Title": "Throw a window.",
+  "Setup.Welcome.Title": "Throw a window",
   "Setup.Welcome.Body": "Grab a window and throw it. It is pulled into the nearest cell and stops there.\nNext, you will set up standard features, hotkeys, and layout.",
   "Setup.Welcome.Hint": "The window above moves. Grab it and give it a throw.",
   "Setup.Welcome.HintHeld": "Let go and it settles into the nearest cell.",
