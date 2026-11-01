@@ -31,15 +31,6 @@ public sealed class TrayStatusRenderingTests : IDisposable
             .OrderBy(key => key, StringComparer.Ordinal).Select(catalog.Get).ToArray();
         Assert.NotEmpty(statuses);
         using var text = new GdiOverlayText(scale);
-        // 日本語の状態文は既存の文言を保つため、収まらないものは次の描画検査で省略記号を確かめる。
-        if (language == UiLanguage.English)
-        {
-            foreach (var status in statuses)
-            {
-                Assert.True(Measure(text, status) <= 286, $"{language}: {status}");
-            }
-        }
-
         // 各状態が先頭・末尾の両方に来る二件連結と、全件連結を含める。
         var combined = statuses.Select((status, index) =>
             status + " / " + statuses[(index + 1) % statuses.Length]);
@@ -50,23 +41,26 @@ public sealed class TrayStatusRenderingTests : IDisposable
             var layout = TrayMenuLayout.Create(new(workArea.Right - 24, workArea.Bottom, 24, 24), workArea,
                 TrayTaskbarEdge.Bottom, scale, true);
             Assert.Equal(compact, layout.IsCompact);
-            var bounds = layout.Rect(17, compact ? 54 : 80, 286, compact ? 22 : 24);
+            var bounds = layout.StatusText;
             foreach (var status in cases)
             {
-                var display = status;
-                if (Measure(text, status) * scale > bounds.Width)
-                {
-                    display = Enumerable.Range(0, status.Length).Select(length => status[..length] + "…")
-                        .Last(value => Measure(text, value) * scale <= bounds.Width);
-                    Assert.EndsWith("…", display);
-                    Assert.StartsWith(display[..^1], status);
-                }
-                Assert.True(Measure(text, display) * scale <= bounds.Width);
-
                 var snapshot = new TrayMenuSnapshot(layout, [], true, status, 1, OverlayTheme.Light);
                 using var renderer = new TrayMenuRenderer(snapshot);
+                var firstLength = Enumerable.Range(0, status.Length + 1)
+                    .Last(length => Measure(text, status[..length]) * scale <= bounds.Width);
+                var lines = new List<string> { status[..firstLength] };
+                if (firstLength < status.Length)
+                {
+                    var rest = status[firstLength..];
+                    lines.Add(Measure(text, rest) * scale <= bounds.Width ? rest
+                        : Enumerable.Range(0, rest.Length).Select(length => rest[..length] + "…")
+                            .Last(value => Measure(text, value) * scale <= bounds.Width));
+                }
+                Assert.Equal(lines, renderer.StatusLines(status));
+                Assert.All(lines, line => Assert.True(Measure(text, line) * scale <= bounds.Width));
+                Assert.False(bounds.Intersects(layout.Rows[0]));
                 var actual = renderer.Render(-1, false);
-                var expected = DrawStatus(text, display, bounds, scale);
+                var expected = DrawStatus(text, lines, bounds, scale);
                 var pixels = new byte[expected.Pixels.Length];
                 for (var y = 0; y < bounds.Height; y++)
                 {
@@ -81,25 +75,28 @@ public sealed class TrayStatusRenderingTests : IDisposable
     }
 
     private static double Measure(GdiOverlayText text, string value) =>
-        GdiOverlayText.SplitRuns(value, true).Sum(run => text.Measure(run.Value, 11.5, run.Cjk));
+        GdiOverlayText.SplitRuns(value, true).Sum(run => text.Measure(run.Value, 12, run.Cjk));
 
-    private static OverlayFrame DrawStatus(GdiOverlayText text, string value, PixelRect bounds, double scale)
+    private static OverlayFrame DrawStatus(GdiOverlayText text, IReadOnlyList<string> lines, PixelRect bounds, double scale)
     {
         var area = new PixelRect(0, 0, bounds.Width, bounds.Height);
         var frame = OverlayPainter.Create(area.Width, area.Height);
         var palette = OverlayPalette.For(OverlayTheme.Light);
         OverlayPainter.Fill(frame, area, palette.Surface);
-        var x = 0.0;
-        foreach (var run in GdiOverlayText.SplitRuns(value, true))
+        for (var line = 0; line < lines.Count; line++)
         {
-            var width = text.Measure(run.Value, 11.5, run.Cjk) * scale;
-            // 描画側と同じ画面座標で丸め、150% の半ピクセルを含める。
-            var left = (int)Math.Round(bounds.X + x) - bounds.X;
-            var runBounds = new PixelRect(left, 0, Math.Min(area.Width - left, (int)Math.Ceiling(width)),
-                area.Height);
-            text.Draw(frame, area, new(run.Value, runBounds, 11.5, Mono: run.Cjk), palette.Muted,
-                centerFontBody: true);
-            x += width;
+            var x = 0.0;
+            foreach (var run in GdiOverlayText.SplitRuns(lines[line], true))
+            {
+                var width = text.Measure(run.Value, 12, run.Cjk) * scale;
+                // 描画側と同じ画面座標で丸め、150% の半ピクセルを含める。
+                var left = (int)Math.Round(bounds.X + x) - bounds.X;
+                var runBounds = new PixelRect(left, (int)Math.Round(20 * line * scale),
+                    Math.Min(area.Width - left, (int)Math.Ceiling(width)), (int)Math.Round(20 * scale));
+                text.Draw(frame, area, new(run.Value, runBounds, 12, Mono: run.Cjk), palette.RedText,
+                    centerFontBody: true);
+                x += width;
+            }
         }
         return frame;
     }

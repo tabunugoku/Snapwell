@@ -70,8 +70,8 @@ public sealed class TrayMenuTextCenteringTests
         using var text = new GdiOverlayText(scale);
         foreach (var (value, size, mono, height) in new[]
         {
-            ("有効", 10.5, true, 19), ("Ctrl", 11.5, true, 22), ("Space", 11.5, true, 22),
-            ("Snapwell", 13.0, false, 24), ("区画 ABC", 13.0, true, 32),
+            ("有効", 12.0, false, 20), ("Ctrl", 11.5, true, 22), ("Space", 11.5, true, 22),
+            ("Snapwell", 14.0, false, 20), ("区画 ABC", 14.0, true, 32),
         })
         {
             var area = new PixelRect(0, 0, (int)Math.Round(160 * scale), (int)Math.Round(height * scale));

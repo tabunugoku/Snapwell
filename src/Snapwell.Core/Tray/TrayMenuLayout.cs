@@ -15,10 +15,32 @@ public sealed class TrayMenuLayout
     /// <summary>ヘッダーのスイッチ。</summary>
     public PixelRect Toggle { get; }
     /// <summary>ヘッダー共通の中心線を決めるアイコン。</summary>
-    public PixelRect HeaderIcon => Rect(18, 18, 20, 20);
+    public PixelRect HeaderIcon => Rect(16, 23, 20, 20);
+    /// <summary>通常の太さの題を置く行。</summary>
+    public PixelRect HeaderTitle => CenterVertically(HeaderIcon, Panel.X + Px(48), Px(80), Px(20));
+    /// <summary>見出しの末尾へ 8 論理 px 重ねるモニター構成の行。</summary>
+    public PixelRect MonitorRow => Rect(48, 53, 256, 28);
+    /// <summary>二行のエラー説明を置く領域。</summary>
+    public PixelRect StatusText => Rect(40, IsCompact ? 61 : 89, 264, 40);
+    /// <summary>エラー説明の先頭のアイコン。</summary>
+    public PixelRect StatusIcon => Rect(16, IsCompact ? 63 : 91, 16, 16);
+    /// <summary>項目内の線のアイコンを置く矩形。</summary>
+    public PixelRect ItemIcon(int index) => CenterVertically(Rows[index], Rows[index].X + Px(12), Px(16), Px(16));
+    /// <summary>アイコンとの間を 12 論理 px あけた項目の文字。</summary>
+    public PixelRect ItemLabel(int index)
+    {
+        var row = Rows[index];
+        var left = ItemIcon(index).Right + Px(12);
+        return new(left, row.Y, Math.Max(0, row.Right - Px(12) - left), row.Height);
+    }
     /// <summary>ヘッダーの状態タグ。</summary>
     public PixelRect StatusTag => CenterVertically(HeaderIcon,
-        Toggle.X - Px(10) - Px(_statusTagTextWidth + 16), Px(_statusTagTextWidth + 16), Px(19));
+        Toggle.X - Px(12) - Px(_statusTagTextWidth + 24), Px(_statusTagTextWidth + 24), Px(20));
+    /// <summary>意味の色を示す 6 論理 px の点。</summary>
+    public PixelRect StatusDot => CenterVertically(StatusTag, StatusTag.X + Px(6), Px(6), Px(6));
+    /// <summary>点から 6 論理 px あけた通常の文字。</summary>
+    public PixelRect StatusLabel => new(StatusTag.X + Px(18), StatusTag.Y,
+        Math.Max(0, StatusTag.Width - Px(24)), StatusTag.Height);
     /// <summary>項目の矩形。</summary>
     public IReadOnlyList<PixelRect> Rows { get; }
     /// <summary>区切り線の矩形。</summary>
@@ -56,28 +78,28 @@ public sealed class TrayMenuLayout
         var top = Math.Max(workArea.Y, panel.Y - padding);
         Bounds = new(left, top, Math.Min(workArea.Right, panel.Right + padding) - left,
             Math.Min(workArea.Bottom, panel.Bottom + padding) - top);
-        var toggle = CenterVertically(HeaderIcon, panel.X + Px(263), Px(40), HeaderIcon.Height);
+        var toggle = CenterVertically(HeaderIcon, panel.Right - Px(56), Px(40), HeaderIcon.Height);
         Toggle = new(Math.Max(panel.X, Math.Min(toggle.X, panel.Right - toggle.Width)), toggle.Y,
             Math.Min(panel.Width, toggle.Width), toggle.Height);
-        var offset = hasStatus ? 24 : 0;
-        var start = (compact ? 58 : 89) + offset;
-        var groupGap = compact ? 2 : 9;
+        var offset = hasStatus ? 48 : 0;
+        var start = (compact ? 62 : 90) + offset;
+        const int GroupGap = 9;
         var viewportTop = Math.Min(panel.Bottom, panel.Y + Px(start));
         ItemsViewport = new(panel.X, viewportTop, panel.Width,
-            Math.Max(0, panel.Bottom - Px(compact ? 4 : 8) - viewportTop));
-        MaxScrollOffset = Math.Max(0, Px(start + 32 * itemCount + groupGap) - Px(start) - ItemsViewport.Height);
+            Math.Max(0, panel.Bottom - Px(5) - viewportTop));
+        MaxScrollOffset = Math.Max(0, Px(start + 32 * itemCount + GroupGap) - Px(start) - ItemsViewport.Height);
         ScrollOffset = Math.Clamp(scrollOffset, 0, MaxScrollOffset);
         PixelRect Row(int y)
         {
-            var row = Rect(7, y, 306, 32);
+            var row = Rect(4, y, 312, 32);
             return new(row.X, row.Y - ScrollOffset, Math.Max(0, Math.Min(row.Right, panel.Right) - row.X),
                 row.Height);
         }
         Rows = Array.AsReadOnly(Enumerable.Range(0, itemCount)
-            .Select(index => Row(start + 32 * index + (index >= itemCount - 2 ? groupGap : 0))).ToArray());
-        var groupSeparator = Rect(13, start + 32 * (itemCount - 2) + (compact ? 0 : 4), 294, 1);
+            .Select(index => Row(start + 32 * index + (index >= itemCount - 2 ? GroupGap : 0))).ToArray());
+        var groupSeparator = Rect(4, start + 32 * (itemCount - 2) + 4, 312, 1);
         Separators = Array.AsReadOnly<PixelRect>(
-            [Rect(7, 51, 306, 1), Rect(13, start - 5, 294, 1),
+            [Rect(4, start - 5, 312, 1),
                 new(groupSeparator.X, groupSeparator.Y - ScrollOffset, groupSeparator.Width, groupSeparator.Height)]);
     }
 
@@ -85,7 +107,7 @@ public sealed class TrayMenuLayout
     public TrayMenuLayout WithScrollOffset(int offset) =>
         new(Panel, _workArea, Scale, _hasStatus, IsCompact, offset, _statusTagTextWidth, _itemCount);
 
-    /// <summary>実測した論理 px の文言幅に左右 8 px の余白を足し、タグの右端を固定する。</summary>
+    /// <summary>実測した文字幅に左右 6 px・点 6 px・間隔 6 px を足し、タグの右端を固定する。</summary>
     public TrayMenuLayout WithStatusTagTextWidth(double textWidth)
     {
         if (!double.IsFinite(textWidth) || textWidth < 0)
@@ -156,9 +178,10 @@ public sealed class TrayMenuLayout
 
         var width = Math.Min(workArea.Width, (int)Math.Round(320 * scale));
         var extraHeight = (itemCount - 4) * 32;
-        var height = (int)Math.Round(((hasStatus ? 258 : 234) + extraHeight) * scale);
+        // 内側 230 = 余白 8 + 見出し 56 + メタ 28 - 重なり 8 + 四行 128 + 区切り二組 18。
+        var height = (int)Math.Round(((hasStatus ? 280 : 232) + extraHeight) * scale);
         var compact = height > workArea.Height;
-        if (compact) { height = (int)Math.Round(((hasStatus ? 216 : 192) + extraHeight) * scale); }
+        if (compact) { height = (int)Math.Round(((hasStatus ? 252 : 204) + extraHeight) * scale); }
         height = Math.Min(height, workArea.Height);
 
         var gap = (int)Math.Round(8 * scale);

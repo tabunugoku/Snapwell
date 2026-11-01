@@ -85,8 +85,8 @@ public sealed class TrayMenuControllerTests
         menu.Up(snapshot.Layout.Rows[2].Center);
         menu.Down(snapshot.Layout.Rows[1].Center);
         menu.Up(snapshot.Layout.Rows[1].Center);
-        menu.Down(snapshot.Layout.Separators[1].Center);
-        menu.Up(snapshot.Layout.Separators[1].Center);
+        menu.Down(snapshot.Layout.Separators[0].Center);
+        menu.Up(snapshot.Layout.Separators[0].Center);
         Assert.Empty(commands);
         menu.Down(snapshot.Layout.Rows[0].Center);
         menu.Up(snapshot.Layout.Rows[0].Center);

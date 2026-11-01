@@ -9,6 +9,7 @@ using Snapwell.Core.Tray;
 namespace Snapwell.App.Tests.Tray;
 
 /// <summary>ヘッダーの状態・実測幅・キャッシュ済みの画素を検証する。</summary>
+[Collection("UI language")]
 public sealed class TrayMenuHeaderTests
 {
     /// <summary>異常を最優先し、タスクバーと同じ状態を使う。</summary>
@@ -33,17 +34,22 @@ public sealed class TrayMenuHeaderTests
     {
         using var text = new GdiOverlayText(scale);
         var widths = new List<int>();
-        foreach (var label in new[] { "有効", "一時停止中", "異常" })
+        foreach (var label in new[] { "有効", "一時停止中", "異常", "Active", "Paused", "Error" })
         {
             var layout = Snapshot(true, null, OverlayTheme.Light, scale).Layout
-                .WithStatusTagTextWidth(text.Measure(label, 10.5, true, true));
-            var title = TrayMenuLayout.CenterVertically(layout.HeaderIcon,
-                layout.Panel.X + layout.Px(49), layout.Px(110), layout.Px(24));
+                .WithStatusTagTextWidth(text.Measure(label, 12, false));
+            var title = layout.HeaderTitle;
             Assert.True(layout.Panel.Contains(layout.StatusTag));
             Assert.False(title.Intersects(layout.StatusTag));
             Assert.True(title.Right < layout.StatusTag.X);
-            Assert.Equal(layout.Px(10), layout.Toggle.X - layout.StatusTag.Right);
-            Assert.Equal(layout.Px(text.Measure(label, 10.5, true, true) + 16), layout.StatusTag.Width);
+            Assert.Equal(layout.Px(12), layout.Toggle.X - layout.StatusTag.Right);
+            Assert.Equal(layout.Px(text.Measure(label, 12, false) + 24), layout.StatusTag.Width);
+            Assert.Equal(layout.Px(20), layout.StatusTag.Height);
+            Assert.Equal(layout.Px(6), layout.StatusDot.Width);
+            Assert.Equal(layout.Px(6), layout.StatusDot.Height);
+            Assert.Equal(layout.Px(6), layout.StatusDot.X - layout.StatusTag.X);
+            Assert.Equal(layout.Px(6), layout.StatusLabel.X - layout.StatusDot.Right);
+            Assert.Equal(layout.Px(6), layout.StatusTag.Right - layout.StatusLabel.Right);
             Assert.Equal(layout.StatusTag, layout.WithScrollOffset(int.MaxValue).StatusTag);
             widths.Add(layout.StatusTag.Width);
         }
@@ -78,9 +84,22 @@ public sealed class TrayMenuHeaderTests
             contrasts.Add(contrast);
             if (state == 0) { Assert.Contains(pixels, color => color.Blue > color.Red + 20); }
             if (state == 2) { Assert.Contains(pixels, color => color.Red > color.Blue + 20); }
-            var tag = snapshot.Layout.WithStatusTagTextWidth(text.Measure(snapshot.StatusLabel, 10.5, true, true))
-                .StatusTag;
+            var measured = snapshot.Layout.WithStatusTagTextWidth(text.Measure(snapshot.StatusLabel, 12, false));
+            var tag = measured.StatusTag;
             var colors = Pixels(frame, snapshot.Layout.Bounds, tag).ToArray();
+            Assert.Equal(palette.Surface2, colors[colors.Length / tag.Height / 2]);
+            var label = measured.StatusLabel;
+            var expected = OverlayPainter.Create(label.Width, label.Height);
+            OverlayPainter.Fill(expected, new(0, 0, label.Width, label.Height), palette.Surface2);
+            text.Draw(expected, label, new(snapshot.StatusLabel, label, 12), palette.Muted, centerFontBody: true);
+            Assert.Equal(expected.Pixels, Pixels(frame, snapshot.Layout.Bounds, label)
+                .SelectMany(color => new[] { color.Blue, color.Green, color.Red, color.Alpha }).ToArray());
+            Assert.Contains(state switch
+            {
+                0 => palette.GreenText,
+                1 => palette.YellowText,
+                _ => palette.RedText,
+            }, colors);
             Assert.Contains(colors, color => state switch
             {
                 0 => color.Green > color.Red + 10 && color.Green > color.Blue + 10,

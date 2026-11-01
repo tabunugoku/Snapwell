@@ -166,7 +166,7 @@ public sealed class TrayMenuToggleAnimationTests
         {
             var thumb = layout.ThumbBounds(position);
             var color = position == 0 ? OverlayPalette.For(theme).Muted
-                : theme == OverlayTheme.Dark ? new OverlayColor(17, 17, 17, 255) : new(255, 255, 255, 255);
+                : theme == OverlayTheme.Dark ? new OverlayColor(22, 22, 22, 255) : new(255, 255, 255, 255);
             var points = new List<(int X, int Y)>();
             for (var y = thumb.Y; y < thumb.Bottom; y++)
             {

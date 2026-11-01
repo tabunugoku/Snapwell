@@ -6,6 +6,43 @@ namespace Snapwell.Core.Tests.Tray;
 /// <summary>タスクバーの辺と拡大率による物理座標の配置を検証する。</summary>
 public sealed class TrayMenuLayoutTests
 {
+    /// <summary>枠の内側 230 と各部品の座標を、更新・二行エラーの有無ごとに固定する。</summary>
+    [Theory]
+    [InlineData(1)]
+    [InlineData(1.5)]
+    [InlineData(2)]
+    public void SpecRectanglesStaySeparateWithUpdateAndTwoLineError(double scale)
+    {
+        foreach (var count in new[] { 4, 5 })
+        {
+            foreach (var status in new[] { false, true })
+            {
+                var layout = TrayMenuLayout.Create(new(1800, 1800, 24, 24), new(0, 0, 2000, 1800),
+                    TrayTaskbarEdge.Bottom, scale, status, count);
+                Assert.Equal(layout.Px(230 + 2 + (count - 4) * 32 + (status ? 48 : 0)), layout.Panel.Height);
+                Assert.Equal(layout.Rect(16, 23, 20, 20), layout.HeaderIcon);
+                Assert.Equal(layout.Rect(48, 23, 80, 20), layout.HeaderTitle);
+                Assert.Equal(layout.Rect(264, 23, 40, 20), layout.Toggle);
+                Assert.Equal(layout.Rect(48, 53, 256, 28), layout.MonitorRow);
+                Assert.Equal(layout.Rect(16, 91, 16, 16), layout.StatusIcon);
+                Assert.Equal(layout.Rect(40, 89, 264, 40), layout.StatusText);
+                var start = status ? 138 : 90;
+                Assert.Equal(layout.Rect(4, start - 5, 312, 1), layout.Separators[0]);
+                Assert.Equal(layout.Rect(4, start + 32 * (count - 2) + 4, 312, 1), layout.Separators[1]);
+                for (var index = 0; index < count; index++)
+                {
+                    var y = start + 32 * index + (index >= count - 2 ? 9 : 0);
+                    Assert.Equal(layout.Rect(4, y, 312, 32), layout.Rows[index]);
+                    Assert.Equal(layout.Rect(16, y + 8, 16, 16), layout.ItemIcon(index));
+                    Assert.Equal(layout.Rect(44, y, 260, 32), layout.ItemLabel(index));
+                    Assert.All(layout.Separators, separator => Assert.False(separator.Intersects(layout.Rows[index])));
+                    if (status) { Assert.False(layout.StatusText.Intersects(layout.Rows[index])); }
+                }
+                Assert.Equal(0, layout.MaxScrollOffset);
+            }
+        }
+    }
+
     /// <summary>上下左右・三つの拡大率・負の座標を組み合わせる。</summary>
     public static IEnumerable<object[]> EdgesAndScales()
     {
@@ -46,7 +83,7 @@ public sealed class TrayMenuLayoutTests
         Assert.Equal(edge, TrayMenuLayout.DetectEdge(monitor, work, anchor));
         var layout = TrayMenuLayout.Create(anchor, work, edge, scale);
         Assert.Equal((int)(320 * scale), layout.Panel.Width);
-        Assert.Equal((int)(234 * scale), layout.Panel.Height);
+        Assert.Equal((int)(232 * scale), layout.Panel.Height);
         Assert.Equal((int)(40 * scale), layout.Toggle.Width);
         Assert.Equal((int)(20 * scale), layout.Toggle.Height);
         Assert.True(work.Contains(layout.Panel));
@@ -104,8 +141,8 @@ public sealed class TrayMenuLayoutTests
     {
         var layout = TrayMenuLayout.Create(new(900, 900, 20, 20), new(0, 0, 1000, 900),
             TrayTaskbarEdge.Bottom, 2, hasStatus: true);
-        Assert.Equal(516, layout.Panel.Height);
-        Assert.Equal(layout.Rect(7, 113, 306, 32), layout.Rows[0]);
+        Assert.Equal(560, layout.Panel.Height);
+        Assert.Equal(layout.Rect(4, 138, 312, 32), layout.Rows[0]);
         Assert.All(layout.Separators, separator =>
             Assert.All(layout.Rows, row => Assert.False(row.Intersects(separator))));
     }
@@ -156,10 +193,10 @@ public sealed class TrayMenuLayoutTests
         var work = new PixelRect(-1200, -700, 1200, height);
         var layout = TrayMenuLayout.Create(new(-100, work.Bottom, 24, 24), work,
             TrayTaskbarEdge.Bottom, scale, status);
-        var compact = Math.Round((status ? 258 : 234) * scale) > height;
+        var compact = Math.Round((status ? 280 : 232) * scale) > height;
         Assert.Equal(compact, layout.IsCompact);
-        Assert.Equal(Math.Min(height, (int)Math.Round((compact ? (status ? 216 : 192)
-            : (status ? 258 : 234)) * scale)), layout.Panel.Height);
+        Assert.Equal(Math.Min(height, (int)Math.Round((compact ? (status ? 252 : 204)
+            : (status ? 280 : 232)) * scale)), layout.Panel.Height);
         Assert.True(work.Contains(layout.Bounds));
         Assert.True(work.Contains(layout.Panel));
         var items = TrayMenuModel.Create(true, launcherAvailable: true);

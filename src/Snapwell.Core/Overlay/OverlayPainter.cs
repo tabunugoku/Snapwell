@@ -53,11 +53,8 @@ public sealed record OverlayPalette(OverlayColor Dim, OverlayColor Cell, Overlay
     {
         Subtle = new(146, 146, 142, 255),
         AccentTint = new(140, 203, 242, 36),
-        GreenBackground = new(52, 101, 56, 77),
         GreenText = new(124, 196, 138, 255),
-        YellowBackground = new(149, 100, 0, 71),
         YellowText = new(224, 182, 90, 255),
-        RedBackground = new(159, 47, 45, 71),
         RedText = new(242, 147, 140, 255),
     };
 
@@ -66,16 +63,10 @@ public sealed record OverlayPalette(OverlayColor Dim, OverlayColor Cell, Overlay
     /// <summary>一覧の選択と対象タグに使う薄いアクセント。</summary>
     public OverlayColor AccentTint { get; init; } = new(31, 108, 159, 31);
 
-    /// <summary>有効を表すタグの背景色。</summary>
-    public OverlayColor GreenBackground { get; init; } = new(237, 243, 236, 255);
     /// <summary>有効を表すタグの文字色。</summary>
     public OverlayColor GreenText { get; init; } = new(47, 122, 62, 255);
-    /// <summary>一時停止を表すタグの背景色。</summary>
-    public OverlayColor YellowBackground { get; init; } = new(251, 243, 219, 255);
     /// <summary>一時停止を表すタグの文字色。</summary>
     public OverlayColor YellowText { get; init; } = new(138, 90, 0, 255);
-    /// <summary>異常を表すタグの背景色。</summary>
-    public OverlayColor RedBackground { get; init; } = new(253, 235, 236, 255);
     /// <summary>異常を表すアイコンとタグの文字色。</summary>
     public OverlayColor RedText { get; init; } = new(180, 35, 24, 255);
 

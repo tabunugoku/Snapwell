@@ -7,6 +7,62 @@ namespace Snapwell.Core.Tests.Tray;
 /// <summary>状態アイコンに使う小数座標と透明な抜きを検証する。</summary>
 public sealed class TrayMenuIconDrawingTests
 {
+    /// <summary>更新の縦線は 1.5 論理 px の被覆率を保ち、縮小時にも空にならない。</summary>
+    [Theory]
+    [InlineData(1)]
+    [InlineData(1.5)]
+    [InlineData(2)]
+    public void UpdateStemPreservesOneAndHalfPixelStrokeWidth(double scale)
+    {
+        var frame = TrayMenuIcons.Create(TrayMenuCommand.Update, (int)(16 * scale), new(255, 255, 255, 255));
+        var coverage = Enumerable.Range((int)(5 * scale), (int)(6 * scale))
+            .Sum(x => Pixel(frame, x, (int)(3 * scale))[3] / 255.0);
+        Assert.InRange(coverage, 1.5 * scale - .02, 1.5 * scale + .02);
+    }
+
+    /// <summary>仕様の五つの Path と、丸い端を含む非空の描画を固定する。</summary>
+    [Theory]
+    [InlineData(TrayMenuCommand.Arrange,
+        "M2 2.5 H7 V7 H2 Z M9 2.5 H14 V7 H9 Z M2 9 H7 V13.5 H2 Z M9 9 H14 V13.5 H9 Z")]
+    [InlineData(TrayMenuCommand.Launcher, "M2 3 H14 V13 H2 Z M2 6 H14 M6 6 V13")]
+    [InlineData(TrayMenuCommand.Settings,
+        "M8 5.5 A2.5 2.5 0 1 1 8 10.5 A2.5 2.5 0 1 1 8 5.5 Z M8 1.5 v2 M8 12.5 v2 M1.5 8 h2 M12.5 8 h2 M3.4 3.4 l1.4 1.4 M11.2 11.2 l1.4 1.4 M3.4 12.6 l1.4 -1.4 M11.2 4.8 l1.4 -1.4")]
+    [InlineData(TrayMenuCommand.Exit,
+        "M6 2.5 H3 A0.5 0.5 0 0 0 2.5 3 V13 A0.5 0.5 0 0 0 3 13.5 H6 M10 5 L13 8 L10 11 M13 8 H6")]
+    [InlineData(TrayMenuCommand.Update, "M8 2 V10 M4.5 6.5 L8 10 L11.5 6.5 M2.5 13.5 H13.5")]
+    public void ItemPathsMatchSpecAndRenderInsideScaledBounds(TrayMenuCommand command, string path)
+    {
+        Assert.Equal(path, TrayMenuIcons.Path(command));
+        foreach (var size in new[] { 16, 20, 24, 32 })
+        {
+            var color = new OverlayColor(82, 82, 79, 255);
+            var icon = TrayMenuIcons.Create(command, size, color);
+            Assert.Equal(size, icon.Width);
+            Assert.Equal(size, icon.Height);
+            var alphas = icon.Pixels.Where((_, index) => index % 4 == 3).ToArray();
+            Assert.Contains(alphas, alpha => alpha > 0);
+            Assert.Contains(alphas, alpha => alpha is > 0 and < 255);
+            var padded = OverlayPainter.Create(size + 4, size + 4);
+            OverlayPainter.Composite(padded, icon, 2, 2);
+            for (var y = 0; y < padded.Height; y++)
+            {
+                for (var x = 0; x < padded.Width; x++)
+                {
+                    if (x < 2 || y < 2 || x >= size + 2 || y >= size + 2)
+                    {
+                        Assert.Equal(0, Pixel(padded, x, y)[3]);
+                    }
+                }
+            }
+            for (var index = 0; index < icon.Pixels.Length; index += 4)
+            {
+                Assert.InRange(icon.Pixels[index], 0, icon.Pixels[index + 3]);
+                Assert.InRange(icon.Pixels[index + 1], 0, icon.Pixels[index + 3]);
+                Assert.InRange(icon.Pixels[index + 2], 0, icon.Pixels[index + 3]);
+            }
+        }
+    }
+
     /// <summary>円と丸い端を持つ線を半透明の乗算済み画素として塗る。</summary>
     [Fact]
     public void CircleAndRoundLinePreserveCoverageAndPremultipliedColor()

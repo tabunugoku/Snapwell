@@ -36,7 +36,7 @@ public sealed class TrayMenuMockupTests
                 var layout = TrayMenuLayout.Create(new(-20, work.Bottom, 20, 20), work,
                     TrayTaskbarEdge.Bottom, scale, status).WithScrollOffset(int.MaxValue);
                 Assert.Equal(4, layout.Rows.Count);
-                Assert.Equal(3, layout.Separators.Count);
+                Assert.Equal(2, layout.Separators.Count);
                 Assert.True(layout.ItemsViewport.Contains(layout.Rows[^1]));
                 for (var index = 0; index < 4; index++)
                 {
@@ -44,8 +44,8 @@ public sealed class TrayMenuMockupTests
                     var gap = index == 0 ? 0 : row.Y - layout.Rows[index - 1].Bottom;
                     if (index == 2)
                     {
-                        Assert.InRange(gap, layout.Px(layout.IsCompact ? 2 : 9) - 1,
-                            layout.Px(layout.IsCompact ? 2 : 9) + 1);
+                        Assert.InRange(gap, layout.Px(9) - 1,
+                            layout.Px(9) + 1);
                     }
                     else { Assert.Equal(0, gap); }
                     var visible = layout.EnsureVisible(index + 1);
@@ -54,7 +54,7 @@ public sealed class TrayMenuMockupTests
                     Assert.Equal(index + 1, TrayMenuModel.HitTest(visible, TrayMenuModel.Create(true, true),
                         visible.Rows[index].Center));
                 }
-                Assert.InRange(layout.Separators[2].Y, layout.Rows[1].Bottom, layout.Rows[2].Y - 1);
+                Assert.InRange(layout.Separators[1].Y, layout.Rows[1].Bottom, layout.Rows[2].Y - 1);
             }
         }
     }

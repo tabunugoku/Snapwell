@@ -27,52 +27,56 @@ internal sealed class TrayMenuRenderer : IDisposable
         try
         {
             var layout = snapshot.Layout.WithStatusTagTextWidth(
-                _text.Measure(snapshot.StatusLabel, 10.5, true, true));
+                _text.Measure(snapshot.StatusLabel, 12, false));
             _snapshot = snapshot with { Layout = layout };
             _background = OverlayPainter.Create(layout.Bounds.Width, layout.Bounds.Height);
             var panel = Local(layout.Panel);
             var shadow = OverlayPainter.CreatePanelShadow(panel.Width, panel.Height, layout.Scale);
             OverlayPainter.Composite(_background, shadow.Frame, panel.X + shadow.Bounds.X, panel.Y + shadow.Bounds.Y);
-            Box(_background, layout.Panel, _palette.Surface, _palette.Border, 8);
-            foreach (var separator in layout.Separators.Take(2))
-            {
-                OverlayPainter.Fill(_background, Local(separator), _palette.Border);
-            }
+            Box(_background, layout.Panel, _palette.Surface, _palette.BorderStrong, 8);
+            OverlayPainter.Fill(_background, Local(layout.Separators[0]), _palette.Border);
 
             DrawHeaderIcon(_background);
-            Text(_background, "Snapwell", TrayMenuLayout.CenterVertically(layout.HeaderIcon,
-                layout.Panel.X + layout.Px(49), layout.Px(110), layout.Px(24)), 13, _palette.Ink, bold: true);
-            var (tagBackground, tagText) = snapshot.IconKind switch
+            Text(_background, "Snapwell", layout.HeaderTitle, 14, _palette.Text);
+            var dotColor = snapshot.IconKind switch
             {
-                TrayIconKind.Attention => (_palette.RedBackground, _palette.RedText),
-                TrayIconKind.Paused => (_palette.YellowBackground, _palette.YellowText),
-                _ => (_palette.GreenBackground, _palette.GreenText),
+                TrayIconKind.Attention => _palette.RedText,
+                TrayIconKind.Paused => _palette.YellowText,
+                _ => _palette.GreenText,
             };
             OverlayPainter.FillRounded(_background, Local(layout.StatusTag),
-                tagBackground, 9999, layout.Scale);
-            Text(_background, snapshot.StatusLabel, layout.StatusTag,
-                10.5, tagText, bold: true, center: true);
+                _palette.Surface2, 4, layout.Scale);
+            OverlayPainter.FillRounded(_background, Local(layout.StatusDot), dotColor, 3, layout.Scale);
+            Text(_background, snapshot.StatusLabel, layout.StatusLabel, 12, _palette.Muted);
             if (!layout.IsCompact)
             {
-                Text(_background, MonitorDescription(snapshot.MonitorCount), layout.Rect(17, 58, 286, 22),
-                    11.5, _palette.Muted);
+                var monitorText = new PixelRect(layout.MonitorRow.X, layout.MonitorRow.Y,
+                    layout.MonitorRow.Width, layout.Px(16));
+                Text(_background, MonitorDescription(snapshot.MonitorCount), monitorText, 12, _palette.Subtle);
             }
             if (snapshot.Status is { } status)
             {
-                var bounds = layout.Rect(17, layout.IsCompact ? 54 : 80, 286, layout.IsCompact ? 22 : 24);
-                Text(_background, Ellipsize(status, bounds.Width / layout.Scale, 11.5), bounds,
-                    11.5, _palette.Muted);
+                DrawStatusIcon(_background);
+                foreach (var (line, index) in StatusLines(status).Select((line, index) => (line, index)))
+                {
+                    var bounds = new PixelRect(layout.StatusText.X, layout.StatusText.Y + layout.Px(20 * index),
+                        layout.StatusText.Width, layout.Px(20));
+                    Text(_background, line, bounds, 12, _palette.RedText);
+                }
             }
 
             _rows = snapshot.Items.Select((item, index) =>
             {
                 var row = layout.Rows[index];
                 var frame = OverlayPainter.Create(row.Width, row.Height);
-                var color = item.Enabled ? _palette.Text : _palette.Muted with { Alpha = 128 };
-                var available = Math.Max(0, row.Width / layout.Scale - 44);
-                var label = Ellipsize(item.Name, available, 13);
-                Text(frame, label, new(row.X + layout.Px(34), row.Y, layout.Px(available), row.Height),
-                    13, color, origin: row);
+                var iconBounds = layout.ItemIcon(index);
+                var iconColor = item.Command == TrayMenuCommand.Update ? _palette.BlueText : _palette.Muted;
+                var icon = TrayMenuIcons.Create(item.Command, iconBounds.Width, iconColor);
+                OverlayPainter.Composite(frame, icon, iconBounds.X - row.X, iconBounds.Y - row.Y);
+                var color = item.Enabled ? _palette.Text : _palette.Subtle;
+                var bounds = layout.ItemLabel(index);
+                var label = Ellipsize(item.Name, bounds.Width / layout.Scale, 14);
+                Text(frame, label, bounds, 14, color, origin: row);
                 return frame;
             }).ToArray();
         }
@@ -93,7 +97,7 @@ internal sealed class TrayMenuRenderer : IDisposable
         DrawToggle(result, position, fill, stretch);
         if (selected == 0 && keyboard)
         {
-            OverlayPainter.StrokeRounded(result, Local(layout.Toggle), _palette.BlueText, 4, 1, layout.Scale);
+            OverlayPainter.StrokeRounded(result, Local(layout.Toggle), _palette.BlueText, 4, 2, layout.Scale);
         }
 
         var destination = Local(layout.ItemsViewport);
@@ -113,7 +117,7 @@ internal sealed class TrayMenuRenderer : IDisposable
         var items = OverlayPainter.Create(viewport.Width, viewport.Height);
         PixelRect InViewport(PixelRect rect) =>
             new(rect.X - viewport.X, rect.Y - viewport.Y, rect.Width, rect.Height);
-        OverlayPainter.Fill(items, InViewport(layout.Separators[2]), _palette.Border);
+        OverlayPainter.Fill(items, InViewport(layout.Separators[1]), _palette.Border);
         if (selected > 0)
         {
             OverlayPainter.FillRounded(items, InViewport(layout.Rows[selected - 1]),
@@ -123,7 +127,7 @@ internal sealed class TrayMenuRenderer : IDisposable
         if (selected > 0 && keyboard)
         {
             OverlayPainter.StrokeRounded(items, InViewport(layout.Rows[selected - 1]),
-                _palette.BlueText, 4, 1, layout.Scale);
+                _palette.BlueText, 4, 2, layout.Scale);
         }
 
         for (var index = 0; index < _rows.Length; index++)
@@ -148,7 +152,7 @@ internal sealed class TrayMenuRenderer : IDisposable
         var thumb = Local(layout.ThumbBounds(position, stretch));
         OverlayPainter.FillRounded(frame, thumb, _palette.Muted, 6, layout.Scale);
         var onColor = _snapshot.Theme == OverlayTheme.Dark
-            ? new OverlayColor(17, 17, 17, 255) : new(255, 255, 255, 255);
+            ? new OverlayColor(22, 22, 22, 255) : new(255, 255, 255, 255);
         OverlayPainter.FillRounded(frame, thumb, Opacity(onColor, fill), 6, layout.Scale);
     }
 
@@ -184,6 +188,31 @@ internal sealed class TrayMenuRenderer : IDisposable
         }
         OverlayPainter.Composite(background, icon, bounds.X, bounds.Y,
             _snapshot.IconKind == TrayIconKind.Paused ? .38 : 1);
+    }
+
+    private void DrawStatusIcon(OverlayFrame frame)
+    {
+        var bounds = Local(_snapshot.Layout.StatusIcon);
+        var scale = _snapshot.Layout.Scale;
+        OverlayPainter.StrokeRounded(frame, bounds, _palette.RedText, 8, 1.5, scale);
+        var center = bounds.Center;
+        OverlayPainter.StrokeLine(frame, new(center.X, bounds.Y + 4 * scale),
+            new(center.X, bounds.Y + 8 * scale), 1.5 * scale, _palette.RedText);
+        OverlayPainter.FillCircle(frame, new(center.X, bounds.Y + 11.5 * scale), .75 * scale, _palette.RedText);
+    }
+
+    /// <summary>幅を実測して二行に折り返し、二行目の末尾だけを省略する。</summary>
+    internal IReadOnlyList<string> StatusLines(string status)
+    {
+        var available = _snapshot.Layout.StatusText.Width / _snapshot.Layout.Scale;
+        var first = "";
+        foreach (var rune in status.EnumerateRunes())
+        {
+            if (Measure(first + rune, 12) > available) { break; }
+            first += rune;
+        }
+        return first.Length == status.Length ? [first]
+            : [first, Ellipsize(status[first.Length..], available, 12)];
     }
 
     private PixelRect Local(PixelRect rect) => new(rect.X - _snapshot.Layout.Bounds.X,
@@ -230,19 +259,19 @@ internal sealed class TrayMenuRenderer : IDisposable
     }
 
     private void Text(OverlayFrame frame, string value, PixelRect bounds, double size, OverlayColor color,
-        bool mono = false, bool bold = false, bool center = false, PixelRect? origin = null)
+        PixelRect? origin = null)
     {
         var runs = Runs(value).ToArray();
-        var widths = runs.Select(run => _text.Measure(run.Value, size, mono || run.Japanese, bold)).ToArray();
+        var widths = runs.Select(run => _text.Measure(run.Value, size, run.Japanese)).ToArray();
         var scale = _snapshot.Layout.Scale;
-        var x = (double)bounds.X + (center ? (bounds.Width - widths.Sum() * scale) / 2 : 0);
+        var x = (double)bounds.X;
         foreach (var (run, index) in runs.Select((run, index) => (run, index)))
         {
             var left = (int)Math.Round(x);
             var width = Math.Max(0, Math.Min(bounds.Right - left, (int)Math.Ceiling(widths[index] * scale)));
             _text.Draw(frame, origin ?? _snapshot.Layout.Bounds,
                 new(run.Value, new(left, bounds.Y, width, bounds.Height), size,
-                    Mono: mono || run.Japanese, Bold: bold), color, centerFontBody: true);
+                    Mono: run.Japanese), color, centerFontBody: true);
             x += widths[index] * scale;
         }
     }
