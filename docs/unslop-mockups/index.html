@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="ja" data-variant="tobe">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Snapwell UI の案</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="kit.css">
+<style>
+.dir { display: grid; gap: 0; border: 1px solid var(--sw-line); border-radius: var(--sw-r-m); background: var(--sw-surface); }
+.dir > div { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 16px; padding: 12px 16px; border-top: 1px solid var(--sw-line); }
+.dir > div:first-child { border-top: 0; }
+.dir dt { color: var(--sw-text-3); font-size: var(--sw-fs-desc); }
+.dir dd { margin: 0; }
+.surfaces { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.surface { display: grid; gap: 8px; padding: 16px; border: 1px solid var(--sw-line); border-radius: var(--sw-r-m); background: var(--sw-surface); color: inherit; text-decoration: none; }
+.surface:hover { border-color: var(--sw-line-strong); }
+.surface strong { font-weight: var(--sw-fw-strong); display: flex; align-items: center; gap: 8px; }
+.surface p { margin: 0; color: var(--sw-text-2); font-size: var(--sw-fs-desc); line-height: var(--sw-lh-desc); }
+.compare { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.compare figure { margin: 0; display: grid; gap: 8px; min-width: 0; }
+.compare figcaption { font-size: var(--sw-fs-desc); color: var(--sw-text-2); }
+.compare iframe { width: 100%; height: 400px; border: 1px solid var(--sw-line); border-radius: var(--sw-r-m); background: var(--sw-canvas); }
+@media (max-width: 900px) { .compare { grid-template-columns: minmax(0, 1fr); } .dir > div { grid-template-columns: minmax(0, 1fr); gap: 4px; } }
+table.list { width: 100%; border-collapse: collapse; font-size: var(--sw-fs-desc); line-height: var(--sw-lh-desc); background: var(--sw-surface); border: 1px solid var(--sw-line); border-radius: var(--sw-r-m); overflow: hidden; }
+table.list th, table.list td { text-align: left; vertical-align: top; padding: 8px 12px; border-top: 1px solid var(--sw-line); }
+table.list th { font-weight: var(--sw-fw-strong); color: var(--sw-text-2); border-top: 0; background: var(--sw-raised); }
+table.list td.mono, table.list code { font-family: var(--sw-font-mono); font-size: var(--sw-fs-caption); }
+.table-scroll { overflow-x: auto; }
+.table-scroll table { min-width: 640px; }
+.dev td:first-child { width: 28px; color: var(--sw-text-3); font-variant-numeric: tabular-nums; }
+.dev tr.big td { background: var(--sw-accent-tint); }
+.dev tr.big td:nth-child(2) { font-weight: var(--sw-fw-strong); }
+.sw { display: inline-block; width: 16px; height: 16px; border-radius: var(--sw-r-s); border: 1px solid var(--sw-line-strong); vertical-align: -3px; margin-right: 8px; }
+.tok-groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; align-items: start; }
+.tok-groups h3 { margin: 0 0 8px; font-size: var(--sw-fs-body); font-weight: var(--sw-fw-strong); }
+.audit { margin: 0; padding-left: 20px; display: grid; gap: 4px; color: var(--sw-text-2); }
+.sig { display: flex; gap: 24px; align-items: center; flex-wrap: wrap; padding: 16px; border: 1px solid var(--sw-line); border-radius: var(--sw-r-m); background: var(--sw-surface); }
+.sig figure { margin: 0; display: grid; justify-items: center; gap: 8px; font-size: var(--sw-fs-caption); color: var(--sw-text-3); }
+
+/* 部品の見本（iframe の中で表示する） */
+body.sample { background: var(--sw-canvas); }
+body.sample .doc-wrap { padding: 16px; }
+.spec { display: grid; gap: 16px; }
+.spec .card { border: 1px solid var(--sw-line); border-radius: var(--sw-r-m); background: var(--sw-surface); }
+.spec .row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: center; min-height: var(--sw-row-min-h); padding: var(--sw-row-pad-y) var(--sw-row-pad-x); border-top: 1px solid var(--sw-line); }
+.spec .row:first-child { border-top: 0; }
+.spec .row b { display: block; font-weight: var(--sw-fw-regular); }
+.spec .row small { display: block; color: var(--sw-text-2); font-size: var(--sw-fs-desc); line-height: var(--sw-lh-desc); }
+.spec .line { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.spec .ptitle { font-family: var(--sw-font-display); font-size: var(--sw-fs-title); line-height: var(--sw-lh-title); letter-spacing: var(--sw-title-tracking); margin: 0; font-weight: 500; }
+.spec .gtitle { font-size: var(--sw-fs-body); font-weight: var(--sw-fw-strong); margin: 0; }
+.spec .tray { width: var(--sw-tray-w); padding: var(--sw-tray-pad); border-radius: var(--sw-r-m); border: 1px solid var(--sw-line-strong); background: var(--sw-surface); box-shadow: var(--sw-shadow-flyout); }
+.spec .tray div { height: var(--sw-tray-item-h); display: flex; align-items: center; gap: 12px; padding: 0 12px; border-radius: var(--sw-r-s); font-size: var(--sw-fs-body); }
+.spec .tray div.hover { background: var(--sw-raised); }
+:root[data-variant="asis"] .spec .tray .ico { visibility: hidden; width: 0; margin-right: -12px; }
+.spec .zone { position: relative; height: 96px; border-radius: var(--sw-r-m); background: var(--sw-desktop); overflow: hidden; }
+.spec .zone svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+</style>
+</head>
+<body>
+<main class="doc-wrap" id="doc">
+  <h1 data-ja="Snapwell の UI をそろえる案" data-en="Unifying the Snapwell UI">Snapwell の UI をそろえる案</h1>
+  <p class="doc-lead" data-ja="設定画面（WinUI 3）、トレイのメニュー（Win32 のレイヤードウィンドウ）、ランチャーとプレビュー（同じく Win32）の 3 つを、ひとつのトークンでそろえる案です。上の「案／現状」で同じ画面をいまの値と案の値で切り替えられます。機能・ページの順・用語は変えていません。" data-en="One set of tokens for the three surfaces: Settings (WinUI 3), the tray menu (Win32 layered window), and the launcher with its previews (Win32). Use To-be / As-is above to switch the same screens between current values and proposed values. Features, page order and glossary terms are unchanged."></p>
+
+  <section class="doc-section">
+    <h2 data-ja="方針（5 行）" data-en="Direction (five lines)">方針</h2>
+    <dl class="dir" id="dir"></dl>
+  </section>
+
+  <section class="doc-section">
+    <h2 data-ja="3 つの面" data-en="The three surfaces">3 つの面</h2>
+    <div class="surfaces" id="surfaces"></div>
+  </section>
+
+  <section class="doc-section">
+    <h2 data-ja="部品の見本: 現状と案を並べて" data-en="Components side by side: as-is and to-be">部品の見本</h2>
+    <p data-ja="左右は同じ HTML で、トークンの値だけが違います。配色と言語は上の切り替えに従います。" data-en="Both sides are the same HTML; only the token values differ. Theme and language follow the switches above."></p>
+    <div class="compare">
+      <figure><figcaption data-ja="現状（App.xaml・OverlayPalette・TrayMenuLayout の値）" data-en="As-is (values from App.xaml, OverlayPalette, TrayMenuLayout)"></figcaption><iframe id="fAsis" title="as-is"></iframe></figure>
+      <figure><figcaption data-ja="案" data-en="To-be"></figcaption><iframe id="fTobe" title="to-be"></iframe></figure>
+    </div>
+  </section>
+
+  <section class="doc-section">
+    <h2 data-ja="署名の細部: 投げの軌跡" data-en="Signature detail: the throw trace">署名の細部: 投げの軌跡</h2>
+    <p data-ja="ロゴにある「点線と、止まった四角」を、製品の 4 か所でだけ使います。予測の線の終点（いまは半径 4 の丸）を、角丸 2 の 8 px の四角に変えるのが唯一の新しい形です。" data-en="The logo’s dashed line ending in a stopped square appears in exactly four places. The only new shape: the prediction end point changes from a radius-4 dot to an 8 px square with radius 2."></p>
+    <div class="sig" id="sig"></div>
+  </section>
+
+  <section class="doc-section">
+    <h2 data-ja="逸脱の一覧（既存のモックアップ・寸法図・実装との違い）" data-en="Deviations (from existing mockups, dimensional drawings and the implementation)">逸脱の一覧</h2>
+    <p data-ja="色の付いた行は、見た目が大きく変わる、または判断が要るものです。実装の前に確認してください。" data-en="Tinted rows change the look noticeably or need a decision. Please confirm before implementing."></p>
+    <div class="table-scroll"><table class="list dev" id="dev"></table></div>
+  </section>
+
+  <section class="doc-section">
+    <h2 data-ja="監査で見つけたこと（現状）" data-en="Audit findings (as-is)">監査で見つけたこと</h2>
+    <ul class="audit" id="audit"></ul>
+  </section>
+
+  <section class="doc-section">
+    <h2 data-ja="共有トークン" data-en="Shared tokens">共有トークン</h2>
+    <p data-ja="値はいまの配色・案／現状のものを tokens.css から読んで表示しています。明暗の両方の値は DESIGN-SPEC.md にあります。" data-en="Values are read live from tokens.css for the current theme and variant. DESIGN-SPEC.md lists both light and dark values."></p>
+    <div class="tok-groups" id="tokens"></div>
+  </section>
+</main>
+<script src="strings.js"></script>
+<script src="kit.js"></script>
+<script>
+(function () {
+  'use strict';
+  const params = new URLSearchParams(location.search);
+  const L = (ja, en) => SW.state.lang === 'en' ? en : ja;
+
+  // ---------- 見本（iframe の中） ----------
+  if (params.get('embed') === 'sample') {
+    document.body.classList.add('sample');
+    const t = SW.t, I = SW.icon;
+    const render = () => {
+      document.getElementById('doc').innerHTML =
+        '<div class="spec">' +
+        '<p class="ptitle">' + t('General_Title.Text') + '</p>' +
+        '<p class="gtitle">' + t('General_WindowsTitle.Text') + '</p>' +
+        '<div class="card">' +
+        '<div class="row"><div><b>' + t('General_EnabledTitle.Text') + '</b><small>' + t('General_EnabledDescription.Text') + '</small></div><button data-toggle="on" aria-label="on"></button></div>' +
+        '<div class="row"><div><b>' + t('Hotkey.Command.ArrangeAllMonitors') + '</b><small class="line"><span class="tag">' + t('Hotkeys.Status.Changed') + '</span><span class="tag caution"><span class="dot"></span>' + t('Hotkeys.Status.Duplicate') + '</span><span class="kbd">Win</span><span class="kbd">Alt</span><span class="kbd">Z</span></small></div><button data-toggle="off" aria-label="off"></button></div>' +
+        '</div>' +
+        '<div class="line"><button class="btn primary">' + t('Common.Save') + '</button><button class="btn">' + t('Common.Cancel') + '</button><button class="combo">' + t('Feel_PresetName_Standard.Text') + I('chevron') + '</button></div>' +
+        '<div class="line" style="align-items:flex-start;gap:16px"><div class="tray"><div class="hover">' + I('arrange') + t('Tray.Arrange') + '</div><div>' + I('launcher') + t('Tray.Launcher') + '</div></div>' +
+        '<div class="zone" style="flex:1;min-width:160px"><svg viewBox="0 0 200 96" preserveAspectRatio="none" aria-hidden="true"><rect x="104" y="6" width="90" height="84" rx="8" fill="var(--sw-zone-fill)" stroke="var(--sw-accent)" stroke-width="1.5" stroke-dasharray="4 4"/></svg></div></div>' +
+        '</div>';
+      SW.hydrateToggles(document);
+    };
+    SW.onChange(render); SW.apply();
+    return;
+  }
+
+  SW.docBar('index.html');
+
+  const DIR = [
+    ['製品', 'Product', 'Windows 11 に常駐するウィンドウマネージャー。投げたウィンドウが、ばねと磁石で区画に吸い込まれる。一日中 PC で作業する人のための道具。', 'A resident window manager for Windows 11. Thrown windows are pulled into zones by springs and magnets. A tool for people who work at a PC all day.'],
+    ['性格', 'Character', '正確・静か・少し手触りがある。', 'Precise, quiet, with a little texture.'],
+    ['世界', 'World', '製図台と方眼紙、磁石とばね。インクの黒と、区画の青 1 色だけ。', 'A drafting table and graph paper, magnets and springs. Ink black plus one zone blue.'],
+    ['見せ場', 'Moments', '区画のプレビューと予測の線、操作感のばねの曲線、ランチャーの範囲選択。色と動きはこの 3 か所に集め、ほかの面は静かに保つ。', 'The zone preview with its prediction trace, the spring curves in Feel, and range selection in the launcher. Color and motion live there; everything else stays quiet.'],
+    ['署名', 'Signature', '投げの軌跡: 4/4 の点線が、角丸の小さな四角で止まる。ロゴ、トレイのアイコン、予測の線の終点、操作感の曲線の目標点だけに使う。', 'The throw trace: a 4/4 dashed line that stops in a small rounded square. Used only in the logo, the tray icon, the prediction end point and the Feel curve target.'],
+  ];
+
+  const SURF = [
+    ['settings.html', 'general', '設定画面と初回セットアップ', 'Settings and first-run setup', 'WinUI 3。9 ページ（全般→外観）と、ようこそ・標準のスナップ・ショートカット・グリッドの 4 段のセットアップ。保存の状態、エラー、更新の有無を切り替えられます。', 'WinUI 3. Nine pages (General to Look) and the four-step setup. Switch save state, errors and update availability.'],
+    ['tray.html', 'arrange', 'トレイのメニューと通知', 'Tray menu and notification', 'Win32 のレイヤードウィンドウ。有効・一時停止中・異常、更新あり、キーボードでの選択。更新の吹き出しは Windows が描くので見た目は変えられません。', 'Win32 layered window. Active, paused, error, update available, keyboard selection. The update balloon is drawn by Windows and cannot be styled.'],
+    ['launcher.html', 'launcher', 'ランチャーと区画のプレビュー', 'Launcher and zone preview', '区画のドラッグでの範囲選択、プリセット、ウィンドウの一覧と整列、投げたときのプレビューと予測の線。', 'Range selection by dragging cells, presets, the window list and arrangement, and the preview and prediction trace when throwing.'],
+  ];
+
+  // [逸脱, 現状, 案, 大きい変更か]
+  const DEV = [
+    ['操作のボタンの高さ', 'Action button height', '28（文字 13）', '32（文字 14）。WinUI 3 の標準のボタンの高さにそろえる', true],
+    ['角丸', 'Corner radii', 'ボタン 6、ナビ 6 と 7、カード 8、トレイ 8（寸法図は 12）、一覧 4、セットアップのカード 12、タグは丸', '操作の部品 4、面（カード・メニュー・ランチャー・プレビュー・ウィンドウ）8、トグルだけ 10 の丸', true],
+    ['状態のタグ', 'Status tags', '大文字・字間 0.05em・太字 10.5 の色付きの丸いタグ（緑・黄・赤・青）', '字間なし・通常の太さ 12 の中立のタグ。意味の色は 6 px の点だけに付ける', true],
+    ['アクセントの色', 'Accent color', '区画の青 #1F6C9F、導入の青 #2563EB（IntroPalette）、フォーカスの青の 3 種', '区画の青 1 色（ライト #1F6C9F、ダーク #8CCBF2）。導入の #2563EB をやめる', true],
+    ['区画の塗り（ライト）', 'Zone fill (light)', '不透明の #E1F3FE', '区画の青の 18% の半透明。下のウィンドウが透けて見える', true],
+    ['予測の線の終点', 'Prediction end point', '半径 4 の丸', '8 px・角丸 2 の四角（署名の細部）', true],
+    ['トレイの項目のアイコン', 'Tray item icons', 'なし（文字だけ）', '16 px の線のアイコン（ナビと同じ線の太さ 1.5）。更新の項目だけアクセント', true],
+    ['設定の背景', 'Settings background', '内容の面が白（Surface）、行の枠が線', '内容はキャンバス（#F5F5F3）、行は白いカード。Windows 11 の設定アプリと同じ重ね方', true],
+    ['ランチャーの選択範囲の描き方', 'Launcher selection drawing', 'セルごとに青で塗り、セルごとに枠（角 4）', '選んだセルをまとめて 1 つの面（角 8・区画の塗り・内側に 1.5 の枠）にし、中央に大きさの札を置く。セルは角 4 のまま。判断をお願いします', true],
+    ['入力欄と ComboBox のフォーカス', 'TextBox and ComboBox focus', 'WinUI 3 の標準の下のアクセントの線', '下の線をやめ、ほかの部品と同じ 2 px の輪だけにする', true],
+    ['ナビ', 'Navigation', '幅 232、項目の左右の余白 10、選択の印 3 × 18', '幅 240、余白 8、印 3 × 16。印はばね（m 1・f 6 Hz・ζ 1.0）で移る', false],
+    ['タイトルバー', 'Title bar', '高さ 36、左右 14', '高さ 32、左右 16（Windows 11 の標準）', false],
+    ['文字の大きさ', 'Type sizes', '10.5・11.5・12.5・13・14・26 と行の高さ 16.8・20.8・22.4・41.6', '12/16、12/20、14/20、20/28、28/36 の 5 段', false],
+    ['ページの見出し', 'Page title', '游明朝 26、字間 −0.02em', '游明朝 28/36、字間なし', false],
+    ['ようこその見出し', 'Welcome title', '「ウィンドウを投げよう。」', '「ウィンドウを投げよう」（句点を取る。見出しは句点なし）', false],
+    ['フォーカスの輪', 'Focus ring', 'BlueText 2 px の角丸 10（ナビ）、トレイは 1 px', 'どこでもアクセント 2 px、部品の外側に 2 px あけて沿う', false],
+    ['トレイのメニュー', 'Tray menu', '余白 7、見出し 51（太字 13）、モニター構成の行 38', '余白 4、見出し 56（通常の太さ 14）、モニター構成の行 28', false],
+    ['ランチャー', 'Launcher', '余白 15、上 27.2（実寸 14）、プリセット 29.2 / 間 6 / 図 18 × 12、タグ 18.8', '余白 16、間 12、プリセット 32 / 間 4 / 図 20 × 12、タグ 20', false],
+    ['ランチャーの幅と上の位置', 'Launcher width and top', 'min(560, 作業領域 − 28)、上から 14', 'min(560, 作業領域 − 32)、上から 16', false],
+    ['ランチャーのウィンドウの一覧', 'Launcher window list', '行 28', '行 32。メインはアクセントの輪と点、スタックは灰色の輪。整列のボタンは図つきで 4 等分', false],
+    ['セットアップのカード', 'Setup card', '角 12、フッターの余白 20,14、段の間 8', '角 8、フッターの余白 24,16、段の間 12', false],
+    ['行の最小の高さとグループの間', 'Row height and group gap', '行 46.4（中身で決まる）、グループの間 22、グループの題 12.5', '行 56、グループの間 24、グループの題 14', false],
+    ['キーの表示', 'Key caps', '高さ 22、下に影なし', '高さ 24、下の線を 2 px にしてキーらしく', false],
+    ['メニューとランチャーの出方', 'Menu and launcher appearance', 'すぐ出る', '透明度と 4 px の浮き上がりを、ばね（m 1・f 4.5 Hz・ζ 1.0、行き過ぎなし）で。視差を減らす設定ではすぐ出る', false],
+    ['既存モックアップのトレイのプロファイル行', 'Profile rows in the old tray mockup', 'モックアップにだけある（DESIGN §16 は 4 項目）', '再現しない。DESIGN §16 の 4 項目に従う', false],
+  ];
+
+  const AUDIT = [
+    ['青が 3 種ある（区画・導入・フォーカス）。', 'Three blues (zones, intro, focus).'],
+    ['大文字・字間つき・太字の色付きタグが 4 色ある。AI っぽい見た目のよくある印。', 'Uppercase, tracked, bold pill tags in four hues — a common generated-UI tell.'],
+    ['4 px の格子から外れた値が多い（10.5・11.5・12.5・13 の文字、22.4・20.8・16.8・41.6 の行、17.67 の余白、18.8 のタグ、27.2 と 29.2 のランチャーの高さ、51 のトレイの見出し、9 の群の間）。', 'Many off-grid values (10.5/11.5/12.5/13 type, 22.4/20.8/16.8/41.6 line heights, 17.67 padding, 18.8 tag, 27.2/29.2 launcher heights, 51 tray header, 9 group gap).'],
+    ['角丸が 4・6・7・8・12・丸と散らばっている。トレイの角丸は描画が 8、寸法図が 12 で食い違う。', 'Radii scattered across 4/6/7/8/12/pill; the tray is 8 in code but 12 in the drawing.'],
+    ['補足の文字（Muted）がダークで 4.5:1 をわずかに下回るところがある。', 'Muted text dips just under 4.5:1 in places in dark.'],
+    ['App.xaml の Default の辞書が Dark の写しで、MainWindow.xaml がナビの色を重ねて定義している。', 'App.xaml’s Default dictionary duplicates Dark; MainWindow.xaml redefines NavigationView brushes.'],
+    ['寸法の微調整（キーの文字の -2、ナビのアイコンの 2）が実測で入っている。新しい値では測り直しが要る。', 'Measured nudges (−2 on key text, 2 on nav icons) will need re-measuring with the new values.'],
+  ];
+
+  const TOKENS = [
+    ['色', 'Color', ['canvas', 'surface', 'raised', 'line', 'line-strong', 'text', 'text-2', 'text-3', 'ink', 'on-ink', 'accent', 'accent-tint', 'zone-fill', 'positive', 'caution', 'negative'], true],
+    ['文字', 'Type', ['font-ui', 'font-display', 'font-mono', 'fs-caption', 'fs-desc', 'fs-body', 'fs-subtitle', 'fs-title', 'lh-body', 'lh-title', 'fw-regular', 'fw-strong']],
+    ['形と間隔', 'Shape and spacing', ['r-s', 'r-m', 'r-pill', 's1', 's2', 's3', 's4', 's6', 's8', 'focus-w', 'focus-gap', 'icon', 'icon-stroke']],
+    ['部品', 'Components', ['control-h', 'compact-h', 'tag-h', 'kbd-h', 'toggle-w', 'toggle-h', 'knob', 'row-min-h', 'row-pad-x', 'row-pad-y', 'nav-w', 'nav-h', 'titlebar-h', 'footer-h']],
+    ['トレイとランチャー', 'Tray and launcher', ['tray-w', 'tray-pad', 'tray-header-h', 'tray-item-h', 'tray-meta-h', 'launcher-w', 'launcher-pad', 'launcher-gap', 'preset-h', 'preset-gap', 'preset-icon-w', 'list-row-h']],
+    ['動き（m・f Hz・ζ）', 'Motion (m, f Hz, ζ)', ['spring-toggle', 'spring-surface', 'spring-select']],
+  ];
+
+  function frameSrc(v) { return 'index.html?embed=sample&v=' + v + '&theme=' + (SW.state.theme === 'auto' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : SW.state.theme) + '&lang=' + SW.state.lang; }
+
+  function render() {
+    document.getElementById('dir').innerHTML = DIR.map(d => '<div><dt>' + L(d[0], d[1]) + '</dt><dd>' + L(d[2], d[3]) + '</dd></div>').join('');
+    document.getElementById('surfaces').innerHTML = SURF.map(s => '<a class="surface" href="' + s[0] + '"><strong>' + SW.icon(s[1]) + L(s[2], s[3]) + '</strong><p>' + L(s[4], s[5]) + '</p></a>').join('');
+    document.getElementById('dev').innerHTML = '<tr><th>#</th><th>' + L('項目', 'Item') + '</th><th>' + L('現状', 'As-is') + '</th><th>' + L('案', 'To-be') + '</th></tr>' +
+      DEV.map((d, i) => '<tr' + (d[4] ? ' class="big"' : '') + '><td>' + (i + 1) + '</td><td>' + L(d[0], d[1]) + '</td><td>' + d[2] + '</td><td>' + d[3] + '</td></tr>').join('');
+    document.getElementById('audit').innerHTML = AUDIT.map(a => '<li>' + L(a[0], a[1]) + '</li>').join('');
+    const cs = getComputedStyle(document.documentElement);
+    document.getElementById('tokens').innerHTML = TOKENS.map(([ja, en, names, color]) => '<div><h3>' + L(ja, en) + '</h3><table class="list">' +
+      names.map(n => { const v = cs.getPropertyValue('--sw-' + n).trim(); return '<tr><td class="mono">' + (color ? '<span class="sw" style="background:' + v + '"></span>' : '') + '--sw-' + n + '</td><td class="mono">' + v.replace(/"/g, '') + '</td></tr>'; }).join('') + '</table></div>').join('');
+    const fa = document.getElementById('fAsis'), ft = document.getElementById('fTobe');
+    if (fa.getAttribute('src') !== frameSrc('asis')) fa.src = frameSrc('asis');
+    if (ft.getAttribute('src') !== frameSrc('tobe')) ft.src = frameSrc('tobe');
+    document.getElementById('sig').innerHTML =
+      '<figure>' + SW.logo(44) + L('ロゴ', 'Logo') + '</figure>' +
+      '<figure><svg width="44" height="44" viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3" fill="none" stroke="var(--sw-ink)" stroke-width="1.5"/><rect x="8" y="3.5" width="4.5" height="4.5" rx="1" fill="var(--sw-accent)"/></svg>' + L('トレイ（16 DIP）', 'Tray (16 DIP)') + '</figure>' +
+      '<figure><svg width="160" height="44" viewBox="0 0 160 44" aria-hidden="true"><line x1="8" y1="36" x2="148" y2="10" stroke="var(--sw-accent)" stroke-width="1.5" stroke-dasharray="4 4"/><rect x="144" y="6" width="8" height="8" rx="2" fill="var(--sw-accent)"/></svg>' + L('予測の線の終点', 'Prediction end') + '</figure>' +
+      '<figure><svg width="160" height="44" viewBox="0 0 160 44" aria-hidden="true"><line x1="0" y1="10" x2="160" y2="10" stroke="var(--sw-line-strong)" stroke-dasharray="4 4"/><path d="M0 40 C30 40 40 4 70 8 S110 12 160 10" fill="none" stroke="var(--sw-accent)" stroke-width="1.5"/><rect x="150" y="6" width="8" height="8" rx="2" fill="var(--sw-accent)"/></svg>' + L('操作感の曲線の目標', 'Feel curve target') + '</figure>';
+  }
+  SW.onChange(render);
+  SW.apply();
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render);
+})();
+</script>
+</body>
+</html>
