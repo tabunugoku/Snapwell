@@ -4,11 +4,11 @@ using Microsoft.UI.Xaml.Media;
 
 namespace Snapwell.Settings.Dialogs;
 
-/// <summary>ContentDialog の下のボタンを、設定画面の操作ボタン（高さ 28・最小幅 72・案 B）にそろえる。</summary>
+/// <summary>ContentDialog の下のボタンを、設定画面の操作ボタン（高さ 32・最小幅 80）にそろえる。</summary>
 internal static class DialogButtons
 {
-    private const double ButtonHeight = 28;
-    private const double ButtonMinWidth = 72;
+    private const double ButtonHeight = 32;
+    private const double ButtonMinWidth = 80;
 
     /// <summary>
     /// 既定ボタンは状態の切り替えで AccentButtonStyle に戻され、PrimaryButtonStyle が効かない（実機で確認）。
@@ -16,32 +16,58 @@ internal static class DialogButtons
     /// </summary>
     public static void Compact(ContentDialog dialog)
     {
+        if (!dialog.Resources.MergedDictionaries.Any(dictionary =>
+            dictionary.Source?.OriginalString == "ms-appx:///Dialogs/DialogResources.xaml"))
+        {
+            dialog.Resources.MergedDictionaries.Add(new ResourceDictionary
+            {
+                Source = new Uri("ms-appx:///Dialogs/DialogResources.xaml"),
+            });
+        }
         dialog.CornerRadius = new CornerRadius(8);
+        dialog.TitleTemplate = (DataTemplate)dialog.Resources["SnapwellDialogTitleTemplate"];
+        dialog.PrimaryButtonStyle = (Style)Application.Current.Resources["SnapwellPrimaryButtonStyle"];
+        dialog.SecondaryButtonStyle = dialog.CloseButtonStyle =
+            (Style)Application.Current.Resources["SnapwellActionButtonStyle"];
         // 既定ボタンになった決定以外のボタンは、強調色の Style に戻されて文字が見えなくなる（実機で確認）。
         // 決定以外を既定にしないことで避ける（Enter で押されるのは決定ボタンだけになる）
         if (dialog.DefaultButton != ContentDialogButton.Primary) { dialog.DefaultButton = ContentDialogButton.None; }
         dialog.Opened += (_, _) =>
         {
-            // 既定のままだと下のボタンが幅いっぱいに引き伸ばされるため、右に寄せて内容の幅にする
-            if (Find(dialog, "CommandSpace") is { } commandSpace) { commandSpace.HorizontalAlignment = HorizontalAlignment.Right; }
-            var text = ThemeBrush(dialog, "SnapwellTextBrush");
-            var border = ThemeBrush(dialog, "SnapwellBorderStrongBrush");
+            // 標準テンプレートの間隔用の列を保ち、表示するボタンの列だけを等分する。
+            // 実機未確認: 日英中の長い文言と、ボタンが 1 個・2 個・3 個の配置。
+            if (Find(dialog, "CommandSpace") is Grid commandSpace)
+            {
+                commandSpace.HorizontalAlignment = HorizontalAlignment.Stretch;
+                foreach (var column in commandSpace.ColumnDefinitions) { column.Width = new GridLength(0); }
+                var buttons = commandSpace.Children.OfType<Button>()
+                    .Where(button => button.Visibility == Visibility.Visible).ToArray();
+                foreach (var button in buttons)
+                {
+                    commandSpace.ColumnDefinitions[Grid.GetColumn(button)].Width = new GridLength(1, GridUnitType.Star);
+                }
+                foreach (var button in buttons.Skip(1))
+                {
+                    commandSpace.ColumnDefinitions[Grid.GetColumn(button) - 1].Width = new GridLength(8);
+                }
+            }
             foreach (var name in new[] { "PrimaryButton", "SecondaryButton", "CloseButton" })
             {
                 if (Find(dialog, name) is not Button button) { continue; }
                 button.MinHeight = 0;
                 button.MinWidth = ButtonMinWidth;
                 button.Height = ButtonHeight;
-                button.FontSize = 13;
-                button.CornerRadius = new CornerRadius(6);
+                button.FontSize = 14;
+                button.FontFamily = (FontFamily)Application.Current.Resources["SnapwellUiFontFamily"];
+                button.FontWeight = Microsoft.UI.Text.FontWeights.Normal;
+                button.CornerRadius = new CornerRadius(4);
                 button.VerticalContentAlignment = VerticalAlignment.Center;
-                button.Padding = new Thickness(14, 0, 14, 2); // 日本語のフォントは文字が下に寄るため、下に 2px 足して中央に見せる
-                if (name == "PrimaryButton") { continue; }
-                // 決定以外は枠つきで塗らない
-                button.Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
-                button.BorderThickness = new Thickness(1);
-                if (border is not null) { button.BorderBrush = border; }
-                if (text is not null) { button.Foreground = text; }
+                button.Padding = new Thickness(12, 0, 12, 0);
+                button.UseSystemFocusVisuals = true;
+                button.FocusVisualMargin = new Thickness(-2);
+                button.FocusVisualPrimaryThickness = new Thickness(2);
+                button.FocusVisualSecondaryThickness = new Thickness(0);
+                button.FocusVisualPrimaryBrush = (Brush)Application.Current.Resources["SnapwellBlueTextBrush"];
             }
         };
     }
@@ -49,19 +75,7 @@ internal static class DialogButtons
     /// <summary>コードで作るダイアログにも、Snapwell の色（水色の強調色を使わない）を当てる。</summary>
     public static void UseSnapwellColors(ContentDialog dialog)
     {
-        dialog.Resources.MergedDictionaries.Add(new ResourceDictionary
-        {
-            Source = new Uri("ms-appx:///Dialogs/DialogResources.xaml"),
-        });
         Compact(dialog);
-    }
-
-    private static Brush? ThemeBrush(FrameworkElement element, string key)
-    {
-        var theme = element.ActualTheme == ElementTheme.Dark ? "Dark" : "Light";
-        return Application.Current.Resources.ThemeDictionaries.TryGetValue(theme, out var dictionary)
-            && dictionary is ResourceDictionary themed
-            && themed.TryGetValue(key, out var brush) ? brush as Brush : null;
     }
 
     private static FrameworkElement? Find(DependencyObject parent, string name)

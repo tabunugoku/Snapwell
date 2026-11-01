@@ -8,18 +8,16 @@
         <Style x:Key="DiagramText" TargetType="TextBlock" BasedOn="{StaticResource SnapwellHintTextStyle}">
             <Setter Property="TextWrapping" Value="Wrap" />
         </Style>
-        <Style x:Key="DiagramHeading" TargetType="TextBlock" BasedOn="{StaticResource DiagramText}">
-            <Setter Property="FontSize" Value="12" />
-            <Setter Property="FontWeight" Value="SemiBold" />
+        <Style x:Key="DiagramHeading" TargetType="TextBlock" BasedOn="{StaticResource SnapwellGroupTitleStyle}">
             <Setter Property="Foreground" Value="{ThemeResource SnapwellInkBrush}" />
-            <Setter Property="Margin" Value="0,0,0,6" />
+            <Setter Property="Margin" Value="0,0,0,8" />
         </Style>
         <Style x:Key="DiagramCard" TargetType="Border">
             <Setter Property="Background" Value="{ThemeResource SnapwellSurface2Brush}" />
             <Setter Property="BorderBrush" Value="{ThemeResource SnapwellBorderBrush}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="8" />
-            <Setter Property="Padding" Value="12,10" />
+            <Setter Property="Padding" Value="12" />
         </Style>
         <Style x:Key="DiagramAfterCard" TargetType="Border" BasedOn="{StaticResource DiagramCard}">
             <Setter Property="Background" Value="{ThemeResource SnapwellSurfaceBrush}" />
@@ -29,13 +27,13 @@
             <Setter Property="Background" Value="{ThemeResource SnapwellBackgroundBrush}" />
             <Setter Property="BorderBrush" Value="{ThemeResource SnapwellBorderStrongBrush}" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="CornerRadius" Value="8" />
         </Style>
         <Style x:Key="DiagramWindow" TargetType="Border">
             <Setter Property="Background" Value="{ThemeResource SnapwellSurface2Brush}" />
             <Setter Property="BorderBrush" Value="{ThemeResource SnapwellBorderStrongBrush}" />
             <Setter Property="BorderThickness" Value="1.5" />
-            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="CornerRadius" Value="8" />
         </Style>
         <Style x:Key="DiagramTitleBar" TargetType="Border">
             <Setter Property="Background" Value="{ThemeResource SnapwellSurfaceBrush}" />
@@ -117,11 +115,12 @@
     </UserControl.Resources>
     <StackPanel Padding="16,4,16,12">
         <Button l:Loc.Uid="OsDiagram_Disclosure" x:Name="Disclosure" Click="Disclosure_Click"
+                Style="{StaticResource SnapwellButtonStyle}"
                 HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="0,2,0,0" MinWidth="0"
                 MinHeight="0" UseSystemFocusVisuals="True">
             <Button.Template>
                 <ControlTemplate TargetType="Button">
-                    <Border Background="Transparent">
+                    <Border Background="Transparent" CornerRadius="4" Control.IsTemplateFocusTarget="True">
                         <ContentPresenter Content="{TemplateBinding Content}"
                                           Padding="{TemplateBinding Padding}" />
                     </Border>
@@ -136,7 +135,7 @@
                 <TextBlock l:Loc.Uid="OsDiagram_DisclosureText" Grid.Column="1" Style="{StaticResource DiagramText}" />
             </Grid>
         </Button>
-        <Grid x:Name="Comparison" Visibility="Collapsed" Margin="0,10,0,0" RowSpacing="12"
+        <Grid x:Name="Comparison" Visibility="Collapsed" Margin="0,12,0,0" RowSpacing="12"
               SizeChanged="Comparison_SizeChanged">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
@@ -174,7 +173,7 @@
                     </StackPanel>
                 </Border>
             </Grid>
-            <TextBlock x:Name="Reason" Grid.Row="1" FontSize="12" Style="{StaticResource DiagramText}" />
+            <TextBlock x:Name="Reason" Grid.Row="1" Style="{StaticResource DiagramText}" />
         </Grid>
     </StackPanel>
 </UserControl>

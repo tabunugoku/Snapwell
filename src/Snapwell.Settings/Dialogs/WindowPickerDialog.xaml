@@ -14,18 +14,20 @@
         <Style x:Key="PickRowStyle" TargetType="Button" BasedOn="{StaticResource SnapwellButtonStyle}">
             <Setter Property="HorizontalAlignment" Value="Stretch" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Height" Value="Auto" />
+            <Setter Property="MinHeight" Value="56" />
             <Setter Property="Padding" Value="16,12" />
             <Setter Property="BorderThickness" Value="0,0,0,1" />
             <Setter Property="BorderBrush" Value="{ThemeResource SnapwellBorderBrush}" />
             <Setter Property="Background" Value="{ThemeResource SnapwellSurfaceBrush}" />
-            <Setter Property="CornerRadius" Value="0" />
+            <Setter Property="CornerRadius" Value="4" />
         </Style>
         <Style x:Key="PickWarningStyle" TargetType="TextBlock" BasedOn="{StaticResource SnapwellHintTextStyle}">
             <Setter Property="Foreground" Value="{ThemeResource SnapwellYellowTextBrush}" />
         </Style>
         </ResourceDictionary>
     </ContentDialog.Resources>
-    <StackPanel Spacing="12" Width="440">
+    <StackPanel Spacing="12" MaxWidth="440">
         <TextBlock l:Loc.Uid="WindowPicker_Lead"
                    Style="{StaticResource SnapwellHintTextStyle}" />
         <Border Style="{StaticResource SnapwellRowsBorderStyle}">
