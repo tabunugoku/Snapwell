@@ -8,7 +8,7 @@ namespace Snapwell.Settings.Setup;
 internal sealed class IntroPalette(FrameworkElement owner)
 {
     internal bool Dark => owner.ActualTheme == ElementTheme.Dark;
-    internal Color Accent => Dark ? Color.FromArgb(255, 106, 168, 255) : Color.FromArgb(255, 37, 99, 235);
+    internal Color Accent => Dark ? Color.FromArgb(255, 140, 203, 242) : Color.FromArgb(255, 31, 108, 159);
     internal SolidColorBrush AccentBrush => Cached("accent", () => new(Accent));
     internal SolidColorBrush Background => Brush("SnapwellBackgroundBrush");
     internal SolidColorBrush Surface => Brush("SnapwellSurfaceBrush");
