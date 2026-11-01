@@ -6,49 +6,26 @@
     xmlns:controls="using:Snapwell.Settings.Controls"
     xmlns:primitives="using:Microsoft.UI.Xaml.Controls.Primitives"
     xmlns:l="using:Snapwell.Settings.Localization">
-    <Grid x:Name="Root" Loaded="Root_Loaded" Background="{ThemeResource SnapwellSurfaceBrush}">
+    <Grid x:Name="Root" Loaded="Root_Loaded" Background="{ThemeResource SnapwellBackgroundBrush}">
         <Grid.RowDefinitions>
-            <RowDefinition Height="36" />
+            <RowDefinition Height="32" />
             <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
+            <RowDefinition Height="64" />
         </Grid.RowDefinitions>
-        <Border x:Name="TitleBar" Grid.Row="0" Height="36" Padding="14,0,0,0"
-                Background="{ThemeResource SnapwellSurfaceBrush}"
+        <Border x:Name="TitleBar" Grid.Row="0" Height="32" Padding="16,0"
+                Background="{ThemeResource SnapwellBackgroundBrush}"
                 BorderBrush="{ThemeResource SnapwellBorderBrush}" BorderThickness="0,0,0,1">
             <TextBlock l:Loc.Uid="MainWindow_Title" FontFamily="{StaticResource SnapwellUiFontFamily}"
                        FontSize="12" Foreground="{ThemeResource SnapwellTextBrush}"
                        VerticalAlignment="Center" />
         </Border>
         <NavigationView x:Name="Navigation" Grid.Row="1" IsSettingsVisible="False"
-                        PaneDisplayMode="Left" IsPaneOpen="True" OpenPaneLength="232"
+                        PaneDisplayMode="Left" IsPaneOpen="True" OpenPaneLength="240"
                         IsBackButtonVisible="Collapsed" IsPaneToggleButtonVisible="False"
-                        Background="{ThemeResource SnapwellSurface2Brush}"
+                        Background="{ThemeResource SnapwellBackgroundBrush}"
                         SelectionChanged="Navigation_SelectionChanged">
             <NavigationView.Resources>
                 <ResourceDictionary>
-                    <ResourceDictionary.ThemeDictionaries>
-                        <ResourceDictionary x:Key="Light">
-                            <SolidColorBrush x:Key="NavigationViewDefaultPaneBackground" Color="#FFF9F9F8" />
-                            <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="#FFF9F9F8" />
-                            <SolidColorBrush x:Key="NavigationViewTopPaneBackground" Color="#FFF9F9F8" />
-                            <SolidColorBrush x:Key="NavigationViewContentBackground" Color="#FFFFFFFF" />
-                            <SolidColorBrush x:Key="NavigationViewContentGridBorderBrush" Color="Transparent" />
-                        </ResourceDictionary>
-                        <ResourceDictionary x:Key="Dark">
-                            <SolidColorBrush x:Key="NavigationViewDefaultPaneBackground" Color="#FF252524" />
-                            <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="#FF252524" />
-                            <SolidColorBrush x:Key="NavigationViewTopPaneBackground" Color="#FF252524" />
-                            <SolidColorBrush x:Key="NavigationViewContentBackground" Color="#FF202020" />
-                            <SolidColorBrush x:Key="NavigationViewContentGridBorderBrush" Color="Transparent" />
-                        </ResourceDictionary>
-                        <ResourceDictionary x:Key="Default">
-                            <SolidColorBrush x:Key="NavigationViewDefaultPaneBackground" Color="#FF252524" />
-                            <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="#FF252524" />
-                            <SolidColorBrush x:Key="NavigationViewTopPaneBackground" Color="#FF252524" />
-                            <SolidColorBrush x:Key="NavigationViewContentBackground" Color="#FF202020" />
-                            <SolidColorBrush x:Key="NavigationViewContentGridBorderBrush" Color="Transparent" />
-                        </ResourceDictionary>
-                    </ResourceDictionary.ThemeDictionaries>
                     <CornerRadius x:Key="NavigationViewContentGridCornerRadius">0</CornerRadius>
                     <Thickness x:Key="NavigationViewContentGridBorderThickness">0</Thickness>
                     <Thickness x:Key="NavigationViewContentMargin">0</Thickness>
@@ -61,39 +38,36 @@
                         <Setter Property="Template">
                             <Setter.Value>
                                 <ControlTemplate TargetType="primitives:NavigationViewItemPresenter">
-                                    <Grid x:Name="LayoutRoot" Margin="10,0" MinHeight="36" CornerRadius="6"
+                                    <Grid x:Name="LayoutRoot" Margin="8,0" MinHeight="36" CornerRadius="4"
                                           Background="Transparent">
                                         <VisualStateManager.VisualStateGroups>
                                             <VisualStateGroup x:Name="PointerStates">
                                                 <VisualState x:Name="Normal" />
                                                 <VisualState x:Name="PointerOver">
                                                     <VisualState.Setters>
-                                                        <Setter Target="LayoutRoot.Background" Value="{ThemeResource SnapwellSurfaceBrush}" />
+                                                        <Setter Target="LayoutRoot.Background" Value="{ThemeResource SnapwellSurface2Brush}" />
                                                     </VisualState.Setters>
                                                 </VisualState>
                                                 <VisualState x:Name="Pressed">
                                                     <VisualState.Setters>
-                                                        <Setter Target="LayoutRoot.Background" Value="{ThemeResource SnapwellSurfaceBrush}" />
+                                                        <Setter Target="LayoutRoot.Background" Value="{ThemeResource SnapwellSurface2Brush}" />
                                                     </VisualState.Setters>
                                                 </VisualState>
                                                 <VisualState x:Name="Selected">
                                                     <VisualState.Setters>
-                                                        <Setter Target="LayoutRoot.Background" Value="{ThemeResource SnapwellSurfaceBrush}" />
-                                                        <Setter Target="SelectedOutline.BorderBrush" Value="{ThemeResource SnapwellBorderBrush}" />
+                                                        <Setter Target="LayoutRoot.Background" Value="{ThemeResource SnapwellSurface2Brush}" />
                                                         <Setter Target="SelectedIndicator.Opacity" Value="1" />
                                                     </VisualState.Setters>
                                                 </VisualState>
                                                 <VisualState x:Name="PointerOverSelected">
                                                     <VisualState.Setters>
-                                                        <Setter Target="LayoutRoot.Background" Value="{ThemeResource SnapwellSurfaceBrush}" />
-                                                        <Setter Target="SelectedOutline.BorderBrush" Value="{ThemeResource SnapwellBorderBrush}" />
+                                                        <Setter Target="LayoutRoot.Background" Value="{ThemeResource SnapwellSurface2Brush}" />
                                                         <Setter Target="SelectedIndicator.Opacity" Value="1" />
                                                     </VisualState.Setters>
                                                 </VisualState>
                                                 <VisualState x:Name="PressedSelected">
                                                     <VisualState.Setters>
-                                                        <Setter Target="LayoutRoot.Background" Value="{ThemeResource SnapwellSurfaceBrush}" />
-                                                        <Setter Target="SelectedOutline.BorderBrush" Value="{ThemeResource SnapwellBorderBrush}" />
+                                                        <Setter Target="LayoutRoot.Background" Value="{ThemeResource SnapwellSurface2Brush}" />
                                                         <Setter Target="SelectedIndicator.Opacity" Value="1" />
                                                     </VisualState.Setters>
                                                 </VisualState>
@@ -107,18 +81,11 @@
                                                 </VisualState>
                                             </VisualStateGroup>
                                         </VisualStateManager.VisualStateGroups>
-                                        <!-- box-shadow はレイアウト寸法を増やさず、面の外側に広がる。 -->
-                                        <Border x:Name="SelectedOutline" Margin="-1" CornerRadius="7"
-                                                BorderThickness="1" BorderBrush="Transparent" IsHitTestVisible="False" />
                                         <Grid x:Name="PresenterContentRootGrid">
-                                            <!-- 項目 B より前の標準テンプレートの列幅と余白を保つ。 -->
-                                            <Grid x:Name="ContentGrid" MinHeight="36" Margin="0,0,14,0">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="8" />
-                                                    <ColumnDefinition Width="*" />
-                                                </Grid.ColumnDefinitions>
-                                                <ContentPresenter x:Name="ContentPresenter" Grid.Column="1"
-                                                                  Margin="4,-1,8,-1" Padding="{TemplateBinding Padding}"
+                                            <!-- アイコンの左を 16 DIP、内容の右を 12 DIP 空ける。 -->
+                                            <Grid x:Name="ContentGrid" MinHeight="36" Margin="16,0,12,0">
+                                                <ContentPresenter x:Name="ContentPresenter"
+                                                                  Padding="{TemplateBinding Padding}"
                                                                   Content="{TemplateBinding Content}"
                                                                   ContentTemplate="{TemplateBinding ContentTemplate}"
                                                                   ContentTemplateSelector="{TemplateBinding ContentTemplateSelector}"
@@ -129,8 +96,8 @@
                                                                   AutomationProperties.AccessibilityView="Raw" />
                                             </Grid>
                                             <!-- SelectionIndicator という名前は標準の移動・拡縮処理が使うため避ける。 -->
-                                            <Rectangle x:Name="SelectedIndicator" Width="3" Margin="0,9"
-                                                       HorizontalAlignment="Left" VerticalAlignment="Stretch"
+                                            <Rectangle x:Name="SelectedIndicator" Width="3" Height="16" Margin="0,10,0,0"
+                                                       HorizontalAlignment="Left" VerticalAlignment="Top"
                                                        Fill="{ThemeResource SnapwellInkBrush}" IsHitTestVisible="False"
                                                        Opacity="0" RadiusX="2" RadiusY="2" />
                                         </Grid>
@@ -149,6 +116,7 @@
                     <Setter Property="FontFamily" Value="{StaticResource SnapwellUiFontFamily}" />
                     <Setter Property="FontSize" Value="14" />
                     <Setter Property="MinHeight" Value="36" />
+                    <Setter Property="Margin" Value="0,0,0,2" />
                     <Setter Property="UseSystemFocusVisuals" Value="False" />
                     <Setter Property="FocusVisualPrimaryBrush" Value="Transparent" />
                     <Setter Property="FocusVisualSecondaryBrush" Value="Transparent" />
@@ -168,7 +136,7 @@
                                         IsTabStop="False" />
                                     <!-- 行の外側に 2 DIP 空けて 2 DIP の枠を描き、寸法には加えない。 -->
                                     <Border x:Name="KeyboardFocusOutline"
-                                            Margin="6,-4,6,-4" BorderThickness="2" CornerRadius="10"
+                                            Margin="4,-4,4,-4" BorderThickness="2" CornerRadius="6"
                                             BorderBrush="{ThemeResource SnapwellBlueTextBrush}" IsHitTestVisible="False"
                                             Visibility="Collapsed" />
                                 </Grid>
@@ -179,71 +147,69 @@
             </NavigationView.MenuItemContainerStyle>
             <NavigationView.MenuItems>
                 <controls:NavigationItem Tag="general" l:Loc.Uid="Nav_General">
-                    <StackPanel Orientation="Horizontal" Spacing="10">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
                         <Path Style="{StaticResource SnapwellNavIconPathStyle}"
                               Data="M8 5.5 A2.5 2.5 0 1 1 8 10.5 A2.5 2.5 0 1 1 8 5.5 Z M8 1.5 v2 M8 12.5 v2 M1.5 8 h2 M12.5 8 h2 M3.4 3.4 l1.4 1.4 M11.2 11.2 l1.4 1.4 M3.4 12.6 l1.4 -1.4 M11.2 4.8 l1.4 -1.4" />
                         <TextBlock VerticalAlignment="Center" />
                     </StackPanel>
                 </controls:NavigationItem>
                 <controls:NavigationItem Tag="grid" l:Loc.Uid="Nav_Grid">
-                    <StackPanel Orientation="Horizontal" Spacing="10">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
                         <Path Style="{StaticResource SnapwellNavIconPathStyle}"
                               Data="M3 2.5 H13 A1.5 1.5 0 0 1 14.5 4 V12 A1.5 1.5 0 0 1 13 13.5 H3 A1.5 1.5 0 0 1 1.5 12 V4 A1.5 1.5 0 0 1 3 2.5 Z M6 2.5 v11 M10 2.5 v11 M1.5 8 h13" />
                         <TextBlock VerticalAlignment="Center" />
                     </StackPanel>
                 </controls:NavigationItem>
                 <controls:NavigationItem Tag="hotkeys" l:Loc.Uid="Nav_Hotkeys">
-                    <StackPanel Orientation="Horizontal" Spacing="10">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
                         <Path Style="{StaticResource SnapwellNavIconPathStyle}"
                               Data="M3 4 H13 A1.5 1.5 0 0 1 14.5 5.5 V10.5 A1.5 1.5 0 0 1 13 12 H3 A1.5 1.5 0 0 1 1.5 10.5 V5.5 A1.5 1.5 0 0 1 3 4 Z M4 7 h1 M7 7 h2 M11 7 h1 M5 9.5 h6" />
                         <TextBlock VerticalAlignment="Center" />
                     </StackPanel>
                 </controls:NavigationItem>
                 <controls:NavigationItem Tag="feel" l:Loc.Uid="Nav_Feel">
-                    <StackPanel Orientation="Horizontal" Spacing="10">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
                         <Path Style="{StaticResource SnapwellNavIconPathStyle}"
                               Data="M1.5 12 c2 0 3 -8 5 -8 s2.5 6 4 6 s1.5 -3 4 -3" />
                         <TextBlock VerticalAlignment="Center" />
                     </StackPanel>
                 </controls:NavigationItem>
                 <controls:NavigationItem Tag="rules" l:Loc.Uid="Nav_Rules">
-                    <StackPanel Orientation="Horizontal" Spacing="10">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
                         <Path Style="{StaticResource SnapwellNavIconPathStyle}"
                               Data="M2.5 3.5 h11 M2.5 8 h11 M2.5 12.5 h7" />
                         <TextBlock VerticalAlignment="Center" />
                     </StackPanel>
                 </controls:NavigationItem>
                 <controls:NavigationItem Tag="os" l:Loc.Uid="Nav_Os">
-                    <StackPanel Orientation="Horizontal" Spacing="10">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
                         <Path Style="{StaticResource SnapwellNavIconPathStyle}"
                               Data="M2.5 1.5 H6 A1 1 0 0 1 7 2.5 V6 A1 1 0 0 1 6 7 H2.5 A1 1 0 0 1 1.5 6 V2.5 A1 1 0 0 1 2.5 1.5 Z M10 1.5 H13.5 A1 1 0 0 1 14.5 2.5 V6 A1 1 0 0 1 13.5 7 H10 A1 1 0 0 1 9 6 V2.5 A1 1 0 0 1 10 1.5 Z M2.5 9 H6 A1 1 0 0 1 7 10 V13.5 A1 1 0 0 1 6 14.5 H2.5 A1 1 0 0 1 1.5 13.5 V10 A1 1 0 0 1 2.5 9 Z M10 9 H13.5 A1 1 0 0 1 14.5 10 V13.5 A1 1 0 0 1 13.5 14.5 H10 A1 1 0 0 1 9 13.5 V10 A1 1 0 0 1 10 9 Z" />
                         <TextBlock VerticalAlignment="Center" />
                     </StackPanel>
                 </controls:NavigationItem>
                 <controls:NavigationItem Tag="backup" l:Loc.Uid="Nav_Backup">
-                    <StackPanel Orientation="Horizontal" Spacing="10">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
                         <Path Style="{StaticResource SnapwellNavIconPathStyle}"
                               Data="M13 6.5 A5 5 0 0 0 3.6 4.4 M3 9.5 a5 5 0 0 0 9.4 2.1 M13.5 2.5 v4 h-4 M2.5 13.5 v-4 h4" />
                         <TextBlock VerticalAlignment="Center" />
                     </StackPanel>
                 </controls:NavigationItem>
                 <controls:NavigationItem Tag="launcher" l:Loc.Uid="Nav_Launcher">
-                    <StackPanel Orientation="Horizontal" Spacing="10">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
                         <Path Style="{StaticResource SnapwellNavIconPathStyle}" Data="M2 3 H14 V13 H2 Z M2 6 H14 M6 6 V13" />
                         <TextBlock VerticalAlignment="Center" />
                     </StackPanel>
                 </controls:NavigationItem>
                 <controls:NavigationItem Tag="look" l:Loc.Uid="Nav_Look">
-                    <StackPanel Orientation="Horizontal" Spacing="10">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
                         <Path Style="{StaticResource SnapwellNavIconPathStyle}"
                               Data="M1.5 13.5 v-6 a6 6 0 0 1 6 -6 h6 M5 13.5 v-6 a2.5 2.5 0 0 1 2.5 -2.5 h6" />
                         <TextBlock VerticalAlignment="Center" />
                     </StackPanel>
                 </controls:NavigationItem>
             </NavigationView.MenuItems>
-            <Grid Background="{ThemeResource SnapwellSurfaceBrush}"
-                  BorderBrush="{ThemeResource SnapwellBorderBrush}"
-                  BorderThickness="1,0,0,0">
+            <Grid Background="{ThemeResource SnapwellBackgroundBrush}">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
@@ -256,8 +222,8 @@
                                 VerticalContentAlignment="Stretch" IsTabStop="True" />
             </Grid>
         </NavigationView>
-        <Grid Grid.Row="2" Padding="32,17.67" ColumnSpacing="16"
-              Background="{ThemeResource SnapwellSurfaceBrush}"
+        <Grid Grid.Row="2" Height="64" Padding="32,0" ColumnSpacing="16"
+              Background="{ThemeResource SnapwellBackgroundBrush}"
               BorderBrush="{ThemeResource SnapwellBorderBrush}" BorderThickness="0,1,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
