@@ -266,6 +266,7 @@ public sealed class GdiOverlayTextTests
                 LauncherTextKind.Muted => palette.Muted,
                 LauncherTextKind.Ink => palette.Ink,
                 LauncherTextKind.Blue => palette.BlueText,
+                LauncherTextKind.Disabled => palette.Subtle,
                 _ => palette.Text,
             });
         foreach (var cursor in new ZoneCell[] { new(0, 0), new(1, 2), new(7, 7), new(0, 0) })

@@ -75,13 +75,28 @@ public sealed class OverlayPainterTests
     public void PaletteMatchesMockupTokens(OverlayTheme theme)
     {
         var expected = theme == OverlayTheme.Light
-            ? new OverlayColor[] { new(247, 246, 243, 140), new(255, 255, 255, 140), new(0, 0, 0, 20),
-                new(225, 243, 254, 255), new(31, 108, 159, 140), new(31, 108, 159, 255) }
-            : new OverlayColor[] { new(25, 25, 24, 128), new(255, 255, 255, 13), new(255, 255, 255, 23),
-                new(31, 108, 159, 71), new(140, 203, 242, 153), new(140, 203, 242, 255) };
+            ? new OverlayColor[] { new(245, 245, 243, 140), new(255, 255, 255, 128), new(28, 28, 27, 26),
+                new(31, 108, 159, 46), new(31, 108, 159, 153), new(31, 108, 159, 255) }
+            : new OverlayColor[] { new(26, 26, 25, 128), new(255, 255, 255, 13), new(255, 255, 255, 26),
+                new(140, 203, 242, 41), new(140, 203, 242, 166), new(140, 203, 242, 255) };
         var palette = OverlayPalette.For(theme);
         Assert.Equal(expected, new[] { palette.Dim, palette.Cell, palette.CellBorder,
             palette.BlueBackground, palette.BlueLine, palette.BlueText });
+    }
+
+    /// <summary>状態の点と薄いアクセントも、明暗の仕様値にそろえる。</summary>
+    [Theory]
+    [InlineData(OverlayTheme.Light)]
+    [InlineData(OverlayTheme.Dark)]
+    public void SemanticPaletteMatchesDesignTokens(OverlayTheme theme)
+    {
+        var palette = OverlayPalette.For(theme);
+        var expected = theme == OverlayTheme.Light
+            ? new OverlayColor[] { new(47, 122, 62, 255), new(138, 90, 0, 255), new(180, 35, 24, 255),
+                new(31, 108, 159, 31) }
+            : new OverlayColor[] { new(124, 196, 138, 255), new(224, 182, 90, 255), new(242, 147, 140, 255),
+                new(140, 203, 242, 36) };
+        Assert.Equal(expected, new[] { palette.GreenText, palette.YellowText, palette.RedText, palette.AccentTint });
     }
 
     /// <summary>プレビューの内側は塗り色、点線は塗りの上への source-over になる。</summary>
@@ -94,7 +109,8 @@ public sealed class OverlayPainterTests
         var frame = OverlayPainter.Preview(new(-100, -80, 140, 140), new(-90, -70, 100, 100), theme, 2);
         Assert.Equal(Composite(palette.BlueBackground), Pixel(frame, 60, 60));
         Assert.Equal(Composite(palette.BlueLine, Composite(palette.BlueBackground)), Pixel(frame, 30, 10));
-        Assert.Equal(Composite(palette.BlueBackground), Pixel(frame, 42, 10));
+        Assert.Equal(Composite(palette.BlueBackground), Pixel(frame, 38, 10));
+        Assert.Equal(Pixel(frame, 30, 10), Pixel(frame, 46, 10));
         Assert.True(Pixel(frame, 30, 9)[3] > 0);
         Assert.Equal(new byte[4], Pixel(frame, 10, 10));
     }
@@ -133,32 +149,74 @@ public sealed class OverlayPainterTests
         }
     }
 
-    /// <summary>選択区画だけ配色を変え、隙間は dim、カーソルだけは内側の青い枠になる。</summary>
+    /// <summary>選択範囲は隙間も含む一枚の面になり、カーソルの輪を最後に重ねる。</summary>
     [Theory]
-    [InlineData(OverlayTheme.Light, 1.0)]
+    [InlineData(OverlayTheme.Light, 1)]
     [InlineData(OverlayTheme.Dark, 1.5)]
-    [InlineData(OverlayTheme.Dark, 2.0)]
-    public void LauncherPaintsIndividualCellsAndOnlyCursorHasInsetRing(OverlayTheme theme, double scale)
+    [InlineData(OverlayTheme.Light, 2)]
+    [InlineData(OverlayTheme.Dark, 2.5)]
+    public void LauncherSelectionFillsBoundingRectangleIncludingCellGaps(OverlayTheme theme, double scale)
     {
-        var selection = new ZoneSelection(new(-200, -100, 200, 100), new(3, 1), new(8, 8))
-            .Select(new(0, 0), new(1, 0));
+        var area = new PixelRect(-400, -300, 400, 300);
+        var selection = new ZoneSelection(area, new(3, 3), new(8, 8)).Select(new(0, 0), new(1, 1));
         var frame = OverlayPainter.Launcher(selection, theme, scale);
         var palette = OverlayPalette.For(theme);
-        var dim = Composite(palette.Dim);
-        for (var column = 0; column < 3; column++)
+        var background = Composite(palette.BlueBackground, Composite(palette.Dim));
+        var first = selection.Grid.CellRect(0, 0);
+        var cursor = selection.Grid.CellRect(1, 1);
+        Assert.Equal(background, Pixel(frame, first.Right - area.X + 2, first.Bottom - area.Y + 2));
+        Assert.Equal(background, Pixel(frame, (int)first.Center.X - area.X, (int)first.Center.Y - area.Y));
+        Assert.Equal(background, Pixel(frame, cursor.X - area.X - 2, (int)cursor.Center.Y - area.Y));
+        Assert.Equal(Composite(palette.BlueText), Pixel(frame,
+            cursor.X - area.X + (int)Math.Ceiling(scale), (int)cursor.Center.Y - area.Y));
+        Assert.Equal(Composite(palette.Cell, Composite(palette.Dim)), Pixel(frame,
+            (int)selection.Grid.CellRect(2, 2).Center.X - area.X,
+            (int)selection.Grid.CellRect(2, 2).Center.Y - area.Y));
+    }
+
+    /// <summary>一セル・全セル・逆向きの選択でも外接矩形の塗りと内側の枠を使う。</summary>
+    [Theory]
+    [InlineData(0, 0, 0, 0)]
+    [InlineData(0, 0, 2, 2)]
+    [InlineData(2, 2, 0, 0)]
+    public void SelectionUsesSingleRoundedSurfaceForEveryDragDirection(int x0, int y0, int x1, int y1)
+    {
+        var area = new PixelRect(-400, -300, 400, 300);
+        var selection = new ZoneSelection(area, new(3, 3), new(8, 8)).Select(new(x0, y0), new(x1, y1));
+        var palette = OverlayPalette.For(OverlayTheme.Light);
+        var actual = OverlayPainter.Launcher(selection);
+        var bounds = selection.Bounds;
+        var x = (int)bounds.Center.X - area.X;
+        Assert.Equal(Composite(palette.BlueText), Pixel(actual, x, bounds.Y - area.Y));
+        var withoutLines = OverlayPainter.Launcher(selection, showZoneLines: false);
+        Assert.Equal(Composite(palette.BlueBackground, Composite(palette.Dim)),
+            Pixel(withoutLines, x, bounds.Y - area.Y + 4));
+    }
+
+    /// <summary>予測の終点は半径四の円ではなく、八 DIP 四方・角二の四角になる。</summary>
+    [Theory]
+    [InlineData(1)]
+    [InlineData(1.5)]
+    [InlineData(2)]
+    [InlineData(2.5)]
+    public void PredictionEndpointIsCenteredEightDipRoundedSquare(double scale)
+    {
+        var area = new PixelRect(-100, -80, 160, 160);
+        var end = new Vec2(-20, 0);
+        var actual = OverlayPainter.Preview(area, new(30, 30, 20, 20), scale: scale,
+            showZoneLines: false, origin: end, prediction: end);
+        var expected = OverlayPainter.Create(160, 160);
+        var half = (int)(4 * scale);
+        OverlayPainter.FillRounded(expected, new(80 - half, 80 - half, 2 * half, 2 * half),
+            OverlayPalette.For(OverlayTheme.Light).BlueText, 2, scale);
+        for (var y = 80 - half - 1; y <= 80 + half; y++)
         {
-            var rect = selection.Grid.CellRect(column, 0);
-            var x = rect.X - selection.WorkArea.X;
-            var middle = rect.Y - selection.WorkArea.Y + rect.Height / 2;
-            var background = Composite(column < 2 ? palette.BlueBackground : palette.Cell, dim);
-            Assert.Equal(background, Pixel(frame, x + rect.Width / 2, middle));
-            Assert.Equal(Composite(column < 2 ? palette.BlueLine : palette.CellBorder, background),
-                Pixel(frame, x, middle));
-            var inset = (int)Math.Ceiling(scale);
-            Assert.Equal(column == 1 ? Composite(palette.BlueText, background) : background,
-                Pixel(frame, x + inset, middle));
-            Assert.Equal(dim, Pixel(frame, x + rect.Width + 2, middle));
+            for (var x = 80 - half - 1; x <= 80 + half; x++)
+            {
+                Assert.Equal(Pixel(expected, x, y), Pixel(actual, x, y));
+            }
         }
+        Assert.Equal(255, Pixel(actual, 80 - half + (int)scale, 80 - half + (int)scale)[3]);
     }
 
     /// <summary>枠は DPI に応じて太くなり、縮小でも少なくとも一画素を保つ。</summary>
@@ -197,11 +255,12 @@ public sealed class OverlayPainterTests
             var expectedColor = Composite(OverlayPalette.For(theme).Text);
             foreach (var layer in new[] { new LauncherPanelLayer(area, frame), panel })
             {
-                // 文字の描画を省いた面では、Text 色の画素は矢印だけになる。
+                // ink と Text が同じ色なので、分割案の中だけで矢印を調べる。
                 var pixels = Enumerable.Range(0, layer.Frame.Width * layer.Frame.Height)
                     .Where(index => layer.Frame.Pixels.AsSpan(index * 4, 4).SequenceEqual(expectedColor))
                     .Select(index => (X: layer.Bounds.X + index % layer.Frame.Width,
-                        Y: layer.Bounds.Y + index / layer.Frame.Width)).ToArray();
+                        Y: layer.Bounds.Y + index / layer.Frame.Width))
+                    .Where(point => layout.Plan.Contains(new Vec2(point.X, point.Y))).ToArray();
                 Assert.NotEmpty(pixels);
                 Assert.All(pixels, point => Assert.True(layout.Plan.Contains(new Vec2(point.X, point.Y))));
                 var rows = pixels.GroupBy(point => point.Y).OrderBy(row => row.Key).ToArray();

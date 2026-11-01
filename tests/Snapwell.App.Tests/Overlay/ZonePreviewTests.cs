@@ -100,6 +100,21 @@ public sealed class ZonePreviewTests
         Assert.Equal(1, presenter.Hides);
     }
 
+    /// <summary>表示要求の描画でも、半透明の青を乗算済みの画素で保持する。</summary>
+    [Theory]
+    [InlineData(OverlayTheme.Light, 29, 19, 6, 46)]
+    [InlineData(OverlayTheme.Dark, 39, 33, 23, 41)]
+    public void QueuedPreviewUsesTranslucentZoneFill(OverlayTheme theme, byte blue, byte green, byte red, byte alpha)
+    {
+        var presenter = new RecordingPresenter();
+        var preview = new ZonePreview(presenter, new FakeMonitors(), theme: () => theme,
+            settings: () => new() { ShowZoneLines = false, ShowPredictionLine = false });
+        preview.Show(new(300, 300, 400, 300));
+        var frame = Assert.Single(presenter.Requests).Paint();
+        Assert.Equal(new[] { blue, green, red, alpha },
+            frame.Pixels.AsSpan((400 * frame.Width + 400) * 4, 4).ToArray());
+    }
+
     private sealed class Fixture
     {
         internal PortableSettings Options { get; set; } = new();

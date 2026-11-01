@@ -9,9 +9,9 @@ public sealed class LauncherMeasuredLayoutTests
 {
     /// <summary>描画解像度によらず、偽の元サイズ測定でパネルと小さい文字の寸法を固定する。</summary>
     [Theory]
-    [InlineData(1, 580, -66, 560, 186, 595, -49, 44, 19, 59, 530, 48, 27, 22)]
-    [InlineData(1.5, 440, -59, 840, 278, 462, -33, 65, 28, 128, 795, 72, 41, 33)]
-    [InlineData(2, 300, -52, 1120, 371, 330, -18, 86, 38, 197, 1060, 96, 54, 44)]
+    [InlineData(1, 580, -64, 560, 204, 596, -42, 38, 20, 76, 528, 48, 21, 20)]
+    [InlineData(1.5, 440, -56, 840, 306, 464, -23, 57, 30, 154, 792, 72, 32, 30)]
+    [InlineData(2, 300, -48, 1120, 408, 332, -4, 75, 40, 232, 1056, 96, 42, 40)]
     public void OriginalMeasurementKeepsLayoutDimensions(double scale, int panelX, int panelY,
         int panelWidth, int panelHeight, int textX, int tagY, int tagWidth, int tagHeight,
         int keysY, int keysWidth, int keysHeight, int keyWidth, int keyHeight)
@@ -21,7 +21,7 @@ public sealed class LauncherMeasuredLayoutTests
         Assert.Equal(new(panelX, panelY, panelWidth, panelHeight), layout.Panel);
         Assert.Equal(new(textX, tagY, tagWidth, tagHeight), layout.Tag);
         Assert.Equal(new(textX, keysY, keysWidth, keysHeight), layout.KeysBounds);
-        Assert.Equal(new(textX, keysY, keyWidth, keyHeight), layout.Keys[0]);
+        Assert.Equal(new(textX, keysY + (int)(2 * scale), keyWidth, keyHeight), layout.Keys[0]);
     }
 
     /// <summary>日本語を含む全ラベルが一画素も欠けずに自分の矩形へ収まる。</summary>

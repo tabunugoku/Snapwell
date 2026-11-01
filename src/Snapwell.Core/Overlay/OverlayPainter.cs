@@ -42,35 +42,42 @@ public sealed record OverlayPalette(OverlayColor Dim, OverlayColor Cell, Overlay
     OverlayColor Surface, OverlayColor Surface2, OverlayColor Border, OverlayColor BorderStrong,
     OverlayColor Text, OverlayColor Muted, OverlayColor Ink)
 {
-    private static readonly OverlayPalette _light = new(new(247, 246, 243, 140), new(255, 255, 255, 140),
-        new(0, 0, 0, 20), new(225, 243, 254, 255), new(31, 108, 159, 140), new(31, 108, 159, 255),
-        new(255, 255, 255, 255), new(249, 249, 248, 255), new(234, 234, 234, 255), new(218, 218, 215, 255),
-        new(47, 52, 55, 255), new(120, 119, 116, 255), new(17, 17, 17, 255));
-    private static readonly OverlayPalette _dark = new(new(25, 25, 24, 128), new(255, 255, 255, 13),
-        new(255, 255, 255, 23), new(31, 108, 159, 71), new(140, 203, 242, 153), new(140, 203, 242, 255),
-        new(32, 32, 32, 255), new(37, 37, 36, 255), new(255, 255, 255, 20), new(255, 255, 255, 36),
-        new(230, 230, 227, 255), new(155, 154, 151, 255), new(242, 242, 240, 255))
+    private static readonly OverlayPalette _light = new(new(245, 245, 243, 140), new(255, 255, 255, 128),
+        new(28, 28, 27, 26), new(31, 108, 159, 46), new(31, 108, 159, 153), new(31, 108, 159, 255),
+        new(255, 255, 255, 255), new(239, 239, 237, 255), new(28, 28, 27, 23), new(28, 28, 27, 46),
+        new(28, 28, 27, 255), new(82, 82, 79, 255), new(28, 28, 27, 255));
+    private static readonly OverlayPalette _dark = new(new(26, 26, 25, 128), new(255, 255, 255, 13),
+        new(255, 255, 255, 26), new(140, 203, 242, 41), new(140, 203, 242, 166), new(140, 203, 242, 255),
+        new(34, 34, 33, 255), new(44, 44, 43, 255), new(255, 255, 255, 20), new(255, 255, 255, 38),
+        new(237, 237, 235, 255), new(180, 180, 176, 255), new(237, 237, 235, 255))
     {
+        Subtle = new(146, 146, 142, 255),
+        AccentTint = new(140, 203, 242, 36),
         GreenBackground = new(52, 101, 56, 77),
-        GreenText = new(166, 209, 169, 255),
+        GreenText = new(124, 196, 138, 255),
         YellowBackground = new(149, 100, 0, 71),
-        YellowText = new(232, 196, 106, 255),
+        YellowText = new(224, 182, 90, 255),
         RedBackground = new(159, 47, 45, 71),
-        RedText = new(242, 167, 165, 255),
+        RedText = new(242, 147, 140, 255),
     };
+
+    /// <summary>件数と無効な項目の文字色。</summary>
+    public OverlayColor Subtle { get; init; } = new(107, 107, 103, 255);
+    /// <summary>一覧の選択と対象タグに使う薄いアクセント。</summary>
+    public OverlayColor AccentTint { get; init; } = new(31, 108, 159, 31);
 
     /// <summary>有効を表すタグの背景色。</summary>
     public OverlayColor GreenBackground { get; init; } = new(237, 243, 236, 255);
     /// <summary>有効を表すタグの文字色。</summary>
-    public OverlayColor GreenText { get; init; } = new(52, 101, 56, 255);
+    public OverlayColor GreenText { get; init; } = new(47, 122, 62, 255);
     /// <summary>一時停止を表すタグの背景色。</summary>
     public OverlayColor YellowBackground { get; init; } = new(251, 243, 219, 255);
     /// <summary>一時停止を表すタグの文字色。</summary>
-    public OverlayColor YellowText { get; init; } = new(149, 100, 0, 255);
+    public OverlayColor YellowText { get; init; } = new(138, 90, 0, 255);
     /// <summary>異常を表すタグの背景色。</summary>
     public OverlayColor RedBackground { get; init; } = new(253, 235, 236, 255);
     /// <summary>異常を表すアイコンとタグの文字色。</summary>
-    public OverlayColor RedText { get; init; } = new(159, 47, 45, 255);
+    public OverlayColor RedText { get; init; } = new(180, 35, 24, 255);
 
     /// <summary>指定したテーマの配色を返す。</summary>
     public static OverlayPalette For(OverlayTheme theme) => theme == OverlayTheme.Dark ? _dark : _light;
@@ -79,6 +86,20 @@ public sealed record OverlayPalette(OverlayColor Dim, OverlayColor Cell, Overlay
 /// <summary>Win32 に依存せず、切り詰めと alpha 合成を行う描画関数。</summary>
 public static class OverlayPainter
 {
+    /// <summary>ランチャーの文字の意味をテーマの色へ変換する。</summary>
+    public static OverlayColor LauncherTextColor(LauncherTextKind kind, OverlayTheme theme)
+    {
+        var palette = OverlayPalette.For(theme);
+        return kind switch
+        {
+            LauncherTextKind.Muted => palette.Muted,
+            LauncherTextKind.Ink => palette.Ink,
+            LauncherTextKind.Blue => palette.BlueText,
+            LauncherTextKind.Disabled => palette.Subtle,
+            _ => palette.Text,
+        };
+    }
+
     /// <summary>透明な画素配列を作る。</summary>
     public static OverlayFrame Create(int width, int height)
     {
@@ -149,7 +170,7 @@ public static class OverlayPainter
             var radius = Math.Max(1, (int)Math.Round(4 * scale));
             FillRounded(frame, new((int)Math.Floor(end.X) - workArea.X - radius,
                 (int)Math.Floor(end.Y) - workArea.Y - radius,
-                2 * radius, 2 * radius), palette.BlueText, 4, scale);
+                2 * radius, 2 * radius), palette.BlueText, 2, scale);
         }
 
         return frame;
@@ -217,33 +238,39 @@ public static class OverlayPainter
         var palette = OverlayPalette.For(theme);
         // alpha が零の領域はレイヤードウィンドウの入力を通すため、背景全体を薄く塗る。
         Fill(frame, new(0, 0, area.Width, area.Height), palette.Dim);
+        var range = selection.Range;
         for (var row = 0; row < selection.Grid.Plan.Rows; row++)
         {
             for (var column = 0; column < selection.Grid.Plan.Columns; column++)
             {
-                var rect = Local(selection.Grid.CellRect(column, row), area);
-                if (frame.Clip is { } clip && !clip.Intersects(rect))
+                if (column >= range.Column && column < range.Column + range.Columns &&
+                    row >= range.Row && row < range.Row + range.Rows)
                 {
                     continue;
                 }
 
-                var range = selection.Range;
-                var selected = column >= range.Column && column < range.Column + range.Columns &&
-                    row >= range.Row && row < range.Row + range.Rows;
-                FillRounded(frame, rect, selected ? palette.BlueBackground : palette.Cell, 4, scale);
+                var rect = Local(selection.Grid.CellRect(column, row), area);
+                FillRounded(frame, rect, palette.Cell, 4, scale);
                 if (showZoneLines)
                 {
-                    StrokeRounded(frame, rect, selected ? palette.BlueLine : palette.CellBorder, 4, 1, scale);
-                }
-                if (selection.Cursor == new ZoneCell(column, row))
-                {
-                    var inset = Math.Max(1, scale);
-                    PaintRounded(frame, rect.X + inset, rect.Y + inset,
-                        Math.Max(0, rect.Width - 2 * inset), Math.Max(0, rect.Height - 2 * inset),
-                        Math.Max(0, 4 * scale - inset), palette.BlueText, Math.Max(1, 2 * scale));
+                    StrokeRounded(frame, rect, palette.CellBorder, 4, 1, scale);
                 }
             }
         }
+
+        var bounds = Local(selection.Bounds, area);
+        FillRounded(frame, bounds, palette.BlueBackground, 8, scale);
+        if (showZoneLines)
+        {
+            StrokeRounded(frame, bounds, palette.BlueText, 8, 1.5, scale);
+        }
+
+        // 範囲の面でカーソルの輪を覆わないよう、最後に描く。
+        var cursor = Local(selection.Grid.CellRect(selection.Cursor.Column, selection.Cursor.Row), area);
+        var inset = Math.Max(1, scale);
+        PaintRounded(frame, cursor.X + inset, cursor.Y + inset,
+            Math.Max(0, cursor.Width - 2 * inset), Math.Max(0, cursor.Height - 2 * inset),
+            Math.Max(0, 4 * scale - inset), palette.BlueText, Math.Max(1, 2 * scale));
     }
 
     /// <summary>角の被覆率から alpha を求め、論理半径の角丸矩形を塗る。</summary>
@@ -270,9 +297,9 @@ public static class OverlayPainter
     {
         var palette = OverlayPalette.For(theme);
         var rect = Local(layout.SelectionLabel, area);
-        FillRounded(frame, rect, palette.Surface, 6, scale);
-        StrokeRounded(frame, rect, palette.Border, 6, 1, scale);
-        drawText?.Invoke(frame, area, layout.Text[0]);
+        FillRounded(frame, rect, palette.Surface, 4, scale);
+        StrokeRounded(frame, rect, palette.BlueLine, 4, 1, scale);
+        drawText?.Invoke(frame, area, layout.Text[0] with { Kind = LauncherTextKind.Blue });
     }
 
     /// <summary>選択ラベルを独立した小さい画素列へ描く。</summary>
@@ -332,9 +359,9 @@ public static class OverlayPainter
             shadow ??= CreatePanelShadow(panel.Width, panel.Height, scale);
             Composite(frame, shadow.Frame, panel.X + shadow.Bounds.X, panel.Y + shadow.Bounds.Y);
         }
-        Box(layout.Panel, 12, palette.Surface, palette.Border);
-        FillRounded(frame, Local(layout.Tag, area), palette.BlueBackground, 9999, scale);
-        Box(layout.Plan, 6, palette.Surface, palette.Border);
+        Box(layout.Panel, 8, palette.Surface, palette.BorderStrong);
+        FillRounded(frame, Local(layout.Tag, area), palette.AccentTint, 4, scale);
+        Box(layout.Plan, 4, palette.Surface, palette.BorderStrong);
         if (layout.Plan.Width > 0)
         {
             FillDownArrow(frame, Local(layout.Plan, area), palette.Text, scale);
@@ -348,23 +375,28 @@ public static class OverlayPainter
                 continue;
             }
 
-            // disabled の opacity は背景も含むボタン全体にかけ、下の面へ合成する。
+            // 無効なプリセットは背景を塗らず、文字と図だけで状態を示す。
             var layer = Create(rect.Width, rect.Height);
             var full = new PixelRect(0, 0, rect.Width, rect.Height);
-            FillRounded(layer, full, palette.Surface2, 6, scale);
-            StrokeRounded(layer, full, palette.Border, 6, 1, scale);
+            if (button.Enabled) { FillRounded(layer, full, palette.Surface, 4, scale); }
+            StrokeRounded(layer, full, palette.Border, 4, 1, scale);
             var icon = button.IconBorder;
             PaintRounded(layer, icon.X - button.Bounds.X, icon.Y - button.Bounds.Y, icon.Width, icon.Height,
-                1.5 * scale, palette.Muted, Math.Max(1, scale), centered: true);
+                1.5 * scale, palette.Subtle, Math.Max(1, scale), centered: true);
             var on = button.IconFill;
             PaintRounded(layer, on.X - button.Bounds.X, on.Y - button.Bounds.Y, on.Width, on.Height,
-                .5 * scale, palette.Muted);
+                .5 * scale, button.Enabled ? palette.Ink : palette.Subtle);
+            foreach (var dash in button.IconDashes)
+            {
+                DrawRounded(layer, new(dash.X - button.Bounds.X, dash.Y - button.Bounds.Y),
+                    new(dash.Width, dash.Height), button.Enabled ? palette.Ink : palette.Subtle, .5 * scale);
+            }
             if (drawText is not null && layout.Text.FirstOrDefault(text => button.Bounds.Contains(text.Bounds)) is { } label)
             {
                 drawText(layer, button.Bounds, label);
             }
 
-            Composite(frame, layer, rect.X, rect.Y, button.Enabled ? 1 : .4);
+            Composite(frame, layer, rect.X, rect.Y);
         }
 
         foreach (var key in layout.Keys)
@@ -386,6 +418,55 @@ public static class OverlayPainter
             {
                 drawText?.Invoke(frame, area, text);
             }
+        }
+    }
+
+    /// <summary>一覧の行の面・番号キー・チェック・役割の輪を文字と独立に描く。</summary>
+    public static void WindowRow(OverlayFrame frame, PixelRect area, LauncherWindowRow row,
+        OverlayTheme theme, double scale)
+    {
+        var palette = OverlayPalette.For(theme);
+        var rect = Local(row.Bounds, area);
+        FillRounded(frame, rect, row.Selected ? palette.AccentTint : palette.Surface2, 6, scale);
+        StrokeRounded(frame, rect, row.Selected ? palette.BlueText : palette.Border, 6, 1, scale);
+        var key = Local(row.NumberBounds(scale), area);
+        FillRounded(frame, key, palette.Surface, 4, scale);
+        StrokeRounded(frame, key, palette.BorderStrong, 4, 1, scale);
+        var check = Local(row.CheckBounds(scale), area);
+        StrokeRounded(frame, check, row.Selected ? palette.BlueText : palette.Muted, 4, 1, scale);
+        if (!row.Selected) { return; }
+
+        var pill = Local(row.RoleBounds(scale), area);
+        if (row.Main) { FillRounded(frame, pill, palette.AccentTint, 999, scale); }
+        StrokeRounded(frame, pill, row.Main ? palette.BlueText : palette.Border, 999, 1, scale);
+        var tint = row.Main ? palette.BlueText : palette.Subtle;
+        var ring = Local(row.IconBounds(scale), area);
+        StrokeRounded(frame, ring, tint, ring.Width / scale / 2,
+            LauncherWindowRow.IconRingThickness(scale) / scale, scale);
+        if (row.Main)
+        {
+            var dot = Local(row.IconDotBounds(scale), area);
+            FillRounded(frame, dot, tint, dot.Width / scale / 2, scale);
+        }
+    }
+
+    /// <summary>整列ボタンの面と四十四 × 二十八 DIP の区画図を描く。</summary>
+    public static void ArrangeButton(OverlayFrame frame, LauncherArrangeButton button,
+        OverlayTheme theme, double scale)
+    {
+        var palette = OverlayPalette.For(theme);
+        var rect = new PixelRect(0, 0, frame.Width, frame.Height);
+        FillRounded(frame, rect, palette.Surface2, 6, scale);
+        StrokeRounded(frame, rect, palette.Border, 6, 1, scale);
+        var icon = button.IconBounds(scale);
+        var line = Math.Max(1, Math.Round(scale)) / scale;
+        StrokeRounded(frame, icon, palette.Muted with { Alpha = 153 }, 3, line, scale);
+        foreach (var (shape, index) in button.IconPixelRects(scale).Select((shape, index) => (shape, index)))
+        {
+            var fill = new PixelRect(icon.X + shape.X, icon.Y + shape.Y, shape.Width, shape.Height);
+            var main = button.Layout == ArrangeLayout.MainAndStack && index == 0;
+            FillRounded(frame, fill, main ? palette.BlueBackground : palette.Muted with { Alpha = 115 }, 2, scale);
+            if (main) { StrokeRounded(frame, fill, palette.BlueText, 2, 1, scale); }
         }
     }
 
@@ -418,7 +499,7 @@ public static class OverlayPainter
         var radii = Enumerable.Range(0, 3).Select(index => ((index < count ? lower : upper) - 1) / 2).ToArray();
         var padding = radii.Sum();
         var shadow = Create(width + 2 * padding, height + 2 * padding);
-        FillRounded(shadow, new(padding, padding, width, height), new(0, 0, 0, 255), 12, scale);
+        FillRounded(shadow, new(padding, padding, width, height), new(0, 0, 0, 255), 8, scale);
         var values = new double[shadow.Width * shadow.Height];
         var scratch = new double[values.Length];
         for (var index = 0; index < values.Length; index++)
@@ -634,7 +715,7 @@ public static class OverlayPainter
                 if (coverage > 0 && dashScale > 0)
                 {
                     var along = PerimeterPosition(px, py, width, height, radius) / dashScale;
-                    coverage *= Math.Clamp(Math.Min(6 - along % 11, along % 11 + 0.5), 0, 1);
+                    coverage *= Math.Clamp(Math.Min(4 - along % 8, along % 8 + 0.5), 0, 1);
                 }
 
                 if (coverage > 0)

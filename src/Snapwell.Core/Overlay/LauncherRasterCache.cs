@@ -51,17 +51,11 @@ public sealed class LauncherRasterCache
         }
         else
         {
-            for (var row = 0; row < selection.Grid.Plan.Rows; row++)
+            if (_previous.Bounds != selection.Bounds || _previous.Cursor != selection.Cursor)
             {
-                for (var column = 0; column < selection.Grid.Plan.Columns; column++)
-                {
-                    var cell = new ZoneCell(column, row);
-                    if (Selected(_previous, cell) != Selected(selection, cell) ||
-                        (_previous.Cursor == cell) != (selection.Cursor == cell))
-                    {
-                        AddDirty(dirty, Local(selection.Grid.CellRect(column, row), area));
-                    }
-                }
+                // 面はセル間の隙間にも描くため、旧・新の外接矩形を丸ごと復元する。
+                AddDirty(dirty, Local(_previous.Bounds, area));
+                AddDirty(dirty, Local(selection.Bounds, area));
             }
 
             if (_label != label)
@@ -112,13 +106,6 @@ public sealed class LauncherRasterCache
         _frame.Revision++;
         _frame.DirtyRegions = dirty;
         return _frame;
-    }
-
-    private static bool Selected(ZoneSelection selection, ZoneCell cell)
-    {
-        var range = selection.Range;
-        return cell.Column >= range.Column && cell.Column < range.Column + range.Columns &&
-            cell.Row >= range.Row && cell.Row < range.Row + range.Rows;
     }
 
     private static PixelRect Local(PixelRect rect, PixelRect area) =>

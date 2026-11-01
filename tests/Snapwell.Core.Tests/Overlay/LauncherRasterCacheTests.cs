@@ -69,6 +69,54 @@ public sealed class LauncherRasterCacheTests
         }
     }
 
+    /// <summary>間隔を含む面の拡張・縮小・始点越え・不動・同じ範囲の反転を全面描画と比較する。</summary>
+    [Theory]
+    [InlineData(OverlayTheme.Light, 1, true)]
+    [InlineData(OverlayTheme.Dark, 1.5, true)]
+    [InlineData(OverlayTheme.Light, 2, false)]
+    public void RangeTransitionsRestoreOldAndNewBoundingRectangles(OverlayTheme theme, double scale, bool lines)
+    {
+        var initial = new ZoneSelection(new(-900, -500, 720, 540), new(4, 4), new(8, 8))
+            .Select(new(1, 1), new(2, 2));
+        var layout = LauncherPanelLayout.Create(initial, scale);
+        var panel = OverlayPainter.CreatePanelLayer(initial.WorkArea, layout, theme, scale, DrawText);
+        var oldLabel = OverlayPainter.CreateSelectionLabelLayer(layout, theme, scale, DrawText);
+        foreach (var (anchor, cursor) in new (ZoneCell, ZoneCell)[]
+        {
+            (new(1, 1), new(3, 3)), (new(1, 1), new(1, 1)), (new(1, 1), new(0, 0)),
+            (new(1, 1), new(2, 2)), (new(2, 2), new(1, 1)),
+        })
+        {
+            var cache = new LauncherRasterCache();
+            var first = cache.Render(initial, panel, oldLabel, theme, scale, lines);
+            var selection = initial.Select(anchor, cursor);
+            layout = LauncherPanelLayout.Create(selection, scale);
+            var unchanged = selection.Bounds == initial.Bounds && selection.Cursor == initial.Cursor;
+            var label = unchanged ? oldLabel : OverlayPainter.CreateSelectionLabelLayer(layout, theme, scale, DrawText);
+            var actual = cache.Render(selection, panel, label, theme, scale, lines);
+            var expected = OverlayPainter.Launcher(selection, theme, scale, lines);
+            OverlayPainter.Panel(expected, selection, layout, theme, scale, DrawText);
+            Assert.Same(first.Pixels, actual.Pixels);
+            Assert.Equal(expected.Pixels, actual.Pixels);
+            var dirty = actual.DirtyRegions!;
+            if (unchanged)
+            {
+                Assert.Empty(dirty);
+                continue;
+            }
+
+            foreach (var bounds in new[] { initial.Bounds, selection.Bounds })
+            {
+                var local = new PixelRect(bounds.X - initial.WorkArea.X, bounds.Y - initial.WorkArea.Y,
+                    bounds.Width, bounds.Height);
+                var covered = dirty.Sum(region => (long)Math.Max(0,
+                    Math.Min(region.Right, local.Right) - Math.Max(region.X, local.X)) * Math.Max(0,
+                    Math.Min(region.Bottom, local.Bottom) - Math.Max(region.Y, local.Y)));
+                Assert.Equal((long)bounds.Width * bounds.Height, covered);
+            }
+        }
+    }
+
     /// <summary>小さいパネル省略時も描画でき、テーマや寸法の変更で古い画素を残さない。</summary>
     [Fact]
     public void ThemeGridScaleAndSizeInvalidatePixels()

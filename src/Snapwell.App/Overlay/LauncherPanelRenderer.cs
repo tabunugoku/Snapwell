@@ -53,27 +53,9 @@ internal sealed class LauncherPanelRenderer
         IReadOnlyList<string>? presetIds = null, LauncherWindowListText? windowText = null)
     {
         using var text = new GdiOverlayText(scale);
-        var palette = OverlayPalette.For(theme);
         void DrawText(OverlayFrame surface, PixelRect area, LauncherText item)
         {
-            if (_layout?.Presets.FirstOrDefault(button => button.Bounds == area &&
-                LauncherPreset.All[button.Index].KeepSize) is { } keep)
-            {
-                foreach (var dash in keep.IconDashes)
-                {
-                    OverlayPainter.DrawRounded(surface, new(dash.X - area.X, dash.Y - area.Y),
-                        new(dash.Width, dash.Height), palette.Muted, .5 * scale);
-                }
-            }
-
-            var color = item.Kind switch
-            {
-                LauncherTextKind.Muted => palette.Muted,
-                LauncherTextKind.Ink => palette.Ink,
-                LauncherTextKind.Blue => palette.BlueText,
-                _ => palette.Text,
-            };
-            text.Draw(surface, area, item, color);
+            text.Draw(surface, area, item, OverlayPainter.LauncherTextColor(item.Kind, theme));
         }
 
         var key = (selection.Grid, scale, target, menuOpen, theme,

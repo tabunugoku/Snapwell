@@ -47,8 +47,8 @@ public sealed class LauncherPanelLayoutTests
         var selection = new ZoneSelection(new(-1920, -300, 1920, 1040), new(8, 8), new(8, 8));
         var layout = LauncherPanelLayout.Create(selection, scale);
         Assert.Equal((int)(560 * scale), layout.Panel.Width);
-        Assert.Equal(-300 + (int)(14 * scale), layout.Panel.Y);
-        Assert.Equal(layout.Panel.X + (int)(15 * scale), layout.Top.X);
+        Assert.Equal(-300 + (int)(16 * scale), layout.Panel.Y);
+        Assert.Equal(layout.Panel.X + (int)(16 * scale), layout.Top.X);
         Assert.Equal(8, layout.Presets.Count);
         Assert.Equal("8 × 8", LauncherPanelLayout.PlanName(selection.Grid.Plan));
     }
@@ -106,11 +106,11 @@ public sealed class LauncherPanelLayoutTests
         Assert.InRange(Math.Abs(selection.Bounds.Center.Y - layout.SelectionLabel.Center.Y), 0, 1);
     }
 
-    /// <summary>面と枠、無効なボタンの不透明度を画素で検証する。</summary>
+    /// <summary>面と強い枠、無効なボタンの透明な背景を画素で検証する。</summary>
     [Theory]
     [InlineData(OverlayTheme.Light)]
     [InlineData(OverlayTheme.Dark)]
-    public void PanelPaintsSurfaceBorderAndDisabledOpacity(OverlayTheme theme)
+    public void PanelPaintsStrongBorderAndTransparentDisabledBackground(OverlayTheme theme)
     {
         var selection = new ZoneSelection(new(0, 0, 1920, 1040), new(8, 8), new(8, 8));
         var layout = LauncherPanelLayout.Create(selection);
@@ -120,15 +120,11 @@ public sealed class LauncherPanelLayoutTests
         var reference = OverlayPainter.Create(1, 1);
         OverlayPainter.Fill(reference, new(0, 0, 1, 1), palette.Surface);
         Assert.Equal(reference.Pixels, Pixel(frame, layout.Panel.X + 30, layout.Panel.Y + 3));
-        OverlayPainter.Fill(reference, new(0, 0, 1, 1), palette.Border);
+        OverlayPainter.Fill(reference, new(0, 0, 1, 1), palette.BorderStrong);
         Assert.Equal(reference.Pixels, Pixel(frame, (int)layout.Panel.Center.X, layout.Panel.Y));
         var disabled = layout.Presets[3].Bounds;
-        var opacityReference = OverlayPainter.Create(1, 1);
-        OverlayPainter.Fill(opacityReference, new(0, 0, 1, 1), palette.Surface);
-        var buttonLayer = OverlayPainter.Create(1, 1);
-        OverlayPainter.Fill(buttonLayer, new(0, 0, 1, 1), palette.Surface2);
-        OverlayPainter.Composite(opacityReference, buttonLayer, 0, 0, .4);
-        Assert.Equal(opacityReference.Pixels, Pixel(frame, disabled.X + 4, disabled.Y + disabled.Height / 2));
+        Assert.Equal(new byte[] { palette.Surface.Blue, palette.Surface.Green, palette.Surface.Red, 255 },
+            Pixel(frame, disabled.X + 4, disabled.Y + disabled.Height / 2));
     }
 
     /// <summary>パネル用の CSS 変数も明暗それぞれの値を保持する。</summary>
@@ -138,13 +134,15 @@ public sealed class LauncherPanelLayoutTests
     public void PanelPaletteMatchesMockupTokens(OverlayTheme theme)
     {
         var expected = theme == OverlayTheme.Light
-            ? new OverlayColor[] { new(255, 255, 255, 255), new(249, 249, 248, 255), new(234, 234, 234, 255),
-                new(218, 218, 215, 255), new(47, 52, 55, 255), new(120, 119, 116, 255), new(17, 17, 17, 255) }
-            : new OverlayColor[] { new(32, 32, 32, 255), new(37, 37, 36, 255), new(255, 255, 255, 20),
-                new(255, 255, 255, 36), new(230, 230, 227, 255), new(155, 154, 151, 255), new(242, 242, 240, 255) };
+            ? new OverlayColor[] { new(255, 255, 255, 255), new(239, 239, 237, 255), new(28, 28, 27, 23),
+                new(28, 28, 27, 46), new(28, 28, 27, 255), new(82, 82, 79, 255), new(28, 28, 27, 255),
+                new(107, 107, 103, 255) }
+            : new OverlayColor[] { new(34, 34, 33, 255), new(44, 44, 43, 255), new(255, 255, 255, 20),
+                new(255, 255, 255, 38), new(237, 237, 235, 255), new(180, 180, 176, 255), new(237, 237, 235, 255),
+                new(146, 146, 142, 255) };
         var palette = OverlayPalette.For(theme);
         Assert.Equal(expected, new[] { palette.Surface, palette.Surface2, palette.Border, palette.BorderStrong,
-            palette.Text, palette.Muted, palette.Ink });
+            palette.Text, palette.Muted, palette.Ink, palette.Subtle });
     }
 
     /// <summary>下へ八 px の薄い影をパネルの外へ描く。</summary>
@@ -158,6 +156,95 @@ public sealed class LauncherPanelLayoutTests
         var below = Pixel(frame, (int)layout.Panel.Center.X, layout.Panel.Bottom + 8);
         Assert.InRange(below[3], 1, 13);
         Assert.Equal(new byte[4], Pixel(frame, 0, 1040 - 1));
+    }
+
+    /// <summary>四の倍数の寸法と左右の余白を、負座標でも各倍率で保つ。</summary>
+    [Theory]
+    [InlineData(1)]
+    [InlineData(1.5)]
+    [InlineData(2)]
+    [InlineData(2.5)]
+    public void NarrowPanelKeepsSixteenDipMarginsAndPresetHitBounds(double scale)
+    {
+        var area = new PixelRect(-2000, -300, (int)(520 * scale), (int)(900 * scale));
+        var layout = LauncherPanelLayout.Create(new(area, new(8, 8), new()), scale);
+        Assert.Equal((int)(488 * scale), layout.Panel.Width);
+        Assert.Equal(area.X + (int)(16 * scale), layout.Panel.X);
+        Assert.Equal(area.Right - (int)(16 * scale), layout.Panel.Right);
+        Assert.Equal(area.Y + (int)(16 * scale), layout.Panel.Y);
+        Assert.Equal((int)(32 * scale), layout.Top.Height);
+        Assert.Equal((int)(20 * scale), layout.Tag.Height);
+        Assert.All(layout.Keys, key => Assert.Equal((int)(20 * scale), key.Height));
+        Assert.All(layout.Presets, button =>
+        {
+            Assert.Equal((int)(32 * scale), button.Bounds.Height);
+            Assert.Equal(20 * scale, button.Icon.Width);
+            Assert.Equal(12 * scale, button.Icon.Height);
+            Assert.Equal(button.Bounds.X + 8 * scale, button.Icon.X);
+            Assert.Equal(button.Bounds.Y + 10 * scale, button.Icon.Y);
+            Assert.Equal(button.Index, layout.HitPreset(button.Bounds.Center));
+        });
+        foreach (var row in layout.Presets.GroupBy(button => button.Bounds.Y))
+        {
+            foreach (var pair in row.Zip(row.Skip(1)))
+            {
+                Assert.InRange(pair.Second.Bounds.X - pair.First.Bounds.Right,
+                    (int)(4 * scale) - 1, (int)(4 * scale));
+            }
+        }
+        Assert.All(layout.Text, text => Assert.False(text.Bold));
+    }
+
+    /// <summary>無効なプリセットの文字と図は、描画に使う配色で text-3 になる。</summary>
+    [Theory]
+    [InlineData(OverlayTheme.Light, 1)]
+    [InlineData(OverlayTheme.Dark, 1.5)]
+    [InlineData(OverlayTheme.Light, 2)]
+    public void DisabledPresetTextAndIconUseSubtlePixels(OverlayTheme theme, double scale)
+    {
+        var selection = new ZoneSelection(new(0, 0, 1920, 1040), new(8, 8), new(8, 8));
+        var layout = LauncherPanelLayout.Create(selection, scale);
+        var frame = OverlayPainter.Create(1920, 1040);
+        OverlayPainter.Panel(frame, selection, layout, theme, scale, (surface, area, item) =>
+        {
+            if (item.Kind != LauncherTextKind.Disabled) { return; }
+            OverlayPainter.Fill(surface, new(item.Bounds.X - area.X, item.Bounds.Y - area.Y,
+                item.Bounds.Width, item.Bounds.Height), OverlayPainter.LauncherTextColor(item.Kind, theme));
+        });
+        var subtle = OverlayPalette.For(theme).Subtle;
+        var expected = new byte[] { subtle.Blue, subtle.Green, subtle.Red, 255 };
+        foreach (var button in layout.Presets.Where(button => !button.Enabled))
+        {
+            var label = Assert.Single(layout.Text, item => button.Bounds.Contains(item.Bounds));
+            Assert.Equal(LauncherTextKind.Disabled, label.Kind);
+            Assert.Equal(expected, Pixel(frame, (int)label.Bounds.Center.X, (int)label.Bounds.Center.Y));
+            var fill = button.IconFill;
+            Assert.Equal(expected, Pixel(frame, (int)(fill.X + fill.Width / 2), (int)(fill.Y + fill.Height / 2)));
+        }
+    }
+
+    /// <summary>折り返した案内も二十四 DIP の各行の中央に二十 DIP のキーを収める。</summary>
+    [Theory]
+    [InlineData(1)]
+    [InlineData(1.5)]
+    [InlineData(2)]
+    public void KeyHintsStayWithinTwentyFourDipRows(double scale)
+    {
+        var selection = new ZoneSelection(new(-900, -500, (int)(520 * scale), (int)(900 * scale)),
+            new(8, 8), new());
+        var layout = LauncherPanelLayout.Create(selection, scale);
+        Assert.NotEmpty(layout.Keys);
+        foreach (var row in layout.Keys.GroupBy(key => key.Y))
+        {
+            var bounds = new PixelRect(layout.KeysBounds.X, row.Key - (int)Math.Round(2 * scale),
+                layout.KeysBounds.Width, (int)Math.Round(24 * scale));
+            Assert.True(layout.KeysBounds.Contains(bounds));
+            Assert.All(row, key =>
+            {
+                Assert.Equal((int)Math.Round(20 * scale), key.Height);
+                Assert.True(bounds.Contains(key));
+            });
+        }
     }
 
     private static byte[] Pixel(OverlayFrame frame, int x, int y) =>

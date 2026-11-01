@@ -17,13 +17,13 @@ public sealed class LauncherPresetIconTests
         var layout = LauncherPanelLayout.Create(selection, scale);
         var maximize = layout.Presets[7];
         Assert.Equal(maximize.Icon.Map(1, 1, 16, 10), maximize.IconFill);
-        Assert.Equal(maximize.IconBorder.Right - scale / 2, maximize.IconFill.Right, 8);
+        Assert.Equal(maximize.IconBorder.Right - 20 * scale / 36, maximize.IconFill.Right, 8);
         Assert.Equal(maximize.IconBorder.Bottom - scale / 2, maximize.IconFill.Bottom, 8);
-        Assert.Equal(16 * scale, maximize.IconFill.Width, 8);
+        Assert.Equal(16 * 20 / 18.0 * scale, maximize.IconFill.Width, 8);
         foreach (var button in layout.Presets)
         {
             var preset = LauncherPreset.All[button.Index];
-            Assert.Equal(button.Icon.X + (preset.X1 == 1 ? 17 : 1.5 + preset.X1 * 15) * scale,
+            Assert.Equal(button.Icon.X + (preset.X1 == 1 ? 17 : 1.5 + preset.X1 * 15) * 20 * scale / 18,
                 button.IconFill.Right, 8);
             Assert.Equal(button.Icon.Y + (preset.Y1 == 1 ? 11 : 1.5 + preset.Y1 * 9) * scale,
                 button.IconFill.Bottom, 8);

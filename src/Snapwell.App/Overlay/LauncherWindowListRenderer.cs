@@ -48,8 +48,8 @@ internal sealed class LauncherWindowListRenderer
                 Add(layout.Panel, layout.Panel, frame =>
                 {
                     var rect = new PixelRect(0, 0, frame.Width, frame.Height);
-                    OverlayPainter.FillRounded(frame, rect, palette.Surface, 12, scale);
-                    OverlayPainter.StrokeRounded(frame, rect, palette.Border, 12, 1, scale);
+                    OverlayPainter.FillRounded(frame, rect, palette.Surface, 8, scale);
+                    OverlayPainter.StrokeRounded(frame, rect, palette.BorderStrong, 8, 1, scale);
                 });
             }
 
@@ -98,53 +98,22 @@ internal sealed class LauncherWindowListRenderer
                     var clipped = new PixelRect(row.Bounds.X, top, row.Bounds.Width, bottom - top);
                     Add((row, clipped), clipped, frame =>
                     {
-                        var rect = new PixelRect(0, row.Bounds.Y - clipped.Y, row.Bounds.Width, row.Bounds.Height);
-                        OverlayPainter.FillRounded(frame, rect,
-                            row.Selected ? palette.BlueBackground : palette.Surface2, 6, scale);
-                        OverlayPainter.StrokeRounded(frame, rect,
-                            row.Selected ? palette.BlueText : palette.Border, 6, 1, scale);
-                        int Px(double value) => (int)Math.Round(value * scale);
-                        var key = new PixelRect(row.Bounds.X + Px(10), row.Bounds.Y + Px(3), Px(20), Px(22));
-                        var keyLocal = new PixelRect(key.X - clipped.X, key.Y - clipped.Y, key.Width, key.Height);
-                        OverlayPainter.FillRounded(frame, keyLocal, palette.Surface, 4, scale);
-                        OverlayPainter.StrokeRounded(frame, keyLocal, palette.BorderStrong, 4, 1, scale);
-                        text.Draw(frame, clipped, new(row.Number.ToString(CultureInfo.InvariantCulture), key,
-                            11.5, Mono: true, Center: true), palette.Text);
-                        var check = new PixelRect(row.Bounds.X + Px(40), row.Bounds.Y + Px(6), Px(16), Px(16));
-                        OverlayPainter.StrokeRounded(frame, new(check.X - clipped.X, check.Y - clipped.Y,
-                            check.Width, check.Height), row.Selected ? palette.BlueText : palette.Muted, 4, 1, scale);
+                        OverlayPainter.WindowRow(frame, clipped, row, theme, scale);
+                        text.Draw(frame, clipped, new(row.Number.ToString(CultureInfo.InvariantCulture),
+                            row.NumberBounds(scale), 11.5, Mono: true, Center: true), palette.Text);
                         if (row.Selected)
                         {
-                            text.Draw(frame, clipped, new("✓", check, 11, Center: true), palette.BlueText);
+                            text.Draw(frame, clipped, new("✓", row.CheckBounds(scale), 11, Center: true),
+                                palette.BlueText);
                         }
 
-                        var role = row.RoleBounds(scale);
-                        var roleWidth = row.Selected ? row.Bounds.Right - role.X : 0;
-                        var titleBounds = new PixelRect(check.Right + Px(8), row.Bounds.Y,
-                            Math.Max(0, row.Bounds.Right - Px(8) - roleWidth - check.Right - Px(8)), row.Bounds.Height);
+                        var titleBounds = row.TitleBounds(scale);
                         var title = LauncherPanelLayout.Ellipsize(row.Window.Title, titleBounds.Width / scale,
                             candidate => text.Measure(candidate, 12, false));
                         text.Draw(frame, clipped, new(title, titleBounds, 12), palette.Text);
                         if (row.Selected)
                         {
-                            // 固定幅の枠の中央に置き、文字幅が違っても右端と枠が縦にそろう。
-                            var pill = new PixelRect(role.X - clipped.X, role.Y - clipped.Y, role.Width, role.Height);
-                            if (row.Main) { OverlayPainter.FillRounded(frame, pill, palette.BlueBackground, 999, scale); }
-                            OverlayPainter.StrokeRounded(frame, pill, row.Main ? palette.BlueText : palette.Border,
-                                999, 1, scale);
-                            var tint = row.Main ? palette.BlueText : palette.Muted;
-                            // 図形で描く。メインは輪と点 (◉)、スタックは輪だけ (○)。フォントのグリフに頼らない。
-                            var ring = row.IconBounds(scale);
-                            var ringLocal = new PixelRect(ring.X - clipped.X, ring.Y - clipped.Y, ring.Width, ring.Height);
-                            OverlayPainter.StrokeRounded(frame, ringLocal, tint, ring.Width / (double)scale / 2,
-                                LauncherWindowRow.IconRingThickness(scale) / scale, scale);
-                            if (row.Main)
-                            {
-                                var dot = row.IconDotBounds(scale);
-                                OverlayPainter.FillRounded(frame, new(dot.X - clipped.X, dot.Y - clipped.Y,
-                                    dot.Width, dot.Height), tint, dot.Width / (double)scale / 2, scale);
-                            }
-
+                            var tint = row.Main ? palette.BlueText : palette.Subtle;
                             text.Draw(frame, clipped, new(row.Main ? labels.Main : labels.Stack, row.RoleLabelBounds(scale),
                                 10.5), tint);
                         }
@@ -168,30 +137,18 @@ internal sealed class LauncherWindowListRenderer
                 {
                     Add((button, layout.SelectedCount > 0), button.Bounds, frame =>
                     {
-                        var rect = new PixelRect(0, 0, frame.Width, frame.Height);
-                        OverlayPainter.FillRounded(frame, rect, palette.Surface2, 6, scale);
-                        OverlayPainter.StrokeRounded(frame, rect, palette.Border, 6, 1, scale);
-                        int Px(double value) => (int)Math.Round(value * scale);
-                        // 枠も図形も整数ピクセルの端で描く。線の太さも整数ピクセルにそろえ、ぼやけを防ぐ。
-                        var icon = button.IconBounds(scale);
-                        var line = Math.Max(1, Math.Round(scale)) / scale;
-                        OverlayPainter.StrokeRounded(frame, icon, palette.Muted with { Alpha = 153 }, 3, line, scale);
-                        foreach (var (shape, index) in button.IconPixelRects(scale).Select((shape, index) => (shape, index)))
-                        {
-                            var fill = new PixelRect(icon.X + shape.X, icon.Y + shape.Y, shape.Width, shape.Height);
-                            OverlayPainter.FillRounded(frame, fill,
-                                button.Layout == Snapwell.Core.Layout.ArrangeLayout.MainAndStack && index == 0
-                                    ? palette.BlueText : palette.Muted with { Alpha = 115 }, 2, scale);
-                        }
-
+                        OverlayPainter.ArrangeButton(frame, button, theme, scale);
                         var fitted = LauncherPanelLayout.Ellipsize(button.Label, button.Bounds.Width / scale,
                             candidate => text.Measure(candidate, 12, false));
                         var label = new LauncherText(fitted, button.LabelBounds(scale), 12, Center: true);
                         text.Draw(frame, button.Bounds, label, palette.Text, centerFontBody: true);
-                        var key = new PixelRect(button.Bounds.X, button.Bounds.Bottom - Px(20), button.Bounds.Width, Px(16));
-                        text.Draw(frame, button.Bounds, new(string.Create(CultureInfo.InvariantCulture,
-                            $"Alt+{(int)button.Layout + 1}"), key, 10.5,
-                            Mono: true, Center: true), palette.Muted);
+                        var key = button.ShortcutBounds(scale);
+                        if (key.Width > 0)
+                        {
+                            text.Draw(frame, button.Bounds, new(string.Create(CultureInfo.InvariantCulture,
+                                $"Alt+{(int)button.Layout + 1}"), key, 10.5,
+                                Mono: true, Center: true), palette.Muted);
+                        }
                         if (layout.SelectedCount == 0)
                         {
                             for (var i = 0; i < frame.Pixels.Length; i++) { frame.Pixels[i] = (byte)(frame.Pixels[i] * .4); }

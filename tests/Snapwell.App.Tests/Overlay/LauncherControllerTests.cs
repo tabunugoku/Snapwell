@@ -44,14 +44,20 @@ public sealed class LauncherControllerTests
 
     /// <summary>高 DPI の縮小配置でも展開の表示と数字キーの登録が一致し、折りたたむと直ちに解放する。</summary>
     [Theory]
-    [InlineData(1920, 960)]
-    [InlineData(1536, 864)]
-    [InlineData(1920, 1040)]
-    public void HighDpiExpansionKeepsPresentationAndBindingsTogether(int width, int height)
+    [InlineData(1920, 960, true)]
+    [InlineData(1536, 864, false)]
+    [InlineData(1920, 1040, true)]
+    public void HighDpiExpansionKeepsPresentationAndBindingsTogether(int width, int height, bool canExpand)
     {
         using var fixture = new Fixture(new ShortMonitor(width, height));
         fixture.Launcher.Open();
         fixture.Presenter.Raise(new(OverlayPointerKind.Down, fixture.Launcher.WindowList!.Header.Center));
+        Assert.Equal(canExpand, fixture.Launcher.WindowList!.Expanded);
+        if (!canExpand)
+        {
+            Assert.DoesNotContain(fixture.Applied, binding => LauncherWindowBindings.Contains(binding.Id));
+            return;
+        }
         Assert.True(fixture.Launcher.WindowList!.Expanded);
         Assert.All(LauncherWindowBindings.All, binding => Assert.Contains(binding, fixture.Applied));
         fixture.Presenter.DelayPresentation = true;

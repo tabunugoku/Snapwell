@@ -28,7 +28,7 @@ public sealed class LauncherWindowListLayoutTests
     /// <summary>実際のプリセット配置でも展開判定が一致し、負座標・件数・焦点・スクロールに依存しない。</summary>
     [Theory]
     [InlineData(1920, 960, true)]
-    [InlineData(1536, 864, true)]
+    [InlineData(1536, 864, false)]
     [InlineData(1920, 1040, true)]
     [InlineData(1280, 720, false)]
     public void ExpansionMatchesPredictionAcrossShortAreasAndPages(int width, int height, bool canExpand)
@@ -65,16 +65,15 @@ public sealed class LauncherWindowListLayoutTests
     /// <summary>ボタンを縮め、次にヒントを省き、最後に一行まで減らす。下限の一画素下では展開しない。</summary>
     [Theory]
     [InlineData(211, true, 32, true)]
-    [InlineData(186, true, 32, true)]
-    [InlineData(185, true, 32, false)]
-    [InlineData(161, true, 31, false)]
-    [InlineData(158, true, 28, false)]
-    [InlineData(157, false, 0, false)]
+    [InlineData(184, true, 32, true)]
+    [InlineData(183, true, 32, false)]
+    [InlineData(156, true, 32, false)]
+    [InlineData(155, false, 0, false)]
     public void CompactStagesKeepControlsBeforeReducingRows(int available, bool expanded,
         int viewportHeight, bool hint)
     {
-        Assert.Equal(158, LauncherWindowListLayout.MinimumExpandedHeight);
-        var area = new PixelRect(-900, -200, 900, 114 + available);
+        Assert.Equal(156, LauncherWindowListLayout.MinimumExpandedHeight);
+        var area = new PixelRect(-900, -200, 900, 116 + available);
         var panel = new PixelRect(-700, -200, 560, 100);
         var list = LauncherWindowListLayout.Create(area, panel, 1, [new(1, "Window")], [], 0, true);
         Assert.Equal(expanded, LauncherWindowListLayout.CanExpand(area, panel, 1));
@@ -84,7 +83,7 @@ public sealed class LauncherWindowListLayoutTests
         if (expanded)
         {
             AssertControlsFit(area, list, 1);
-            Assert.All(list.Buttons, button => Assert.Equal(70, button.Bounds.Height));
+            Assert.All(list.Buttons, button => Assert.Equal(64, button.Bounds.Height));
         }
     }
 
@@ -101,11 +100,11 @@ public sealed class LauncherWindowListLayoutTests
     public void MinimumHeightAccountsForPhysicalPixelRounding(double scale)
     {
         int Px(int value) => (int)Math.Round(value * scale);
-        var minimum = Math.Max(Px(158), Px(4) + Px(28) + Px(24) + Px(70) + Px(4) + Px(28));
+        var minimum = Math.Max(Px(156), Px(4) + Px(28) + Px(24) + Px(64) + Px(4) + Px(32));
         var panel = new PixelRect(-600, -300, Px(560), 100);
         foreach (var offset in new[] { -1, 0 })
         {
-            var area = new PixelRect(-900, -300, Px(900), 100 + minimum + Px(14) + offset);
+            var area = new PixelRect(-900, -300, Px(900), 100 + minimum + Px(16) + offset);
             var list = LauncherWindowListLayout.Create(area, panel, scale, [new(1, "Window")], [], 0, true);
             Assert.Equal(offset == 0, LauncherWindowListLayout.CanExpand(area, panel, scale));
             Assert.Equal(offset == 0, list.Expanded);
@@ -118,12 +117,12 @@ public sealed class LauncherWindowListLayoutTests
         Assert.False(LauncherWindowListLayout.CanExpand(new(0, 0, Px(300), Px(900)), default, scale));
     }
 
-    /// <summary>通常領域では以前のパネル・行・ページャー・ボタン・ヒントの全座標を保つ。</summary>
+    /// <summary>通常領域の余白・行・ページャー・ボタン・ヒントを新しい寸法にそろえる。</summary>
     [Theory]
-    [InlineData(1, 680, 174, 560, 356, 160)]
-    [InlineData(1.5, 540, 261, 840, 534, 240)]
-    [InlineData(2, 400, 348, 1120, 664, 272)]
-    public void NormalAreasPreserveOriginalCoordinates(double scale, int x, int y, int width,
+    [InlineData(1, 680, 174, 560, 344, 160)]
+    [InlineData(1.5, 540, 261, 840, 516, 240)]
+    [InlineData(2, 400, 348, 1120, 660, 292)]
+    public void NormalAreasUseUpdatedCoordinates(double scale, int x, int y, int width,
         int height, int viewportHeight)
     {
         int Px(int value) => (int)Math.Round(value * scale);
@@ -131,28 +130,50 @@ public sealed class LauncherWindowListLayoutTests
         var list = LauncherWindowListLayout.Create(new(0, 0, 1920, 1040), new(0, 0, width, y),
             scale, windows, [], 0, true);
         Assert.Equal(new(x, y, width, height), list.Panel);
-        var left = x + Px(14);
-        var inner = width - Px(28);
+        var left = x + Px(16);
+        var inner = width - Px(32);
         Assert.Equal(new(left, y + Px(8), inner, Px(28)), list.Header);
         Assert.Equal(new(left, y + Px(44), inner, viewportHeight), list.Viewport);
         var pagerY = y + Px(44) + viewportHeight + Px(8);
-        Assert.Equal(new(x + width - Px(122), pagerY, Px(50), Px(22)), list.Previous);
-        Assert.Equal(new(x + width - Px(66), pagerY, Px(50), Px(22)), list.Next);
-        Assert.Equal(new(left, pagerY + Px(112), inner, Px(18)), list.Hint);
+        Assert.Equal(new(x + width - Px(122), pagerY, Px(50), Px(24)), list.Previous);
+        Assert.Equal(new(x + width - Px(66), pagerY, Px(50), Px(24)), list.Next);
+        Assert.Equal(new(left, pagerY + Px(100), inner, Px(20)), list.Hint);
         for (var i = 0; i < 9; i++)
         {
-            Assert.Equal(new(left, y + Px(44) + i * Px(32), inner, Px(28)), list.Rows[i].Bounds);
+            Assert.Equal(new(left, y + Px(44) + i * Px(32), inner, Px(32)), list.Rows[i].Bounds);
         }
         for (var i = 0; i < 4; i++)
         {
             var button = list.Buttons[i];
-            var buttonX = left + i * (inner + Px(6)) / 4;
-            var right = left + (i + 1) * (inner + Px(6)) / 4 - Px(6);
-            Assert.Equal(new(buttonX, pagerY + Px(30), right - buttonX, Px(76)), button.Bounds);
-            Assert.Equal(new(buttonX, pagerY + Px(66), right - buttonX, Px(18)), button.LabelBounds(scale));
-            Assert.Equal(new((button.Bounds.Width - Px(44)) / 2, Px(6), Px(44), Px(28)),
+            var buttonX = left + i * inner / 4;
+            var right = left + (i + 1) * inner / 4;
+            Assert.Equal(new(buttonX, pagerY + Px(28), right - buttonX, Px(64)), button.Bounds);
+            Assert.Equal(new(buttonX, pagerY + Px(64), right - buttonX, Px(20)), button.LabelBounds(scale));
+            Assert.Equal(new((button.Bounds.Width - Px(44)) / 2, Px(4), Px(44), Px(28)),
                 button.IconBounds(scale));
         }
+    }
+
+    /// <summary>行は三十二 DIP、整列ボタンは六十四 DIP で幅を四等分する。</summary>
+    [Theory]
+    [InlineData(1)]
+    [InlineData(1.5)]
+    [InlineData(2)]
+    [InlineData(2.5)]
+    public void RowsUseThirtyTwoDipAndArrangeButtonsPartitionFullWidth(double scale)
+    {
+        var area = new PixelRect(-2400, -300, (int)(900 * scale), (int)(900 * scale));
+        var windows = Enumerable.Range(1, 9).Select(i => new LauncherWindow(i, "Window")).ToArray();
+        var list = LauncherWindowListLayout.Create(area, default, scale, windows, [1, 2], 0, true);
+        Assert.All(list.Rows, row => Assert.Equal((int)(32 * scale), row.Bounds.Height));
+        Assert.All(list.Buttons, button => Assert.Equal((int)(64 * scale), button.Bounds.Height));
+        Assert.Equal(list.Viewport.Width, list.Buttons.Sum(button => button.Bounds.Width));
+        Assert.Equal(list.Viewport.X, list.Buttons[0].Bounds.X);
+        Assert.Equal(list.Viewport.Right, list.Buttons[^1].Bounds.Right);
+        Assert.InRange(list.Buttons.Max(button => button.Bounds.Width) -
+            list.Buttons.Min(button => button.Bounds.Width), 0, 1);
+        Assert.True(list.Rows[0].Main);
+        Assert.False(list.Rows[1].Main);
     }
 
     private static void AssertControlsFit(PixelRect area, LauncherWindowListLayout list, double scale)
@@ -172,12 +193,8 @@ public sealed class LauncherWindowListLayoutTests
             Assert.True(button.Bounds.Contains(button.LabelBounds(scale)));
             var icon = button.IconBounds(scale);
             var label = button.LabelBounds(scale);
-            var key = new PixelRect(button.Bounds.X,
-                button.Bounds.Bottom - (int)Math.Round(20 * scale), button.Bounds.Width, (int)Math.Round(16 * scale));
             Assert.True(new PixelRect(0, 0, button.Bounds.Width, button.Bounds.Height).Contains(icon));
             Assert.True(button.Bounds.Y + icon.Bottom <= label.Y);
-            Assert.True(label.Bottom <= key.Y);
-            Assert.True(button.Bounds.Contains(key));
         });
         if (list.Hint.Height > 0)
         {
@@ -209,7 +226,7 @@ public sealed class LauncherWindowListLayoutTests
     {
         foreach (var mode in Enum.GetValues<ArrangeLayout>())
         {
-            var button = new LauncherArrangeButton(mode, new(-100, 200, 130, 76), "label");
+            var button = new LauncherArrangeButton(mode, new(-100, 200, 130, 64), "label");
             Assert.Equal(22, (button.IconRects.Min(rect => rect.X) + button.IconRects.Max(rect => rect.Right)) / 2);
             Assert.Equal(14, (button.IconRects.Min(rect => rect.Y) + button.IconRects.Max(rect => rect.Bottom)) / 2);
             Assert.Equal(button.Bounds.Center.X, button.LabelBounds(1).Center.X);
@@ -232,7 +249,7 @@ public sealed class LauncherWindowListLayoutTests
     {
         foreach (var mode in Enum.GetValues<ArrangeLayout>())
         {
-            var button = new LauncherArrangeButton(mode, new(0, 0, 130, 76), "");
+            var button = new LauncherArrangeButton(mode, new(0, 0, 130, 64), "");
             var icon = button.IconBounds(scale);
             Assert.Equal((int)Math.Round(44 * scale), icon.Width);
             var rects = button.IconPixelRects(scale);
@@ -275,7 +292,7 @@ public sealed class LauncherWindowListLayoutTests
     [InlineData(3)]
     public void RoleIconStaysInsideRoleAndAlignsAcrossRows(double scale)
     {
-        var height = (int)Math.Round(28 * scale);
+        var height = (int)Math.Round(32 * scale);
         var rows = Enumerable.Range(0, 4).Select(i => new LauncherWindowRow(new(i + 1, "w"),
             new(100, 50 + i * (height + 4), 480, height), true, false, i + 1, i == 0)).ToArray();
         Assert.All(rows, row =>
@@ -284,13 +301,17 @@ public sealed class LauncherWindowListLayoutTests
             var icon = row.IconBounds(scale);
             var dot = row.IconDotBounds(scale);
             Assert.True(role.Contains(icon));
-            Assert.True(icon.Contains(dot));
+            if (row.Main) { Assert.True(icon.Contains(dot)); }
+            else { Assert.Equal(default, dot); }
             Assert.Equal(icon.Width, icon.Height);
             // 偶数の差のときは上下が等しく、奇数のときも整数ピクセルの中で 1 だけずれる。
             Assert.InRange((icon.Y - role.Y) - (role.Bottom - icon.Bottom), -1, 0);
-            Assert.Equal(dot.X - icon.X, icon.Right - dot.Right);
-            Assert.Equal(dot.Y - icon.Y, icon.Bottom - dot.Bottom);
-            Assert.True(dot.X - icon.X > LauncherWindowRow.IconRingThickness(scale));
+            if (row.Main)
+            {
+                Assert.Equal(dot.X - icon.X, icon.Right - dot.Right);
+                Assert.Equal(dot.Y - icon.Y, icon.Bottom - dot.Bottom);
+                Assert.True(dot.X - icon.X > LauncherWindowRow.IconRingThickness(scale));
+            }
             Assert.True(role.Contains(row.RoleLabelBounds(scale)));
             Assert.True(row.RoleLabelBounds(scale).X > icon.Right);
         });
@@ -323,6 +344,88 @@ public sealed class LauncherWindowListLayoutTests
             });
         }
     }
+
+    /// <summary>選択の面と役割の輪・点を、明暗と DPI ごとの画素で検証する。</summary>
+    [Theory]
+    [InlineData(OverlayTheme.Light, 1)]
+    [InlineData(OverlayTheme.Dark, 1.5)]
+    [InlineData(OverlayTheme.Light, 2)]
+    public void SelectedRowsPaintAccentTintAndRoleColors(OverlayTheme theme, double scale)
+    {
+        int Px(double value) => (int)Math.Round(value * scale);
+        var palette = OverlayPalette.For(theme);
+        foreach (var main in new[] { true, false })
+        {
+            var row = new LauncherWindowRow(new(1, "Window"), new(-900, -300, Px(480), Px(32)),
+                true, false, 1, main);
+            var frame = OverlayPainter.Create(row.Bounds.Width, row.Bounds.Height);
+            OverlayPainter.Fill(frame, new(0, 0, frame.Width, frame.Height), palette.Surface);
+            OverlayPainter.WindowRow(frame, row.Bounds, row, theme, scale);
+            var background = OverlayPainter.Create(1, 1);
+            OverlayPainter.Fill(background, new(0, 0, 1, 1), palette.Surface);
+            OverlayPainter.Fill(background, new(0, 0, 1, 1), palette.AccentTint);
+            Assert.Equal(background.Pixels, Pixel(frame, Px(100), Px(16)));
+            var check = row.CheckBounds(scale);
+            Assert.Equal(Px(20), check.Width);
+            Assert.Equal(Px(20), check.Height);
+            Assert.True(row.Bounds.Contains(check));
+            Assert.False(check.Intersects(row.TitleBounds(scale)));
+            Assert.False(row.TitleBounds(scale).Intersects(row.RoleBounds(scale)));
+            var ring = row.IconBounds(scale);
+            var edge = Pixel(frame, ring.X - row.Bounds.X, (int)ring.Center.Y - row.Bounds.Y - 1);
+            var color = main ? palette.BlueText : palette.Subtle;
+            Assert.InRange(Math.Abs(edge[0] - color.Blue), 0, 6);
+            Assert.InRange(Math.Abs(edge[1] - color.Green), 0, 6);
+            Assert.InRange(Math.Abs(edge[2] - color.Red), 0, 6);
+            var center = Pixel(frame, (int)ring.Center.X - row.Bounds.X, (int)ring.Center.Y - row.Bounds.Y);
+            Assert.Equal(main ? new byte[] { color.Blue, color.Green, color.Red, 255 } : background.Pixels, center);
+        }
+    }
+
+    /// <summary>図・ラベル・キーを六十四 DIP に収め、主の区画を zone-fill と accent の枠で描く。</summary>
+    [Theory]
+    [InlineData(OverlayTheme.Light, 1)]
+    [InlineData(OverlayTheme.Dark, 1.5)]
+    [InlineData(OverlayTheme.Light, 2)]
+    public void ArrangementMainZoneUsesTintAndAccentBorderWithoutOverlappingText(OverlayTheme theme, double scale)
+    {
+        int Px(double value) => (int)Math.Round(value * scale);
+        var palette = OverlayPalette.For(theme);
+        foreach (var width in new[] { 60, 132 })
+        {
+            var button = new LauncherArrangeButton(ArrangeLayout.MainAndStack,
+                new(-900, -300, Px(width), Px(64)), "Main");
+            var icon = button.IconBounds(scale);
+            var iconScreen = new PixelRect(button.Bounds.X + icon.X, button.Bounds.Y + icon.Y,
+                icon.Width, icon.Height);
+            Assert.Equal(Px(44), icon.Width);
+            Assert.Equal(Px(28), icon.Height);
+            Assert.True(button.Bounds.Contains(iconScreen));
+            Assert.True(button.Bounds.Contains(button.LabelBounds(scale)));
+            Assert.False(button.LabelBounds(scale).Intersects(iconScreen));
+            var key = button.ShortcutBounds(scale);
+            Assert.Equal(width == 132, key.Width > 0);
+            if (key.Width > 0)
+            {
+                Assert.True(button.Bounds.Contains(key));
+                Assert.False(key.Intersects(iconScreen));
+                Assert.False(key.Intersects(button.LabelBounds(scale)));
+            }
+
+            var frame = OverlayPainter.Create(button.Bounds.Width, button.Bounds.Height);
+            OverlayPainter.ArrangeButton(frame, button, theme, scale);
+            var main = button.IconPixelRects(scale)[0];
+            var reference = OverlayPainter.Create(1, 1);
+            OverlayPainter.Fill(reference, new(0, 0, 1, 1), palette.Surface2);
+            OverlayPainter.Fill(reference, new(0, 0, 1, 1), palette.BlueBackground);
+            Assert.Equal(reference.Pixels, Pixel(frame, icon.X + (int)main.Center.X, icon.Y + (int)main.Center.Y));
+            Assert.Equal(new byte[] { palette.BlueText.Blue, palette.BlueText.Green, palette.BlueText.Red, 255 },
+                Pixel(frame, icon.X + main.X, icon.Y + (int)main.Center.Y));
+        }
+    }
+
+    private static byte[] Pixel(OverlayFrame frame, int x, int y) =>
+        frame.Pixels.AsSpan((y * frame.Width + x) * 4, 4).ToArray();
 
     /// <summary>追加レイヤーの変更と削除を差分だけで復元し、全面描画と同じ画素にする。</summary>
     [Fact]
