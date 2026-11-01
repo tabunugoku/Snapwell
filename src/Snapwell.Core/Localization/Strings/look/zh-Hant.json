@@ -18,7 +18,7 @@
   "Look_ZoneLinesDescription.Text": "為吸附目標格加上虛線邊框（開啟「目標區域預覽」時）。也適用於啟動器中的格線",
   "Look_ZoneLinesToggle.AutomationName": "顯示格線",
   "Look_PredictionLineTitle.Text": "甩出時顯示預測線",
-  "Look_PredictionLineDescription.Text": "用虛線和圓點顯示視窗的預計停止位置（開啟「目標區域預覽」時）。熟悉後可以關閉",
+  "Look_PredictionLineDescription.Text": "用虛線和小方塊顯示視窗的預計停止位置（開啟「目標區域預覽」時）。熟悉後可以關閉",
   "Look_PredictionLineToggle.AutomationName": "甩出時顯示預測線",
   "Look_OverlayExampleTitle.Text": "覆疊層範例",
   "Look_OverlayExampleHint.Text": "這是向右上方甩出視窗的範例。可用上方的「目標區域預覽」和「覆疊層」開關查看顯示的變化。",

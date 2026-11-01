@@ -18,7 +18,7 @@
   "Look_ZoneLinesDescription.Text": "Outlines the snap target with dashes (when Zone preview is on). Also applies to cell lines in the launcher.",
   "Look_ZoneLinesToggle.AutomationName": "Show cell lines",
   "Look_PredictionLineTitle.Text": "Show prediction line on throw",
-  "Look_PredictionLineDescription.Text": "Shows a dotted line and dot to the predicted resting point (when Zone preview is on). Turn it off once you're used to throwing.",
+  "Look_PredictionLineDescription.Text": "Shows a dotted line and a small square to the predicted resting point (when Zone preview is on). Turn it off once you're used to throwing.",
   "Look_PredictionLineToggle.AutomationName": "Show prediction line on throw",
   "Look_OverlayExampleTitle.Text": "Overlay example",
   "Look_OverlayExampleHint.Text": "An example throw to the top right. Use the Zone preview and Overlay switches above to see how the display changes.",

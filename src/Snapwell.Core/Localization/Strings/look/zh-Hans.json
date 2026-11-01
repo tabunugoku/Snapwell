@@ -18,7 +18,7 @@
   "Look_ZoneLinesDescription.Text": "为吸附目标格添加虚线边框（开启“目标区域预览”时）。也适用于启动器中的格线",
   "Look_ZoneLinesToggle.AutomationName": "显示格线",
   "Look_PredictionLineTitle.Text": "甩出时显示预测线",
-  "Look_PredictionLineDescription.Text": "用虚线和圆点显示窗口的预计停止位置（开启“目标区域预览”时）。熟悉后可以关闭",
+  "Look_PredictionLineDescription.Text": "用虚线和小方块显示窗口的预计停止位置（开启“目标区域预览”时）。熟悉后可以关闭",
   "Look_PredictionLineToggle.AutomationName": "甩出时显示预测线",
   "Look_OverlayExampleTitle.Text": "叠加层示例",
   "Look_OverlayExampleHint.Text": "这是向右上方甩出窗口的示例。可用上方的“目标区域预览”和“叠加层”开关查看显示的变化。",
