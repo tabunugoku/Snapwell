@@ -91,7 +91,11 @@ public sealed partial class LauncherPage : Page
             """));
         icon.VerticalAlignment = VerticalAlignment.Center;
         content.Children.Add(icon);
-        content.Children.Add(new TextBlock { Text = preset.Name });
+        content.Children.Add(new TextBlock
+        {
+            Text = preset.Name,
+            Style = (Style)Application.Current.Resources["SnapwellRowTitleStyle"],
+        });
         return content;
     }
 
@@ -118,9 +122,7 @@ public sealed partial class LauncherPage : Page
                 {
                     Content = ContentFor(preset),
                     Style = (Style)Application.Current.Resources["SnapwellButtonStyle"],
-                    Padding = new(8, 4, 8, 4),
-                    FontSize = 12,
-                    Margin = new(0, 0, 6, 6),
+                    Margin = new(0, 0, 4, 4),
                     IsEnabled = preset.KeepSize || preset.RangeFor(GridPlan.EightByEight) is not null,
                 });
             }

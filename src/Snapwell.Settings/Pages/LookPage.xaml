@@ -6,13 +6,14 @@
     xmlns:controls="using:Snapwell.Settings.Controls"
     x:Class="Snapwell.Settings.Pages.LookPage">
     <Page.Resources>
-        <Style x:Key="CornerCardStyle" TargetType="Button">
+        <Style x:Key="CornerCardStyle" TargetType="Button" BasedOn="{StaticResource SnapwellButtonStyle}">
+            <Setter Property="Height" Value="Auto" />
             <Setter Property="HorizontalAlignment" Value="Stretch" />
             <Setter Property="VerticalAlignment" Value="Stretch" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
             <Setter Property="VerticalContentAlignment" Value="Top" />
-            <Setter Property="Padding" Value="10" />
-            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="Padding" Value="12" />
+            <Setter Property="CornerRadius" Value="8" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Background" Value="{ThemeResource SnapwellSurfaceBrush}" />
             <Setter Property="BorderBrush" Value="{ThemeResource SnapwellBorderBrush}" />
@@ -20,18 +21,7 @@
         <Style x:Key="DemoSwitchStyle" TargetType="ToggleSwitch"
                BasedOn="{StaticResource SnapwellDemoSwitchStyle}" />
         <Style x:Key="DemoSelectStyle" TargetType="ComboBox"
-               BasedOn="{StaticResource SnapwellDemoSelectStyle}">
-            <Setter Property="FontFamily" Value="{StaticResource SnapwellUiFontFamily}" />
-            <Setter Property="FontSize" Value="14" />
-            <Setter Property="MinHeight" Value="0" />
-            <Setter Property="Padding" Value="8,6" />
-            <Setter Property="CornerRadius" Value="6" />
-            <Setter Property="Background" Value="{ThemeResource SnapwellSurfaceBrush}" />
-            <Setter Property="Foreground" Value="{ThemeResource SnapwellTextBrush}" />
-            <Setter Property="BorderBrush" Value="{ThemeResource SnapwellBorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-        </Style>
+               BasedOn="{StaticResource SnapwellDemoSelectStyle}" />
     </Page.Resources>
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
         <StackPanel Padding="32,28,32,40" HorizontalAlignment="Stretch">
@@ -108,13 +98,13 @@
                                         BorderBrush="{ThemeResource SnapwellBorderBrush}"
                                         Background="{ThemeResource SnapwellSurfaceBrush}" />
                             </Border>
-                            <TextBlock x:Name="CornerDefaultLabel" FontWeight="SemiBold" FontSize="13" TextWrapping="Wrap"
+                            <TextBlock x:Name="CornerDefaultLabel" Style="{StaticResource SnapwellGroupTitleStyle}" Margin="0"
                                        Foreground="{ThemeResource SnapwellTextBrush}" />
-                            <TextBlock l:Loc.Uid="Look_CornerDefaultDescription" FontSize="11.5" TextWrapping="Wrap"
+                            <TextBlock l:Loc.Uid="Look_CornerDefaultDescription" Style="{StaticResource SnapwellRowDescriptionStyle}"
                                        Foreground="{ThemeResource SnapwellMutedBrush}" />
                         </StackPanel>
                     </Button>
-                    <Border x:Name="CardDefaultMark" CornerRadius="10" BorderThickness="1.5" IsHitTestVisible="False"
+                    <Border x:Name="CardDefaultMark" CornerRadius="8" BorderThickness="1.5" IsHitTestVisible="False"
                             BorderBrush="{ThemeResource SnapwellInkBrush}" Visibility="Collapsed" />
                 </Grid>
                 <Grid Grid.Column="1" VerticalAlignment="Stretch">
@@ -128,13 +118,13 @@
                                         BorderBrush="{ThemeResource SnapwellBorderBrush}"
                                         Background="{ThemeResource SnapwellSurfaceBrush}" />
                             </Border>
-                            <TextBlock x:Name="CornerRoundLabel" FontWeight="SemiBold" FontSize="13" TextWrapping="Wrap"
+                            <TextBlock x:Name="CornerRoundLabel" Style="{StaticResource SnapwellGroupTitleStyle}" Margin="0"
                                        Foreground="{ThemeResource SnapwellTextBrush}" />
-                            <TextBlock l:Loc.Uid="Look_CornerRoundDescription" FontSize="11.5" TextWrapping="Wrap"
+                            <TextBlock l:Loc.Uid="Look_CornerRoundDescription" Style="{StaticResource SnapwellRowDescriptionStyle}"
                                        Foreground="{ThemeResource SnapwellMutedBrush}" />
                         </StackPanel>
                     </Button>
-                    <Border x:Name="CardRoundMark" CornerRadius="10" BorderThickness="1.5" IsHitTestVisible="False"
+                    <Border x:Name="CardRoundMark" CornerRadius="8" BorderThickness="1.5" IsHitTestVisible="False"
                             BorderBrush="{ThemeResource SnapwellInkBrush}" Visibility="Collapsed" />
                 </Grid>
                 <Grid Grid.Column="2" VerticalAlignment="Stretch">
@@ -148,13 +138,13 @@
                                         BorderBrush="{ThemeResource SnapwellBorderBrush}"
                                         Background="{ThemeResource SnapwellSurfaceBrush}" />
                             </Border>
-                            <TextBlock x:Name="CornerSmallLabel" FontWeight="SemiBold" FontSize="13" TextWrapping="Wrap"
+                            <TextBlock x:Name="CornerSmallLabel" Style="{StaticResource SnapwellGroupTitleStyle}" Margin="0"
                                        Foreground="{ThemeResource SnapwellTextBrush}" />
-                            <TextBlock l:Loc.Uid="Look_CornerSmallDescription" FontSize="11.5" TextWrapping="Wrap"
+                            <TextBlock l:Loc.Uid="Look_CornerSmallDescription" Style="{StaticResource SnapwellRowDescriptionStyle}"
                                        Foreground="{ThemeResource SnapwellMutedBrush}" />
                         </StackPanel>
                     </Button>
-                    <Border x:Name="CardSmallMark" CornerRadius="10" BorderThickness="1.5" IsHitTestVisible="False"
+                    <Border x:Name="CardSmallMark" CornerRadius="8" BorderThickness="1.5" IsHitTestVisible="False"
                             BorderBrush="{ThemeResource SnapwellInkBrush}" Visibility="Collapsed" />
                 </Grid>
                 <Grid Grid.Column="3" VerticalAlignment="Stretch">
@@ -168,13 +158,13 @@
                                         BorderBrush="{ThemeResource SnapwellBorderBrush}"
                                         Background="{ThemeResource SnapwellSurfaceBrush}" />
                             </Border>
-                            <TextBlock x:Name="CornerNoneLabel" FontWeight="SemiBold" FontSize="13" TextWrapping="Wrap"
+                            <TextBlock x:Name="CornerNoneLabel" Style="{StaticResource SnapwellGroupTitleStyle}" Margin="0"
                                        Foreground="{ThemeResource SnapwellTextBrush}" />
-                            <TextBlock l:Loc.Uid="Look_CornerNoneDescription" FontSize="11.5" TextWrapping="Wrap"
+                            <TextBlock l:Loc.Uid="Look_CornerNoneDescription" Style="{StaticResource SnapwellRowDescriptionStyle}"
                                        Foreground="{ThemeResource SnapwellMutedBrush}" />
                         </StackPanel>
                     </Button>
-                    <Border x:Name="CardNoneMark" CornerRadius="10" BorderThickness="1.5" IsHitTestVisible="False"
+                    <Border x:Name="CardNoneMark" CornerRadius="8" BorderThickness="1.5" IsHitTestVisible="False"
                             BorderBrush="{ThemeResource SnapwellInkBrush}" Visibility="Collapsed" />
                 </Grid>
             </Grid>
@@ -232,7 +222,7 @@
             <TextBlock l:Loc.Uid="Look_OverlayExampleTitle" Style="{StaticResource SnapwellGroupTitleStyle}" />
             <TextBlock l:Loc.Uid="Look_OverlayExampleHint"
                        Style="{StaticResource SnapwellHintTextStyle}" TextWrapping="Wrap" Margin="0,0,0,8" />
-            <Border l:Loc.Uid="Look_OverlayExampleName" Width="400" Height="190" HorizontalAlignment="Left" CornerRadius="10" BorderThickness="1"
+            <Border l:Loc.Uid="Look_OverlayExampleName" Width="400" Height="190" HorizontalAlignment="Left" CornerRadius="8" BorderThickness="1"
                     BorderBrush="{ThemeResource SnapwellBorderBrush}"
                     Background="{ThemeResource SnapwellSurfaceBrush}"
                     >
@@ -248,11 +238,11 @@
                                    Fill="{ThemeResource SnapwellBlueBackgroundBrush}" />
                         <Rectangle x:Name="OverlayBox" Canvas.Left="199" Width="199" Height="94" RadiusX="8" RadiusY="8"
                                    Stroke="{ThemeResource SnapwellBlueLineBrush}" StrokeThickness="1.5"
-                                   StrokeDashArray="3,3" />
+                                   StrokeDashArray="2.666667,2.666667" />
                         <Line x:Name="OverlayPredLine" X1="91" Y1="139" X2="297" Y2="51"
-                              Stroke="{ThemeResource SnapwellBlueTextBrush}" StrokeThickness="2"
-                              StrokeDashArray="2.5,2.5" />
-                        <Ellipse x:Name="OverlayPredDot" Canvas.Left="292" Canvas.Top="46" Width="10" Height="10"
+                              Stroke="{ThemeResource SnapwellBlueTextBrush}" StrokeThickness="1.5"
+                              StrokeDashArray="2.666667,2.666667" />
+                        <Rectangle x:Name="OverlayPredDot" Canvas.Left="293" Canvas.Top="47" Width="8" Height="8" RadiusX="2" RadiusY="2"
                                  Fill="{ThemeResource SnapwellBlueTextBrush}" />
                         <Border Canvas.Left="11" Canvas.Top="111" Width="96" Height="62" CornerRadius="8"
                                 BorderThickness="1.5" BorderBrush="{ThemeResource SnapwellBorderStrongBrush}"
@@ -262,7 +252,7 @@
                                     Background="{ThemeResource SnapwellSurfaceBrush}" />
                         </Border>
                     </Canvas>
-                    <TextBlock x:Name="OverlayLegend" FontSize="11.5" HorizontalAlignment="Right"
+                    <TextBlock x:Name="OverlayLegend" Style="{StaticResource SnapwellHintTextStyle}" HorizontalAlignment="Right"
                                VerticalAlignment="Bottom" Margin="0,0,8,6" TextAlignment="Right"
                                Foreground="{ThemeResource SnapwellMutedBrush}" />
                 </Grid>

@@ -9,6 +9,7 @@
         <Style x:Key="DemoSwitchStyle" TargetType="ToggleSwitch"
                BasedOn="{StaticResource SnapwellDemoSwitchStyle}" />
         <Style x:Key="FeelCardButtonStyle" TargetType="Button" BasedOn="{StaticResource SnapwellButtonStyle}">
+            <Setter Property="Height" Value="Auto" />
             <Setter Property="Padding" Value="12" />
             <Setter Property="CornerRadius" Value="8" />
             <Setter Property="HorizontalAlignment" Value="Stretch" />
@@ -16,16 +17,12 @@
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
             <Setter Property="VerticalContentAlignment" Value="Stretch" />
         </Style>
-        <Style x:Key="ChipButtonStyle" TargetType="Button" BasedOn="{StaticResource SnapwellButtonStyle}">
-            <Setter Property="Padding" Value="12,5" />
-            <Setter Property="FontSize" Value="13" />
-        </Style>
-        <Style x:Key="SelectedChipButtonStyle" TargetType="Button" BasedOn="{StaticResource SnapwellButtonStyle}">
-            <Setter Property="Padding" Value="11,4" />
-            <Setter Property="FontSize" Value="13" />
-            <Setter Property="Foreground" Value="{ThemeResource SnapwellInkBrush}" />
-            <Setter Property="BorderBrush" Value="{ThemeResource SnapwellInkBrush}" />
-            <Setter Property="BorderThickness" Value="2" />
+        <Style x:Key="ChipButtonStyle" TargetType="Button" BasedOn="{StaticResource SnapwellSmallButtonStyle}" />
+        <Style x:Key="SelectedChipButtonStyle" TargetType="Button" BasedOn="{StaticResource ChipButtonStyle}">
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Background" Value="{ThemeResource SnapwellSurface2Brush}" />
+            <Setter Property="Foreground" Value="{ThemeResource SnapwellTextBrush}" />
+            <Setter Property="BorderBrush" Value="{ThemeResource SnapwellBorderStrongBrush}" />
         </Style>
         <Style x:Key="SelectedFeelCardButtonStyle" TargetType="Button" BasedOn="{StaticResource FeelCardButtonStyle}">
             <Setter Property="Padding" Value="11" />
@@ -55,7 +52,7 @@
                             <RowDefinition Height="*" />
                             <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
-                        <TextBlock l:Loc.Uid="Feel_PresetName_Standard" FontWeight="SemiBold" FontSize="13" LineHeight="20.8"
+                        <TextBlock l:Loc.Uid="Feel_PresetName_Standard" Style="{StaticResource SnapwellGroupTitleStyle}" Margin="0"
                                    Foreground="{ThemeResource SnapwellInkBrush}" />
                         <Viewbox Grid.Row="1" VerticalAlignment="Bottom" Height="54" Stretch="Fill" Margin="0,8,0,0">
                             <Canvas Width="160" Height="54">
@@ -67,7 +64,7 @@
                             </Canvas>
                         </Viewbox>
                         <TextBlock x:Name="StandardMetrics" Grid.Row="2" Margin="0,8,0,0"
-                                   FontSize="12" LineHeight="16" TextWrapping="Wrap"
+                                   Style="{StaticResource SnapwellTagTextStyle}" TextWrapping="Wrap"
                                    Foreground="{ThemeResource SnapwellMutedBrush}" />
                     </Grid>
                 </Button>
@@ -80,7 +77,7 @@
                             <RowDefinition Height="*" />
                             <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
-                        <TextBlock l:Loc.Uid="Feel_PresetName_Crisp" FontWeight="SemiBold" FontSize="13" LineHeight="20.8"
+                        <TextBlock l:Loc.Uid="Feel_PresetName_Crisp" Style="{StaticResource SnapwellGroupTitleStyle}" Margin="0"
                                    Foreground="{ThemeResource SnapwellInkBrush}" />
                         <Viewbox Grid.Row="1" VerticalAlignment="Bottom" Height="54" Stretch="Fill" Margin="0,8,0,0">
                             <Canvas Width="160" Height="54">
@@ -92,7 +89,7 @@
                             </Canvas>
                         </Viewbox>
                         <TextBlock x:Name="CrispMetrics" Grid.Row="2" Margin="0,8,0,0"
-                                   FontSize="12" LineHeight="16" TextWrapping="Wrap"
+                                   Style="{StaticResource SnapwellTagTextStyle}" TextWrapping="Wrap"
                                    Foreground="{ThemeResource SnapwellMutedBrush}" />
                     </Grid>
                 </Button>
@@ -105,7 +102,7 @@
                             <RowDefinition Height="*" />
                             <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
-                        <TextBlock l:Loc.Uid="Feel_PresetName_Smooth" FontWeight="SemiBold" FontSize="13" LineHeight="20.8"
+                        <TextBlock l:Loc.Uid="Feel_PresetName_Smooth" Style="{StaticResource SnapwellGroupTitleStyle}" Margin="0"
                                    Foreground="{ThemeResource SnapwellInkBrush}" />
                         <Viewbox Grid.Row="1" VerticalAlignment="Bottom" Height="54" Stretch="Fill" Margin="0,8,0,0">
                             <Canvas Width="160" Height="54">
@@ -117,7 +114,7 @@
                             </Canvas>
                         </Viewbox>
                         <TextBlock x:Name="SmoothMetrics" Grid.Row="2" Margin="0,8,0,0"
-                                   FontSize="12" LineHeight="16" TextWrapping="Wrap"
+                                   Style="{StaticResource SnapwellTagTextStyle}" TextWrapping="Wrap"
                                    Foreground="{ThemeResource SnapwellMutedBrush}" />
                     </Grid>
                 </Button>
@@ -130,7 +127,7 @@
                             <RowDefinition Height="*" />
                             <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
-                        <TextBlock l:Loc.Uid="Feel_PresetName_Bouncy" FontWeight="SemiBold" FontSize="13" LineHeight="20.8"
+                        <TextBlock l:Loc.Uid="Feel_PresetName_Bouncy" Style="{StaticResource SnapwellGroupTitleStyle}" Margin="0"
                                    Foreground="{ThemeResource SnapwellInkBrush}" />
                         <Viewbox Grid.Row="1" VerticalAlignment="Bottom" Height="54" Stretch="Fill" Margin="0,8,0,0">
                             <Canvas Width="160" Height="54">
@@ -142,7 +139,7 @@
                             </Canvas>
                         </Viewbox>
                         <TextBlock x:Name="BouncyMetrics" Grid.Row="2" Margin="0,8,0,0"
-                                   FontSize="12" LineHeight="16" TextWrapping="Wrap"
+                                   Style="{StaticResource SnapwellTagTextStyle}" TextWrapping="Wrap"
                                    Foreground="{ThemeResource SnapwellMutedBrush}" />
                     </Grid>
                 </Button>
@@ -177,10 +174,10 @@
                                 </Border.RenderTransform>
                                 <Grid>
                                     <Grid.RowDefinitions>
-                                        <RowDefinition Height="36" />
+                                        <RowDefinition Height="32" />
                                         <RowDefinition Height="*" />
                                     </Grid.RowDefinitions>
-                                    <Grid Padding="10,0,0,0" ColumnSpacing="8">
+                                    <Grid Padding="12,0,0,0" ColumnSpacing="8">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="12" />
                                             <ColumnDefinition Width="*" />
@@ -188,7 +185,7 @@
                                         </Grid.ColumnDefinitions>
                                         <Border Height="12" CornerRadius="3" VerticalAlignment="Center"
                                                 Background="{ThemeResource SnapwellMutedBrush}" />
-                                        <TextBlock l:Loc.Uid="Feel_TrialWindowLabel" Grid.Column="1" FontSize="12"
+                                        <TextBlock l:Loc.Uid="Feel_TrialWindowLabel" Grid.Column="1" Style="{StaticResource SnapwellTagTextStyle}"
                                                    VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
                                                    Foreground="{ThemeResource SnapwellTextBrush}" />
                                         <StackPanel Grid.Column="2" Orientation="Horizontal" IsHitTestVisible="False"
@@ -215,7 +212,7 @@
                                             </Canvas>
                                         </StackPanel>
                                     </Grid>
-                                    <StackPanel Grid.Row="1" Spacing="7" Padding="12,10">
+                                    <StackPanel Grid.Row="1" Spacing="8" Padding="12">
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="80*" />

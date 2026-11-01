@@ -6,12 +6,11 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <Page.Resources>
         <Style x:Key="RuleRowStyle" TargetType="Grid" BasedOn="{StaticResource SnapwellRowGridStyle}">
-            <Setter Property="Padding" Value="12,10" />
-            <Setter Property="ColumnSpacing" Value="12" />
             <Setter Property="BorderBrush" Value="{ThemeResource SnapwellBorderBrush}" />
             <Setter Property="BorderThickness" Value="0,0,0,1" />
         </Style>
         <Style x:Key="RuleConditionStyle" TargetType="Button" BasedOn="{StaticResource SnapwellButtonStyle}">
+            <Setter Property="Height" Value="Auto" />
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderBrush" Value="Transparent" />
             <Setter Property="Padding" Value="0,4" />
@@ -26,13 +25,13 @@
             <TextBlock l:Loc.Uid="Rules_Lead" Style="{StaticResource SnapwellLeadTextStyle}" />
             <Border Style="{StaticResource SnapwellRowsBorderStyle}">
                 <StackPanel>
-                    <Grid Padding="12,8" ColumnSpacing="12">
+                    <Grid Padding="16,12" MinHeight="56" ColumnSpacing="16">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="44" />
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="100" />
                             <ColumnDefinition Width="132" />
-                            <ColumnDefinition Width="124" />
+                            <ColumnDefinition Width="140" />
                         </Grid.ColumnDefinitions>
                         <TextBlock l:Loc.Uid="Rules_EnabledColumn" Style="{StaticResource SnapwellHintTextStyle}" />
                         <TextBlock l:Loc.Uid="Rules_ConditionColumn" Grid.Column="1"

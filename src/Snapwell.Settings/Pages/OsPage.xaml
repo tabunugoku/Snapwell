@@ -24,7 +24,10 @@
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                             <Border x:Name="DragSnapTag" Style="{StaticResource SnapwellTagStyle}">
-                                <TextBlock x:Name="DragSnapTagText" Style="{StaticResource SnapwellTagTextStyle}" />
+                                <StackPanel Orientation="Horizontal">
+                                    <Ellipse Style="{StaticResource SnapwellTagGreenDotStyle}" Visibility="Collapsed" />
+                                    <TextBlock x:Name="DragSnapTagText" Style="{StaticResource SnapwellTagTextStyle}" />
+                                </StackPanel>
                             </Border>
                             <ToggleSwitch l:Loc.Uid="Os_StandardSnapToggle" x:Name="StandardSnapToggle"
                                           IsEnabled="False" Style="{StaticResource SnapwellToggleSwitchStyle}"
@@ -45,7 +48,10 @@
                         </StackPanel>
                         <Border x:Name="LayoutTag" Grid.Column="1" VerticalAlignment="Center"
  Style="{StaticResource SnapwellTagStyle}">
-                            <TextBlock x:Name="LayoutTagText" Style="{StaticResource SnapwellTagTextStyle}" />
+                                <StackPanel Orientation="Horizontal">
+                                    <Ellipse Style="{StaticResource SnapwellTagGreenDotStyle}" Visibility="Collapsed" />
+                                    <TextBlock x:Name="LayoutTagText" Style="{StaticResource SnapwellTagTextStyle}" />
+                                </StackPanel>
                         </Border>
                     </Grid>
                     <controls:OsHowDiagram Kind="SnapLayout" />
@@ -62,7 +68,10 @@
                         </StackPanel>
                         <Border x:Name="SnapBarTag" Grid.Column="1" VerticalAlignment="Center"
  Style="{StaticResource SnapwellTagStyle}">
-                            <TextBlock x:Name="SnapBarTagText" Style="{StaticResource SnapwellTagTextStyle}" />
+                                <StackPanel Orientation="Horizontal">
+                                    <Ellipse Style="{StaticResource SnapwellTagGreenDotStyle}" Visibility="Collapsed" />
+                                    <TextBlock x:Name="SnapBarTagText" Style="{StaticResource SnapwellTagTextStyle}" />
+                                </StackPanel>
                         </Border>
                     </Grid>
                     <controls:OsHowDiagram Kind="SnapBar" />
@@ -85,8 +94,11 @@
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                             <Border x:Name="WinArrowTag" Style="{StaticResource SnapwellTagPendingStyle}">
-                                <TextBlock l:Loc.Uid="Os_WinArrowTagText" x:Name="WinArrowTagText"
+                                <StackPanel Orientation="Horizontal">
+                                    <Ellipse Style="{StaticResource SnapwellTagGreenDotStyle}" Visibility="Collapsed" />
+                                    <TextBlock l:Loc.Uid="Os_WinArrowTagText" x:Name="WinArrowTagText"
                                            Style="{StaticResource SnapwellTagTextStyle}" />
+                                </StackPanel>
                             </Border>
                             <ToggleSwitch l:Loc.Uid="Os_ReplaceWinArrowToggle" x:Name="ReplaceWinArrowToggle"
                                           IsEnabled="False" Style="{StaticResource SnapwellToggleSwitchStyle}"

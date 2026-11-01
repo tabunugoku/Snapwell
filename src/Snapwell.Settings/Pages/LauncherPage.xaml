@@ -4,16 +4,15 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       x:Class="Snapwell.Settings.Pages.LauncherPage">
     <Page.Resources>
-        <Style x:Key="PresetOptionCheckBoxStyle" TargetType="CheckBox">
+        <Style x:Key="PresetOptionCheckBoxStyle" TargetType="CheckBox" BasedOn="{StaticResource SnapwellCheckBoxStyle}">
             <Setter Property="MinWidth" Value="0" />
             <Setter Property="MinHeight" Value="0" />
             <Setter Property="Padding" Value="0" />
             <Setter Property="FontFamily" Value="{StaticResource SnapwellUiFontFamily}" />
-            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontSize" Value="14" />
             <Setter Property="Foreground" Value="{ThemeResource SnapwellTextBrush}" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
             <Setter Property="UseSystemFocusVisuals" Value="True" />
-            <Setter Property="FocusVisualMargin" Value="-3" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="CheckBox">
@@ -89,17 +88,17 @@
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
-                            <Grid Width="14" Height="14" Margin="0,0,0,1" VerticalAlignment="Center"
+                            <Grid Width="20" Height="20" VerticalAlignment="Center"
                                   AutomationProperties.AccessibilityView="Raw">
                                 <Border Background="{ThemeResource SnapwellSurfaceBrush}"
                                         BorderBrush="{ThemeResource SnapwellInkBrush}"
-                                        BorderThickness="1" CornerRadius="2" />
-                                <Border x:Name="CheckedMark" Visibility="Collapsed" CornerRadius="2"
+                                        BorderThickness="1" CornerRadius="4" />
+                                <Border x:Name="CheckedMark" Visibility="Collapsed" CornerRadius="4"
                                         Background="{ThemeResource SnapwellInkBrush}">
-                                    <Path Data="M 3,7 L 6,10 L 11,4" StrokeThickness="1.5"
+                                    <Path Data="M 5,10 L 9,14 L 15,6" StrokeThickness="1.5"
                                           Stroke="{ThemeResource SnapwellSurfaceBrush}" />
                                 </Border>
-                                <Border x:Name="IndeterminateMark" Visibility="Collapsed" CornerRadius="2"
+                                <Border x:Name="IndeterminateMark" Visibility="Collapsed" CornerRadius="4"
                                         Background="{ThemeResource SnapwellInkBrush}">
                                     <Rectangle Width="8" Height="2" Fill="{ThemeResource SnapwellSurfaceBrush}" />
                                 </Border>
@@ -119,9 +118,10 @@
             <Setter Property="Background" Value="{ThemeResource SnapwellSurfaceBrush}" />
             <Setter Property="BorderBrush" Value="{ThemeResource SnapwellBorderBrush}" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="6" />
-            <Setter Property="Padding" Value="8,5,10,5" />
-            <Setter Property="Margin" Value="0,0,6,6" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Height" Value="32" />
+            <Setter Property="Padding" Value="8,0,12,0" />
+            <Setter Property="Margin" Value="0,0,4,4" />
         </Style>
         <Style x:Key="PresetOptionSelectedBorder" TargetType="Border" BasedOn="{StaticResource PresetOptionBorder}">
             <Setter Property="BorderBrush" Value="{ThemeResource SnapwellInkBrush}" />
@@ -140,10 +140,10 @@
                         Click="Default_Click" />
             </StackPanel>
             <TextBlock x:Name="Count" Margin="0,12,0,12" Style="{StaticResource SnapwellHintTextStyle}" />
-            <StackPanel x:Name="Groups" Spacing="14" />
+            <StackPanel x:Name="Groups" Spacing="24" />
             <TextBlock l:Loc.Uid="Launcher_PreviewTitle" Style="{StaticResource SnapwellGroupTitleStyle}" />
-            <Border Style="{StaticResource SnapwellRowsBorderStyle}" Padding="14">
-                <StackPanel Spacing="10">
+            <Border Style="{StaticResource SnapwellRowsBorderStyle}" Padding="16">
+                <StackPanel Spacing="12">
                     <TextBlock l:Loc.Uid="Launcher_PreviewTarget" Style="{StaticResource SnapwellHintTextStyle}" />
                     <Grid x:Name="Preview" />
                     <TextBlock l:Loc.Uid="Launcher_EmptyHint" x:Name="EmptyHint" TextWrapping="Wrap"

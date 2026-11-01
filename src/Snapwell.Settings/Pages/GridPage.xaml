@@ -9,43 +9,27 @@
         <Style x:Key="DemoSwitchStyle" TargetType="ToggleSwitch"
                BasedOn="{StaticResource SnapwellDemoSwitchStyle}" />
         <Style x:Key="DemoSelectStyle" TargetType="ComboBox"
-               BasedOn="{StaticResource SnapwellDemoSelectStyle}">
-            <Setter Property="FontFamily" Value="{StaticResource SnapwellUiFontFamily}" />
-            <Setter Property="FontSize" Value="14" />
-            <Setter Property="MinHeight" Value="0" />
-            <Setter Property="Padding" Value="8,6" />
-            <Setter Property="CornerRadius" Value="6" />
-            <Setter Property="Background" Value="{ThemeResource SnapwellSurfaceBrush}" />
+               BasedOn="{StaticResource SnapwellDemoSelectStyle}" />
+        <Style x:Key="ChipButtonStyle" TargetType="Button" BasedOn="{StaticResource SnapwellSmallButtonStyle}" />
+        <Style x:Key="SelectedChipButtonStyle" TargetType="Button" BasedOn="{StaticResource ChipButtonStyle}">
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Background" Value="{ThemeResource SnapwellSurface2Brush}" />
             <Setter Property="Foreground" Value="{ThemeResource SnapwellTextBrush}" />
-            <Setter Property="BorderBrush" Value="{ThemeResource SnapwellBorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-        </Style>
-        <Style x:Key="ChipButtonStyle" TargetType="Button" BasedOn="{StaticResource SnapwellButtonStyle}">
-            <Setter Property="Padding" Value="12,5" />
-            <Setter Property="FontSize" Value="13" />
-        </Style>
-        <Style x:Key="SelectedChipButtonStyle" TargetType="Button" BasedOn="{StaticResource SnapwellButtonStyle}">
-            <Setter Property="Padding" Value="11,4" />
-            <Setter Property="FontSize" Value="13" />
-            <Setter Property="Foreground" Value="{ThemeResource SnapwellInkBrush}" />
-            <Setter Property="BorderBrush" Value="{ThemeResource SnapwellInkBrush}" />
-            <Setter Property="BorderThickness" Value="2" />
+            <Setter Property="BorderBrush" Value="{ThemeResource SnapwellBorderStrongBrush}" />
         </Style>
         <Style x:Key="PreviewCellBorderStyle" TargetType="Border">
             <Setter Property="BorderBrush" Value="{ThemeResource SnapwellCellBorderBrush}" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="2" />
+            <Setter Property="CornerRadius" Value="4" />
         </Style>
         <Style x:Key="PreviewWindowBorderStyle" TargetType="Border">
             <Setter Property="Background" Value="{ThemeResource SnapwellSurfaceBrush}" />
             <Setter Property="BorderBrush" Value="{ThemeResource SnapwellBorderStrongBrush}" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="CornerRadius" Value="8" />
         </Style>
-        <Style x:Key="PreviewWindowLabelStyle" TargetType="TextBlock">
+        <Style x:Key="PreviewWindowLabelStyle" TargetType="TextBlock" BasedOn="{StaticResource SnapwellTagTextStyle}">
             <Setter Property="FontFamily" Value="{StaticResource SnapwellMonoFontFamily}" />
-            <Setter Property="FontSize" Value="11" />
             <Setter Property="Foreground" Value="{ThemeResource SnapwellMutedBrush}" />
             <Setter Property="HorizontalAlignment" Value="Center" />
             <Setter Property="VerticalAlignment" Value="Center" />

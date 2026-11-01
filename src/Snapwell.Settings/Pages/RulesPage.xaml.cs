@@ -2,6 +2,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Shapes;
 using Snapwell.Core.Localization;
 using Snapwell.Core.Rules;
 using Snapwell.Settings.Dialogs;
@@ -58,7 +59,7 @@ public sealed partial class RulesPage : Page
         row.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
         row.ColumnDefinitions.Add(new() { Width = new(100) });
         row.ColumnDefinitions.Add(new() { Width = new(132) });
-        row.ColumnDefinitions.Add(new() { Width = new(124) });
+        row.ColumnDefinitions.Add(new() { Width = new(140) });
         var toggle = new ToggleSwitch
         {
             Style = AppStyle("SnapwellToggleSwitchStyle"),
@@ -76,7 +77,6 @@ public sealed partial class RulesPage : Page
             {
                 Text = lines[lineIndex],
                 Style = AppStyle(lineIndex == 0 ? "SnapwellRowTitleStyle" : "SnapwellHintTextStyle"),
-                FontSize = lineIndex == 0 ? 13 : 12,
                 FontFamily = (FontFamily)Application.Current.Resources["SnapwellMonoFontFamily"],
                 TextWrapping = TextWrapping.Wrap,
             });
@@ -139,16 +139,26 @@ public sealed partial class RulesPage : Page
         RuleRows.Children.Add(row);
     }
 
-    private static Border CreateTag(string text, string color) => new()
+    private static Border CreateTag(string text, string color)
     {
-        Style = AppStyle($"SnapwellTag{color}Style"),
-        Child = new TextBlock
+        var content = new StackPanel { Orientation = Orientation.Horizontal };
+        var dotColor = color switch
         {
-            Text = text,
-            TextWrapping = TextWrapping.Wrap,
-            Style = AppStyle($"SnapwellTag{color}TextStyle"),
-        },
-    };
+            "Red" => "Red",
+            "Yellow" => "Yellow",
+            _ => null,
+        };
+        if (dotColor is not null)
+        {
+            content.Children.Add(new Ellipse { Style = AppStyle($"SnapwellTag{dotColor}DotStyle") });
+        }
+        content.Children.Add(new TextBlock { Text = text, Style = AppStyle("SnapwellTagTextStyle") });
+        return new Border
+        {
+            Style = AppStyle("SnapwellTagStyle"),
+            Child = content,
+        };
+    }
 
     private Button ActionButton(string text, string name, int index, bool enabled, Action action)
     {
@@ -157,10 +167,10 @@ public sealed partial class RulesPage : Page
             Content = text,
             Style = AppStyle("SnapwellButtonStyle"),
             IsEnabled = enabled && !_session.IsReadOnly,
-            Width = 28,
-            Height = 28,
-            MinWidth = 28,
-            MinHeight = 28,
+            Width = 32,
+            Height = 32,
+            MinWidth = 32,
+            MinHeight = 32,
             Padding = new(0, 0, 0, 2),
             HorizontalContentAlignment = HorizontalAlignment.Center,
             VerticalContentAlignment = VerticalAlignment.Center,

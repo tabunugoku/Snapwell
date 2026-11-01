@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Shapes;
 using Snapwell.Core.Commands;
 using Snapwell.Core.Layout;
 using Snapwell.Core.Localization;
@@ -148,13 +149,12 @@ public sealed partial class HotkeysPage : Page
         row.ColumnDefinitions.Add(new() { Width = new(3, GridUnitType.Star) });
         row.ColumnDefinitions.Add(new() { Width = new(4, GridUnitType.Star) });
         row.ColumnDefinitions.Add(new() { Width = new(120) });
-        row.ColumnDefinitions.Add(new() { Width = new(72) });
+        row.ColumnDefinitions.Add(new() { Width = new(68) });
         row.Children.Add(new TextBlock
         {
             Text = name,
             TextWrapping = TextWrapping.Wrap,
             Style = AppStyle("SnapwellRowTitleStyle"),
-            FontSize = 13,
             VerticalAlignment = VerticalAlignment.Center,
         });
         var key = new Button { IsEnabled = !_session.IsReadOnly };
@@ -211,12 +211,27 @@ public sealed partial class HotkeysPage : Page
         HotkeyRows.Children.Add(container);
     }
 
-    private static Border CreateTag(string text, string color) => new()
+    private static Border CreateTag(string text, string color)
     {
-        Style = AppStyle($"SnapwellTag{color}Style"),
-        Margin = new(0, 2, 4, 2),
-        Child = new TextBlock { Text = text, Style = AppStyle($"SnapwellTag{color}TextStyle") },
-    };
+        var content = new StackPanel { Orientation = Orientation.Horizontal };
+        var dotColor = color switch
+        {
+            "Red" => "Red",
+            "Yellow" => "Yellow",
+            _ => null,
+        };
+        if (dotColor is not null)
+        {
+            content.Children.Add(new Ellipse { Style = AppStyle($"SnapwellTag{dotColor}DotStyle") });
+        }
+        content.Children.Add(new TextBlock { Text = text, Style = AppStyle("SnapwellTagTextStyle") });
+        return new Border
+        {
+            Style = AppStyle("SnapwellTagStyle"),
+            Margin = new(0, 2, 4, 2),
+            Child = content,
+        };
+    }
 
     private static Button ActionButton(string text, string name, bool enabled, Action action)
     {
@@ -225,10 +240,10 @@ public sealed partial class HotkeysPage : Page
             Content = text,
             Style = AppStyle("SnapwellButtonStyle"),
             IsEnabled = enabled,
-            Width = 28,
-            Height = 28,
-            MinWidth = 28,
-            MinHeight = 28,
+            Width = 32,
+            Height = 32,
+            MinWidth = 32,
+            MinHeight = 32,
             // 記号のフォントは字面が em ボックスの下寄りなので、実測した分だけ下の余白で持ち上げる。
             Padding = text == "↺" ? new(0, 0, 0, 5) : new(0, 0, 0, 2),
             HorizontalContentAlignment = HorizontalAlignment.Center,
@@ -243,7 +258,7 @@ public sealed partial class HotkeysPage : Page
         return button;
     }
 
-    /// <summary>確認の選択肢に使う文字入りのボタン。28 px 角のアイコンボタンでは文字が収まらない。</summary>
+    /// <summary>確認の選択肢に使う文字入りのボタン。32 px 角のアイコンボタンでは文字が収まらない。</summary>
     private static Button TextActionButton(string text, bool enabled, Action action)
     {
         var button = new Button { Content = text, Style = AppStyle("SnapwellActionButtonStyle"), IsEnabled = enabled };

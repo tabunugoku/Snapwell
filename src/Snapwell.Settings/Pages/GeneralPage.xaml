@@ -9,18 +9,7 @@
         <Style x:Key="DemoSwitchStyle" TargetType="ToggleSwitch"
                BasedOn="{StaticResource SnapwellDemoSwitchStyle}" />
         <Style x:Key="DemoSelectStyle" TargetType="ComboBox"
-               BasedOn="{StaticResource SnapwellDemoSelectStyle}">
-            <Setter Property="FontFamily" Value="{StaticResource SnapwellUiFontFamily}" />
-            <Setter Property="FontSize" Value="14" />
-            <Setter Property="MinHeight" Value="0" />
-            <Setter Property="Padding" Value="8,6" />
-            <Setter Property="CornerRadius" Value="6" />
-            <Setter Property="Background" Value="{ThemeResource SnapwellSurfaceBrush}" />
-            <Setter Property="Foreground" Value="{ThemeResource SnapwellTextBrush}" />
-            <Setter Property="BorderBrush" Value="{ThemeResource SnapwellBorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-        </Style>
+               BasedOn="{StaticResource SnapwellDemoSelectStyle}" />
     </Page.Resources>
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
         <StackPanel Padding="32,28,32,40" HorizontalAlignment="Stretch">

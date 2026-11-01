@@ -84,6 +84,7 @@ public sealed partial class OsPage : Page
         var resources = Application.Current.Resources;
         border.Style = (Style)resources[stopped ? "SnapwellTagGreenStyle" : "SnapwellTagPendingStyle"];
         text.Style = (Style)resources[stopped ? "SnapwellTagGreenTextStyle" : "SnapwellTagTextStyle"];
+        ((StackPanel)border.Child).Children[0].Visibility = stopped ? Visibility.Visible : Visibility.Collapsed;
         text.Text = label;
     }
 
