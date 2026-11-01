@@ -12,444 +12,627 @@
                     <ResourceDictionary.ThemeDictionaries>
                         <!-- モックアップ (docs/mockups/snapwell.html) の :root (Light) の色トークン -->
                         <ResourceDictionary x:Key="Light">
-                            <SolidColorBrush x:Key="SnapwellBackgroundBrush" Color="#FFF7F6F3" />
+                            <SolidColorBrush x:Key="SnapwellBackgroundBrush" Color="#FFF5F5F3" />
                             <SolidColorBrush x:Key="SnapwellSurfaceBrush" Color="#FFFFFFFF" />
-                            <SolidColorBrush x:Key="SnapwellSurface2Brush" Color="#FFF9F9F8" />
-                            <SolidColorBrush x:Key="SnapwellBorderBrush" Color="#FFEAEAEA" />
-                            <SolidColorBrush x:Key="SnapwellBorderStrongBrush" Color="#FFDADAD7" />
-                            <SolidColorBrush x:Key="SnapwellTextBrush" Color="#FF2F3437" />
-                            <SolidColorBrush x:Key="SnapwellMutedBrush" Color="#FF787774" />
-                            <SolidColorBrush x:Key="SnapwellInkBrush" Color="#FF111111" />
+                            <SolidColorBrush x:Key="SnapwellSurface2Brush" Color="#FFEFEFED" />
+                            <SolidColorBrush x:Key="SnapwellBorderBrush" Color="#171C1C1B" />
+                            <SolidColorBrush x:Key="SnapwellBorderStrongBrush" Color="#2E1C1C1B" />
+                            <SolidColorBrush x:Key="SnapwellTextBrush" Color="#FF1C1C1B" />
+                            <SolidColorBrush x:Key="SnapwellMutedBrush" Color="#FF52524F" />
+                            <SolidColorBrush x:Key="SnapwellSubtleBrush" Color="#FF6B6B67" />
+                            <SolidColorBrush x:Key="SnapwellInkBrush" Color="#FF1C1C1B" />
                             <SolidColorBrush x:Key="SnapwellInkTextBrush" Color="#FFFFFFFF" />
-                            <SolidColorBrush x:Key="SnapwellInkHoverBrush" Color="#FF333333" />
-                            <SolidColorBrush x:Key="SnapwellWallBrush" Color="#FFECEAE5" />
-                            <SolidColorBrush x:Key="SnapwellWallLineBrush" Color="#09000000" />
+                            <SolidColorBrush x:Key="SnapwellInkHoverBrush" Color="#FF3A3A38" />
+                            <SolidColorBrush x:Key="SnapwellWallBrush" Color="#FFDCDCD8" />
+                            <SolidColorBrush x:Key="SnapwellWallLineBrush" Color="#0A1C1C1B" />
                             <SolidColorBrush x:Key="SnapwellTaskbarBrush" Color="#D1FFFFFF" />
-                            <SolidColorBrush x:Key="SnapwellDimBrush" Color="#8CF7F6F3" />
-                            <SolidColorBrush x:Key="SnapwellCellBrush" Color="#8CFFFFFF" />
-                            <SolidColorBrush x:Key="SnapwellCellBorderBrush" Color="#14000000" />
-                            <SolidColorBrush x:Key="SnapwellBlueBackgroundBrush" Color="#FFE1F3FE" />
+                            <SolidColorBrush x:Key="SnapwellDimBrush" Color="#8CF5F5F3" />
+                            <SolidColorBrush x:Key="SnapwellCellBrush" Color="#80FFFFFF" />
+                            <SolidColorBrush x:Key="SnapwellCellBorderBrush" Color="#1A1C1C1B" />
+                            <SolidColorBrush x:Key="SnapwellBlueBackgroundBrush" Color="#1F1F6C9F" />
                             <SolidColorBrush x:Key="SnapwellBlueTextBrush" Color="#FF1F6C9F" />
-                            <SolidColorBrush x:Key="SnapwellBlueLineBrush" Color="#8C1F6C9F" />
-                            <SolidColorBrush x:Key="SnapwellRedBackgroundBrush" Color="#FFFDEBEC" />
-                            <SolidColorBrush x:Key="SnapwellRedTextBrush" Color="#FF9F2F2D" />
-                            <SolidColorBrush x:Key="SnapwellGreenBackgroundBrush" Color="#FFEDF3EC" />
-                            <SolidColorBrush x:Key="SnapwellGreenTextBrush" Color="#FF346538" />
-                            <SolidColorBrush x:Key="SnapwellYellowBackgroundBrush" Color="#FFFBF3DB" />
-                            <SolidColorBrush x:Key="SnapwellYellowTextBrush" Color="#FF956400" />
-                            <SolidColorBrush x:Key="SnapwellSkeletonBrush" Color="#FFEFEEEB" />
+                            <SolidColorBrush x:Key="SnapwellBlueLineBrush" Color="#991F6C9F" />
+                            <SolidColorBrush x:Key="SnapwellRedBackgroundBrush" Color="#14B42318" />
+                            <SolidColorBrush x:Key="SnapwellRedTextBrush" Color="#FFB42318" />
+                            <SolidColorBrush x:Key="SnapwellGreenTextBrush" Color="#FF2F7A3E" />
+                            <SolidColorBrush x:Key="SnapwellYellowBackgroundBrush" Color="#148A5A00" />
+                            <SolidColorBrush x:Key="SnapwellYellowTextBrush" Color="#FF8A5A00" />
+                            <SolidColorBrush x:Key="SnapwellSkeletonBrush" Color="#FFE9E9E6" />
 
                             <!-- 無効時もモックアップの中立色を使い、輪郭と文字を残す。 -->
                             <StaticResource x:Key="ButtonBackgroundDisabled" ResourceKey="SnapwellSurface2Brush" />
-                            <StaticResource x:Key="ButtonForegroundDisabled" ResourceKey="SnapwellMutedBrush" />
+                            <StaticResource x:Key="ButtonForegroundDisabled" ResourceKey="SnapwellSubtleBrush" />
                             <StaticResource x:Key="ButtonBorderBrushDisabled" ResourceKey="SnapwellBorderBrush" />
                             <StaticResource x:Key="ComboBoxBackgroundDisabled" ResourceKey="SnapwellSurface2Brush" />
-                            <StaticResource x:Key="ComboBoxForegroundDisabled" ResourceKey="SnapwellMutedBrush" />
+                            <StaticResource x:Key="ComboBoxForegroundDisabled" ResourceKey="SnapwellSubtleBrush" />
                             <StaticResource x:Key="ComboBoxBorderBrushDisabled" ResourceKey="SnapwellBorderBrush" />
 
                             <!-- 標準コントロールの強調色とテーマ色をモックアップのトークンに合わせる -->
-                            <SolidColorBrush x:Key="AccentFillColorDefaultBrush" Color="#FF111111" />
-                            <SolidColorBrush x:Key="AccentFillColorSecondaryBrush" Color="#FF333333" />
-                            <SolidColorBrush x:Key="AccentFillColorTertiaryBrush" Color="#FF333333" />
+                            <SolidColorBrush x:Key="AccentFillColorDefaultBrush" Color="#FF1C1C1B" />
+                            <SolidColorBrush x:Key="AccentFillColorSecondaryBrush" Color="#FF3A3A38" />
+                            <SolidColorBrush x:Key="AccentFillColorTertiaryBrush" Color="#FF3A3A38" />
                             <SolidColorBrush x:Key="TextOnAccentFillColorPrimaryBrush" Color="#FFFFFFFF" />
                             <SolidColorBrush x:Key="TextOnAccentFillColorSecondaryBrush" Color="#FFFFFFFF" />
-                            <SolidColorBrush x:Key="AccentTextFillColorPrimaryBrush" Color="#FF111111" />
-                            <SolidColorBrush x:Key="AccentTextFillColorSecondaryBrush" Color="#FF333333" />
-                            <SolidColorBrush x:Key="AccentTextFillColorTertiaryBrush" Color="#FF333333" />
+                            <SolidColorBrush x:Key="AccentTextFillColorPrimaryBrush" Color="#FF1C1C1B" />
+                            <SolidColorBrush x:Key="AccentTextFillColorSecondaryBrush" Color="#FF3A3A38" />
+                            <SolidColorBrush x:Key="AccentTextFillColorTertiaryBrush" Color="#FF3A3A38" />
 
                             <SolidColorBrush x:Key="ButtonBackground" Color="#FFFFFFFF" />
-                            <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#FFF9F9F8" />
-                            <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#FFF9F9F8" />
-                            <SolidColorBrush x:Key="ButtonForeground" Color="#FF2F3437" />
-                            <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#FF2F3437" />
-                            <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#FF2F3437" />
-                            <SolidColorBrush x:Key="ButtonBorderBrush" Color="#FFEAEAEA" />
-                            <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#FFDADAD7" />
-                            <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="#FFDADAD7" />
+                            <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#FFEFEFED" />
+                            <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#FFEFEFED" />
+                            <SolidColorBrush x:Key="ButtonForeground" Color="#FF1C1C1B" />
+                            <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#FF1C1C1B" />
+                            <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#FF52524F" />
+                            <SolidColorBrush x:Key="ButtonBorderBrush" Color="#2E1C1C1B" />
+                            <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#2E1C1C1B" />
+                            <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="#2E1C1C1B" />
 
-                            <SolidColorBrush x:Key="AccentButtonBackground" Color="#FF111111" />
-                            <SolidColorBrush x:Key="AccentButtonBackgroundPointerOver" Color="#FF333333" />
-                            <SolidColorBrush x:Key="AccentButtonBackgroundPressed" Color="#FF333333" />
+                            <SolidColorBrush x:Key="AccentButtonBackground" Color="#FF1C1C1B" />
+                            <SolidColorBrush x:Key="AccentButtonBackgroundPointerOver" Color="#FF3A3A38" />
+                            <SolidColorBrush x:Key="AccentButtonBackgroundPressed" Color="#FF3A3A38" />
                             <SolidColorBrush x:Key="AccentButtonForeground" Color="#FFFFFFFF" />
                             <SolidColorBrush x:Key="AccentButtonForegroundPointerOver" Color="#FFFFFFFF" />
                             <SolidColorBrush x:Key="AccentButtonForegroundPressed" Color="#FFFFFFFF" />
-                            <SolidColorBrush x:Key="AccentButtonBorderBrush" Color="#FF111111" />
-                            <SolidColorBrush x:Key="AccentButtonBorderBrushPointerOver" Color="#FF333333" />
-                            <SolidColorBrush x:Key="AccentButtonBorderBrushPressed" Color="#FF333333" />
+                            <SolidColorBrush x:Key="AccentButtonBorderBrush" Color="#FF1C1C1B" />
+                            <SolidColorBrush x:Key="AccentButtonBorderBrushPointerOver" Color="#FF3A3A38" />
+                            <SolidColorBrush x:Key="AccentButtonBorderBrushPressed" Color="#FF3A3A38" />
 
-                            <SolidColorBrush x:Key="ToggleSwitchFillOn" Color="#FF111111" />
-                            <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="#FF333333" />
-                            <SolidColorBrush x:Key="ToggleSwitchFillOnPressed" Color="#FF333333" />
-                            <SolidColorBrush x:Key="ToggleSwitchStrokeOn" Color="#FF111111" />
-                            <SolidColorBrush x:Key="ToggleSwitchStrokeOnPointerOver" Color="#FF333333" />
-                            <SolidColorBrush x:Key="ToggleSwitchStrokeOnPressed" Color="#FF333333" />
+                            <SolidColorBrush x:Key="ToggleSwitchFillOn" Color="#FF1C1C1B" />
+                            <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="#FF3A3A38" />
+                            <SolidColorBrush x:Key="ToggleSwitchFillOnPressed" Color="#FF3A3A38" />
+                            <SolidColorBrush x:Key="ToggleSwitchStrokeOn" Color="#FF1C1C1B" />
+                            <SolidColorBrush x:Key="ToggleSwitchStrokeOnPointerOver" Color="#FF3A3A38" />
+                            <SolidColorBrush x:Key="ToggleSwitchStrokeOnPressed" Color="#FF3A3A38" />
                             <SolidColorBrush x:Key="ToggleSwitchKnobFillOn" Color="#FFFFFFFF" />
                             <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPointerOver" Color="#FFFFFFFF" />
                             <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPressed" Color="#FFFFFFFF" />
-                            <SolidColorBrush x:Key="ToggleSwitchStrokeOff" Color="#FF787774" />
-                            <SolidColorBrush x:Key="ToggleSwitchStrokeOffPointerOver" Color="#FF2F3437" />
-                            <SolidColorBrush x:Key="ToggleSwitchStrokeOffPressed" Color="#FF2F3437" />
-                            <SolidColorBrush x:Key="ToggleSwitchKnobFillOff" Color="#FF787774" />
-                            <SolidColorBrush x:Key="ToggleSwitchKnobFillOffPointerOver" Color="#FF2F3437" />
-                            <SolidColorBrush x:Key="ToggleSwitchKnobFillOffPressed" Color="#FF2F3437" />
+                            <SolidColorBrush x:Key="ToggleSwitchStrokeOff" Color="#FF52524F" />
+                            <SolidColorBrush x:Key="ToggleSwitchStrokeOffPointerOver" Color="#FF52524F" />
+                            <SolidColorBrush x:Key="ToggleSwitchStrokeOffPressed" Color="#FF52524F" />
+                            <SolidColorBrush x:Key="ToggleSwitchKnobFillOff" Color="#FF52524F" />
+                            <SolidColorBrush x:Key="ToggleSwitchKnobFillOffPointerOver" Color="#FF52524F" />
+                            <SolidColorBrush x:Key="ToggleSwitchKnobFillOffPressed" Color="#FF52524F" />
 
-                            <SolidColorBrush x:Key="SliderTrackValueFill" Color="#FF111111" />
-                            <SolidColorBrush x:Key="SliderTrackValueFillPointerOver" Color="#FF333333" />
-                            <SolidColorBrush x:Key="SliderTrackValueFillPressed" Color="#FF333333" />
-                            <SolidColorBrush x:Key="SliderTrackValueFillDisabled" Color="#FF787774" />
-                            <SolidColorBrush x:Key="SliderThumbBackground" Color="#FF111111" />
-                            <SolidColorBrush x:Key="SliderThumbBackgroundPointerOver" Color="#FF333333" />
-                            <SolidColorBrush x:Key="SliderThumbBackgroundPressed" Color="#FF333333" />
-                            <SolidColorBrush x:Key="SliderThumbBackgroundDisabled" Color="#FF787774" />
-                            <SolidColorBrush x:Key="SliderTrackFill" Color="#FFDADAD7" />
-                            <SolidColorBrush x:Key="SliderTrackFillPointerOver" Color="#FFDADAD7" />
-                            <SolidColorBrush x:Key="SliderTrackFillPressed" Color="#FFDADAD7" />
-                            <SolidColorBrush x:Key="SliderTrackFillDisabled" Color="#FFEAEAEA" />
+                            <SolidColorBrush x:Key="SliderTrackValueFill" Color="#FF1C1C1B" />
+                            <SolidColorBrush x:Key="SliderTrackValueFillPointerOver" Color="#FF3A3A38" />
+                            <SolidColorBrush x:Key="SliderTrackValueFillPressed" Color="#FF3A3A38" />
+                            <SolidColorBrush x:Key="SliderTrackValueFillDisabled" Color="#FF6B6B67" />
+                            <SolidColorBrush x:Key="SliderThumbBackground" Color="#FF1C1C1B" />
+                            <SolidColorBrush x:Key="SliderThumbBackgroundPointerOver" Color="#FF3A3A38" />
+                            <SolidColorBrush x:Key="SliderThumbBackgroundPressed" Color="#FF3A3A38" />
+                            <SolidColorBrush x:Key="SliderThumbBackgroundDisabled" Color="#FF6B6B67" />
+                            <SolidColorBrush x:Key="SliderTrackFill" Color="#2E1C1C1B" />
+                            <SolidColorBrush x:Key="SliderTrackFillPointerOver" Color="#2E1C1C1B" />
+                            <SolidColorBrush x:Key="SliderTrackFillPressed" Color="#2E1C1C1B" />
+                            <SolidColorBrush x:Key="SliderTrackFillDisabled" Color="#171C1C1B" />
 
-                            <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillChecked" Color="#FF111111" />
-                            <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver" Color="#FF333333" />
-                            <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPressed" Color="#FF333333" />
-                            <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedDisabled" Color="#FF787774" />
-                            <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeChecked" Color="#FF111111" />
-                            <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedPointerOver" Color="#FF333333" />
-                            <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedPressed" Color="#FF333333" />
-                            <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedDisabled" Color="#FF787774" />
+                            <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillChecked" Color="#FF1C1C1B" />
+                            <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver" Color="#FF3A3A38" />
+                            <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPressed" Color="#FF3A3A38" />
+                            <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedDisabled" Color="#FF6B6B67" />
+                            <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeChecked" Color="#FF1C1C1B" />
+                            <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedPointerOver" Color="#FF3A3A38" />
+                            <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedPressed" Color="#FF3A3A38" />
+                            <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedDisabled" Color="#FF6B6B67" />
                             <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundChecked" Color="#FFFFFFFF" />
                             <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedPointerOver" Color="#FFFFFFFF" />
                             <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedPressed" Color="#FFFFFFFF" />
                             <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedDisabled" Color="#FFFFFFFF" />
 
-                            <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#FF111111" />
-                            <SolidColorBrush x:Key="ComboBoxBorderBrushFocused" Color="#FF111111" />
-                            <SolidColorBrush x:Key="ComboBoxItemPillFillBrush" Color="#FF111111" />
-                            <SolidColorBrush x:Key="ListViewItemSelectionIndicatorBrush" Color="#FF111111" />
-                            <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPointerOverBrush" Color="#FF333333" />
-                            <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPressedBrush" Color="#FF333333" />
-                            <SolidColorBrush x:Key="ListViewItemCheckBoxSelectedBrush" Color="#FF111111" />
-                            <SolidColorBrush x:Key="ListViewItemCheckBoxSelectedPointerOverBrush" Color="#FF333333" />
-                            <SolidColorBrush x:Key="ListViewItemCheckBoxSelectedPressedBrush" Color="#FF333333" />
+                            <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#2E1C1C1B" />
+                            <SolidColorBrush x:Key="ComboBoxBorderBrushFocused" Color="#2E1C1C1B" />
+                            <SolidColorBrush x:Key="ComboBoxItemPillFillBrush" Color="#FF1C1C1B" />
+                            <SolidColorBrush x:Key="ListViewItemSelectionIndicatorBrush" Color="#FF1C1C1B" />
+                            <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPointerOverBrush" Color="#FF3A3A38" />
+                            <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPressedBrush" Color="#FF3A3A38" />
+                            <SolidColorBrush x:Key="ListViewItemCheckBoxSelectedBrush" Color="#FF1C1C1B" />
+                            <SolidColorBrush x:Key="ListViewItemCheckBoxSelectedPointerOverBrush" Color="#FF3A3A38" />
+                            <SolidColorBrush x:Key="ListViewItemCheckBoxSelectedPressedBrush" Color="#FF3A3A38" />
                             <SolidColorBrush x:Key="ListViewItemCheckBrush" Color="#FFFFFFFF" />
                             <SolidColorBrush x:Key="ListViewItemCheckPointerOverBrush" Color="#FFFFFFFF" />
                             <SolidColorBrush x:Key="ListViewItemCheckPressedBrush" Color="#FFFFFFFF" />
 
                             <!-- モックアップの .snav の配色と選択表示 -->
-                            <SolidColorBrush x:Key="NavigationViewDefaultPaneBackground" Color="#FFF9F9F8" />
-                            <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="#FFF9F9F8" />
-                            <SolidColorBrush x:Key="NavigationViewTopPaneBackground" Color="#FFF9F9F8" />
-                            <SolidColorBrush x:Key="NavigationViewContentBackground" Color="#FFFFFFFF" />
+                            <SolidColorBrush x:Key="NavigationViewDefaultPaneBackground" Color="#FFF5F5F3" />
+                            <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="#FFF5F5F3" />
+                            <SolidColorBrush x:Key="NavigationViewTopPaneBackground" Color="#FFF5F5F3" />
+                            <SolidColorBrush x:Key="NavigationViewContentBackground" Color="#FFF5F5F3" />
                             <SolidColorBrush x:Key="NavigationViewContentGridBorderBrush" Color="Transparent" />
                             <SolidColorBrush x:Key="NavigationViewItemBackground" Color="Transparent" />
-                            <SolidColorBrush x:Key="NavigationViewItemBackgroundPointerOver" Color="#FFFFFFFF" />
-                            <SolidColorBrush x:Key="NavigationViewItemBackgroundPressed" Color="#FFFFFFFF" />
-                            <SolidColorBrush x:Key="NavigationViewItemBackgroundSelected" Color="#FFFFFFFF" />
-                            <SolidColorBrush x:Key="NavigationViewItemBackgroundSelectedPointerOver" Color="#FFFFFFFF" />
-                            <SolidColorBrush x:Key="NavigationViewItemBackgroundSelectedPressed" Color="#FFFFFFFF" />
-                            <SolidColorBrush x:Key="NavigationViewItemForeground" Color="#FF2F3437" />
-                            <SolidColorBrush x:Key="NavigationViewItemForegroundPointerOver" Color="#FF2F3437" />
-                            <SolidColorBrush x:Key="NavigationViewItemForegroundPressed" Color="#FF2F3437" />
-                            <SolidColorBrush x:Key="NavigationViewItemForegroundSelected" Color="#FF2F3437" />
-                            <SolidColorBrush x:Key="NavigationViewItemForegroundSelectedPointerOver" Color="#FF2F3437" />
-                            <SolidColorBrush x:Key="NavigationViewItemForegroundSelectedPressed" Color="#FF2F3437" />
+                            <SolidColorBrush x:Key="NavigationViewItemBackgroundPointerOver" Color="#FFEFEFED" />
+                            <SolidColorBrush x:Key="NavigationViewItemBackgroundPressed" Color="#FFEFEFED" />
+                            <SolidColorBrush x:Key="NavigationViewItemBackgroundSelected" Color="#FFEFEFED" />
+                            <SolidColorBrush x:Key="NavigationViewItemBackgroundSelectedPointerOver" Color="#FFEFEFED" />
+                            <SolidColorBrush x:Key="NavigationViewItemBackgroundSelectedPressed" Color="#FFEFEFED" />
+                            <SolidColorBrush x:Key="NavigationViewItemForeground" Color="#FF1C1C1B" />
+                            <SolidColorBrush x:Key="NavigationViewItemForegroundPointerOver" Color="#FF1C1C1B" />
+                            <SolidColorBrush x:Key="NavigationViewItemForegroundPressed" Color="#FF1C1C1B" />
+                            <SolidColorBrush x:Key="NavigationViewItemForegroundSelected" Color="#FF1C1C1B" />
+                            <SolidColorBrush x:Key="NavigationViewItemForegroundSelectedPointerOver" Color="#FF1C1C1B" />
+                            <SolidColorBrush x:Key="NavigationViewItemForegroundSelectedPressed" Color="#FF1C1C1B" />
                             <SolidColorBrush x:Key="NavigationViewItemBorderBrush" Color="Transparent" />
                             <SolidColorBrush x:Key="NavigationViewItemBorderBrushPointerOver" Color="Transparent" />
                             <SolidColorBrush x:Key="NavigationViewItemBorderBrushPressed" Color="Transparent" />
-                            <SolidColorBrush x:Key="NavigationViewItemBorderBrushSelected" Color="#FFEAEAEA" />
-                            <SolidColorBrush x:Key="NavigationViewItemBorderBrushSelectedPointerOver" Color="#FFEAEAEA" />
-                            <SolidColorBrush x:Key="NavigationViewItemBorderBrushSelectedPressed" Color="#FFEAEAEA" />
-                            <SolidColorBrush x:Key="NavigationViewSelectionIndicatorForeground" Color="#FF111111" />
+                            <SolidColorBrush x:Key="NavigationViewItemBorderBrushSelected" Color="Transparent" />
+                            <SolidColorBrush x:Key="NavigationViewItemBorderBrushSelectedPointerOver" Color="Transparent" />
+                            <SolidColorBrush x:Key="NavigationViewItemBorderBrushSelectedPressed" Color="Transparent" />
+                            <SolidColorBrush x:Key="NavigationViewSelectionIndicatorForeground" Color="#FF1C1C1B" />
+
+                            <!-- アクセントは輪と区画、意味の色は InfoBar のアイコンに使う。 -->
+                            <Color x:Key="SystemAccentColor">#FF1F6C9F</Color>
+                            <Color x:Key="SystemAccentColorDark1">#FF1F6C9F</Color>
+                            <Color x:Key="SystemAccentColorDark2">#FF1F6C9F</Color>
+                            <Color x:Key="SystemAccentColorDark3">#FF1F6C9F</Color>
+                            <Color x:Key="SystemAccentColorLight1">#FF1F6C9F</Color>
+                            <Color x:Key="SystemAccentColorLight2">#FF1F6C9F</Color>
+                            <Color x:Key="SystemAccentColorLight3">#FF1F6C9F</Color>
+                            <SolidColorBrush x:Key="FocusVisualPrimaryBrush" Color="#FF1F6C9F" />
+                            <SolidColorBrush x:Key="FocusVisualSecondaryBrush" Color="Transparent" />
+                            <StaticResource x:Key="AccentButtonBackgroundDisabled" ResourceKey="SnapwellSurface2Brush" />
+                            <StaticResource x:Key="AccentButtonForegroundDisabled" ResourceKey="SnapwellSubtleBrush" />
+                            <StaticResource x:Key="AccentButtonBorderBrushDisabled" ResourceKey="SnapwellBorderBrush" />
+                            <SolidColorBrush x:Key="TextControlBorderBrush" Color="#2E1C1C1B" />
+                            <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="#2E1C1C1B" />
+                            <SolidColorBrush x:Key="TextControlBorderBrushPressed" Color="#2E1C1C1B" />
+                            <SolidColorBrush x:Key="TextControlBorderBrushDisabled" Color="#2E1C1C1B" />
+                            <StaticResource x:Key="TextControlBackground" ResourceKey="SnapwellSurface2Brush" />
+                            <StaticResource x:Key="TextControlBackgroundPointerOver" ResourceKey="SnapwellSurface2Brush" />
+                            <StaticResource x:Key="TextControlBackgroundFocused" ResourceKey="SnapwellSurface2Brush" />
+                            <StaticResource x:Key="TextControlForeground" ResourceKey="SnapwellTextBrush" />
+                            <StaticResource x:Key="TextControlForegroundPointerOver" ResourceKey="SnapwellTextBrush" />
+                            <StaticResource x:Key="TextControlForegroundFocused" ResourceKey="SnapwellTextBrush" />
+                            <StaticResource x:Key="TextControlForegroundDisabled" ResourceKey="SnapwellSubtleBrush" />
+                            <SolidColorBrush x:Key="ComboBoxBorderBrush" Color="#2E1C1C1B" />
+                            <SolidColorBrush x:Key="ComboBoxBorderBrushPointerOver" Color="#2E1C1C1B" />
+                            <SolidColorBrush x:Key="ComboBoxBorderBrushPressed" Color="#2E1C1C1B" />
+                            <StaticResource x:Key="ComboBoxBackground" ResourceKey="SnapwellSurface2Brush" />
+                            <StaticResource x:Key="ComboBoxBackgroundPointerOver" ResourceKey="SnapwellSurface2Brush" />
+                            <StaticResource x:Key="ComboBoxBackgroundFocused" ResourceKey="SnapwellSurface2Brush" />
+                            <StaticResource x:Key="ComboBoxForeground" ResourceKey="SnapwellTextBrush" />
+                            <StaticResource x:Key="ComboBoxForegroundPointerOver" ResourceKey="SnapwellTextBrush" />
+                            <StaticResource x:Key="ComboBoxForegroundFocused" ResourceKey="SnapwellTextBrush" />
+                            <StaticResource x:Key="ComboBoxBackgroundBorderBrushFocused" ResourceKey="SnapwellBorderStrongBrush" />
+                            <StaticResource x:Key="InfoBarErrorSeverityBackgroundBrush" ResourceKey="SnapwellRedBackgroundBrush" />
+                            <StaticResource x:Key="InfoBarErrorSeverityIconBackground" ResourceKey="SnapwellRedTextBrush" />
+                            <StaticResource x:Key="InfoBarErrorSeverityIconForeground" ResourceKey="SnapwellSurfaceBrush" />
+                            <StaticResource x:Key="InfoBarWarningSeverityBackgroundBrush" ResourceKey="SnapwellYellowBackgroundBrush" />
+                            <StaticResource x:Key="InfoBarWarningSeverityIconBackground" ResourceKey="SnapwellYellowTextBrush" />
+                            <StaticResource x:Key="InfoBarWarningSeverityIconForeground" ResourceKey="SnapwellSurfaceBrush" />
+                            <SolidColorBrush x:Key="InfoBarSuccessSeverityBackgroundBrush" Color="#142F7A3E" />
+                            <StaticResource x:Key="InfoBarSuccessSeverityIconBackground" ResourceKey="SnapwellGreenTextBrush" />
+                            <StaticResource x:Key="InfoBarSuccessSeverityIconForeground" ResourceKey="SnapwellSurfaceBrush" />
+                            <StaticResource x:Key="InfoBarInformationalSeverityBackgroundBrush" ResourceKey="SnapwellBlueBackgroundBrush" />
+                            <StaticResource x:Key="InfoBarInformationalSeverityIconBackground" ResourceKey="SnapwellBlueTextBrush" />
+                            <StaticResource x:Key="InfoBarInformationalSeverityIconForeground" ResourceKey="SnapwellSurfaceBrush" />
+                            <StaticResource x:Key="InfoBarTitleForeground" ResourceKey="SnapwellTextBrush" />
+                            <StaticResource x:Key="InfoBarMessageForeground" ResourceKey="SnapwellTextBrush" />
+                            <StaticResource x:Key="CheckBoxCheckBackgroundFillIndeterminate" ResourceKey="SnapwellInkBrush" />
+                            <StaticResource x:Key="CheckBoxCheckBackgroundStrokeIndeterminate" ResourceKey="SnapwellInkBrush" />
+                            <StaticResource x:Key="CheckBoxCheckGlyphForegroundIndeterminate" ResourceKey="SnapwellInkTextBrush" />
+                            <StaticResource x:Key="CheckBoxCheckBackgroundFillIndeterminatePointerOver" ResourceKey="SnapwellInkBrush" />
+                            <StaticResource x:Key="CheckBoxCheckBackgroundStrokeIndeterminatePointerOver" ResourceKey="SnapwellInkBrush" />
+                            <StaticResource x:Key="CheckBoxCheckGlyphForegroundIndeterminatePointerOver" ResourceKey="SnapwellInkTextBrush" />
+                            <StaticResource x:Key="CheckBoxCheckBackgroundFillIndeterminatePressed" ResourceKey="SnapwellInkBrush" />
+                            <StaticResource x:Key="CheckBoxCheckBackgroundStrokeIndeterminatePressed" ResourceKey="SnapwellInkBrush" />
+                            <StaticResource x:Key="CheckBoxCheckGlyphForegroundIndeterminatePressed" ResourceKey="SnapwellInkTextBrush" />
+                            <StaticResource x:Key="CheckBoxCheckBackgroundFillIndeterminateDisabled" ResourceKey="SnapwellSubtleBrush" />
+                            <StaticResource x:Key="CheckBoxCheckBackgroundStrokeIndeterminateDisabled" ResourceKey="SnapwellSubtleBrush" />
+                            <StaticResource x:Key="CheckBoxCheckGlyphForegroundIndeterminateDisabled" ResourceKey="SnapwellInkTextBrush" />
                         </ResourceDictionary>
 
                         <!-- モックアップの prefers-color-scheme: dark の色トークン -->
                         <ResourceDictionary x:Key="Dark">
-                            <SolidColorBrush x:Key="SnapwellBackgroundBrush" Color="#FF191918" />
-                            <SolidColorBrush x:Key="SnapwellSurfaceBrush" Color="#FF202020" />
-                            <SolidColorBrush x:Key="SnapwellSurface2Brush" Color="#FF252524" />
+                            <SolidColorBrush x:Key="SnapwellBackgroundBrush" Color="#FF1A1A19" />
+                            <SolidColorBrush x:Key="SnapwellSurfaceBrush" Color="#FF222221" />
+                            <SolidColorBrush x:Key="SnapwellSurface2Brush" Color="#FF2C2C2B" />
                             <SolidColorBrush x:Key="SnapwellBorderBrush" Color="#14FFFFFF" />
-                            <SolidColorBrush x:Key="SnapwellBorderStrongBrush" Color="#24FFFFFF" />
-                            <SolidColorBrush x:Key="SnapwellTextBrush" Color="#FFE6E6E3" />
-                            <SolidColorBrush x:Key="SnapwellMutedBrush" Color="#FF9B9A97" />
-                            <SolidColorBrush x:Key="SnapwellInkBrush" Color="#FFF2F2F0" />
-                            <SolidColorBrush x:Key="SnapwellInkTextBrush" Color="#FF111111" />
-                            <SolidColorBrush x:Key="SnapwellInkHoverBrush" Color="#FFD9D9D6" />
-                            <SolidColorBrush x:Key="SnapwellWallBrush" Color="#FF2A2A28" />
+                            <SolidColorBrush x:Key="SnapwellBorderStrongBrush" Color="#26FFFFFF" />
+                            <SolidColorBrush x:Key="SnapwellTextBrush" Color="#FFEDEDEB" />
+                            <SolidColorBrush x:Key="SnapwellMutedBrush" Color="#FFB4B4B0" />
+                            <SolidColorBrush x:Key="SnapwellSubtleBrush" Color="#FF92928E" />
+                            <SolidColorBrush x:Key="SnapwellInkBrush" Color="#FFEDEDEB" />
+                            <SolidColorBrush x:Key="SnapwellInkTextBrush" Color="#FF161616" />
+                            <SolidColorBrush x:Key="SnapwellInkHoverBrush" Color="#FFD2D2CF" />
+                            <SolidColorBrush x:Key="SnapwellWallBrush" Color="#FF2E2E2C" />
                             <SolidColorBrush x:Key="SnapwellWallLineBrush" Color="#08FFFFFF" />
                             <SolidColorBrush x:Key="SnapwellTaskbarBrush" Color="#D9202020" />
-                            <SolidColorBrush x:Key="SnapwellDimBrush" Color="#80191918" />
+                            <SolidColorBrush x:Key="SnapwellDimBrush" Color="#801A1A19" />
                             <SolidColorBrush x:Key="SnapwellCellBrush" Color="#0DFFFFFF" />
-                            <SolidColorBrush x:Key="SnapwellCellBorderBrush" Color="#17FFFFFF" />
-                            <SolidColorBrush x:Key="SnapwellBlueBackgroundBrush" Color="#471F6C9F" />
+                            <SolidColorBrush x:Key="SnapwellCellBorderBrush" Color="#1AFFFFFF" />
+                            <SolidColorBrush x:Key="SnapwellBlueBackgroundBrush" Color="#248CCBF2" />
                             <SolidColorBrush x:Key="SnapwellBlueTextBrush" Color="#FF8CCBF2" />
-                            <SolidColorBrush x:Key="SnapwellBlueLineBrush" Color="#998CCBF2" />
-                            <SolidColorBrush x:Key="SnapwellRedBackgroundBrush" Color="#479F2F2D" />
-                            <SolidColorBrush x:Key="SnapwellRedTextBrush" Color="#FFF2A7A5" />
-                            <SolidColorBrush x:Key="SnapwellGreenBackgroundBrush" Color="#4D346538" />
-                            <SolidColorBrush x:Key="SnapwellGreenTextBrush" Color="#FFA6D1A9" />
-                            <SolidColorBrush x:Key="SnapwellYellowBackgroundBrush" Color="#47956400" />
-                            <SolidColorBrush x:Key="SnapwellYellowTextBrush" Color="#FFE8C46A" />
-                            <SolidColorBrush x:Key="SnapwellSkeletonBrush" Color="#FF2D2D2B" />
+                            <SolidColorBrush x:Key="SnapwellBlueLineBrush" Color="#A68CCBF2" />
+                            <SolidColorBrush x:Key="SnapwellRedBackgroundBrush" Color="#1FF2938C" />
+                            <SolidColorBrush x:Key="SnapwellRedTextBrush" Color="#FFF2938C" />
+                            <SolidColorBrush x:Key="SnapwellGreenTextBrush" Color="#FF7CC48A" />
+                            <SolidColorBrush x:Key="SnapwellYellowBackgroundBrush" Color="#1FE0B65A" />
+                            <SolidColorBrush x:Key="SnapwellYellowTextBrush" Color="#FFE0B65A" />
+                            <SolidColorBrush x:Key="SnapwellSkeletonBrush" Color="#FF333331" />
 
                             <!-- 無効時もモックアップの中立色を使い、輪郭と文字を残す。 -->
                             <StaticResource x:Key="ButtonBackgroundDisabled" ResourceKey="SnapwellSurface2Brush" />
-                            <StaticResource x:Key="ButtonForegroundDisabled" ResourceKey="SnapwellMutedBrush" />
+                            <StaticResource x:Key="ButtonForegroundDisabled" ResourceKey="SnapwellSubtleBrush" />
                             <StaticResource x:Key="ButtonBorderBrushDisabled" ResourceKey="SnapwellBorderBrush" />
                             <StaticResource x:Key="ComboBoxBackgroundDisabled" ResourceKey="SnapwellSurface2Brush" />
-                            <StaticResource x:Key="ComboBoxForegroundDisabled" ResourceKey="SnapwellMutedBrush" />
+                            <StaticResource x:Key="ComboBoxForegroundDisabled" ResourceKey="SnapwellSubtleBrush" />
                             <StaticResource x:Key="ComboBoxBorderBrushDisabled" ResourceKey="SnapwellBorderBrush" />
 
-                            <SolidColorBrush x:Key="AccentFillColorDefaultBrush" Color="#FFF2F2F0" />
-                            <SolidColorBrush x:Key="AccentFillColorSecondaryBrush" Color="#FFD9D9D6" />
-                            <SolidColorBrush x:Key="AccentFillColorTertiaryBrush" Color="#FFD9D9D6" />
-                            <SolidColorBrush x:Key="TextOnAccentFillColorPrimaryBrush" Color="#FF111111" />
-                            <SolidColorBrush x:Key="TextOnAccentFillColorSecondaryBrush" Color="#FF111111" />
-                            <SolidColorBrush x:Key="AccentTextFillColorPrimaryBrush" Color="#FFF2F2F0" />
-                            <SolidColorBrush x:Key="AccentTextFillColorSecondaryBrush" Color="#FFD9D9D6" />
-                            <SolidColorBrush x:Key="AccentTextFillColorTertiaryBrush" Color="#FFD9D9D6" />
+                            <SolidColorBrush x:Key="AccentFillColorDefaultBrush" Color="#FFEDEDEB" />
+                            <SolidColorBrush x:Key="AccentFillColorSecondaryBrush" Color="#FFD2D2CF" />
+                            <SolidColorBrush x:Key="AccentFillColorTertiaryBrush" Color="#FFD2D2CF" />
+                            <SolidColorBrush x:Key="TextOnAccentFillColorPrimaryBrush" Color="#FF161616" />
+                            <SolidColorBrush x:Key="TextOnAccentFillColorSecondaryBrush" Color="#FF161616" />
+                            <SolidColorBrush x:Key="AccentTextFillColorPrimaryBrush" Color="#FFEDEDEB" />
+                            <SolidColorBrush x:Key="AccentTextFillColorSecondaryBrush" Color="#FFD2D2CF" />
+                            <SolidColorBrush x:Key="AccentTextFillColorTertiaryBrush" Color="#FFD2D2CF" />
 
-                            <SolidColorBrush x:Key="ButtonBackground" Color="#FF202020" />
-                            <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#FF252524" />
-                            <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#FF252524" />
-                            <SolidColorBrush x:Key="ButtonForeground" Color="#FFE6E6E3" />
-                            <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#FFE6E6E3" />
-                            <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#FFE6E6E3" />
-                            <SolidColorBrush x:Key="ButtonBorderBrush" Color="#14FFFFFF" />
-                            <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#24FFFFFF" />
-                            <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="#24FFFFFF" />
+                            <SolidColorBrush x:Key="ButtonBackground" Color="#FF222221" />
+                            <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#FF2C2C2B" />
+                            <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#FF2C2C2B" />
+                            <SolidColorBrush x:Key="ButtonForeground" Color="#FFEDEDEB" />
+                            <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#FFEDEDEB" />
+                            <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#FFB4B4B0" />
+                            <SolidColorBrush x:Key="ButtonBorderBrush" Color="#26FFFFFF" />
+                            <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#26FFFFFF" />
+                            <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="#26FFFFFF" />
 
-                            <SolidColorBrush x:Key="AccentButtonBackground" Color="#FFF2F2F0" />
-                            <SolidColorBrush x:Key="AccentButtonBackgroundPointerOver" Color="#FFD9D9D6" />
-                            <SolidColorBrush x:Key="AccentButtonBackgroundPressed" Color="#FFD9D9D6" />
-                            <SolidColorBrush x:Key="AccentButtonForeground" Color="#FF111111" />
-                            <SolidColorBrush x:Key="AccentButtonForegroundPointerOver" Color="#FF111111" />
-                            <SolidColorBrush x:Key="AccentButtonForegroundPressed" Color="#FF111111" />
-                            <SolidColorBrush x:Key="AccentButtonBorderBrush" Color="#FFF2F2F0" />
-                            <SolidColorBrush x:Key="AccentButtonBorderBrushPointerOver" Color="#FFD9D9D6" />
-                            <SolidColorBrush x:Key="AccentButtonBorderBrushPressed" Color="#FFD9D9D6" />
+                            <SolidColorBrush x:Key="AccentButtonBackground" Color="#FFEDEDEB" />
+                            <SolidColorBrush x:Key="AccentButtonBackgroundPointerOver" Color="#FFD2D2CF" />
+                            <SolidColorBrush x:Key="AccentButtonBackgroundPressed" Color="#FFD2D2CF" />
+                            <SolidColorBrush x:Key="AccentButtonForeground" Color="#FF161616" />
+                            <SolidColorBrush x:Key="AccentButtonForegroundPointerOver" Color="#FF161616" />
+                            <SolidColorBrush x:Key="AccentButtonForegroundPressed" Color="#FF161616" />
+                            <SolidColorBrush x:Key="AccentButtonBorderBrush" Color="#FFEDEDEB" />
+                            <SolidColorBrush x:Key="AccentButtonBorderBrushPointerOver" Color="#FFD2D2CF" />
+                            <SolidColorBrush x:Key="AccentButtonBorderBrushPressed" Color="#FFD2D2CF" />
 
-                            <SolidColorBrush x:Key="ToggleSwitchFillOn" Color="#FFF2F2F0" />
-                            <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="#FFD9D9D6" />
-                            <SolidColorBrush x:Key="ToggleSwitchFillOnPressed" Color="#FFD9D9D6" />
-                            <SolidColorBrush x:Key="ToggleSwitchStrokeOn" Color="#FFF2F2F0" />
-                            <SolidColorBrush x:Key="ToggleSwitchStrokeOnPointerOver" Color="#FFD9D9D6" />
-                            <SolidColorBrush x:Key="ToggleSwitchStrokeOnPressed" Color="#FFD9D9D6" />
-                            <SolidColorBrush x:Key="ToggleSwitchKnobFillOn" Color="#FF111111" />
-                            <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPointerOver" Color="#FF111111" />
-                            <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPressed" Color="#FF111111" />
-                            <SolidColorBrush x:Key="ToggleSwitchStrokeOff" Color="#FF9B9A97" />
-                            <SolidColorBrush x:Key="ToggleSwitchStrokeOffPointerOver" Color="#FFE6E6E3" />
-                            <SolidColorBrush x:Key="ToggleSwitchStrokeOffPressed" Color="#FFE6E6E3" />
-                            <SolidColorBrush x:Key="ToggleSwitchKnobFillOff" Color="#FF9B9A97" />
-                            <SolidColorBrush x:Key="ToggleSwitchKnobFillOffPointerOver" Color="#FFE6E6E3" />
-                            <SolidColorBrush x:Key="ToggleSwitchKnobFillOffPressed" Color="#FFE6E6E3" />
+                            <SolidColorBrush x:Key="ToggleSwitchFillOn" Color="#FFEDEDEB" />
+                            <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="#FFD2D2CF" />
+                            <SolidColorBrush x:Key="ToggleSwitchFillOnPressed" Color="#FFD2D2CF" />
+                            <SolidColorBrush x:Key="ToggleSwitchStrokeOn" Color="#FFEDEDEB" />
+                            <SolidColorBrush x:Key="ToggleSwitchStrokeOnPointerOver" Color="#FFD2D2CF" />
+                            <SolidColorBrush x:Key="ToggleSwitchStrokeOnPressed" Color="#FFD2D2CF" />
+                            <SolidColorBrush x:Key="ToggleSwitchKnobFillOn" Color="#FF161616" />
+                            <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPointerOver" Color="#FF161616" />
+                            <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPressed" Color="#FF161616" />
+                            <SolidColorBrush x:Key="ToggleSwitchStrokeOff" Color="#FFB4B4B0" />
+                            <SolidColorBrush x:Key="ToggleSwitchStrokeOffPointerOver" Color="#FFB4B4B0" />
+                            <SolidColorBrush x:Key="ToggleSwitchStrokeOffPressed" Color="#FFB4B4B0" />
+                            <SolidColorBrush x:Key="ToggleSwitchKnobFillOff" Color="#FFB4B4B0" />
+                            <SolidColorBrush x:Key="ToggleSwitchKnobFillOffPointerOver" Color="#FFB4B4B0" />
+                            <SolidColorBrush x:Key="ToggleSwitchKnobFillOffPressed" Color="#FFB4B4B0" />
 
-                            <SolidColorBrush x:Key="SliderTrackValueFill" Color="#FFF2F2F0" />
-                            <SolidColorBrush x:Key="SliderTrackValueFillPointerOver" Color="#FFD9D9D6" />
-                            <SolidColorBrush x:Key="SliderTrackValueFillPressed" Color="#FFD9D9D6" />
-                            <SolidColorBrush x:Key="SliderTrackValueFillDisabled" Color="#FF9B9A97" />
-                            <SolidColorBrush x:Key="SliderThumbBackground" Color="#FFF2F2F0" />
-                            <SolidColorBrush x:Key="SliderThumbBackgroundPointerOver" Color="#FFD9D9D6" />
-                            <SolidColorBrush x:Key="SliderThumbBackgroundPressed" Color="#FFD9D9D6" />
-                            <SolidColorBrush x:Key="SliderThumbBackgroundDisabled" Color="#FF9B9A97" />
-                            <SolidColorBrush x:Key="SliderTrackFill" Color="#24FFFFFF" />
-                            <SolidColorBrush x:Key="SliderTrackFillPointerOver" Color="#24FFFFFF" />
-                            <SolidColorBrush x:Key="SliderTrackFillPressed" Color="#24FFFFFF" />
+                            <SolidColorBrush x:Key="SliderTrackValueFill" Color="#FFEDEDEB" />
+                            <SolidColorBrush x:Key="SliderTrackValueFillPointerOver" Color="#FFD2D2CF" />
+                            <SolidColorBrush x:Key="SliderTrackValueFillPressed" Color="#FFD2D2CF" />
+                            <SolidColorBrush x:Key="SliderTrackValueFillDisabled" Color="#FF92928E" />
+                            <SolidColorBrush x:Key="SliderThumbBackground" Color="#FFEDEDEB" />
+                            <SolidColorBrush x:Key="SliderThumbBackgroundPointerOver" Color="#FFD2D2CF" />
+                            <SolidColorBrush x:Key="SliderThumbBackgroundPressed" Color="#FFD2D2CF" />
+                            <SolidColorBrush x:Key="SliderThumbBackgroundDisabled" Color="#FF92928E" />
+                            <SolidColorBrush x:Key="SliderTrackFill" Color="#26FFFFFF" />
+                            <SolidColorBrush x:Key="SliderTrackFillPointerOver" Color="#26FFFFFF" />
+                            <SolidColorBrush x:Key="SliderTrackFillPressed" Color="#26FFFFFF" />
                             <SolidColorBrush x:Key="SliderTrackFillDisabled" Color="#14FFFFFF" />
 
-                            <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillChecked" Color="#FFF2F2F0" />
-                            <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver" Color="#FFD9D9D6" />
-                            <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPressed" Color="#FFD9D9D6" />
-                            <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedDisabled" Color="#FF9B9A97" />
-                            <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeChecked" Color="#FFF2F2F0" />
-                            <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedPointerOver" Color="#FFD9D9D6" />
-                            <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedPressed" Color="#FFD9D9D6" />
-                            <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedDisabled" Color="#FF9B9A97" />
-                            <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundChecked" Color="#FF111111" />
-                            <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedPointerOver" Color="#FF111111" />
-                            <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedPressed" Color="#FF111111" />
-                            <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedDisabled" Color="#FF111111" />
+                            <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillChecked" Color="#FFEDEDEB" />
+                            <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver" Color="#FFD2D2CF" />
+                            <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPressed" Color="#FFD2D2CF" />
+                            <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedDisabled" Color="#FF92928E" />
+                            <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeChecked" Color="#FFEDEDEB" />
+                            <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedPointerOver" Color="#FFD2D2CF" />
+                            <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedPressed" Color="#FFD2D2CF" />
+                            <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedDisabled" Color="#FF92928E" />
+                            <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundChecked" Color="#FF161616" />
+                            <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedPointerOver" Color="#FF161616" />
+                            <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedPressed" Color="#FF161616" />
+                            <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedDisabled" Color="#FF161616" />
 
-                            <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#FFF2F2F0" />
-                            <SolidColorBrush x:Key="ComboBoxBorderBrushFocused" Color="#FFF2F2F0" />
-                            <SolidColorBrush x:Key="ComboBoxItemPillFillBrush" Color="#FFF2F2F0" />
-                            <SolidColorBrush x:Key="ListViewItemSelectionIndicatorBrush" Color="#FFF2F2F0" />
-                            <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPointerOverBrush" Color="#FFD9D9D6" />
-                            <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPressedBrush" Color="#FFD9D9D6" />
-                            <SolidColorBrush x:Key="ListViewItemCheckBoxSelectedBrush" Color="#FFF2F2F0" />
-                            <SolidColorBrush x:Key="ListViewItemCheckBoxSelectedPointerOverBrush" Color="#FFD9D9D6" />
-                            <SolidColorBrush x:Key="ListViewItemCheckBoxSelectedPressedBrush" Color="#FFD9D9D6" />
-                            <SolidColorBrush x:Key="ListViewItemCheckBrush" Color="#FF111111" />
-                            <SolidColorBrush x:Key="ListViewItemCheckPointerOverBrush" Color="#FF111111" />
-                            <SolidColorBrush x:Key="ListViewItemCheckPressedBrush" Color="#FF111111" />
+                            <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#26FFFFFF" />
+                            <SolidColorBrush x:Key="ComboBoxBorderBrushFocused" Color="#26FFFFFF" />
+                            <SolidColorBrush x:Key="ComboBoxItemPillFillBrush" Color="#FFEDEDEB" />
+                            <SolidColorBrush x:Key="ListViewItemSelectionIndicatorBrush" Color="#FFEDEDEB" />
+                            <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPointerOverBrush" Color="#FFD2D2CF" />
+                            <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPressedBrush" Color="#FFD2D2CF" />
+                            <SolidColorBrush x:Key="ListViewItemCheckBoxSelectedBrush" Color="#FFEDEDEB" />
+                            <SolidColorBrush x:Key="ListViewItemCheckBoxSelectedPointerOverBrush" Color="#FFD2D2CF" />
+                            <SolidColorBrush x:Key="ListViewItemCheckBoxSelectedPressedBrush" Color="#FFD2D2CF" />
+                            <SolidColorBrush x:Key="ListViewItemCheckBrush" Color="#FF161616" />
+                            <SolidColorBrush x:Key="ListViewItemCheckPointerOverBrush" Color="#FF161616" />
+                            <SolidColorBrush x:Key="ListViewItemCheckPressedBrush" Color="#FF161616" />
 
-                            <SolidColorBrush x:Key="NavigationViewDefaultPaneBackground" Color="#FF252524" />
-                            <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="#FF252524" />
-                            <SolidColorBrush x:Key="NavigationViewTopPaneBackground" Color="#FF252524" />
-                            <SolidColorBrush x:Key="NavigationViewContentBackground" Color="#FF202020" />
+                            <SolidColorBrush x:Key="NavigationViewDefaultPaneBackground" Color="#FF1A1A19" />
+                            <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="#FF1A1A19" />
+                            <SolidColorBrush x:Key="NavigationViewTopPaneBackground" Color="#FF1A1A19" />
+                            <SolidColorBrush x:Key="NavigationViewContentBackground" Color="#FF1A1A19" />
                             <SolidColorBrush x:Key="NavigationViewContentGridBorderBrush" Color="Transparent" />
                             <SolidColorBrush x:Key="NavigationViewItemBackground" Color="Transparent" />
-                            <SolidColorBrush x:Key="NavigationViewItemBackgroundPointerOver" Color="#FF202020" />
-                            <SolidColorBrush x:Key="NavigationViewItemBackgroundPressed" Color="#FF202020" />
-                            <SolidColorBrush x:Key="NavigationViewItemBackgroundSelected" Color="#FF202020" />
-                            <SolidColorBrush x:Key="NavigationViewItemBackgroundSelectedPointerOver" Color="#FF202020" />
-                            <SolidColorBrush x:Key="NavigationViewItemBackgroundSelectedPressed" Color="#FF202020" />
-                            <SolidColorBrush x:Key="NavigationViewItemForeground" Color="#FFE6E6E3" />
-                            <SolidColorBrush x:Key="NavigationViewItemForegroundPointerOver" Color="#FFE6E6E3" />
-                            <SolidColorBrush x:Key="NavigationViewItemForegroundPressed" Color="#FFE6E6E3" />
-                            <SolidColorBrush x:Key="NavigationViewItemForegroundSelected" Color="#FFE6E6E3" />
-                            <SolidColorBrush x:Key="NavigationViewItemForegroundSelectedPointerOver" Color="#FFE6E6E3" />
-                            <SolidColorBrush x:Key="NavigationViewItemForegroundSelectedPressed" Color="#FFE6E6E3" />
+                            <SolidColorBrush x:Key="NavigationViewItemBackgroundPointerOver" Color="#FF2C2C2B" />
+                            <SolidColorBrush x:Key="NavigationViewItemBackgroundPressed" Color="#FF2C2C2B" />
+                            <SolidColorBrush x:Key="NavigationViewItemBackgroundSelected" Color="#FF2C2C2B" />
+                            <SolidColorBrush x:Key="NavigationViewItemBackgroundSelectedPointerOver" Color="#FF2C2C2B" />
+                            <SolidColorBrush x:Key="NavigationViewItemBackgroundSelectedPressed" Color="#FF2C2C2B" />
+                            <SolidColorBrush x:Key="NavigationViewItemForeground" Color="#FFEDEDEB" />
+                            <SolidColorBrush x:Key="NavigationViewItemForegroundPointerOver" Color="#FFEDEDEB" />
+                            <SolidColorBrush x:Key="NavigationViewItemForegroundPressed" Color="#FFEDEDEB" />
+                            <SolidColorBrush x:Key="NavigationViewItemForegroundSelected" Color="#FFEDEDEB" />
+                            <SolidColorBrush x:Key="NavigationViewItemForegroundSelectedPointerOver" Color="#FFEDEDEB" />
+                            <SolidColorBrush x:Key="NavigationViewItemForegroundSelectedPressed" Color="#FFEDEDEB" />
                             <SolidColorBrush x:Key="NavigationViewItemBorderBrush" Color="Transparent" />
                             <SolidColorBrush x:Key="NavigationViewItemBorderBrushPointerOver" Color="Transparent" />
                             <SolidColorBrush x:Key="NavigationViewItemBorderBrushPressed" Color="Transparent" />
-                            <SolidColorBrush x:Key="NavigationViewItemBorderBrushSelected" Color="#14FFFFFF" />
-                            <SolidColorBrush x:Key="NavigationViewItemBorderBrushSelectedPointerOver" Color="#14FFFFFF" />
-                            <SolidColorBrush x:Key="NavigationViewItemBorderBrushSelectedPressed" Color="#14FFFFFF" />
-                            <SolidColorBrush x:Key="NavigationViewSelectionIndicatorForeground" Color="#FFF2F2F0" />
+                            <SolidColorBrush x:Key="NavigationViewItemBorderBrushSelected" Color="Transparent" />
+                            <SolidColorBrush x:Key="NavigationViewItemBorderBrushSelectedPointerOver" Color="Transparent" />
+                            <SolidColorBrush x:Key="NavigationViewItemBorderBrushSelectedPressed" Color="Transparent" />
+                            <SolidColorBrush x:Key="NavigationViewSelectionIndicatorForeground" Color="#FFEDEDEB" />
+
+                            <!-- アクセントは輪と区画、意味の色は InfoBar のアイコンに使う。 -->
+                            <Color x:Key="SystemAccentColor">#FF8CCBF2</Color>
+                            <Color x:Key="SystemAccentColorDark1">#FF8CCBF2</Color>
+                            <Color x:Key="SystemAccentColorDark2">#FF8CCBF2</Color>
+                            <Color x:Key="SystemAccentColorDark3">#FF8CCBF2</Color>
+                            <Color x:Key="SystemAccentColorLight1">#FF8CCBF2</Color>
+                            <Color x:Key="SystemAccentColorLight2">#FF8CCBF2</Color>
+                            <Color x:Key="SystemAccentColorLight3">#FF8CCBF2</Color>
+                            <SolidColorBrush x:Key="FocusVisualPrimaryBrush" Color="#FF8CCBF2" />
+                            <SolidColorBrush x:Key="FocusVisualSecondaryBrush" Color="Transparent" />
+                            <StaticResource x:Key="AccentButtonBackgroundDisabled" ResourceKey="SnapwellSurface2Brush" />
+                            <StaticResource x:Key="AccentButtonForegroundDisabled" ResourceKey="SnapwellSubtleBrush" />
+                            <StaticResource x:Key="AccentButtonBorderBrushDisabled" ResourceKey="SnapwellBorderBrush" />
+                            <SolidColorBrush x:Key="TextControlBorderBrush" Color="#26FFFFFF" />
+                            <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="#26FFFFFF" />
+                            <SolidColorBrush x:Key="TextControlBorderBrushPressed" Color="#26FFFFFF" />
+                            <SolidColorBrush x:Key="TextControlBorderBrushDisabled" Color="#26FFFFFF" />
+                            <StaticResource x:Key="TextControlBackground" ResourceKey="SnapwellSurface2Brush" />
+                            <StaticResource x:Key="TextControlBackgroundPointerOver" ResourceKey="SnapwellSurface2Brush" />
+                            <StaticResource x:Key="TextControlBackgroundFocused" ResourceKey="SnapwellSurface2Brush" />
+                            <StaticResource x:Key="TextControlForeground" ResourceKey="SnapwellTextBrush" />
+                            <StaticResource x:Key="TextControlForegroundPointerOver" ResourceKey="SnapwellTextBrush" />
+                            <StaticResource x:Key="TextControlForegroundFocused" ResourceKey="SnapwellTextBrush" />
+                            <StaticResource x:Key="TextControlForegroundDisabled" ResourceKey="SnapwellSubtleBrush" />
+                            <SolidColorBrush x:Key="ComboBoxBorderBrush" Color="#26FFFFFF" />
+                            <SolidColorBrush x:Key="ComboBoxBorderBrushPointerOver" Color="#26FFFFFF" />
+                            <SolidColorBrush x:Key="ComboBoxBorderBrushPressed" Color="#26FFFFFF" />
+                            <StaticResource x:Key="ComboBoxBackground" ResourceKey="SnapwellSurface2Brush" />
+                            <StaticResource x:Key="ComboBoxBackgroundPointerOver" ResourceKey="SnapwellSurface2Brush" />
+                            <StaticResource x:Key="ComboBoxBackgroundFocused" ResourceKey="SnapwellSurface2Brush" />
+                            <StaticResource x:Key="ComboBoxForeground" ResourceKey="SnapwellTextBrush" />
+                            <StaticResource x:Key="ComboBoxForegroundPointerOver" ResourceKey="SnapwellTextBrush" />
+                            <StaticResource x:Key="ComboBoxForegroundFocused" ResourceKey="SnapwellTextBrush" />
+                            <StaticResource x:Key="ComboBoxBackgroundBorderBrushFocused" ResourceKey="SnapwellBorderStrongBrush" />
+                            <StaticResource x:Key="InfoBarErrorSeverityBackgroundBrush" ResourceKey="SnapwellRedBackgroundBrush" />
+                            <StaticResource x:Key="InfoBarErrorSeverityIconBackground" ResourceKey="SnapwellRedTextBrush" />
+                            <StaticResource x:Key="InfoBarErrorSeverityIconForeground" ResourceKey="SnapwellSurfaceBrush" />
+                            <StaticResource x:Key="InfoBarWarningSeverityBackgroundBrush" ResourceKey="SnapwellYellowBackgroundBrush" />
+                            <StaticResource x:Key="InfoBarWarningSeverityIconBackground" ResourceKey="SnapwellYellowTextBrush" />
+                            <StaticResource x:Key="InfoBarWarningSeverityIconForeground" ResourceKey="SnapwellSurfaceBrush" />
+                            <SolidColorBrush x:Key="InfoBarSuccessSeverityBackgroundBrush" Color="#1F7CC48A" />
+                            <StaticResource x:Key="InfoBarSuccessSeverityIconBackground" ResourceKey="SnapwellGreenTextBrush" />
+                            <StaticResource x:Key="InfoBarSuccessSeverityIconForeground" ResourceKey="SnapwellSurfaceBrush" />
+                            <StaticResource x:Key="InfoBarInformationalSeverityBackgroundBrush" ResourceKey="SnapwellBlueBackgroundBrush" />
+                            <StaticResource x:Key="InfoBarInformationalSeverityIconBackground" ResourceKey="SnapwellBlueTextBrush" />
+                            <StaticResource x:Key="InfoBarInformationalSeverityIconForeground" ResourceKey="SnapwellSurfaceBrush" />
+                            <StaticResource x:Key="InfoBarTitleForeground" ResourceKey="SnapwellTextBrush" />
+                            <StaticResource x:Key="InfoBarMessageForeground" ResourceKey="SnapwellTextBrush" />
+                            <StaticResource x:Key="CheckBoxCheckBackgroundFillIndeterminate" ResourceKey="SnapwellInkBrush" />
+                            <StaticResource x:Key="CheckBoxCheckBackgroundStrokeIndeterminate" ResourceKey="SnapwellInkBrush" />
+                            <StaticResource x:Key="CheckBoxCheckGlyphForegroundIndeterminate" ResourceKey="SnapwellInkTextBrush" />
+                            <StaticResource x:Key="CheckBoxCheckBackgroundFillIndeterminatePointerOver" ResourceKey="SnapwellInkBrush" />
+                            <StaticResource x:Key="CheckBoxCheckBackgroundStrokeIndeterminatePointerOver" ResourceKey="SnapwellInkBrush" />
+                            <StaticResource x:Key="CheckBoxCheckGlyphForegroundIndeterminatePointerOver" ResourceKey="SnapwellInkTextBrush" />
+                            <StaticResource x:Key="CheckBoxCheckBackgroundFillIndeterminatePressed" ResourceKey="SnapwellInkBrush" />
+                            <StaticResource x:Key="CheckBoxCheckBackgroundStrokeIndeterminatePressed" ResourceKey="SnapwellInkBrush" />
+                            <StaticResource x:Key="CheckBoxCheckGlyphForegroundIndeterminatePressed" ResourceKey="SnapwellInkTextBrush" />
+                            <StaticResource x:Key="CheckBoxCheckBackgroundFillIndeterminateDisabled" ResourceKey="SnapwellSubtleBrush" />
+                            <StaticResource x:Key="CheckBoxCheckBackgroundStrokeIndeterminateDisabled" ResourceKey="SnapwellSubtleBrush" />
+                            <StaticResource x:Key="CheckBoxCheckGlyphForegroundIndeterminateDisabled" ResourceKey="SnapwellInkTextBrush" />
                         </ResourceDictionary>
 
                         <ResourceDictionary x:Key="Default">
-                            <SolidColorBrush x:Key="SnapwellBackgroundBrush" Color="#FF191918" />
-                            <SolidColorBrush x:Key="SnapwellSurfaceBrush" Color="#FF202020" />
-                            <SolidColorBrush x:Key="SnapwellSurface2Brush" Color="#FF252524" />
+                            <SolidColorBrush x:Key="SnapwellBackgroundBrush" Color="#FF1A1A19" />
+                            <SolidColorBrush x:Key="SnapwellSurfaceBrush" Color="#FF222221" />
+                            <SolidColorBrush x:Key="SnapwellSurface2Brush" Color="#FF2C2C2B" />
                             <SolidColorBrush x:Key="SnapwellBorderBrush" Color="#14FFFFFF" />
-                            <SolidColorBrush x:Key="SnapwellBorderStrongBrush" Color="#24FFFFFF" />
-                            <SolidColorBrush x:Key="SnapwellTextBrush" Color="#FFE6E6E3" />
-                            <SolidColorBrush x:Key="SnapwellMutedBrush" Color="#FF9B9A97" />
-                            <SolidColorBrush x:Key="SnapwellInkBrush" Color="#FFF2F2F0" />
-                            <SolidColorBrush x:Key="SnapwellInkTextBrush" Color="#FF111111" />
-                            <SolidColorBrush x:Key="SnapwellInkHoverBrush" Color="#FFD9D9D6" />
-                            <SolidColorBrush x:Key="SnapwellWallBrush" Color="#FF2A2A28" />
+                            <SolidColorBrush x:Key="SnapwellBorderStrongBrush" Color="#26FFFFFF" />
+                            <SolidColorBrush x:Key="SnapwellTextBrush" Color="#FFEDEDEB" />
+                            <SolidColorBrush x:Key="SnapwellMutedBrush" Color="#FFB4B4B0" />
+                            <SolidColorBrush x:Key="SnapwellSubtleBrush" Color="#FF92928E" />
+                            <SolidColorBrush x:Key="SnapwellInkBrush" Color="#FFEDEDEB" />
+                            <SolidColorBrush x:Key="SnapwellInkTextBrush" Color="#FF161616" />
+                            <SolidColorBrush x:Key="SnapwellInkHoverBrush" Color="#FFD2D2CF" />
+                            <SolidColorBrush x:Key="SnapwellWallBrush" Color="#FF2E2E2C" />
                             <SolidColorBrush x:Key="SnapwellWallLineBrush" Color="#08FFFFFF" />
                             <SolidColorBrush x:Key="SnapwellTaskbarBrush" Color="#D9202020" />
-                            <SolidColorBrush x:Key="SnapwellDimBrush" Color="#80191918" />
+                            <SolidColorBrush x:Key="SnapwellDimBrush" Color="#801A1A19" />
                             <SolidColorBrush x:Key="SnapwellCellBrush" Color="#0DFFFFFF" />
-                            <SolidColorBrush x:Key="SnapwellCellBorderBrush" Color="#17FFFFFF" />
-                            <SolidColorBrush x:Key="SnapwellBlueBackgroundBrush" Color="#471F6C9F" />
+                            <SolidColorBrush x:Key="SnapwellCellBorderBrush" Color="#1AFFFFFF" />
+                            <SolidColorBrush x:Key="SnapwellBlueBackgroundBrush" Color="#248CCBF2" />
                             <SolidColorBrush x:Key="SnapwellBlueTextBrush" Color="#FF8CCBF2" />
-                            <SolidColorBrush x:Key="SnapwellBlueLineBrush" Color="#998CCBF2" />
-                            <SolidColorBrush x:Key="SnapwellRedBackgroundBrush" Color="#479F2F2D" />
-                            <SolidColorBrush x:Key="SnapwellRedTextBrush" Color="#FFF2A7A5" />
-                            <SolidColorBrush x:Key="SnapwellGreenBackgroundBrush" Color="#4D346538" />
-                            <SolidColorBrush x:Key="SnapwellGreenTextBrush" Color="#FFA6D1A9" />
-                            <SolidColorBrush x:Key="SnapwellYellowBackgroundBrush" Color="#47956400" />
-                            <SolidColorBrush x:Key="SnapwellYellowTextBrush" Color="#FFE8C46A" />
-                            <SolidColorBrush x:Key="SnapwellSkeletonBrush" Color="#FF2D2D2B" />
+                            <SolidColorBrush x:Key="SnapwellBlueLineBrush" Color="#A68CCBF2" />
+                            <SolidColorBrush x:Key="SnapwellRedBackgroundBrush" Color="#1FF2938C" />
+                            <SolidColorBrush x:Key="SnapwellRedTextBrush" Color="#FFF2938C" />
+                            <SolidColorBrush x:Key="SnapwellGreenTextBrush" Color="#FF7CC48A" />
+                            <SolidColorBrush x:Key="SnapwellYellowBackgroundBrush" Color="#1FE0B65A" />
+                            <SolidColorBrush x:Key="SnapwellYellowTextBrush" Color="#FFE0B65A" />
+                            <SolidColorBrush x:Key="SnapwellSkeletonBrush" Color="#FF333331" />
 
                             <!-- 無効時もモックアップの中立色を使い、輪郭と文字を残す。 -->
                             <StaticResource x:Key="ButtonBackgroundDisabled" ResourceKey="SnapwellSurface2Brush" />
-                            <StaticResource x:Key="ButtonForegroundDisabled" ResourceKey="SnapwellMutedBrush" />
+                            <StaticResource x:Key="ButtonForegroundDisabled" ResourceKey="SnapwellSubtleBrush" />
                             <StaticResource x:Key="ButtonBorderBrushDisabled" ResourceKey="SnapwellBorderBrush" />
                             <StaticResource x:Key="ComboBoxBackgroundDisabled" ResourceKey="SnapwellSurface2Brush" />
-                            <StaticResource x:Key="ComboBoxForegroundDisabled" ResourceKey="SnapwellMutedBrush" />
+                            <StaticResource x:Key="ComboBoxForegroundDisabled" ResourceKey="SnapwellSubtleBrush" />
                             <StaticResource x:Key="ComboBoxBorderBrushDisabled" ResourceKey="SnapwellBorderBrush" />
 
-                            <SolidColorBrush x:Key="AccentFillColorDefaultBrush" Color="#FFF2F2F0" />
-                            <SolidColorBrush x:Key="AccentFillColorSecondaryBrush" Color="#FFD9D9D6" />
-                            <SolidColorBrush x:Key="AccentFillColorTertiaryBrush" Color="#FFD9D9D6" />
-                            <SolidColorBrush x:Key="TextOnAccentFillColorPrimaryBrush" Color="#FF111111" />
-                            <SolidColorBrush x:Key="TextOnAccentFillColorSecondaryBrush" Color="#FF111111" />
-                            <SolidColorBrush x:Key="AccentTextFillColorPrimaryBrush" Color="#FFF2F2F0" />
-                            <SolidColorBrush x:Key="AccentTextFillColorSecondaryBrush" Color="#FFD9D9D6" />
-                            <SolidColorBrush x:Key="AccentTextFillColorTertiaryBrush" Color="#FFD9D9D6" />
+                            <SolidColorBrush x:Key="AccentFillColorDefaultBrush" Color="#FFEDEDEB" />
+                            <SolidColorBrush x:Key="AccentFillColorSecondaryBrush" Color="#FFD2D2CF" />
+                            <SolidColorBrush x:Key="AccentFillColorTertiaryBrush" Color="#FFD2D2CF" />
+                            <SolidColorBrush x:Key="TextOnAccentFillColorPrimaryBrush" Color="#FF161616" />
+                            <SolidColorBrush x:Key="TextOnAccentFillColorSecondaryBrush" Color="#FF161616" />
+                            <SolidColorBrush x:Key="AccentTextFillColorPrimaryBrush" Color="#FFEDEDEB" />
+                            <SolidColorBrush x:Key="AccentTextFillColorSecondaryBrush" Color="#FFD2D2CF" />
+                            <SolidColorBrush x:Key="AccentTextFillColorTertiaryBrush" Color="#FFD2D2CF" />
 
-                            <SolidColorBrush x:Key="ButtonBackground" Color="#FF202020" />
-                            <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#FF252524" />
-                            <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#FF252524" />
-                            <SolidColorBrush x:Key="ButtonForeground" Color="#FFE6E6E3" />
-                            <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#FFE6E6E3" />
-                            <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#FFE6E6E3" />
-                            <SolidColorBrush x:Key="ButtonBorderBrush" Color="#14FFFFFF" />
-                            <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#24FFFFFF" />
-                            <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="#24FFFFFF" />
+                            <SolidColorBrush x:Key="ButtonBackground" Color="#FF222221" />
+                            <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#FF2C2C2B" />
+                            <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#FF2C2C2B" />
+                            <SolidColorBrush x:Key="ButtonForeground" Color="#FFEDEDEB" />
+                            <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#FFEDEDEB" />
+                            <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#FFB4B4B0" />
+                            <SolidColorBrush x:Key="ButtonBorderBrush" Color="#26FFFFFF" />
+                            <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#26FFFFFF" />
+                            <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="#26FFFFFF" />
 
-                            <SolidColorBrush x:Key="AccentButtonBackground" Color="#FFF2F2F0" />
-                            <SolidColorBrush x:Key="AccentButtonBackgroundPointerOver" Color="#FFD9D9D6" />
-                            <SolidColorBrush x:Key="AccentButtonBackgroundPressed" Color="#FFD9D9D6" />
-                            <SolidColorBrush x:Key="AccentButtonForeground" Color="#FF111111" />
-                            <SolidColorBrush x:Key="AccentButtonForegroundPointerOver" Color="#FF111111" />
-                            <SolidColorBrush x:Key="AccentButtonForegroundPressed" Color="#FF111111" />
-                            <SolidColorBrush x:Key="AccentButtonBorderBrush" Color="#FFF2F2F0" />
-                            <SolidColorBrush x:Key="AccentButtonBorderBrushPointerOver" Color="#FFD9D9D6" />
-                            <SolidColorBrush x:Key="AccentButtonBorderBrushPressed" Color="#FFD9D9D6" />
+                            <SolidColorBrush x:Key="AccentButtonBackground" Color="#FFEDEDEB" />
+                            <SolidColorBrush x:Key="AccentButtonBackgroundPointerOver" Color="#FFD2D2CF" />
+                            <SolidColorBrush x:Key="AccentButtonBackgroundPressed" Color="#FFD2D2CF" />
+                            <SolidColorBrush x:Key="AccentButtonForeground" Color="#FF161616" />
+                            <SolidColorBrush x:Key="AccentButtonForegroundPointerOver" Color="#FF161616" />
+                            <SolidColorBrush x:Key="AccentButtonForegroundPressed" Color="#FF161616" />
+                            <SolidColorBrush x:Key="AccentButtonBorderBrush" Color="#FFEDEDEB" />
+                            <SolidColorBrush x:Key="AccentButtonBorderBrushPointerOver" Color="#FFD2D2CF" />
+                            <SolidColorBrush x:Key="AccentButtonBorderBrushPressed" Color="#FFD2D2CF" />
 
-                            <SolidColorBrush x:Key="ToggleSwitchFillOn" Color="#FFF2F2F0" />
-                            <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="#FFD9D9D6" />
-                            <SolidColorBrush x:Key="ToggleSwitchFillOnPressed" Color="#FFD9D9D6" />
-                            <SolidColorBrush x:Key="ToggleSwitchStrokeOn" Color="#FFF2F2F0" />
-                            <SolidColorBrush x:Key="ToggleSwitchStrokeOnPointerOver" Color="#FFD9D9D6" />
-                            <SolidColorBrush x:Key="ToggleSwitchStrokeOnPressed" Color="#FFD9D9D6" />
-                            <SolidColorBrush x:Key="ToggleSwitchKnobFillOn" Color="#FF111111" />
-                            <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPointerOver" Color="#FF111111" />
-                            <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPressed" Color="#FF111111" />
-                            <SolidColorBrush x:Key="ToggleSwitchStrokeOff" Color="#FF9B9A97" />
-                            <SolidColorBrush x:Key="ToggleSwitchStrokeOffPointerOver" Color="#FFE6E6E3" />
-                            <SolidColorBrush x:Key="ToggleSwitchStrokeOffPressed" Color="#FFE6E6E3" />
-                            <SolidColorBrush x:Key="ToggleSwitchKnobFillOff" Color="#FF9B9A97" />
-                            <SolidColorBrush x:Key="ToggleSwitchKnobFillOffPointerOver" Color="#FFE6E6E3" />
-                            <SolidColorBrush x:Key="ToggleSwitchKnobFillOffPressed" Color="#FFE6E6E3" />
+                            <SolidColorBrush x:Key="ToggleSwitchFillOn" Color="#FFEDEDEB" />
+                            <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="#FFD2D2CF" />
+                            <SolidColorBrush x:Key="ToggleSwitchFillOnPressed" Color="#FFD2D2CF" />
+                            <SolidColorBrush x:Key="ToggleSwitchStrokeOn" Color="#FFEDEDEB" />
+                            <SolidColorBrush x:Key="ToggleSwitchStrokeOnPointerOver" Color="#FFD2D2CF" />
+                            <SolidColorBrush x:Key="ToggleSwitchStrokeOnPressed" Color="#FFD2D2CF" />
+                            <SolidColorBrush x:Key="ToggleSwitchKnobFillOn" Color="#FF161616" />
+                            <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPointerOver" Color="#FF161616" />
+                            <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPressed" Color="#FF161616" />
+                            <SolidColorBrush x:Key="ToggleSwitchStrokeOff" Color="#FFB4B4B0" />
+                            <SolidColorBrush x:Key="ToggleSwitchStrokeOffPointerOver" Color="#FFB4B4B0" />
+                            <SolidColorBrush x:Key="ToggleSwitchStrokeOffPressed" Color="#FFB4B4B0" />
+                            <SolidColorBrush x:Key="ToggleSwitchKnobFillOff" Color="#FFB4B4B0" />
+                            <SolidColorBrush x:Key="ToggleSwitchKnobFillOffPointerOver" Color="#FFB4B4B0" />
+                            <SolidColorBrush x:Key="ToggleSwitchKnobFillOffPressed" Color="#FFB4B4B0" />
 
-                            <SolidColorBrush x:Key="SliderTrackValueFill" Color="#FFF2F2F0" />
-                            <SolidColorBrush x:Key="SliderTrackValueFillPointerOver" Color="#FFD9D9D6" />
-                            <SolidColorBrush x:Key="SliderTrackValueFillPressed" Color="#FFD9D9D6" />
-                            <SolidColorBrush x:Key="SliderTrackValueFillDisabled" Color="#FF9B9A97" />
-                            <SolidColorBrush x:Key="SliderThumbBackground" Color="#FFF2F2F0" />
-                            <SolidColorBrush x:Key="SliderThumbBackgroundPointerOver" Color="#FFD9D9D6" />
-                            <SolidColorBrush x:Key="SliderThumbBackgroundPressed" Color="#FFD9D9D6" />
-                            <SolidColorBrush x:Key="SliderThumbBackgroundDisabled" Color="#FF9B9A97" />
-                            <SolidColorBrush x:Key="SliderTrackFill" Color="#24FFFFFF" />
-                            <SolidColorBrush x:Key="SliderTrackFillPointerOver" Color="#24FFFFFF" />
-                            <SolidColorBrush x:Key="SliderTrackFillPressed" Color="#24FFFFFF" />
+                            <SolidColorBrush x:Key="SliderTrackValueFill" Color="#FFEDEDEB" />
+                            <SolidColorBrush x:Key="SliderTrackValueFillPointerOver" Color="#FFD2D2CF" />
+                            <SolidColorBrush x:Key="SliderTrackValueFillPressed" Color="#FFD2D2CF" />
+                            <SolidColorBrush x:Key="SliderTrackValueFillDisabled" Color="#FF92928E" />
+                            <SolidColorBrush x:Key="SliderThumbBackground" Color="#FFEDEDEB" />
+                            <SolidColorBrush x:Key="SliderThumbBackgroundPointerOver" Color="#FFD2D2CF" />
+                            <SolidColorBrush x:Key="SliderThumbBackgroundPressed" Color="#FFD2D2CF" />
+                            <SolidColorBrush x:Key="SliderThumbBackgroundDisabled" Color="#FF92928E" />
+                            <SolidColorBrush x:Key="SliderTrackFill" Color="#26FFFFFF" />
+                            <SolidColorBrush x:Key="SliderTrackFillPointerOver" Color="#26FFFFFF" />
+                            <SolidColorBrush x:Key="SliderTrackFillPressed" Color="#26FFFFFF" />
                             <SolidColorBrush x:Key="SliderTrackFillDisabled" Color="#14FFFFFF" />
 
-                            <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillChecked" Color="#FFF2F2F0" />
-                            <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver" Color="#FFD9D9D6" />
-                            <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPressed" Color="#FFD9D9D6" />
-                            <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedDisabled" Color="#FF9B9A97" />
-                            <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeChecked" Color="#FFF2F2F0" />
-                            <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedPointerOver" Color="#FFD9D9D6" />
-                            <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedPressed" Color="#FFD9D9D6" />
-                            <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedDisabled" Color="#FF9B9A97" />
-                            <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundChecked" Color="#FF111111" />
-                            <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedPointerOver" Color="#FF111111" />
-                            <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedPressed" Color="#FF111111" />
-                            <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedDisabled" Color="#FF111111" />
+                            <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillChecked" Color="#FFEDEDEB" />
+                            <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver" Color="#FFD2D2CF" />
+                            <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPressed" Color="#FFD2D2CF" />
+                            <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedDisabled" Color="#FF92928E" />
+                            <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeChecked" Color="#FFEDEDEB" />
+                            <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedPointerOver" Color="#FFD2D2CF" />
+                            <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedPressed" Color="#FFD2D2CF" />
+                            <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedDisabled" Color="#FF92928E" />
+                            <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundChecked" Color="#FF161616" />
+                            <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedPointerOver" Color="#FF161616" />
+                            <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedPressed" Color="#FF161616" />
+                            <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedDisabled" Color="#FF161616" />
 
-                            <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#FFF2F2F0" />
-                            <SolidColorBrush x:Key="ComboBoxBorderBrushFocused" Color="#FFF2F2F0" />
-                            <SolidColorBrush x:Key="ComboBoxItemPillFillBrush" Color="#FFF2F2F0" />
-                            <SolidColorBrush x:Key="ListViewItemSelectionIndicatorBrush" Color="#FFF2F2F0" />
-                            <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPointerOverBrush" Color="#FFD9D9D6" />
-                            <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPressedBrush" Color="#FFD9D9D6" />
-                            <SolidColorBrush x:Key="ListViewItemCheckBoxSelectedBrush" Color="#FFF2F2F0" />
-                            <SolidColorBrush x:Key="ListViewItemCheckBoxSelectedPointerOverBrush" Color="#FFD9D9D6" />
-                            <SolidColorBrush x:Key="ListViewItemCheckBoxSelectedPressedBrush" Color="#FFD9D9D6" />
-                            <SolidColorBrush x:Key="ListViewItemCheckBrush" Color="#FF111111" />
-                            <SolidColorBrush x:Key="ListViewItemCheckPointerOverBrush" Color="#FF111111" />
-                            <SolidColorBrush x:Key="ListViewItemCheckPressedBrush" Color="#FF111111" />
+                            <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#26FFFFFF" />
+                            <SolidColorBrush x:Key="ComboBoxBorderBrushFocused" Color="#26FFFFFF" />
+                            <SolidColorBrush x:Key="ComboBoxItemPillFillBrush" Color="#FFEDEDEB" />
+                            <SolidColorBrush x:Key="ListViewItemSelectionIndicatorBrush" Color="#FFEDEDEB" />
+                            <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPointerOverBrush" Color="#FFD2D2CF" />
+                            <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPressedBrush" Color="#FFD2D2CF" />
+                            <SolidColorBrush x:Key="ListViewItemCheckBoxSelectedBrush" Color="#FFEDEDEB" />
+                            <SolidColorBrush x:Key="ListViewItemCheckBoxSelectedPointerOverBrush" Color="#FFD2D2CF" />
+                            <SolidColorBrush x:Key="ListViewItemCheckBoxSelectedPressedBrush" Color="#FFD2D2CF" />
+                            <SolidColorBrush x:Key="ListViewItemCheckBrush" Color="#FF161616" />
+                            <SolidColorBrush x:Key="ListViewItemCheckPointerOverBrush" Color="#FF161616" />
+                            <SolidColorBrush x:Key="ListViewItemCheckPressedBrush" Color="#FF161616" />
 
-                            <SolidColorBrush x:Key="NavigationViewDefaultPaneBackground" Color="#FF252524" />
-                            <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="#FF252524" />
-                            <SolidColorBrush x:Key="NavigationViewTopPaneBackground" Color="#FF252524" />
-                            <SolidColorBrush x:Key="NavigationViewContentBackground" Color="#FF202020" />
+                            <SolidColorBrush x:Key="NavigationViewDefaultPaneBackground" Color="#FF1A1A19" />
+                            <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="#FF1A1A19" />
+                            <SolidColorBrush x:Key="NavigationViewTopPaneBackground" Color="#FF1A1A19" />
+                            <SolidColorBrush x:Key="NavigationViewContentBackground" Color="#FF1A1A19" />
                             <SolidColorBrush x:Key="NavigationViewContentGridBorderBrush" Color="Transparent" />
                             <SolidColorBrush x:Key="NavigationViewItemBackground" Color="Transparent" />
-                            <SolidColorBrush x:Key="NavigationViewItemBackgroundPointerOver" Color="#FF202020" />
-                            <SolidColorBrush x:Key="NavigationViewItemBackgroundPressed" Color="#FF202020" />
-                            <SolidColorBrush x:Key="NavigationViewItemBackgroundSelected" Color="#FF202020" />
-                            <SolidColorBrush x:Key="NavigationViewItemBackgroundSelectedPointerOver" Color="#FF202020" />
-                            <SolidColorBrush x:Key="NavigationViewItemBackgroundSelectedPressed" Color="#FF202020" />
-                            <SolidColorBrush x:Key="NavigationViewItemForeground" Color="#FFE6E6E3" />
-                            <SolidColorBrush x:Key="NavigationViewItemForegroundPointerOver" Color="#FFE6E6E3" />
-                            <SolidColorBrush x:Key="NavigationViewItemForegroundPressed" Color="#FFE6E6E3" />
-                            <SolidColorBrush x:Key="NavigationViewItemForegroundSelected" Color="#FFE6E6E3" />
-                            <SolidColorBrush x:Key="NavigationViewItemForegroundSelectedPointerOver" Color="#FFE6E6E3" />
-                            <SolidColorBrush x:Key="NavigationViewItemForegroundSelectedPressed" Color="#FFE6E6E3" />
+                            <SolidColorBrush x:Key="NavigationViewItemBackgroundPointerOver" Color="#FF2C2C2B" />
+                            <SolidColorBrush x:Key="NavigationViewItemBackgroundPressed" Color="#FF2C2C2B" />
+                            <SolidColorBrush x:Key="NavigationViewItemBackgroundSelected" Color="#FF2C2C2B" />
+                            <SolidColorBrush x:Key="NavigationViewItemBackgroundSelectedPointerOver" Color="#FF2C2C2B" />
+                            <SolidColorBrush x:Key="NavigationViewItemBackgroundSelectedPressed" Color="#FF2C2C2B" />
+                            <SolidColorBrush x:Key="NavigationViewItemForeground" Color="#FFEDEDEB" />
+                            <SolidColorBrush x:Key="NavigationViewItemForegroundPointerOver" Color="#FFEDEDEB" />
+                            <SolidColorBrush x:Key="NavigationViewItemForegroundPressed" Color="#FFEDEDEB" />
+                            <SolidColorBrush x:Key="NavigationViewItemForegroundSelected" Color="#FFEDEDEB" />
+                            <SolidColorBrush x:Key="NavigationViewItemForegroundSelectedPointerOver" Color="#FFEDEDEB" />
+                            <SolidColorBrush x:Key="NavigationViewItemForegroundSelectedPressed" Color="#FFEDEDEB" />
                             <SolidColorBrush x:Key="NavigationViewItemBorderBrush" Color="Transparent" />
                             <SolidColorBrush x:Key="NavigationViewItemBorderBrushPointerOver" Color="Transparent" />
                             <SolidColorBrush x:Key="NavigationViewItemBorderBrushPressed" Color="Transparent" />
-                            <SolidColorBrush x:Key="NavigationViewItemBorderBrushSelected" Color="#14FFFFFF" />
-                            <SolidColorBrush x:Key="NavigationViewItemBorderBrushSelectedPointerOver" Color="#14FFFFFF" />
-                            <SolidColorBrush x:Key="NavigationViewItemBorderBrushSelectedPressed" Color="#14FFFFFF" />
-                            <SolidColorBrush x:Key="NavigationViewSelectionIndicatorForeground" Color="#FFF2F2F0" />
+                            <SolidColorBrush x:Key="NavigationViewItemBorderBrushSelected" Color="Transparent" />
+                            <SolidColorBrush x:Key="NavigationViewItemBorderBrushSelectedPointerOver" Color="Transparent" />
+                            <SolidColorBrush x:Key="NavigationViewItemBorderBrushSelectedPressed" Color="Transparent" />
+                            <SolidColorBrush x:Key="NavigationViewSelectionIndicatorForeground" Color="#FFEDEDEB" />
+
+                            <!-- アクセントは輪と区画、意味の色は InfoBar のアイコンに使う。 -->
+                            <Color x:Key="SystemAccentColor">#FF8CCBF2</Color>
+                            <Color x:Key="SystemAccentColorDark1">#FF8CCBF2</Color>
+                            <Color x:Key="SystemAccentColorDark2">#FF8CCBF2</Color>
+                            <Color x:Key="SystemAccentColorDark3">#FF8CCBF2</Color>
+                            <Color x:Key="SystemAccentColorLight1">#FF8CCBF2</Color>
+                            <Color x:Key="SystemAccentColorLight2">#FF8CCBF2</Color>
+                            <Color x:Key="SystemAccentColorLight3">#FF8CCBF2</Color>
+                            <SolidColorBrush x:Key="FocusVisualPrimaryBrush" Color="#FF8CCBF2" />
+                            <SolidColorBrush x:Key="FocusVisualSecondaryBrush" Color="Transparent" />
+                            <StaticResource x:Key="AccentButtonBackgroundDisabled" ResourceKey="SnapwellSurface2Brush" />
+                            <StaticResource x:Key="AccentButtonForegroundDisabled" ResourceKey="SnapwellSubtleBrush" />
+                            <StaticResource x:Key="AccentButtonBorderBrushDisabled" ResourceKey="SnapwellBorderBrush" />
+                            <SolidColorBrush x:Key="TextControlBorderBrush" Color="#26FFFFFF" />
+                            <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="#26FFFFFF" />
+                            <SolidColorBrush x:Key="TextControlBorderBrushPressed" Color="#26FFFFFF" />
+                            <SolidColorBrush x:Key="TextControlBorderBrushDisabled" Color="#26FFFFFF" />
+                            <StaticResource x:Key="TextControlBackground" ResourceKey="SnapwellSurface2Brush" />
+                            <StaticResource x:Key="TextControlBackgroundPointerOver" ResourceKey="SnapwellSurface2Brush" />
+                            <StaticResource x:Key="TextControlBackgroundFocused" ResourceKey="SnapwellSurface2Brush" />
+                            <StaticResource x:Key="TextControlForeground" ResourceKey="SnapwellTextBrush" />
+                            <StaticResource x:Key="TextControlForegroundPointerOver" ResourceKey="SnapwellTextBrush" />
+                            <StaticResource x:Key="TextControlForegroundFocused" ResourceKey="SnapwellTextBrush" />
+                            <StaticResource x:Key="TextControlForegroundDisabled" ResourceKey="SnapwellSubtleBrush" />
+                            <SolidColorBrush x:Key="ComboBoxBorderBrush" Color="#26FFFFFF" />
+                            <SolidColorBrush x:Key="ComboBoxBorderBrushPointerOver" Color="#26FFFFFF" />
+                            <SolidColorBrush x:Key="ComboBoxBorderBrushPressed" Color="#26FFFFFF" />
+                            <StaticResource x:Key="ComboBoxBackground" ResourceKey="SnapwellSurface2Brush" />
+                            <StaticResource x:Key="ComboBoxBackgroundPointerOver" ResourceKey="SnapwellSurface2Brush" />
+                            <StaticResource x:Key="ComboBoxBackgroundFocused" ResourceKey="SnapwellSurface2Brush" />
+                            <StaticResource x:Key="ComboBoxForeground" ResourceKey="SnapwellTextBrush" />
+                            <StaticResource x:Key="ComboBoxForegroundPointerOver" ResourceKey="SnapwellTextBrush" />
+                            <StaticResource x:Key="ComboBoxForegroundFocused" ResourceKey="SnapwellTextBrush" />
+                            <StaticResource x:Key="ComboBoxBackgroundBorderBrushFocused" ResourceKey="SnapwellBorderStrongBrush" />
+                            <StaticResource x:Key="InfoBarErrorSeverityBackgroundBrush" ResourceKey="SnapwellRedBackgroundBrush" />
+                            <StaticResource x:Key="InfoBarErrorSeverityIconBackground" ResourceKey="SnapwellRedTextBrush" />
+                            <StaticResource x:Key="InfoBarErrorSeverityIconForeground" ResourceKey="SnapwellSurfaceBrush" />
+                            <StaticResource x:Key="InfoBarWarningSeverityBackgroundBrush" ResourceKey="SnapwellYellowBackgroundBrush" />
+                            <StaticResource x:Key="InfoBarWarningSeverityIconBackground" ResourceKey="SnapwellYellowTextBrush" />
+                            <StaticResource x:Key="InfoBarWarningSeverityIconForeground" ResourceKey="SnapwellSurfaceBrush" />
+                            <SolidColorBrush x:Key="InfoBarSuccessSeverityBackgroundBrush" Color="#1F7CC48A" />
+                            <StaticResource x:Key="InfoBarSuccessSeverityIconBackground" ResourceKey="SnapwellGreenTextBrush" />
+                            <StaticResource x:Key="InfoBarSuccessSeverityIconForeground" ResourceKey="SnapwellSurfaceBrush" />
+                            <StaticResource x:Key="InfoBarInformationalSeverityBackgroundBrush" ResourceKey="SnapwellBlueBackgroundBrush" />
+                            <StaticResource x:Key="InfoBarInformationalSeverityIconBackground" ResourceKey="SnapwellBlueTextBrush" />
+                            <StaticResource x:Key="InfoBarInformationalSeverityIconForeground" ResourceKey="SnapwellSurfaceBrush" />
+                            <StaticResource x:Key="InfoBarTitleForeground" ResourceKey="SnapwellTextBrush" />
+                            <StaticResource x:Key="InfoBarMessageForeground" ResourceKey="SnapwellTextBrush" />
+                            <StaticResource x:Key="CheckBoxCheckBackgroundFillIndeterminate" ResourceKey="SnapwellInkBrush" />
+                            <StaticResource x:Key="CheckBoxCheckBackgroundStrokeIndeterminate" ResourceKey="SnapwellInkBrush" />
+                            <StaticResource x:Key="CheckBoxCheckGlyphForegroundIndeterminate" ResourceKey="SnapwellInkTextBrush" />
+                            <StaticResource x:Key="CheckBoxCheckBackgroundFillIndeterminatePointerOver" ResourceKey="SnapwellInkBrush" />
+                            <StaticResource x:Key="CheckBoxCheckBackgroundStrokeIndeterminatePointerOver" ResourceKey="SnapwellInkBrush" />
+                            <StaticResource x:Key="CheckBoxCheckGlyphForegroundIndeterminatePointerOver" ResourceKey="SnapwellInkTextBrush" />
+                            <StaticResource x:Key="CheckBoxCheckBackgroundFillIndeterminatePressed" ResourceKey="SnapwellInkBrush" />
+                            <StaticResource x:Key="CheckBoxCheckBackgroundStrokeIndeterminatePressed" ResourceKey="SnapwellInkBrush" />
+                            <StaticResource x:Key="CheckBoxCheckGlyphForegroundIndeterminatePressed" ResourceKey="SnapwellInkTextBrush" />
+                            <StaticResource x:Key="CheckBoxCheckBackgroundFillIndeterminateDisabled" ResourceKey="SnapwellSubtleBrush" />
+                            <StaticResource x:Key="CheckBoxCheckBackgroundStrokeIndeterminateDisabled" ResourceKey="SnapwellSubtleBrush" />
+                            <StaticResource x:Key="CheckBoxCheckGlyphForegroundIndeterminateDisabled" ResourceKey="SnapwellInkTextBrush" />
                         </ResourceDictionary>
                     </ResourceDictionary.ThemeDictionaries>
                 </ResourceDictionary>
@@ -458,20 +641,27 @@
             <CornerRadius x:Key="NavigationViewContentGridCornerRadius">0</CornerRadius>
             <Thickness x:Key="NavigationViewContentGridBorderThickness">0</Thickness>
 
+            <Thickness x:Key="TextControlBorderThemeThicknessFocused">1</Thickness>
+            <Thickness x:Key="ComboBoxBorderThemeThickness">1</Thickness>
+            <Thickness x:Key="ComboBoxBackgroundBorderThicknessFocused">1</Thickness>
+            <x:Double x:Key="CheckBoxSize">20</x:Double>
+            <CornerRadius x:Key="ControlCornerRadius">4</CornerRadius>
+
             <FontFamily x:Key="ContentControlThemeFontFamily">Segoe UI Variable Text, Segoe UI Variable, Yu Gothic UI</FontFamily>
             <FontFamily x:Key="SnapwellUiFontFamily">Segoe UI Variable Text, Segoe UI Variable, Yu Gothic UI</FontFamily>
             <FontFamily x:Key="SnapwellDisplayFontFamily">Yu Mincho</FontFamily>
             <FontFamily x:Key="SnapwellMonoFontFamily">Cascadia Mono, Consolas</FontFamily>
 
-            <!-- モックアップの h3 (Yu Mincho 26px, weight 500, letter-spacing -0.02em) -->
+            <!-- ページ題は游明朝の通常の太さで、字間を加えない。 -->
             <Style x:Key="SnapwellPageTitleStyle" TargetType="TextBlock">
                 <Setter Property="FontFamily" Value="{ThemeResource SnapwellDisplayFontFamily}" />
-                <Setter Property="FontSize" Value="26" />
-                <Setter Property="FontWeight" Value="Medium" />
-                <Setter Property="CharacterSpacing" Value="-20" />
-                <Setter Property="LineHeight" Value="41.6" />
+                <Setter Property="FontSize" Value="28" />
+                <Setter Property="FontWeight" Value="Normal" />
+                <Setter Property="CharacterSpacing" Value="0" />
+                <Setter Property="LineHeight" Value="36" />
                 <Setter Property="Foreground" Value="{ThemeResource SnapwellInkBrush}" />
                 <Setter Property="Margin" Value="0,0,0,4" />
+                <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
             </Style>
 
             <!-- モックアップの等幅フォント (Cascadia Mono, 12px) -->
@@ -479,57 +669,64 @@
                 <Setter Property="FontFamily" Value="{StaticResource SnapwellMonoFontFamily}" />
                 <Setter Property="FontSize" Value="12" />
                 <Setter Property="Foreground" Value="{ThemeResource SnapwellTextBrush}" />
+                <Setter Property="LineHeight" Value="16" />
+                <Setter Property="FontWeight" Value="Normal" />
+                <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
             </Style>
 
-            <!-- kbd の枠内は行高 20、上下の Padding は 0 とし、枠込みで高さ 22 にする。 -->
+            <!-- キーは高さ 24、下の線だけ 2 DIP にする。文字の縦位置は実機未確認。 -->
             <Style x:Key="SnapwellKbdBorderStyle" TargetType="Border">
-                <Setter Property="MinWidth" Value="22" />
-                <Setter Property="Padding" Value="6,0" />
-                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="MinWidth" Value="24" />
+                <Setter Property="Padding" Value="8,0" />
+                <Setter Property="BorderThickness" Value="1,1,1,2" />
                 <Setter Property="BorderBrush" Value="{ThemeResource SnapwellBorderStrongBrush}" />
                 <Setter Property="CornerRadius" Value="4" />
                 <Setter Property="Background" Value="{ThemeResource SnapwellSurface2Brush}" />
                 <Setter Property="VerticalAlignment" Value="Center" />
+                <Setter Property="Height" Value="24" />
             </Style>
 
             <Style x:Key="SnapwellKbdTextStyle" TargetType="TextBlock"
                    BasedOn="{StaticResource SnapwellMonoTextStyle}">
-                <Setter Property="FontSize" Value="11.5" />
-                <Setter Property="LineHeight" Value="20" />
+                <Setter Property="FontSize" Value="12" />
+                <Setter Property="LineHeight" Value="16" />
                 <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
                 <Setter Property="TextAlignment" Value="Center" />
-                <!-- 実測の下寄り 2 DIP を補正し、上下の Margin の合計を 0 にして枠の高さを保つ。 -->
-                <Setter Property="Margin" Value="0,-2,0,2" />
+                <Setter Property="Margin" Value="0" />
                 <Setter Property="VerticalAlignment" Value="Center" />
+                <Setter Property="FontWeight" Value="Normal" />
             </Style>
 
             <Style x:Key="SnapwellKbdCompanionTextStyle" TargetType="TextBlock">
                 <Setter Property="FontFamily" Value="{ThemeResource SnapwellUiFontFamily}" />
-                <Setter Property="FontSize" Value="13" />
-                <Setter Property="LineHeight" Value="20.8" />
+                <Setter Property="FontSize" Value="14" />
+                <Setter Property="LineHeight" Value="20" />
                 <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
                 <Setter Property="Foreground" Value="{ThemeResource SnapwellTextBrush}" />
-                <!-- 日本語の文字が約 2 DIP 下に出るため、キー表示の中心に合わせる。上下の Margin の合計は 0 にする。 -->
-                <Setter Property="Margin" Value="0,-2,0,2" />
+                <Setter Property="Margin" Value="0" />
                 <Setter Property="VerticalAlignment" Value="Center" />
+                <Setter Property="FontWeight" Value="Normal" />
             </Style>
 
             <Style x:Key="SnapwellLeadTextStyle" TargetType="TextBlock">
                 <Setter Property="FontFamily" Value="{ThemeResource SnapwellUiFontFamily}" />
                 <Setter Property="FontSize" Value="14" />
-                <Setter Property="LineHeight" Value="22.4" />
+                <Setter Property="LineHeight" Value="20" />
                 <Setter Property="Foreground" Value="{ThemeResource SnapwellMutedBrush}" />
                 <Setter Property="TextWrapping" Value="Wrap" />
-                <Setter Property="Margin" Value="0,0,0,20" />
+                <Setter Property="Margin" Value="0,0,0,24" />
+                <Setter Property="FontWeight" Value="Normal" />
+                <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
             </Style>
 
             <Style x:Key="SnapwellGroupTitleStyle" TargetType="TextBlock">
                 <Setter Property="FontFamily" Value="{ThemeResource SnapwellUiFontFamily}" />
-                <Setter Property="FontSize" Value="12.5" />
+                <Setter Property="FontSize" Value="14" />
                 <Setter Property="FontWeight" Value="SemiBold" />
                 <Setter Property="LineHeight" Value="20" />
                 <Setter Property="Foreground" Value="{ThemeResource SnapwellInkBrush}" />
-                <Setter Property="Margin" Value="0,22,0,8" />
+                <Setter Property="Margin" Value="0,24,0,8" />
+                <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
             </Style>
 
             <Style x:Key="SnapwellRowsBorderStyle" TargetType="Border">
@@ -543,6 +740,7 @@
                 <Setter Property="Background" Value="{ThemeResource SnapwellSurfaceBrush}" />
                 <Setter Property="Padding" Value="16,12" />
                 <Setter Property="ColumnSpacing" Value="16" />
+                <Setter Property="MinHeight" Value="56" />
             </Style>
 
             <Style x:Key="SnapwellRowDividerStyle" TargetType="Border">
@@ -554,53 +752,61 @@
             <Style x:Key="SnapwellRowTitleStyle" TargetType="TextBlock">
                 <Setter Property="FontFamily" Value="{ThemeResource SnapwellUiFontFamily}" />
                 <Setter Property="FontSize" Value="14" />
-                <Setter Property="LineHeight" Value="22.4" />
+                <Setter Property="LineHeight" Value="20" />
                 <Setter Property="Foreground" Value="{ThemeResource SnapwellInkBrush}" />
                 <Setter Property="TextWrapping" Value="Wrap" />
+                <Setter Property="FontWeight" Value="Normal" />
+                <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
             </Style>
 
             <Style x:Key="SnapwellRowDescriptionStyle" TargetType="TextBlock">
                 <Setter Property="FontFamily" Value="{ThemeResource SnapwellUiFontFamily}" />
-                <Setter Property="FontSize" Value="12.5" />
+                <Setter Property="FontSize" Value="12" />
                 <Setter Property="LineHeight" Value="20" />
                 <Setter Property="Foreground" Value="{ThemeResource SnapwellMutedBrush}" />
                 <Setter Property="TextWrapping" Value="Wrap" />
+                <Setter Property="FontWeight" Value="Normal" />
+                <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
             </Style>
 
             <Style x:Key="SnapwellHintTextStyle" TargetType="TextBlock">
                 <Setter Property="FontFamily" Value="{ThemeResource SnapwellUiFontFamily}" />
-                <Setter Property="FontSize" Value="12.5" />
+                <Setter Property="FontSize" Value="12" />
                 <Setter Property="LineHeight" Value="20" />
                 <Setter Property="Foreground" Value="{ThemeResource SnapwellMutedBrush}" />
                 <Setter Property="TextWrapping" Value="Wrap" />
+                <Setter Property="FontWeight" Value="Normal" />
+                <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
             </Style>
 
-            <!-- モックアップの .tag (カプセル型、Padding 8,1、文字 10.5 SemiBold、字間 0.05em、行高 16.8)。未実装の行は中立色のタグで示す。 -->
+            <!-- タグの面と文字は中立色にし、意味の色は先頭の点だけに使う。 -->
             <Style x:Key="SnapwellTagStyle" TargetType="Border">
-                <Setter Property="controls:Pill.AutoRadius" Value="True" />
-                <Setter Property="Padding" Value="8,1" />
+                <Setter Property="Padding" Value="6,0" />
                 <Setter Property="HorizontalAlignment" Value="Left" />
                 <Setter Property="VerticalAlignment" Value="Center" />
+                <Setter Property="Height" Value="20" />
+                <Setter Property="CornerRadius" Value="4" />
+                <Setter Property="Background" Value="{ThemeResource SnapwellSurface2Brush}" />
             </Style>
 
             <Style x:Key="SnapwellTagRedStyle" TargetType="Border"
                    BasedOn="{StaticResource SnapwellTagStyle}">
-                <Setter Property="Background" Value="{ThemeResource SnapwellRedBackgroundBrush}" />
+                <Setter Property="Background" Value="{ThemeResource SnapwellSurface2Brush}" />
             </Style>
 
             <Style x:Key="SnapwellTagYellowStyle" TargetType="Border"
                    BasedOn="{StaticResource SnapwellTagStyle}">
-                <Setter Property="Background" Value="{ThemeResource SnapwellYellowBackgroundBrush}" />
+                <Setter Property="Background" Value="{ThemeResource SnapwellSurface2Brush}" />
             </Style>
 
             <Style x:Key="SnapwellTagBlueStyle" TargetType="Border"
                    BasedOn="{StaticResource SnapwellTagStyle}">
-                <Setter Property="Background" Value="{ThemeResource SnapwellBlueBackgroundBrush}" />
+                <Setter Property="Background" Value="{ThemeResource SnapwellSurface2Brush}" />
             </Style>
 
             <Style x:Key="SnapwellTagGreenStyle" TargetType="Border"
                    BasedOn="{StaticResource SnapwellTagStyle}">
-                <Setter Property="Background" Value="{ThemeResource SnapwellGreenBackgroundBrush}" />
+                <Setter Property="Background" Value="{ThemeResource SnapwellSurface2Brush}" />
             </Style>
 
             <Style x:Key="SnapwellTagPendingStyle" TargetType="Border"
@@ -610,32 +816,34 @@
 
             <Style x:Key="SnapwellTagTextStyle" TargetType="TextBlock">
                 <Setter Property="FontFamily" Value="{ThemeResource SnapwellUiFontFamily}" />
-                <Setter Property="FontSize" Value="10.5" />
-                <Setter Property="FontWeight" Value="SemiBold" />
-                <Setter Property="CharacterSpacing" Value="50" />
-                <Setter Property="LineHeight" Value="16.8" />
-                <Setter Property="TextWrapping" Value="Wrap" />
+                <Setter Property="FontSize" Value="12" />
+                <Setter Property="FontWeight" Value="Normal" />
+                <Setter Property="CharacterSpacing" Value="0" />
+                <Setter Property="LineHeight" Value="16" />
+                <Setter Property="TextWrapping" Value="NoWrap" />
                 <Setter Property="Foreground" Value="{ThemeResource SnapwellMutedBrush}" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+                <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
             </Style>
 
             <Style x:Key="SnapwellTagRedTextStyle" TargetType="TextBlock"
                    BasedOn="{StaticResource SnapwellTagTextStyle}">
-                <Setter Property="Foreground" Value="{ThemeResource SnapwellRedTextBrush}" />
+                <Setter Property="Foreground" Value="{ThemeResource SnapwellMutedBrush}" />
             </Style>
 
             <Style x:Key="SnapwellTagYellowTextStyle" TargetType="TextBlock"
                    BasedOn="{StaticResource SnapwellTagTextStyle}">
-                <Setter Property="Foreground" Value="{ThemeResource SnapwellYellowTextBrush}" />
+                <Setter Property="Foreground" Value="{ThemeResource SnapwellMutedBrush}" />
             </Style>
 
             <Style x:Key="SnapwellTagBlueTextStyle" TargetType="TextBlock"
                    BasedOn="{StaticResource SnapwellTagTextStyle}">
-                <Setter Property="Foreground" Value="{ThemeResource SnapwellBlueTextBrush}" />
+                <Setter Property="Foreground" Value="{ThemeResource SnapwellMutedBrush}" />
             </Style>
 
             <Style x:Key="SnapwellTagGreenTextStyle" TargetType="TextBlock"
                    BasedOn="{StaticResource SnapwellTagTextStyle}">
-                <Setter Property="Foreground" Value="{ThemeResource SnapwellGreenTextBrush}" />
+                <Setter Property="Foreground" Value="{ThemeResource SnapwellMutedBrush}" />
             </Style>
 
             <Style x:Key="SnapwellTagPendingTextStyle" TargetType="TextBlock"
@@ -644,10 +852,10 @@
                 <Setter Property="TextWrapping" Value="NoWrap" />
             </Style>
 
-            <!-- 編集中の重複表示は、従来どおりフォント本来の行高と折り返しなしで測る。 -->
+            <!-- 重複のタグも caption の行高にそろえ、折り返さず測る。 -->
             <Style x:Key="SnapwellTagConflictTextStyle" TargetType="TextBlock"
                    BasedOn="{StaticResource SnapwellTagRedTextStyle}">
-                <Setter Property="LineHeight" Value="0" />
+                <Setter Property="LineHeight" Value="16" />
                 <Setter Property="TextWrapping" Value="NoWrap" />
             </Style>
 
@@ -748,6 +956,7 @@
                         </ControlTemplate>
                     </Setter.Value>
                 </Setter>
+                <Setter Property="FocusVisualSecondaryBrush" Value="Transparent" />
             </Style>
 
             <Style TargetType="ToggleSwitch" BasedOn="{StaticResource SnapwellToggleSwitchStyle}" />
@@ -758,7 +967,113 @@
                 <Setter Property="Opacity" Value="1" />
             </Style>
 
-            <Style x:Key="SnapwellDemoSelectStyle" TargetType="ComboBox">
+            <Style x:Key="SnapwellSubtitleTextStyle" TargetType="TextBlock">
+                <Setter Property="FontFamily" Value="{ThemeResource SnapwellUiFontFamily}" />
+                <Setter Property="FontSize" Value="20" />
+                <Setter Property="LineHeight" Value="28" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+                <Setter Property="Foreground" Value="{ThemeResource SnapwellTextBrush}" />
+            </Style>
+
+            <Style x:Key="SnapwellTagDotStyle" TargetType="Ellipse">
+                <Setter Property="Width" Value="6" />
+                <Setter Property="Height" Value="6" />
+                <Setter Property="Margin" Value="0,0,6,0" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+                <Setter Property="Fill" Value="{ThemeResource SnapwellMutedBrush}" />
+            </Style>
+
+            <Style x:Key="SnapwellTagGreenDotStyle" TargetType="Ellipse" BasedOn="{StaticResource SnapwellTagDotStyle}">
+                <Setter Property="Fill" Value="{ThemeResource SnapwellGreenTextBrush}" />
+            </Style>
+
+            <Style x:Key="SnapwellTagYellowDotStyle" TargetType="Ellipse" BasedOn="{StaticResource SnapwellTagDotStyle}">
+                <Setter Property="Fill" Value="{ThemeResource SnapwellYellowTextBrush}" />
+            </Style>
+
+            <Style x:Key="SnapwellTagRedDotStyle" TargetType="Ellipse" BasedOn="{StaticResource SnapwellTagDotStyle}">
+                <Setter Property="Fill" Value="{ThemeResource SnapwellRedTextBrush}" />
+            </Style>
+
+            <Style x:Key="SnapwellTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource DefaultTextBoxStyle}">
+                <Setter Property="Height" Value="32" />
+                <Setter Property="MinHeight" Value="0" />
+                <Setter Property="CornerRadius" Value="4" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="BorderBrush" Value="{ThemeResource SnapwellBorderStrongBrush}" />
+                <Setter Property="FontFamily" Value="{ThemeResource SnapwellUiFontFamily}" />
+                <Setter Property="FontSize" Value="14" />
+                <Setter Property="FontWeight" Value="Normal" />
+                <Setter Property="Padding" Value="12,0" />
+                <Setter Property="VerticalContentAlignment" Value="Center" />
+                <Setter Property="UseSystemFocusVisuals" Value="True" />
+                <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource SnapwellBlueTextBrush}" />
+                <Setter Property="FocusVisualSecondaryBrush" Value="Transparent" />
+                <Setter Property="FocusVisualMargin" Value="-2" />
+                <Setter Property="FocusVisualPrimaryThickness" Value="2" />
+                <Setter Property="FocusVisualSecondaryThickness" Value="0" />
+            </Style>
+
+            <Style TargetType="TextBox" BasedOn="{StaticResource SnapwellTextBoxStyle}">
+            </Style>
+
+            <Style x:Key="SnapwellComboBoxStyle" TargetType="ComboBox" BasedOn="{StaticResource DefaultComboBoxStyle}">
+                <Setter Property="Height" Value="32" />
+                <Setter Property="MinHeight" Value="0" />
+                <Setter Property="CornerRadius" Value="4" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="BorderBrush" Value="{ThemeResource SnapwellBorderStrongBrush}" />
+                <Setter Property="FontFamily" Value="{ThemeResource SnapwellUiFontFamily}" />
+                <Setter Property="FontSize" Value="14" />
+                <Setter Property="FontWeight" Value="Normal" />
+                <Setter Property="Padding" Value="12,0" />
+                <Setter Property="VerticalContentAlignment" Value="Center" />
+                <Setter Property="UseSystemFocusVisuals" Value="True" />
+                <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource SnapwellBlueTextBrush}" />
+                <Setter Property="FocusVisualSecondaryBrush" Value="Transparent" />
+                <Setter Property="FocusVisualMargin" Value="-2" />
+                <Setter Property="FocusVisualPrimaryThickness" Value="2" />
+                <Setter Property="FocusVisualSecondaryThickness" Value="0" />
+            </Style>
+
+            <Style TargetType="ComboBox" BasedOn="{StaticResource SnapwellComboBoxStyle}">
+            </Style>
+
+            <Style x:Key="SnapwellCheckBoxStyle" TargetType="CheckBox" BasedOn="{StaticResource DefaultCheckBoxStyle}">
+                <Setter Property="CornerRadius" Value="4" />
+                <Setter Property="UseSystemFocusVisuals" Value="True" />
+                <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource SnapwellBlueTextBrush}" />
+                <Setter Property="FocusVisualSecondaryBrush" Value="Transparent" />
+                <Setter Property="FocusVisualMargin" Value="-2" />
+                <Setter Property="FocusVisualPrimaryThickness" Value="2" />
+                <Setter Property="FocusVisualSecondaryThickness" Value="0" />
+            </Style>
+
+            <Style TargetType="CheckBox" BasedOn="{StaticResource SnapwellCheckBoxStyle}">
+            </Style>
+
+            <Style x:Key="SnapwellSliderStyle" TargetType="Slider" BasedOn="{StaticResource DefaultSliderStyle}">
+                <Setter Property="UseSystemFocusVisuals" Value="True" />
+                <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource SnapwellBlueTextBrush}" />
+                <Setter Property="FocusVisualSecondaryBrush" Value="Transparent" />
+                <Setter Property="FocusVisualMargin" Value="-2" />
+                <Setter Property="FocusVisualPrimaryThickness" Value="2" />
+                <Setter Property="FocusVisualSecondaryThickness" Value="0" />
+            </Style>
+
+            <Style TargetType="Slider" BasedOn="{StaticResource SnapwellSliderStyle}">
+            </Style>
+
+            <Style x:Key="SnapwellInfoBarStyle" TargetType="InfoBar">
+                <Setter Property="CornerRadius" Value="8" />
+            </Style>
+
+            <Style TargetType="InfoBar" BasedOn="{StaticResource SnapwellInfoBarStyle}">
+            </Style>
+
+            <Style x:Key="SnapwellDemoSelectStyle" TargetType="ComboBox"
+                   BasedOn="{StaticResource SnapwellComboBoxStyle}">
                 <Setter Property="Opacity" Value="1" />
             </Style>
 
@@ -767,10 +1082,28 @@
                 <Setter Property="FontSize" Value="14" />
                 <Setter Property="Background" Value="{ThemeResource SnapwellSurfaceBrush}" />
                 <Setter Property="Foreground" Value="{ThemeResource SnapwellTextBrush}" />
-                <Setter Property="BorderBrush" Value="{ThemeResource SnapwellBorderBrush}" />
+                <Setter Property="BorderBrush" Value="{ThemeResource SnapwellBorderStrongBrush}" />
                 <Setter Property="BorderThickness" Value="1" />
-                <Setter Property="CornerRadius" Value="6" />
-                <Setter Property="Padding" Value="14,7" />
+                <Setter Property="CornerRadius" Value="4" />
+                <Setter Property="Padding" Value="12,0" />
+                <Setter Property="Height" Value="32" />
+                <Setter Property="MinHeight" Value="0" />
+                <Setter Property="MinWidth" Value="80" />
+                <Setter Property="FontWeight" Value="Normal" />
+                <Setter Property="UseSystemFocusVisuals" Value="True" />
+                <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource SnapwellBlueTextBrush}" />
+                <Setter Property="FocusVisualSecondaryBrush" Value="Transparent" />
+                <Setter Property="FocusVisualMargin" Value="-2" />
+                <Setter Property="FocusVisualPrimaryThickness" Value="2" />
+                <Setter Property="FocusVisualSecondaryThickness" Value="0" />
+            </Style>
+
+            <Style x:Key="SnapwellSmallButtonStyle" TargetType="Button"
+                   BasedOn="{StaticResource SnapwellButtonStyle}">
+                <Setter Property="Height" Value="24" />
+                <Setter Property="MinWidth" Value="0" />
+                <Setter Property="Padding" Value="8,0" />
+                <Setter Property="FontSize" Value="12" />
             </Style>
 
             <Style x:Key="SnapwellDemoButtonStyle" TargetType="Button"
@@ -778,35 +1111,47 @@
                 <Setter Property="Opacity" Value="1" />
             </Style>
 
-            <!-- 操作ボタンの形と大きさは 1 種類（高さ 28・横の余白 14・最小幅 72・角 6・文字 13）。
-                 決定は Primary（塗り）、それ以外は Action（枠つきで塗らない）。docs/mockups/snapwell.html の案 B。
-                 チップ・カード・アイコンだけのボタンは SnapwellButtonStyle のまま別の部品として扱う -->
+            <!-- 操作ボタンは高さ 32・左右 12・最小幅 80・角 4 にそろえる。 -->
             <Style x:Key="SnapwellActionButtonStyle" TargetType="Button">
                 <Setter Property="FontFamily" Value="{ThemeResource SnapwellUiFontFamily}" />
-                <Setter Property="FontSize" Value="13" />
-                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="FontSize" Value="14" />
+                <Setter Property="Background" Value="{ThemeResource SnapwellSurfaceBrush}" />
                 <Setter Property="Foreground" Value="{ThemeResource SnapwellTextBrush}" />
                 <Setter Property="BorderBrush" Value="{ThemeResource SnapwellBorderStrongBrush}" />
                 <Setter Property="BorderThickness" Value="1" />
-                <Setter Property="CornerRadius" Value="6" />
-                <Setter Property="Padding" Value="14,0,14,2" />
+                <Setter Property="CornerRadius" Value="4" />
+                <Setter Property="Padding" Value="12,0" />
                 <Setter Property="MinHeight" Value="0" />
-                <Setter Property="MinWidth" Value="72" />
-                <Setter Property="Height" Value="28" />
+                <Setter Property="MinWidth" Value="80" />
+                <Setter Property="Height" Value="32" />
+                <Setter Property="FontWeight" Value="Normal" />
+                <Setter Property="UseSystemFocusVisuals" Value="True" />
+                <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource SnapwellBlueTextBrush}" />
+                <Setter Property="FocusVisualSecondaryBrush" Value="Transparent" />
+                <Setter Property="FocusVisualMargin" Value="-2" />
+                <Setter Property="FocusVisualPrimaryThickness" Value="2" />
+                <Setter Property="FocusVisualSecondaryThickness" Value="0" />
             </Style>
 
             <Style x:Key="SnapwellPrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource AccentButtonStyle}">
                 <Setter Property="FontFamily" Value="{ThemeResource SnapwellUiFontFamily}" />
-                <Setter Property="FontSize" Value="13" />
+                <Setter Property="FontSize" Value="14" />
                 <Setter Property="Background" Value="{ThemeResource SnapwellInkBrush}" />
                 <Setter Property="Foreground" Value="{ThemeResource SnapwellInkTextBrush}" />
                 <Setter Property="BorderBrush" Value="{ThemeResource SnapwellInkBrush}" />
                 <Setter Property="BorderThickness" Value="1" />
-                <Setter Property="CornerRadius" Value="6" />
-                <Setter Property="Padding" Value="14,0,14,2" />
+                <Setter Property="CornerRadius" Value="4" />
+                <Setter Property="Padding" Value="12,0" />
                 <Setter Property="MinHeight" Value="0" />
-                <Setter Property="MinWidth" Value="72" />
-                <Setter Property="Height" Value="28" />
+                <Setter Property="MinWidth" Value="80" />
+                <Setter Property="Height" Value="32" />
+                <Setter Property="FontWeight" Value="Normal" />
+                <Setter Property="UseSystemFocusVisuals" Value="True" />
+                <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource SnapwellBlueTextBrush}" />
+                <Setter Property="FocusVisualSecondaryBrush" Value="Transparent" />
+                <Setter Property="FocusVisualMargin" Value="-2" />
+                <Setter Property="FocusVisualPrimaryThickness" Value="2" />
+                <Setter Property="FocusVisualSecondaryThickness" Value="0" />
             </Style>
 
             <Style x:Key="SnapwellNavIconPathStyle" TargetType="Path">
