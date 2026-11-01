@@ -111,7 +111,6 @@ public sealed partial class SetupWindow
         Lead.Visibility = Visibility.Collapsed;
         var welcome = new StackPanel { HorizontalAlignment = HorizontalAlignment.Stretch };
         var hint = Text(UiText.Current.Get("Setup.Welcome.Hint"), "SnapwellHintTextStyle");
-        hint.FontSize = 12;
         hint.TextAlignment = TextAlignment.Center;
         hint.TextWrapping = TextWrapping.Wrap;
         hint.Margin = new(0, 10, 0, 14);
@@ -123,7 +122,6 @@ public sealed partial class SetupWindow
         _welcomeStage = stage;
         welcome.Children.Add(stage);
         var title = Text(UiText.Current.Get("Setup.Welcome.Title"), "SetupHeadingStyle");
-        title.FontSize = 32; title.LineHeight = 38;
         title.TextAlignment = TextAlignment.Center;
         title.Margin = new(0, 14, 0, 0);
         AutomationProperties.SetHeadingLevel(title, AutomationHeadingLevel.Level1);
@@ -131,7 +129,7 @@ public sealed partial class SetupWindow
         var body = Text(UiText.Current.Get("Setup.Welcome.Body"), "SnapwellLeadTextStyle");
         body.TextAlignment = TextAlignment.Center;
         body.TextWrapping = TextWrapping.Wrap;
-        body.MaxWidth = 440; body.LineHeight = body.FontSize * 1.7; body.Margin = new(0, 8, 0, 0);
+        body.MaxWidth = 440; body.Margin = new(0, 8, 0, 0);
         welcome.Children.Add(body);
         welcome.Children.Add(hint);
         PageHost.Children.Add(welcome);
@@ -353,7 +351,6 @@ public sealed partial class SetupWindow
             label.FontWeight = Microsoft.UI.Text.FontWeights.SemiBold;
             content.Children.Add(label);
             var description = Text(plan.Description, "SnapwellRowDescriptionStyle");
-            description.FontSize = 12;
             content.Children.Add(description);
             var button = new Button { Content = content, Tag = index };
             button.Click += (_, _) =>

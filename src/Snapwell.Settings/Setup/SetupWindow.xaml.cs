@@ -166,7 +166,9 @@ public sealed partial class SetupWindow : Window
             {
                 Style = FindStyle(i == (int)_wizard.Step ? "SetupCurrentStepStyle"
                     : i < (int)_wizard.Step ? "SetupDoneStepStyle" : "SetupStepStyle"),
-                Child = Text(labels[i], i == (int)_wizard.Step ? "SetupCurrentStepTextStyle" : "SetupStepTextStyle"),
+                Child = Text((i < (int)_wizard.Step ? "\u2713 " : "") + labels[i],
+                    i == (int)_wizard.Step ? "SetupCurrentStepTextStyle"
+                    : i < (int)_wizard.Step ? "SetupDoneStepTextStyle" : "SetupStepTextStyle"),
             };
             Grid.SetColumn(border, i);
             Steps.Children.Add(border);
