@@ -5,111 +5,98 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Snapwell モックアップ</title>
 <style>
-/* 色はトークンで定義する。暗い配色は OS の設定に合わせ、data-theme で上書きできる
-   値は artifacts/unslop-mockups/tokens.css（採用済みの新デザイン）と同じ。名前だけ既存のまま:
-   bg = canvas、surface-2 = raised、border = line、border-strong = line-strong、muted = text-2、subtle = text-3、
-   blue-tx = accent、zone-fill = 区画の塗り（半透明）、accent-tint = ランチャーの選択と「対象」のタグ */
+/* 色はトークンで定義する。暗い配色は OS の設定に合わせ、data-theme で上書きできる */
 :root {
-  --bg: #F5F5F3;
+  --bg: #F7F6F3;
   --surface: #FFFFFF;
-  --surface-2: #EFEFED;
-  --border: rgba(28, 28, 27, 0.09);
-  --border-strong: rgba(28, 28, 27, 0.18);
-  --text: #1C1C1B;
-  --muted: #52524F;
-  --subtle: #6B6B67;
-  --ink: #1C1C1B;
+  --surface-2: #F9F9F8;
+  --border: #EAEAEA;
+  --border-strong: #DADAD7;
+  --text: #2F3437;
+  --muted: #787774;
+  --ink: #111111;
   --ink-text: #FFFFFF;
-  --ink-hover: #3A3A38;
-  --wall: #DCDCD8;
-  --wall-line: rgba(28, 28, 27, 0.04);
+  --ink-hover: #333333;
+  --wall: #ECEAE5;
+  --wall-line: rgba(0, 0, 0, 0.035);
   --taskbar: rgba(255, 255, 255, 0.82);
-  --dim: rgba(245, 245, 243, 0.55);
-  --cell: rgba(255, 255, 255, 0.5);
-  --cell-border: rgba(28, 28, 27, 0.1);
-  --zone-fill: rgba(31, 108, 159, 0.18);
-  --accent-tint: rgba(31, 108, 159, 0.12);
-  --blue-bg: var(--accent-tint);
+  --dim: rgba(247, 246, 243, 0.55);
+  --cell: rgba(255, 255, 255, 0.55);
+  --cell-border: rgba(0, 0, 0, 0.08);
+  --blue-bg: #E1F3FE;
   --blue-tx: #1F6C9F;
-  --blue-line: rgba(31, 108, 159, 0.6);
-  --red-bg: rgba(180, 35, 24, 0.08);
-  --red-tx: #B42318;
-  --green-bg: #EFEFED;
-  --green-tx: #2F7A3E;
-  --yellow-bg: rgba(138, 90, 0, 0.08);
-  --yellow-tx: #8A5A00;
-  --skeleton: #E9E9E6;
+  --blue-line: rgba(31, 108, 159, 0.55);
+  --red-bg: #FDEBEC;
+  --red-tx: #9F2F2D;
+  --green-bg: #EDF3EC;
+  --green-tx: #346538;
+  --yellow-bg: #FBF3DB;
+  --yellow-tx: #956400;
+  --skeleton: #EFEEEB;
   --shadow-lift: 0, 0, 0;
-  --shadow-flyout: 0 8px 16px rgba(0, 0, 0, 0.14);
-  --font-ui: 'Segoe UI Variable Text', 'Segoe UI Variable', 'Segoe UI', 'Yu Gothic UI', 'Meiryo UI', 'Hiragino Sans', sans-serif;
-  --font-display: 'Yu Mincho', 'YuMincho', 'Hiragino Mincho ProN', serif;
-  --font-mono: 'Cascadia Mono', Consolas, 'Yu Gothic UI', monospace;
+  --font-ui: 'Segoe UI Variable Text', 'Segoe UI Variable', 'Yu Gothic UI', 'Hiragino Sans', 'Helvetica Neue', sans-serif;
+  --font-display: 'Newsreader', 'Instrument Serif', 'Yu Mincho', 'Hiragino Mincho ProN', Georgia, serif;
+  --font-mono: 'Cascadia Mono', 'SF Mono', 'JetBrains Mono', Consolas, monospace;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #1A1A19;
-    --surface: #222221;
-    --surface-2: #2C2C2B;
+    --bg: #191918;
+    --surface: #202020;
+    --surface-2: #252524;
     --border: rgba(255, 255, 255, 0.08);
-    --border-strong: rgba(255, 255, 255, 0.15);
-    --text: #EDEDEB;
-    --muted: #B4B4B0;
-    --subtle: #92928E;
-    --ink: #EDEDEB;
-    --ink-text: #161616;
-    --ink-hover: #D2D2CF;
-    --wall: #2E2E2C;
+    --border-strong: rgba(255, 255, 255, 0.14);
+    --text: #E6E6E3;
+    --muted: #9B9A97;
+    --ink: #F2F2F0;
+    --ink-text: #111111;
+    --ink-hover: #D9D9D6;
+    --wall: #2A2A28;
     --wall-line: rgba(255, 255, 255, 0.03);
-    --taskbar: rgba(34, 34, 33, 0.85);
-    --dim: rgba(26, 26, 25, 0.5);
+    --taskbar: rgba(32, 32, 32, 0.85);
+    --dim: rgba(25, 25, 24, 0.5);
     --cell: rgba(255, 255, 255, 0.05);
-    --cell-border: rgba(255, 255, 255, 0.1);
-    --zone-fill: rgba(140, 203, 242, 0.16);
-    --accent-tint: rgba(140, 203, 242, 0.14);
+    --cell-border: rgba(255, 255, 255, 0.09);
+    --blue-bg: rgba(31, 108, 159, 0.28);
     --blue-tx: #8CCBF2;
-    --blue-line: rgba(140, 203, 242, 0.65);
-    --red-bg: rgba(242, 147, 140, 0.12);
-    --red-tx: #F2938C;
-    --green-bg: #2C2C2B;
-    --green-tx: #7CC48A;
-    --yellow-bg: rgba(224, 182, 90, 0.12);
-    --yellow-tx: #E0B65A;
-    --skeleton: #333331;
-    --shadow-flyout: 0 8px 16px rgba(0, 0, 0, 0.36);
+    --blue-line: rgba(140, 203, 242, 0.6);
+    --red-bg: rgba(159, 47, 45, 0.28);
+    --red-tx: #F2A7A5;
+    --green-bg: rgba(52, 101, 56, 0.3);
+    --green-tx: #A6D1A9;
+    --yellow-bg: rgba(149, 100, 0, 0.28);
+    --yellow-tx: #E8C46A;
+    --skeleton: #2D2D2B;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #1A1A19;
-  --surface: #222221;
-  --surface-2: #2C2C2B;
+  --bg: #191918;
+  --surface: #202020;
+  --surface-2: #252524;
   --border: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.15);
-  --text: #EDEDEB;
-  --muted: #B4B4B0;
-  --subtle: #92928E;
-  --ink: #EDEDEB;
-  --ink-text: #161616;
-  --ink-hover: #D2D2CF;
-  --wall: #2E2E2C;
+  --border-strong: rgba(255, 255, 255, 0.14);
+  --text: #E6E6E3;
+  --muted: #9B9A97;
+  --ink: #F2F2F0;
+  --ink-text: #111111;
+  --ink-hover: #D9D9D6;
+  --wall: #2A2A28;
   --wall-line: rgba(255, 255, 255, 0.03);
-  --taskbar: rgba(34, 34, 33, 0.85);
-  --dim: rgba(26, 26, 25, 0.5);
+  --taskbar: rgba(32, 32, 32, 0.85);
+  --dim: rgba(25, 25, 24, 0.5);
   --cell: rgba(255, 255, 255, 0.05);
-  --cell-border: rgba(255, 255, 255, 0.1);
-  --zone-fill: rgba(140, 203, 242, 0.16);
-  --accent-tint: rgba(140, 203, 242, 0.14);
+  --cell-border: rgba(255, 255, 255, 0.09);
+  --blue-bg: rgba(31, 108, 159, 0.28);
   --blue-tx: #8CCBF2;
-  --blue-line: rgba(140, 203, 242, 0.65);
-  --red-bg: rgba(242, 147, 140, 0.12);
-  --red-tx: #F2938C;
-  --green-bg: #2C2C2B;
-  --green-tx: #7CC48A;
-  --yellow-bg: rgba(224, 182, 90, 0.12);
-  --yellow-tx: #E0B65A;
-  --skeleton: #333331;
-  --shadow-flyout: 0 8px 16px rgba(0, 0, 0, 0.36);
+  --blue-line: rgba(140, 203, 242, 0.6);
+  --red-bg: rgba(159, 47, 45, 0.28);
+  --red-tx: #F2A7A5;
+  --green-bg: rgba(52, 101, 56, 0.3);
+  --green-tx: #A6D1A9;
+  --yellow-bg: rgba(149, 100, 0, 0.28);
+  --yellow-tx: #E8C46A;
+  --skeleton: #2D2D2B;
   color-scheme: dark;
 }
 
@@ -126,30 +113,21 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 button, input, select { font: inherit; color: inherit; }
-/* キー: 高さ 24、下の線だけ 2 px でキーらしく */
 kbd {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 24px;
-  min-width: 24px;
-  padding: 0 8px;
+  display: inline-block;
+  min-width: 22px;
+  padding: 0 6px;
   border: 1px solid var(--border-strong);
-  border-bottom-width: 2px;
   border-radius: 4px;
   background: var(--surface-2);
   font-family: var(--font-mono);
-  font-size: 12px;
-  line-height: 1;
+  font-size: 11.5px;
+  line-height: 20px;
+  text-align: center;
   color: var(--text);
-  vertical-align: middle;
 }
 .mono { font-family: var(--font-mono); }
 .muted { color: var(--muted); }
-/* フォーカスの輪はどこでもアクセント 2 px、部品の外側に 2 px あける（キーボードのときだけ） */
-:focus-visible { outline: 2px solid var(--blue-tx); outline-offset: 2px; }
-/* アプリの面の文字は 14/20 */
-.app-frame, .tray-menu, .lpanel, .dlg { line-height: 20px; }
 
 /* ページの枠 */
 .page { max-width: 1240px; margin: 0 auto; padding: 56px 24px 96px; }
@@ -203,28 +181,21 @@ kbd {
 }
 .screen-head p { margin: 8px 0 0; max-width: 680px; color: var(--muted); }
 .ref { font-family: var(--font-mono); font-size: 12px; color: var(--muted); white-space: nowrap; }
-/* タグ: 中立（raised の背景・text-2 の文字・字間なし・12 の通常の太さ）。意味の色は 6 px の点だけに付ける。
-   green / yellow / red は点の色、blue と pending は点なし。アクセントのタグはランチャーの「対象」(.accent) だけ */
 .tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 20px;
-  padding: 0 6px;
-  border-radius: 4px;
-  background: var(--surface-2);
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 16px;
-  font-weight: 400;
-  white-space: nowrap;
-  vertical-align: middle;
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 9999px;
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-weight: 600;
+  vertical-align: 1px;
 }
-.tag.green::before, .tag.yellow::before, .tag.red::before { content: ""; flex: none; width: 6px; height: 6px; border-radius: 50%; }
-.tag.green::before { background: var(--green-tx); }
-.tag.yellow::before { background: var(--yellow-tx); }
-.tag.red::before { background: var(--red-tx); }
-.tag.accent { background: var(--accent-tint); color: var(--blue-tx); }
+.tag.blue { background: var(--blue-bg); color: var(--blue-tx); }
+.tag.red { background: var(--red-bg); color: var(--red-tx); }
+.tag.green { background: var(--green-bg); color: var(--green-tx); }
+.tag.yellow { background: var(--yellow-bg); color: var(--yellow-tx); }
+.tag.pending { background: var(--surface-2); color: var(--muted); box-shadow: inset 0 0 0 1px var(--border); }
 
 /* 2 列のレイアウト (デスクトップと操作パネル) */
 .stage { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 20px; align-items: start; }
@@ -238,54 +209,55 @@ kbd {
 .panel + .panel { margin-top: 12px; }
 .field { margin-bottom: 14px; }
 .field:last-child { margin-bottom: 0; }
-.field label, .field .label { display: block; font-size: 12px; line-height: 20px; color: var(--muted); margin-bottom: 4px; }
-.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; border: 1px solid var(--border); border-radius: 4px; padding: 2px; background: var(--surface-2); }
-.seg button { border: 0; background: transparent; border-radius: 2px; padding: 4px 8px; cursor: pointer; font-size: 12px; color: var(--muted); }
+.field label, .field .label { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 6px; }
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; border: 1px solid var(--border); border-radius: 6px; padding: 2px; background: var(--surface-2); }
+.seg button { border: 0; background: transparent; border-radius: 4px; padding: 5px 8px; cursor: pointer; font-size: 12.5px; color: var(--muted); }
 .seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--border); }
-/* 入力欄と ComboBox: 高さ 32・角 4・枠 line-strong。フォーカスは下の線でなく 2 px の輪だけ */
-select.input, input.input, #resizeTiming {
-  height: 32px;
-  border: 1px solid var(--border-strong);
-  border-radius: 4px;
+select.input, input.input {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 6px;
   background: var(--surface);
-  padding: 0 8px 0 12px;
+  padding: 6px 8px;
 }
-select.input, input.input { width: 100%; }
 input[type="range"] { width: 100%; accent-color: var(--ink); }
 .range-row { display: grid; grid-template-columns: 1fr 52px; gap: 10px; align-items: center; }
 .range-row output { font-family: var(--font-mono); font-size: 12px; text-align: right; }
 /* ボタンの形と大きさは、どこに置いても 1 種類。違いは「決定 (.primary)」とそれ以外の 2 段階で、色だけで出す。
    アイコンだけの .hk-ic、.seg、.lwin-pager、.chip はボタンではなく部品として別に扱う。
    見せ方は案 B（決定は塗り、ほかは枠つきで塗らない）に決定済み。 */
-:root { --btn-h: 32px; --btn-px: 12px; --btn-r: 4px; --btn-fs: 14px; --btn-minw: 80px; }
+:root { --btn-h: 28px; --btn-px: 14px; --btn-r: 6px; --btn-fs: 13px; --btn-minw: 72px; --step: #ECECEA; --step-hover: #E2E2DF; }
+:root[data-theme="dark"] { --step: #333332; --step-hover: #3C3C3A; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --step: #333332; --step-hover: #3C3C3A; } }
 .btn {
   height: var(--btn-h); min-width: var(--btn-minw); padding: 0 var(--btn-px); border-radius: var(--btn-r);
   font-size: var(--btn-fs); line-height: 1; white-space: nowrap; cursor: pointer;
   display: inline-flex; align-items: center; justify-content: center;
-  border: 1px solid var(--border-strong); background: var(--surface); color: var(--text);
+  border: 1px solid var(--border-strong); background: transparent; color: var(--text);
 }
-.btn:hover { background: var(--surface-2); }
-.btn:active { background: var(--surface-2); color: var(--muted); }
+.btn:hover { background: var(--step); }
+.btn:active { transform: scale(0.98); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .btn.primary { background: var(--ink); color: var(--ink-text); border-color: var(--ink); }
-.btn.primary:hover { background: var(--ink-hover); border-color: var(--ink-hover); }
-.btn:disabled, .btn.primary:disabled { background: var(--surface-2); color: var(--subtle); border-color: var(--border); cursor: not-allowed; }
+.btn.primary:hover { background: var(--ink-hover); }
 .readout { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 12.5px; }
 .readout dt { color: var(--muted); }
 .readout dd { margin: 0; font-family: var(--font-mono); text-align: right; color: var(--ink); }
-.resnap-demo { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 12px; }
+.resnap-demo { display: flex; align-items: center; gap: 14px; margin-top: 10px; }
 .rs-grid { position: relative; width: 320px; height: 160px; flex: none; border: 1px solid var(--border); border-radius: 8px; background-color: var(--surface); background-image:
   repeating-linear-gradient(to right, transparent 0 39px, var(--border) 39px 40px),
   repeating-linear-gradient(to bottom, transparent 0 39px, var(--border) 39px 40px); overflow: hidden; touch-action: none; }
-.rs-fill, .rs-box { position: absolute; border-radius: 8px; }
-.rs-fill { background: var(--zone-fill); }
-.rs-box { border: 1.5px dashed var(--blue-line); }
+.rs-fill, .rs-box { position: absolute; border-radius: 6px; }
+.rs-fill { background: var(--blue-bg); }
+.rs-box { border: 1.5px dashed var(--blue-line); box-sizing: border-box; }
 .rs-win { position: absolute; left: 0; top: 0; width: 120px; height: 80px; border: 1.5px solid var(--border-strong); border-radius: 6px; background: var(--surface-2); box-sizing: border-box; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25); }
 .rs-win.settle { transition: width 0.25s, height 0.25s; }
 .rs-bar { height: 14px; background: var(--surface); border-bottom: 1px solid var(--border); border-radius: 5px 5px 0 0; }
 .rs-grip { position: absolute; right: -6px; bottom: -6px; width: 16px; height: 16px; cursor: nwse-resize; }
 .rs-grip::after { content: ''; position: absolute; right: 6px; bottom: 6px; width: 8px; height: 8px; border-radius: 50%; background: var(--ink); }
-.rs-cap { font-size: 12px; line-height: 20px; color: var(--muted); }
-.hint { font-size: 12px; line-height: 20px; color: var(--muted); margin: 0; }
+.rs-cap { font-size: 12.5px; color: var(--muted); }
+.hint { font-size: 12.5px; color: var(--muted); margin: 0; }
 .hint + .hint { margin-top: 6px; }
 
 /* 疑似デスクトップ */
@@ -354,18 +326,16 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
 .sk { height: 7px; border-radius: 4px; background: var(--skeleton); }
 .win.fixed .win-title::after {
   content: 'サイズ固定';
-  font-size: 12px;
-  line-height: 16px;
-  color: var(--muted);
-  background: var(--surface-2);
-  border-radius: 4px;
-  padding: 0 6px;
+  font-size: 10px;
+  color: var(--yellow-tx);
+  background: var(--yellow-bg);
+  border-radius: 9999px;
+  padding: 0 7px;
   margin-right: 6px;
 }
 
 .fx { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
-/* 区画の塗りは半透明（下のウィンドウが透ける）。点線は 1.5・4/4。予測の線の終点は 8 px・角 2 の四角 */
-.fx .zone { fill: var(--zone-fill); stroke: var(--blue-line); stroke-width: 1.5; stroke-dasharray: 4 4; }
+.fx .zone { fill: var(--blue-bg); stroke: var(--blue-line); stroke-width: 1.5; stroke-dasharray: 6 5; }
 .fx .path { stroke: var(--blue-line); stroke-width: 1.5; stroke-dasharray: 4 4; fill: none; }
 .fx .dot { fill: var(--blue-tx); }
 .fx .label { fill: var(--blue-tx); font-size: 12px; font-family: var(--font-mono); }
@@ -374,19 +344,17 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
 .launcher { position: absolute; inset: 0; background: var(--dim); display: none; z-index: 1000; }
 .launcher.open { display: block; }
 .cell { position: absolute; background: var(--cell); border: 1px solid var(--cell-border); border-radius: 4px; }
+.cell.sel { background: var(--blue-bg); border-color: var(--blue-line); }
 .cell.cursor { box-shadow: inset 0 0 0 2px var(--blue-tx); }
-/* 選択範囲: 選んだセルをまとめた 1 つの面（区画の塗り・内側に 1.5 の枠・角 8）。セルは角 4 のまま */
-.sel-area { position: absolute; border-radius: 8px; background: var(--zone-fill); box-shadow: inset 0 0 0 1.5px var(--blue-tx); pointer-events: none; }
 .sel-label {
   position: absolute;
-  padding: 4px 8px;
-  border-radius: 4px;
+  padding: 4px 10px;
+  border-radius: 6px;
   background: var(--surface);
-  border: 1px solid var(--blue-line);
+  border: 1px solid var(--border);
   font-family: var(--font-mono);
   font-size: 12px;
-  line-height: 1;
-  color: var(--blue-tx);
+  color: var(--ink);
   pointer-events: none;
   transform: translate(-50%, -50%);
   white-space: nowrap;
@@ -394,117 +362,106 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
 .lpanel {
   position: absolute;
   left: 50%;
-  top: 16px;
+  top: 14px;
   transform: translateX(-50%);
-  width: min(560px, calc(100% - 32px));
+  width: min(560px, calc(100% - 28px));
   background: var(--surface);
-  border: 1px solid var(--border-strong);
-  border-radius: 8px;
-  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
   display: grid;
-  gap: 12px;
-  box-shadow: var(--shadow-flyout);
-  max-height: calc(100% - 32px);
+  gap: 10px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.05);
+  max-height: calc(100% - 28px);
   overflow: auto;
 }
-.lpanel-top { display: flex; align-items: center; gap: 8px; min-height: 32px; }
+.lpanel-top { display: flex; align-items: center; gap: 10px; font-size: 12.5px; }
 .lpanel-top .target { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.lpanel-top select { width: 96px; padding: 0 8px; font: 12px var(--font-mono); }
-.presets { display: flex; flex-wrap: wrap; gap: 4px; }
+.lpanel-top select { width: auto; padding: 3px 6px; font-size: 12px; }
+.presets { display: flex; flex-wrap: wrap; gap: 6px; }
 .preset {
   border: 1px solid var(--border);
-  background: var(--surface);
-  border-radius: 4px;
-  height: 32px;
-  padding: 0 12px 0 8px;
+  background: var(--surface-2);
+  border-radius: 6px;
+  padding: 4px 8px;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   cursor: pointer;
   font-size: 12px;
-  color: var(--text);
 }
-.preset:hover:not(:disabled) { background: var(--surface-2); }
 .preset.keep svg rect.on { fill: none; stroke: var(--muted); stroke-dasharray: 1.5 1; }
 .pgroup { display: grid; grid-template-columns: 110px 1fr; gap: 8px 12px; align-items: start; padding: 8px 0; border-top: 1px solid var(--border); }
 .pgroup:first-of-type { border-top: 0; }
-.pgroup > .gname { font-size: 12px; line-height: 20px; color: var(--muted); padding-top: 6px; }
+.pgroup > .gname { font-size: 12.5px; color: var(--muted); padding-top: 6px; }
 .pgroup .opts { display: flex; flex-wrap: wrap; gap: 6px; }
-.popt { display: inline-flex; align-items: center; gap: 8px; min-height: 32px; border: 1px solid var(--border); background: var(--surface); border-radius: 4px; padding: 0 12px 0 8px; font-size: 14px; cursor: pointer; user-select: none; }
+.popt { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--border); background: var(--surface); border-radius: 6px; padding: 5px 10px 5px 8px; font-size: 13px; cursor: pointer; user-select: none; }
 .popt input { accent-color: var(--ink); margin: 0; }
-.popt svg { width: 20px; height: 12px; }
-.popt svg rect.bg { fill: none; stroke: var(--subtle); stroke-width: 1; }
-.popt svg rect.on { fill: var(--ink); }
+.popt svg { width: 18px; height: 12px; }
+.popt svg rect.bg { fill: none; stroke: var(--muted); stroke-width: 1; }
+.popt svg rect.on { fill: var(--muted); }
 .popt.keep svg rect.on { fill: none; stroke: var(--muted); stroke-dasharray: 1.5 1; }
 .popt:has(input:checked) { border-color: var(--ink); }
-.ppreview { margin-top: 12px; border: 1px solid var(--border); border-radius: 8px; padding: 12px; background: var(--surface); }
-.ppreview .lbl { font-size: 12px; line-height: 16px; color: var(--subtle); margin-bottom: 8px; }
+.ppreview { margin-top: 10px; border: 1px solid var(--border); border-radius: 8px; padding: 10px; background: var(--surface); }
+.ppreview .lbl { font-size: 11.5px; color: var(--muted); margin-bottom: 6px; }
 .ppreview .presets { margin: 0; }
-.preset:disabled { color: var(--subtle); background: transparent; cursor: not-allowed; }
-.preset svg { width: 20px; height: 12px; flex: none; }
-.preset svg rect.bg { fill: none; stroke: var(--subtle); stroke-width: 1; }
-.preset svg rect.on { fill: var(--ink); }
-.preset:disabled svg rect.on { fill: var(--subtle); }
-.lpanel-keys { display: flex; flex-wrap: wrap; align-items: center; min-height: 24px; gap: 4px 12px; font-size: 12px; line-height: 16px; color: var(--subtle); }
-.lpanel-keys > span { display: inline-flex; align-items: center; gap: 4px; }
-.lpanel-keys kbd { height: 20px; min-width: 20px; padding: 0 4px; }
+.preset:disabled { opacity: 0.4; cursor: not-allowed; }
+.preset svg { width: 18px; height: 12px; }
+.preset svg rect.bg { fill: none; stroke: var(--muted); stroke-width: 1; }
+.preset svg rect.on { fill: var(--muted); }
+.lpanel-keys { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 11.5px; color: var(--muted); }
 /* ウィンドウを選んで整列。既定では折りたたみ、見出しをクリックすると展開する */
 .lwin { border-top: 1px solid var(--border); padding-top: 8px; display: grid; gap: 8px; }
-.lwin-head { display: flex; align-items: center; gap: 8px; width: 100%; height: 40px; border: 0; background: transparent; padding: 0 4px; font-size: 14px; color: var(--text); cursor: pointer; text-align: left; border-radius: 4px; }
+.lwin-head { display: flex; align-items: center; gap: 8px; width: 100%; border: 0; background: transparent; padding: 4px 2px; font-size: 12.5px; color: var(--ink); cursor: pointer; text-align: left; border-radius: 6px; }
 .lwin-head:hover { background: var(--surface-2); }
 .lwin-head .chev { width: 12px; transition: transform 0.15s; color: var(--muted); }
 .lwin.open .lwin-head .chev { transform: rotate(90deg); }
 .lwin-head .grow { flex: 1; }
-.lwin-count { font-size: 12px; line-height: 16px; color: var(--subtle); font-variant-numeric: tabular-nums; }
-.lwin-count.has { color: var(--text); }
+.lwin-count { font-size: 11.5px; color: var(--muted); }
+.lwin-count.has { color: var(--blue-tx); }
 .lwin-body { display: none; gap: 8px; }
 .lwin.open .lwin-body { display: grid; }
-/* 一覧の行は 32。番号は等幅の caption、チェック 20。メインはアクセントの輪と点、スタックは灰色の輪 */
-.lwin-list { display: grid; gap: 0; max-height: 160px; overflow: auto; }
-.lwin-row { display: flex; align-items: center; gap: 8px; height: 32px; flex: none; border: 0; background: transparent; border-radius: 4px; padding: 0 8px; font-size: 12px; cursor: pointer; text-align: left; width: 100%; color: var(--text); }
-.lwin-row:hover { background: var(--surface-2); }
-.lwin-row.sel { background: var(--accent-tint); }
-.lwin-row .key { flex: none; width: 16px; display: grid; place-items: center; }
-.lwin-row .key kbd { height: auto; min-width: 0; padding: 0; border: 0; background: none; font-size: 12px; color: var(--subtle); }
-.lwin-row .box { flex: none; width: 20px; height: 20px; border-radius: 4px; border: 1px solid var(--subtle); background: var(--surface); display: grid; place-items: center; font-size: 12px; line-height: 1; color: var(--ink-text); }
-.lwin-row.sel .box { background: var(--ink); border-color: var(--ink); font-weight: 600; }
+.lwin-list { display: grid; gap: 4px; max-height: 160px; overflow: auto; }
+.lwin-row { display: flex; align-items: center; gap: 8px; border: 1px solid var(--border); background: var(--surface-2); border-radius: 6px; padding: 4px 8px; font-size: 12px; cursor: pointer; text-align: left; width: 100%; color: var(--ink); }
+.lwin-row.sel { border-color: var(--blue-line); background: var(--blue-bg); }
+.lwin-row .key { flex: none; width: 24px; display: grid; place-items: center; }
+.lwin-row .key kbd { min-width: 20px; text-align: center; }
+.lwin-row .box { flex: none; width: 16px; height: 16px; border-radius: 4px; border: 1px solid var(--muted); display: grid; place-items: center; font-size: 11px; line-height: 1; color: var(--blue-tx); }
+.lwin-row.sel .box { border-color: var(--blue-line); font-weight: 700; }
 .lwin-row .ttl { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.lwin-row .role { flex: none; display: inline-flex; align-items: center; gap: 6px; width: 76px; padding: 0; border: 0; background: transparent; font: inherit; font-size: 12px; color: var(--muted); }
-.lwin-row .role.main { color: var(--blue-tx); }
-.lwin-row .role .rd { flex: none; width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--subtle); display: grid; place-items: center; }
-.lwin-row .role.main .rd { border-color: var(--blue-tx); }
+.lwin-row .role { flex: none; font-size: 10.5px; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); }
+.lwin-row .role.main { background: var(--blue-bg); color: var(--blue-tx); border-color: var(--blue-line); font-weight: 600; }
+.lwin-row .role { display: inline-flex; align-items: center; gap: 5px; width: 76px; box-sizing: border-box; padding: 1px 0 1px 9px; font: inherit; font-size: 10.5px; }
+.lwin-row .role .rd { flex: none; box-sizing: border-box; width: 10px; height: 10px; border-radius: 50%; border: 1px solid currentColor; display: grid; place-items: center; }
 .lwin-row .role .rd.on::after { content: ""; width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
-.lwin-row .setmain { cursor: pointer; border-radius: 4px; }
-.lwin-row .setmain:hover { color: var(--text); }
-.lwin-pager { display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--subtle); }
-.lwin-pager button { border: 0; background: transparent; color: var(--text); font-size: 12px; cursor: pointer; height: 24px; padding: 0 8px; border-radius: 4px; }
-.lwin-pager button:hover:not(:disabled) { background: var(--surface-2); }
-.lwin-pager button:disabled { color: var(--subtle); cursor: not-allowed; }
-.lwin-arrange { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
-.arr { min-height: 64px; border: 1px solid var(--border); background: var(--surface); border-radius: 4px; padding: 8px 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 12px; color: var(--text); cursor: pointer; text-align: center; }
-.arr:hover:not(:disabled) { background: var(--surface-2); }
-.arr:disabled { color: var(--subtle); cursor: not-allowed; }
+.lwin-row .setmain { cursor: pointer; background: transparent; }
+.lwin-row .setmain:hover { background: var(--surface); color: var(--blue-tx); }
+.lwin-pager { display: flex; align-items: center; justify-content: space-between; font-size: 11.5px; color: var(--muted); }
+.lwin-pager button { border: 0; background: transparent; color: var(--blue-tx); font-size: 11.5px; cursor: pointer; padding: 2px 6px; border-radius: 4px; }
+.lwin-pager button:disabled { color: var(--muted); opacity: 0.5; cursor: not-allowed; }
+.lwin-arrange { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.arr { border: 1px solid var(--border); background: var(--surface-2); border-radius: 6px; padding: 6px 4px 5px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 12px; color: var(--ink); cursor: pointer; text-align: center; }
+.arr:hover:not(:disabled) { border-color: var(--blue-line); }
+.arr:disabled { opacity: 0.4; cursor: not-allowed; }
 .arr svg { width: 44px; height: 28px; }
-.arr svg rect { fill: var(--surface-2); stroke: var(--subtle); stroke-width: 1; }
-.arr svg rect.main { fill: var(--zone-fill); stroke: var(--blue-tx); }
-.arr:disabled svg rect.main { fill: var(--surface-2); stroke: var(--subtle); }
-.arr svg rect.bg { fill: none; stroke: var(--subtle); stroke-width: 1; }
-.arr .lbl { display: block; width: 100%; text-align: center; line-height: 16px; }
-.arr kbd { height: 20px; min-width: 20px; padding: 0 4px; }
-.lwin-note { font-size: 12px; line-height: 16px; color: var(--subtle); display: flex; flex-wrap: wrap; gap: 4px 12px; }
-.lwin-status { font-size: 12px; line-height: 16px; color: var(--muted); min-height: 16px; }
+.arr svg rect { fill: var(--muted); opacity: 0.45; }
+.arr svg rect.main { fill: var(--blue-tx); opacity: 1; }
+.arr svg rect.bg { fill: none; stroke: var(--muted); stroke-width: 1; opacity: 0.6; }
+.arr .lbl { display: block; width: 100%; text-align: center; line-height: 1.2; }
+.arr kbd { font-size: 10px; }
+.lwin-note { font-size: 11.5px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.lwin-status { font-size: 11.5px; color: var(--blue-tx); min-height: 1.2em; }
 
 /* 設定画面 (Windows 11 の設定アプリに近い構成) */
-.app-frame { border: 1px solid var(--border-strong); border-radius: 8px; background: var(--surface); overflow: hidden; }
-/* タイトルバー: 高さ 32、左 16（Windows 11 の標準） */
-.app-chrome { height: 32px; display: flex; align-items: center; padding-left: 16px; gap: 8px; font-size: 12px; color: var(--muted); background: var(--bg); border-bottom: 1px solid var(--border); }
+.app-frame { border: 1px solid var(--border); border-radius: 12px; background: var(--surface); overflow: hidden; }
+.app-chrome { height: 36px; display: flex; align-items: center; padding-left: 14px; gap: 10px; font-size: 12px; border-bottom: 1px solid var(--border); }
 .app-chrome .name { flex: 1; }
-.app-chrome .caps span { width: 46px; }
+.app-chrome .caps span { width: 44px; }
 .dlg { width: min(520px, calc(100vw - 32px)); padding: 24px; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--surface); color: var(--text); }
 .dlg::backdrop { background: var(--dim); }
-.dlg h4 { margin: 0 0 8px; font-size: 20px; line-height: 28px; font-weight: 600; color: var(--text); }
+.dlg h4 { margin: 0 0 8px; font-size: 16px; color: var(--ink); }
 .dlg p { margin: 0; color: var(--muted); }
-.dlg .rows { max-height: 280px; overflow: auto; margin: 16px 0 12px; }
+.dlg .rows { max-height: 280px; overflow: auto; margin: 14px 0 10px; }
 .dlg .row { cursor: pointer; }
 .dlg input[type="checkbox"] { accent-color: var(--ink); }
 .rule-list .rl-on { width: 64px; }
@@ -513,79 +470,80 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
 .rule-list .rl-cond { word-break: break-all; cursor: pointer; }
 .rule-list .rl-sub { display: block; margin-top: 2px; font-size: 12px; color: var(--muted); }
 .rl-none { color: var(--muted); }
-.rl-builtin { margin: 0; padding-left: 18px; font-size: 12px; line-height: 20px; color: var(--muted); }
+.rule-list .tag { text-transform: none; letter-spacing: 0; }
+.rl-builtin { margin: 0; padding-left: 18px; font-size: 12.5px; color: var(--muted); }
 .rl-warn { color: var(--yellow-tx); }
-.rd-form { display: grid; gap: 12px; margin: 16px 0 0; }
-.rd-form label { display: grid; gap: 4px; font-size: 12px; line-height: 20px; color: var(--muted); }
+.rd-form { display: grid; gap: 10px; margin: 14px 0 0; }
+.rd-form label { display: grid; gap: 4px; font-size: 12.5px; color: var(--muted); }
 .rd-form input.input { width: 100%; box-sizing: border-box; }
-.rd-err { font-size: 12px; line-height: 20px; color: var(--red-tx); }
-.rd-hint { display: block; margin-top: 4px; font-size: 12px; line-height: 20px; color: var(--muted); }
-.rd-match { font-size: 12px; line-height: 20px; color: var(--muted); }
+.rd-err { font-size: 12.5px; color: var(--red-tx); }
+.rd-hint { display: block; margin-top: 4px; font-size: 12px; color: var(--muted); }
+.rd-match { font-size: 12.5px; color: var(--muted); }
 #pickList .row.pick { width: 100%; text-align: left; background: transparent; border: 0; border-bottom: 1px solid var(--border); color: inherit; font: inherit; }
 #pickList .row.pick:hover { background: var(--surface-2); }
-/* ダイアログのボタンは同じ幅（ContentDialog と同じ） */
-.dlg-foot { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 8px; margin-top: 24px; }
-/* フッター: 高さ 64、左右 32、キャンバスの上 */
-.savebar { display: flex; align-items: center; gap: 16px; min-height: 64px; padding: 0 32px; border-top: 1px solid var(--border); background: var(--bg); }
+.dlg-foot { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; margin-top: 16px; }
+.savebar { display: flex; align-items: center; gap: 16px; padding: 8px 32px; border-top: 1px solid var(--border); background: var(--surface); }
 .savebar .hint { flex: 1; }
-/* 設定の背景: ナビと内容はキャンバス、行の束は白いカード（Windows 11 の設定アプリと同じ重ね方） */
-.settings { display: grid; grid-template-columns: 240px minmax(0, 1fr); min-height: 640px; background: var(--bg); }
-.snav { position: relative; display: flex; flex-direction: column; gap: 2px; background: var(--bg); padding: 8px; }
+.settings { display: grid; grid-template-columns: 232px minmax(0, 1fr); min-height: 640px; }
+.snav { background: var(--surface-2); border-right: 1px solid var(--border); padding: 14px 10px; }
 .snav button {
   width: 100%;
-  height: 36px;
-  flex: none;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   border: 0;
   background: transparent;
-  border-radius: 4px;
-  padding: 0 12px 0 16px;
+  border-radius: 6px;
+  padding: 7px 10px;
   text-align: left;
   cursor: pointer;
   color: var(--text);
   position: relative;
 }
-.snav button:hover { background: var(--surface-2); }
-.snav button[aria-current="true"] { background: var(--surface-2); }
+.snav button:hover { background: var(--surface); }
+.snav button[aria-current="true"] { background: var(--surface); box-shadow: 0 0 0 1px var(--border); }
+.snav button[aria-current="true"]::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 9px; bottom: 9px;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--ink);
+}
 .snav svg { width: 16px; height: 16px; flex: none; color: var(--muted); }
-.snav button[aria-current="true"] svg { color: var(--text); }
-/* 選択の印 3 × 16。JS が select のばね（m 1・f 6 Hz・ζ 1.0）で縦に動かす */
-.snav-ind { position: absolute; left: 8px; top: 0; width: 3px; height: 16px; border-radius: 2px; background: var(--ink); pointer-events: none; }
-.spage { padding: 32px 32px 40px; display: none; }
+.spage { padding: 28px 32px 40px; display: none; }
 .spage.active { display: block; }
 .spage h3 {
   margin: 0 0 4px;
   font-family: var(--font-display);
-  font-weight: 400;
-  font-size: 28px;
-  line-height: 36px;
-  color: var(--text);
+  font-weight: 500;
+  font-size: 26px;
+  letter-spacing: -0.02em;
+  color: var(--ink);
 }
-.spage > p.lead { margin: 0 0 24px; color: var(--muted); }
-.group-title { margin: 24px 0 8px; font-size: 14px; line-height: 20px; font-weight: 600; color: var(--text); }
-.rows { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--surface); }
-.row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: center; min-height: 56px; padding: 12px 16px; background: var(--surface); }
+.spage > p.lead { margin: 0 0 20px; color: var(--muted); }
+.group-title { margin: 22px 0 8px; font-size: 12.5px; font-weight: 600; color: var(--ink); }
+.rows { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: center; padding: 12px 16px; background: var(--surface); }
 .row + .row { border-top: 1px solid var(--border); }
-.row .t { color: var(--text); }
-.row .d { font-size: 12px; line-height: 20px; color: var(--muted); }
+.row .t { color: var(--ink); }
+.row .d { font-size: 12.5px; color: var(--muted); }
 .row .ctl { display: flex; align-items: center; gap: 8px; }
 .row .update-actions { flex-wrap: wrap; justify-content: flex-end; max-width: 300px; }
 .row .update-actions .btn { white-space: nowrap; }
 .row .os-det { grid-column: 1 / -1; }
-.os-det > summary { cursor: pointer; font-size: 12px; line-height: 20px; color: var(--muted); padding: 2px 0 8px; list-style: none; user-select: none; }
+.os-det > summary { cursor: pointer; font-size: 12.5px; color: var(--muted); padding: 2px 0 8px; list-style: none; user-select: none; }
 .os-det > summary::-webkit-details-marker { display: none; }
 .os-det > summary::before { content: "▾"; display: inline-block; width: 14px; }
 .os-det:not([open]) > summary { padding-bottom: 0; }
 .os-det:not([open]) > summary::before { content: "▸"; }
 .os-det > summary:hover { color: var(--ink); }
 .row .os-how { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 12px; align-items: stretch; margin-top: 2px; }
-.os-how .side { border: 1px solid var(--border); border-radius: 8px; background: var(--surface-2); padding: 12px; font-size: 12px; line-height: 20px; color: var(--muted); }
-.os-how .side b { display: block; color: var(--text); font-weight: 600; margin-bottom: 8px; font-size: 12px; }
+.os-how .side { border: 1px solid var(--border); border-radius: 8px; background: var(--surface-2); padding: 10px 12px; font-size: 12.5px; color: var(--muted); }
+.os-how .side b { display: block; color: var(--ink); font-weight: 600; margin-bottom: 6px; font-size: 12px; }
 .os-how .side.after { border-color: var(--border-strong, var(--border)); background: var(--surface); }
 .os-how .arrow { align-self: center; color: var(--muted); font-size: 16px; }
-.os-how .scr { position: relative; height: 104px; margin-bottom: 8px; border: 1px solid var(--border-strong, var(--border)); border-radius: 4px; background: var(--bg); overflow: hidden; }
+.os-how .scr { position: relative; height: 104px; margin-bottom: 8px; border: 1px solid var(--border-strong, var(--border)); border-radius: 6px; background: var(--bg); overflow: hidden; }
 .os-how .scr i { position: absolute; display: block; border-radius: 3px; }
 .os-how .scr .win { background: var(--surface); border: 1px solid var(--border-strong, var(--border)); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12); }
 .os-how .scr .ghost { background: rgba(128, 128, 128, 0.32); border: 1px solid rgba(128, 128, 128, 0.55); }
@@ -606,13 +564,13 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
 .os-how .frames { display: flex; gap: 6px; margin-bottom: 8px; }
 .os-how .frame { flex: 1; min-width: 0; }
 .os-how .frame .scr { height: 76px; margin-bottom: 3px; }
-.os-how .frame small { display: block; font-size: 12px; line-height: 16px; color: var(--subtle); text-align: center; }
+.os-how .frame small { display: block; font-size: 11.5px; color: var(--muted); text-align: center; }
 .os-how .scr .win.hold { border: 1.5px solid var(--border-strong); border-radius: 6px; background: var(--surface-2); overflow: hidden; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25); }
-/* Snapwell はドラッグ中に描かず、離したあとに吸着先の塗りと点線の縁・予測の線と終点の四角だけを描く（外観ページの見え方の例と同じ色） */
-.os-how .scr .zone { background: var(--zone-fill); border: 1.5px dashed var(--blue-line); }
+/* Snapwell はドラッグ中に描かず、離したあとに吸着先の塗りと点線の縁・予測の線と終点の丸だけを描く（外観ページの見え方の例と同じ色） */
+.os-how .scr .zone { background: var(--blue-bg); border: 1.5px dashed var(--blue-line); box-sizing: border-box; }
 .os-how .scr .trail { position: absolute; inset: 0; width: 100%; height: 100%; fill: none; stroke: var(--blue-tx); stroke-width: 1.5; stroke-dasharray: 4 4; }
 .os-how .scr .trail line { vector-effect: non-scaling-stroke; }
-.os-how .scr .dot { width: 8px; height: 8px; border-radius: 2px; background: var(--blue-tx); transform: translate(-50%, -50%); }
+.os-how .scr .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--blue-tx); transform: translate(-50%, -50%); }
 .os-how .scr .throw { position: absolute; width: 24px; height: 16px; transform: translate(-50%, -50%); fill: none; stroke: var(--muted); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 .os-how .keys { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; margin-bottom: 6px; }
 .os-how p { margin: 0 0 4px; }
@@ -620,139 +578,132 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
 .os-how .why { grid-column: 1 / -1; font-size: 12px; color: var(--muted); margin: 0; }
 .os-how .why b { display: inline; margin: 0; }
 @media (max-width: 720px) { .row .os-how { grid-template-columns: 1fr; } .os-how .arrow { transform: rotate(90deg); justify-self: center; } }
-.row .numbox { width: 80px; height: 32px; padding: 0 8px; font: 12px var(--font-mono); text-align: right; color: var(--text); background: var(--surface); border: 1px solid var(--border-strong); border-radius: 4px; }
+.row .numbox { width: 84px; padding: 4px 8px; font: 13px var(--font-mono); color: var(--text); background: transparent; border: 1px solid var(--border-strong, var(--border)); border-radius: 6px; }
 .switch { position: relative; width: 40px; height: 20px; flex: none; touch-action: pan-y; }
 .switch input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
-.switch span { position: absolute; inset: 0; border-radius: 10px; border: 1px solid color-mix(in srgb, var(--ink) calc(var(--f, 0) * 100%), var(--muted)); background: color-mix(in srgb, var(--ink) calc(var(--f, 0) * 100%), transparent); pointer-events: none; }
+.switch span { position: absolute; inset: 0; border-radius: 9999px; border: 1px solid color-mix(in srgb, var(--ink) calc(var(--f, 0) * 100%), var(--muted)); background: color-mix(in srgb, var(--ink) calc(var(--f, 0) * 100%), transparent); pointer-events: none; }
 /* つまみの位置・塗り・伸びは JS のばねが --x --f --sx --sy に書く (makeSwitch)。transition は使わない */
 .switch span::after { content: ''; position: absolute; width: 12px; height: 12px; left: 3px; top: 3px; border-radius: 50%; background: color-mix(in srgb, var(--ink-text) calc(var(--f, 0) * 100%), var(--muted)); transform: translateX(calc(var(--x, 0) * 1px)) scale(var(--sx, 1), var(--sy, 1)); }
 .switch input:focus-visible + span { outline: 2px solid var(--blue-tx); outline-offset: 2px; }
-/* 分割案の選択（高さ 32）と、小ボタンのチップ（高さ 24・文字 12） */
-.chips { display: flex; flex-wrap: wrap; gap: 4px; }
-.chip { height: 24px; border: 1px solid var(--border-strong); background: var(--surface); border-radius: 4px; padding: 0 8px; cursor: pointer; font-size: 12px; line-height: 1; color: var(--text); }
-.chip:hover:not(:disabled) { background: var(--surface-2); }
-.chip[aria-pressed="true"] { background: var(--surface-2); border-color: var(--border-strong); color: var(--text); font-weight: 600; }
-#gPlans .chip { height: 32px; padding: 0 12px; font-family: var(--font-mono); }
-#gPlans .chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--ink-text); font-weight: 400; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { border: 1px solid var(--border); background: var(--surface); border-radius: 6px; padding: 5px 12px; cursor: pointer; font-size: 13px; }
+.chip[aria-pressed="true"] { border-color: var(--ink); color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
 .grid-preview-wrap { display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: 20px; align-items: start; margin-top: 12px; }
-.grid-preview { position: relative; aspect-ratio: 16 / 9; border: 1px solid var(--border); border-radius: 4px; background: var(--wall); overflow: hidden; }
+.grid-preview { position: relative; aspect-ratio: 16 / 9; border: 1px solid var(--border); border-radius: 8px; background: var(--wall); overflow: hidden; }
 .grid-preview .gcell { position: absolute; border: 1px dashed var(--cell-border); border-radius: 2px; }
-.grid-preview .gwin { position: absolute; background: var(--surface); border: 1px solid var(--border-strong); border-radius: 4px; display: grid; place-items: center; font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
-table.list { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 20px; }
-table.list th { text-align: left; font-weight: 400; color: var(--subtle); font-size: 12px; line-height: 16px; padding: 8px 16px; border-bottom: 1px solid var(--border); }
-table.list td { padding: 12px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.grid-preview .gwin { position: absolute; background: var(--surface); border: 1px solid var(--border-strong); border-radius: 4px; display: grid; place-items: center; font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
+table.list { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.list th { text-align: left; font-weight: 500; color: var(--muted); font-size: 12px; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+table.list td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
 table.list tr:last-child td { border-bottom: 0; }
 
 /* ホットキーの割り当て */
-.hk-bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 0 0 12px; }
-.hk-search { flex: 1 1 200px; min-width: 160px; max-width: 280px; height: 32px; padding: 0 12px; border: 1px solid var(--border-strong); border-radius: 4px; background: var(--surface); font-size: 14px; }
-.hk-sum { flex: 1 1 auto; font-size: 12px; line-height: 16px; color: var(--subtle); }
+.hk-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 0 0 10px; }
+.hk-search { flex: 1 1 200px; min-width: 160px; max-width: 280px; padding: 6px 10px; border: 1px solid var(--border-strong); border-radius: 6px; background: var(--surface); font-size: 13px; }
+.hk-sum { flex: 1 1 auto; font-size: 12.5px; color: var(--muted); }
 .hk-table td, .hk-table th { white-space: nowrap; }
 .hk-table td:first-child { white-space: normal; }
-.hk-table .hk-grp td { background: transparent; color: var(--subtle); font-size: 12px; line-height: 16px; font-weight: 600; padding: 16px 16px 4px; }
+.hk-table .hk-grp td { background: var(--surface-2); color: var(--muted); font-size: 12px; font-weight: 600; padding: 6px 12px; }
 .hk-act-col { width: 76px; }
 .hk-anchor { margin-left: 10px; font-weight: 400; }
-.hk-key { display: inline-flex; gap: 4px; align-items: center; min-height: 32px; min-width: 150px; padding: 0 8px; border: 1px solid transparent; border-radius: 4px; background: transparent; cursor: pointer; text-align: left; }
-.hk-key:hover { background: var(--surface-2); }
-/* キーの取り込み中: アクセントの枠だけ（点滅しない） */
-.hk-key.cap { border-color: var(--blue-tx); background: var(--surface); color: var(--subtle); }
-.hk-key.err { border-color: var(--red-tx); background: var(--red-bg); color: var(--red-tx); }
-.hk-key .hk-none { color: var(--subtle); font-size: 12px; }
-.hk-key.cap kbd { background: var(--surface-2); }
-.hk-ic { width: 32px; height: 32px; border: 0; border-radius: 4px; background: transparent; cursor: pointer; color: var(--muted); font-size: 14px; line-height: 1; }
-.hk-ic:hover:not(:disabled) { background: var(--surface-2); color: var(--text); }
-.hk-ic:disabled { color: var(--subtle); opacity: 0.5; cursor: default; }
-.hk-msg td { padding: 8px 16px 12px 24px; background: var(--surface-2); font-size: 12px; line-height: 20px; white-space: normal; }
+.hk-key { display: inline-flex; gap: 4px; align-items: center; min-height: 32px; min-width: 150px; padding: 3px 8px; border: 1px solid transparent; border-radius: 6px; background: transparent; cursor: pointer; text-align: left; }
+.hk-key:hover { background: var(--surface-2); border-color: var(--border); }
+.hk-key:focus-visible { outline: 2px solid var(--blue-line); outline-offset: 1px; }
+.hk-key.cap { border-color: var(--blue-line); background: var(--blue-bg); color: var(--blue-tx); animation: hkPulse 1.2s ease-in-out infinite; }
+.hk-key.err { border-color: var(--red-tx); background: var(--red-bg); color: var(--red-tx); animation: none; }
+.hk-key .hk-none { color: var(--muted); font-size: 12.5px; }
+.hk-key.cap kbd { background: var(--surface); }
+@keyframes hkPulse { 50% { box-shadow: 0 0 0 3px var(--blue-bg); } }
+@media (prefers-reduced-motion: reduce) { .hk-key.cap { animation: none; } }
+.hk-ic { width: 28px; height: 28px; border: 1px solid transparent; border-radius: 6px; background: transparent; cursor: pointer; color: var(--muted); font-size: 14px; line-height: 1; }
+.hk-ic:hover:not(:disabled) { background: var(--surface-2); border-color: var(--border); color: var(--ink); }
+.hk-ic:disabled { opacity: 0.3; cursor: default; }
+.hk-msg td { padding: 8px 12px 10px 24px; background: var(--surface-2); font-size: 12.5px; white-space: normal; }
 .hk-msg.bad td { color: var(--red-tx); }
 .hk-msg .btn { margin: 6px 6px 0 0; }
 .hk-flash td { animation: hkFlash 1.1s ease-out; }
 @keyframes hkFlash { from { background: var(--blue-bg); } }
 .hk-demo { margin-left: 10px; cursor: pointer; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-.feel-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.feel-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
 .feel-card { border: 1px solid var(--border); border-radius: 8px; padding: 12px; background: var(--surface); cursor: pointer; text-align: left; }
 .feel-card[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
-.feel-card .fname { font-weight: 400; color: var(--text); font-size: 14px; line-height: 20px; }
-.feel-card[aria-pressed="true"] .fname { font-weight: 600; }
+.feel-card .fname { font-weight: 600; color: var(--ink); font-size: 13px; }
 .feel-card svg { width: 100%; height: 54px; margin-top: 8px; }
 .feel-card svg path.c { fill: none; stroke: var(--ink); stroke-width: 1.5; }
 .feel-card svg line { stroke: var(--border-strong); stroke-dasharray: 3 3; }
-.feel-metrics { display: block; margin-top: 8px; font-size: 12px; line-height: 16px; color: var(--subtle); }
-.feel-curve-note { margin: 8px 0 0; font-size: 12px; line-height: 20px; color: var(--muted); }
-.feel-trial { margin-top: 16px; }
-.feel-trial > summary { font-size: 14px; line-height: 20px; font-weight: 600; color: var(--text); }
+.feel-metrics { display: block; margin-top: 8px; font-size: 12px; line-height: 16px; color: var(--muted); }
+.feel-curve-note { margin: 8px 0 0; font-size: 12px; line-height: 16px; color: var(--muted); }
+.feel-trial { margin-top: 14px; }
+.feel-trial > summary { font-size: 13px; font-weight: 600; color: var(--ink); }
+.feel-trial > summary:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .feel-state { margin-left: 12px; font: inherit; color: inherit; }
-.feel-reset { margin-left: 8px; }
+.feel-reset { margin-left: 8px; padding: 1px 10px; font-size: 11.5px; }
 .feel-try { border: 1px solid var(--border); border-radius: 8px; background: var(--surface); padding: 12px; }
-.feel-stage { position: relative; height: 400px; border-radius: 4px; background: var(--wall); overflow: hidden; touch-action: none; }
+.feel-stage { position: relative; height: 400px; border-radius: 6px; background: var(--wall); overflow: hidden; touch-action: none; }
 .feel-stage .fz { position: absolute; border: 1px dashed var(--cell-border); border-radius: 4px; }
 .feel-stage .fz.on { background: var(--surface-2); border-style: solid; border-color: var(--ink); }
 .feel-stage .fz-dot { position: absolute; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; background: var(--muted); opacity: .6; }
 .fs-card { position: absolute; left: 0; top: 0; display: flex; flex-direction: column; overflow: hidden; background: var(--surface); border: 1px solid var(--border-strong); border-radius: 8px; user-select: none; will-change: transform; pointer-events: none; }
 .fs-card .win-title { cursor: inherit; height: 36px; min-height: 36px; flex-shrink: 0; }
 .fs-card:focus-visible { outline: 2px solid var(--blue-tx); outline-offset: 2px; }
-.feel-try-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
-.feel-try-hint { font-size: 12px; line-height: 20px; color: var(--muted); }
+.feel-try-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.feel-try-hint { font-size: 12px; color: var(--muted); }
 .row .ctl.tune { gap: 10px; }
 .row .ctl.tune input[type="range"] { width: 200px; accent-color: var(--ink); }
-.row .ctl.tune .unit { width: 20px; font-size: 12px; color: var(--subtle); }
-.corner-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 4px; }
-.ccard { text-align: left; font: inherit; line-height: 20px; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px; display: grid; gap: 8px; cursor: pointer; align-content: start; }
-.ccard > span:last-child { font-size: 12px; color: var(--muted); line-height: 16px; }
-.ccard.sel { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.row .ctl.tune .unit { width: 22px; font-size: 12px; color: var(--muted); }
+.corner-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 4px; }
+.ccard { text-align: left; font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px; display: grid; gap: 6px; cursor: pointer; align-content: start; }
+.ccard > span:last-child { font-size: 11.5px; color: var(--muted); line-height: 1.5; }
+.ccard.sel { border-color: var(--ink); }
 .cwin { display: block; height: 62px; border: 1.5px solid var(--border-strong); background: var(--surface-2); overflow: hidden; }
 .cwin i { display: block; height: 14px; border-bottom: 1px solid var(--border); background: var(--surface); }
-.ov-stage { position: relative; height: 190px; max-width: 400px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); overflow: hidden; color: var(--blue-tx); }
+.ov-stage { position: relative; height: 190px; max-width: 400px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); overflow: hidden; color: var(--blue-tx); }
 .ov-cells { position: absolute; inset: 0; opacity: 0.6; background:
   linear-gradient(to right, transparent calc(25% - 0.5px), var(--border) calc(25% - 0.5px) calc(25% + 0.5px), transparent calc(25% + 0.5px) calc(50% - 0.5px), var(--border) calc(50% - 0.5px) calc(50% + 0.5px), transparent calc(50% + 0.5px) calc(75% - 0.5px), var(--border) calc(75% - 0.5px) calc(75% + 0.5px), transparent calc(75% + 0.5px)),
   linear-gradient(to bottom, transparent calc(50% - 0.5px), var(--border) calc(50% - 0.5px) calc(50% + 0.5px), transparent calc(50% + 0.5px)); }
 .ov-fill, .ov-box { position: absolute; left: 50%; top: 0; width: 50%; height: 50%; border-radius: 8px; }
-.ov-fill { background: var(--zone-fill); }
-.ov-box { border: 1.5px dashed var(--blue-line); }
-.ov-pred { position: absolute; inset: 0; pointer-events: none; }
-.ov-pred svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-.ov-pred line { stroke: var(--blue-line); stroke-width: 1.5; stroke-dasharray: 4 4; vector-effect: non-scaling-stroke; }
-/* 終点は SVG の外に置く（preserveAspectRatio="none" で四角が伸びないように） */
-.ov-end { position: absolute; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 2px; background: var(--blue-tx); }
+.ov-fill { background: var(--blue-bg); }
+.ov-box { border: 1.5px dashed var(--blue-line); box-sizing: border-box; }
+.ov-pred { position: absolute; inset: 0; width: 100%; height: 100%; }
 .ov-win { position: absolute; left: 12px; top: 112px; width: 96px; height: 62px; border: 1.5px solid var(--border-strong); border-radius: 8px; background: var(--surface-2); overflow: hidden; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25); }
 .ov-bar { height: 14px; background: var(--surface); border-bottom: 1px solid var(--border); }
-.ov-legend { position: absolute; right: 8px; bottom: 8px; font-size: 12px; line-height: 16px; color: var(--subtle); text-align: right; }
+.ov-legend { position: absolute; right: 8px; bottom: 6px; font-size: 11.5px; color: var(--muted); text-align: right; }
 .corner-demo { display: flex; gap: 16px; flex-wrap: wrap; }
 .corner-demo .cd { width: 150px; height: 96px; border: 1px solid var(--border-strong); background: var(--surface); display: grid; place-items: center; font-size: 12px; color: var(--muted); }
 
 /* トレイメニュー */
 .tray-stage { position: relative; height: 560px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background-color: var(--wall); background-image: linear-gradient(var(--wall-line) 1px, transparent 1px), linear-gradient(90deg, var(--wall-line) 1px, transparent 1px); background-size: 48px 48px; }
-/* トレイのメニュー: 幅 320・余白 4・角 8。見出し 56（題は通常の太さ 14）、モニター構成の行 28、項目 32 */
 .tray-menu {
   position: absolute;
   right: 12px;
   bottom: 52px;
   width: 320px;
   background: var(--surface);
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 4px;
-  box-shadow: var(--shadow-flyout);
+  padding: 6px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.05);
 }
-.tm-head { display: flex; align-items: center; gap: 12px; height: 56px; padding: 0 12px; }
-.tm-head .n { flex: 1; font-weight: 400; font-size: 14px; color: var(--text); }
-.tm-item { display: flex; align-items: center; gap: 12px; width: 100%; height: 32px; border: 0; background: transparent; padding: 0 12px; border-radius: 4px; text-align: left; cursor: pointer; font-size: 14px; color: var(--text); }
+.tm-head { display: flex; align-items: center; gap: 10px; padding: 10px 10px 12px; border-bottom: 1px solid var(--border); margin-bottom: 4px; }
+.tm-head .n { flex: 1; font-weight: 600; color: var(--ink); }
+.tm-item { display: flex; align-items: center; gap: 10px; width: 100%; border: 0; background: transparent; padding: 7px 10px; border-radius: 4px; text-align: left; cursor: pointer; color: var(--text); }
 .tm-item:hover { background: var(--surface-2); }
-/* キーボードでの選択: アクセント 2 px の輪を内側に描く */
-.tm-item:focus-visible { outline: 2px solid var(--blue-tx); outline-offset: -2px; background: var(--surface-2); }
 .tm-item .grow { flex: 1; }
-.tm-item svg { width: 16px; height: 16px; flex: none; fill: none; stroke: var(--muted); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
-.tm-sep { height: 1px; background: var(--border); margin: 4px 0; }
-.tm-sub { display: flex; align-items: center; min-height: 28px; margin-top: -8px; padding: 0 12px 8px 44px; font-size: 12px; line-height: 16px; color: var(--subtle); }
-.tm-ico { display: grid; place-items: center; width: 20px; height: 20px; flex: none; }
+.tm-item .check { width: 14px; color: var(--ink); }
+.tm-sep { height: 1px; background: var(--border); margin: 4px 6px; }
+.tm-sub { font-size: 11.5px; color: var(--muted); padding: 6px 10px 2px; }
+.tm-ico { display: grid; place-items: center; width: 22px; height: 22px; }
 .tray-probe { margin-top: 10px; display: flex; align-items: center; gap: 12px; font-size: 11.5px; color: var(--muted); }
 .tray-probe .seg { width: 280px; }
 .tray-probe .seg button { padding: 3px 8px; font-size: 11.5px; }
 .tray-ico { width: 20px; height: 20px; border-radius: 4px; display: grid; place-items: center; outline: 1px solid var(--blue-line); outline-offset: 3px; }
 
 /* 初回セットアップ */
-/* 導入: メニューなしで流れ、終わるとようこそへ。アクセントはほかの面と同じ区画の青 1 色（導入だけの青は使わない） */
-.wizard { --wl-accent: var(--blue-tx); --wl-accent-soft: var(--accent-tint); --wl-accent-line: var(--blue-line); }
+/* 導入: メニューなしで流れ、終わるとようこそへ。アクセントはこの導入だけの色 */
+.wizard { --wl-accent: #2563EB; --wl-accent-soft: rgba(37, 99, 235, 0.12); --wl-accent-line: rgba(37, 99, 235, 0.6); }
+:root[data-theme="dark"] .wizard { --wl-accent: #6AA8FF; --wl-accent-soft: rgba(106, 168, 255, 0.16); --wl-accent-line: rgba(106, 168, 255, 0.7); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .wizard { --wl-accent: #6AA8FF; --wl-accent-soft: rgba(106, 168, 255, 0.16); --wl-accent-line: rgba(106, 168, 255, 0.7); } }
 .wizard-frame { position: relative; min-height: 420px; }
 .wizard.intro .steps { visibility: hidden; }
 .wintro { position: absolute; inset: 0; z-index: 10; background: var(--bg); overflow: hidden; cursor: pointer; transition: opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1); }
@@ -770,40 +721,38 @@ table.list tr:last-child td { border-bottom: 0; }
 .wi-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 /* ようこそ: 実装と同じ「ばね + 磁石」で窓が区画へ収まる。装飾は区画と窓だけにとどめる */
 .wbody.welcome { text-align: center; padding-top: 24px; }
-.wbody.welcome h3 { margin-top: 20px; }
+.wbody.welcome h3 { font-size: 32px; margin-top: 20px; }
 .wbody.welcome > p { margin: 8px auto 0; max-width: 440px; line-height: 1.7; }
 .wbody.welcome .wl-hint { font-size: 12px; margin-top: 14px; }
 .wbody.welcome .wl-update { margin: 20px auto 0; max-width: 520px; text-align: left; }
-.wl-stage { position: relative; height: 188px; max-width: 520px; margin: 0 auto; border: 1px solid var(--border); border-radius: 8px; background-color: var(--bg); overflow: hidden; touch-action: none; }
+.wl-stage { position: relative; height: 188px; max-width: 520px; margin: 0 auto; border: 1px solid var(--border); border-radius: 10px; background-color: var(--bg); overflow: hidden; touch-action: none; }
 .wl-zone { position: absolute; border: 1.5px dashed var(--border-strong); border-radius: 8px; box-sizing: border-box; transition: background-color 0.3s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.3s cubic-bezier(0.22, 1, 0.36, 1); }
-.wl-zone.on { background: var(--zone-fill); border-color: var(--blue-line); }
+.wl-zone.on { background: var(--blue-bg); border-color: var(--blue-line); }
 .wl-win { position: absolute; left: 0; top: 0; display: flex; flex-direction: column; gap: 6px; padding: 0 0 8px; border: 1.5px solid var(--border-strong); border-radius: 8px; background: var(--surface); box-shadow: 0 6px 18px rgba(var(--shadow-lift), 0.14); overflow: hidden; cursor: grab; will-change: transform; box-sizing: border-box; }
 .wl-win.held { cursor: grabbing; box-shadow: 0 12px 28px rgba(var(--shadow-lift), 0.22); }
 .wl-win i { display: block; height: 16px; flex: none; border-bottom: 1px solid var(--border); background: var(--surface-2); }
 .wl-win b { display: block; height: 6px; margin: 0 8px; border-radius: 3px; background: var(--skeleton); flex: none; }
 .wl-win b + b { width: 60%; }
 .wizard { max-width: 760px; margin: 0 auto; }
-/* 段の表示: 済みは text-2 とチェック、いまは ink の 600、先は text-3 */
-.steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 0 0 16px; }
-.steps div { border-top: 2px solid var(--border); padding-top: 8px; font-size: 12px; line-height: 16px; color: var(--subtle); }
-.steps div.done { border-top-color: var(--muted); color: var(--muted); }
-.steps div.done::before { content: ""; display: inline-block; width: 8px; height: 4px; margin: 0 8px 0 1px; border-left: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: translateY(-3px) rotate(-45deg); }
-.steps div.now { border-top-color: var(--ink); color: var(--ink); font-weight: 600; }
+.steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 0 0 16px; }
+.steps div { border-top: 2px solid var(--border); padding-top: 8px; font-size: 12px; color: var(--muted); }
+.steps div.done { border-top-color: var(--muted); }
+.steps div.now { border-top-color: var(--ink); color: var(--ink); }
 .wstep { display: none; }
 .wstep.active { display: block; }
 .wbody { padding: 28px 32px; }
-.wbody h3 { margin: 0 0 8px; font-family: var(--font-display); font-weight: 400; font-size: 28px; line-height: 36px; color: var(--text); }
+.wbody h3 { margin: 0 0 6px; font-family: var(--font-display); font-weight: 500; font-size: 28px; letter-spacing: -0.02em; color: var(--ink); line-height: 1.15; }
 .wbody > p { margin: 0 0 18px; color: var(--muted); }
-.wfoot { display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; border-top: 1px solid var(--border); background: var(--surface-2); }
-.consent { display: flex; gap: 8px; align-items: flex-start; margin-top: 16px; font-size: 14px; line-height: 20px; }
+.wfoot { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-top: 1px solid var(--border); background: var(--surface-2); }
+.consent { display: flex; gap: 10px; align-items: flex-start; margin-top: 16px; font-size: 13px; }
 .consent input { margin-top: 4px; accent-color: var(--ink); }
-.plan-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.plan-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .plan-card { border: 1px solid var(--border); border-radius: 8px; padding: 12px; background: var(--surface); cursor: pointer; text-align: left; }
 .plan-card[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
 .plan-card .mini { position: relative; aspect-ratio: 16 / 9; background: var(--wall); border-radius: 4px; margin-bottom: 8px; overflow: hidden; }
 .plan-card .mini i { position: absolute; border: 1px solid var(--cell-border); }
 .plan-card b { color: var(--ink); font-weight: 600; }
-.plan-card span { display: block; font-size: 12px; line-height: 20px; color: var(--muted); }
+.plan-card span { display: block; font-size: 12px; color: var(--muted); }
 
 .notes { margin-top: 20px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .note { border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; background: var(--surface); font-size: 13px; }
@@ -816,10 +765,10 @@ table.list tr:last-child td { border-bottom: 0; }
 }
 @media (max-width: 960px) {
   .stage { grid-template-columns: 1fr; }
-  .settings { grid-template-columns: minmax(0, 1fr); }
-  .snav { flex-direction: row; overflow-x: auto; border-bottom: 1px solid var(--border); gap: 4px; }
+  .settings { grid-template-columns: 1fr; }
+  .snav { display: flex; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--border); gap: 4px; }
   .snav button { width: auto; flex: none; white-space: nowrap; }
-  .snav-ind { display: none; }
+  .snav button[aria-current="true"]::before { display: none; }
   .grid-preview-wrap { grid-template-columns: 1fr; }
   .feel-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .notes { grid-template-columns: 1fr; }
@@ -938,11 +887,10 @@ table.list tr:last-child td { border-bottom: 0; }
         <div class="workarea" id="lArea">
           <div class="launcher" id="launcher" tabindex="-1" aria-label="ランチャー">
             <div id="lCells"></div>
-            <div class="sel-area" id="lSelArea" hidden></div>
             <div class="sel-label" id="lSelLabel" hidden></div>
             <div class="lpanel">
               <div class="lpanel-top">
-                <span class="tag accent">対象</span>
+                <span class="tag blue">対象</span>
                 <span class="target" id="lTarget">ドキュメント — 週次レポート</span>
                 <select class="input" id="lPlan" aria-label="分割案">
                   <option value="8x8">8 × 8</option>
@@ -1238,7 +1186,7 @@ table.list tr:last-child td { border-bottom: 0; }
             <div class="group-title">オーバーレイ</div>
             <div class="rows">
               <div class="row"><div><div class="t">区画の線を表示する</div><div class="d">吸着先の区画の縁に点線の枠を付けます（区画のプレビューがオンのとき）。ランチャーの区画の線にも適用されます</div></div><div class="ctl"><label class="switch"><input type="checkbox" checked id="tgLines" aria-label="区画の線を表示する"><span></span></label></div></div>
-              <div class="row"><div><div class="t">投げたときに予測の線を表示する</div><div class="d">ウィンドウが止まると予測した位置までを、点線と小さな四角で示します（区画のプレビューがオンのとき）。慣れたらオフにできます</div></div><div class="ctl"><label class="switch"><input type="checkbox" checked id="tgPred" aria-label="投げたときに予測の線を表示する"><span></span></label></div></div>
+              <div class="row"><div><div class="t">投げたときに予測の線を表示する</div><div class="d">ウィンドウが止まると予測した位置までを、点線と丸印で示します（区画のプレビューがオンのとき）。慣れたらオフにできます</div></div><div class="ctl"><label class="switch"><input type="checkbox" checked id="tgPred" aria-label="投げたときに予測の線を表示する"><span></span></label></div></div>
             </div>
             <div class="group-title">オーバーレイの見え方</div>
             <p class="hint" style="margin: 0 0 8px">ウィンドウを右上へ投げた場面の例です。上の「区画のプレビュー」と「オーバーレイ」のスイッチで、表示がどう変わるかを確かめられます。</p>
@@ -1246,7 +1194,7 @@ table.list tr:last-child td { border-bottom: 0; }
               <div class="ov-cells"></div>
               <div class="ov-fill" id="ovFill"></div>
               <div class="ov-box" id="ovBox"></div>
-              <span class="ov-pred" id="ovPred" aria-hidden="true"><svg viewBox="0 0 400 190" preserveAspectRatio="none"><line x1="92" y1="140" x2="298" y2="52"/></svg><i class="ov-end" style="left: 74.5%; top: 27.37%"></i></span>
+              <svg class="ov-pred" id="ovPred" viewBox="0 0 400 190" preserveAspectRatio="none"><line x1="92" y1="140" x2="298" y2="52" stroke="currentColor" stroke-width="2" stroke-dasharray="5 5"/><circle cx="298" cy="52" r="5" fill="currentColor"/></svg>
               <div class="ov-win"><div class="ov-bar"></div></div>
               <div class="ov-legend" id="ovLegend"></div>
             </div>
@@ -1338,12 +1286,14 @@ table.list tr:last-child td { border-bottom: 0; }
           <label class="switch"><input type="checkbox" id="trayToggle" checked aria-label="有効"><span></span></label>
         </div>
         <div class="tm-sub">モニター構成: ドック接続 · 3 画面</div>
+        <div class="tm-sub">プロファイル <span class="tag pending">準備中</span></div>
+        <div id="trayProfiles"></div>
         <div class="tm-sep"></div>
-        <button class="tm-item" type="button" role="menuitem"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 2.5 H7 V7 H2 Z M9 2.5 H14 V7 H9 Z M2 9 H7 V13.5 H2 Z M9 9 H14 V13.5 H9 Z"/></svg><span class="grow">現在のモニターを整列</span></button>
-        <button class="tm-item" type="button" role="menuitem"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 3 H14 V13 H2 Z M2 6 H14 M6 6 V13"/></svg><span class="grow">ランチャーを開く</span></button>
+        <button class="tm-item" type="button" role="menuitem"><span class="check"></span><span class="grow">現在のモニターを整列</span></button>
+        <button class="tm-item" type="button" role="menuitem"><span class="check"></span><span class="grow">ランチャーを開く</span></button>
         <div class="tm-sep"></div>
-        <button class="tm-item" type="button" role="menuitem"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 5.5 A2.5 2.5 0 1 1 8 10.5 A2.5 2.5 0 1 1 8 5.5 Z M8 1.5 v2 M8 12.5 v2 M1.5 8 h2 M12.5 8 h2 M3.4 3.4 l1.4 1.4 M11.2 11.2 l1.4 1.4 M3.4 12.6 l1.4 -1.4 M11.2 4.8 l1.4 -1.4"/></svg><span class="grow">設定を開く</span></button>
-        <button class="tm-item" type="button" role="menuitem"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 2.5 H3 A0.5 0.5 0 0 0 2.5 3 V13 A0.5 0.5 0 0 0 3 13.5 H6 M10 5 L13 8 L10 11 M13 8 H6"/></svg><span class="grow">終了（標準の動作に戻す）</span></button>
+        <button class="tm-item" type="button" role="menuitem"><span class="check"></span><span class="grow">設定を開く</span></button>
+        <button class="tm-item" type="button" role="menuitem"><span class="check"></span><span class="grow">終了（標準の動作に戻す）</span></button>
       </div>
       <div class="taskbar">
         <i class="tb-app start"></i><i class="tb-app"></i><i class="tb-app"></i><i class="tb-app"></i>
@@ -1394,7 +1344,7 @@ table.list tr:last-child td { border-bottom: 0; }
             <i class="wl-zone" data-z="0"></i><i class="wl-zone" data-z="1"></i><i class="wl-zone" data-z="2"></i>
             <div class="wl-win" id="wlWin"><i></i><b></b><b></b></div>
           </div>
-          <h3 id="wlTitle">ウィンドウを投げよう</h3>
+          <h3 id="wlTitle">ウィンドウを投げよう。</h3>
           <p id="wlBody">つかんで投げると、いちばん近い区画に吸い込まれて止まります。<br>このあと、標準機能、ホットキー、分割案の 3 つを設定します。</p>
           <p class="hint wl-hint" id="wlHint">上の窓は動かせます。つかんで投げてみてください。</p>
           <div class="rows wl-update"><div class="row"><div><div class="t" id="wlUpT">更新を自動で確認する</div><div class="d" id="wlUpD">オンにすると GitHub に接続して最新版の情報だけを取得します。送るのは版を含む User-Agent だけで、識別子は送りません。既定はオフです。</div></div><div class="ctl"><label class="switch"><input type="checkbox" id="wlUpSw" aria-label="更新を自動で確認する"><span></span></label></div></div></div>
@@ -1807,14 +1757,11 @@ function drawFx(from, proj, target) {
   line.setAttribute('class', 'path');
   line.setAttribute('d', `M${x1} ${y1} L${x2} ${y2}`);
   snapFx.appendChild(line);
-  // 終点は 8 px・角 2 の四角（署名の細部）
-  const dot = document.createElementNS(svgNS, 'rect');
+  const dot = document.createElementNS(svgNS, 'circle');
   dot.setAttribute('class', 'dot');
-  dot.setAttribute('x', x2 - 4);
-  dot.setAttribute('y', y2 - 4);
-  dot.setAttribute('width', 8);
-  dot.setAttribute('height', 8);
-  dot.setAttribute('rx', 2);
+  dot.setAttribute('cx', x2);
+  dot.setAttribute('cy', y2);
+  dot.setAttribute('r', 4);
   snapFx.appendChild(dot);
   const label = document.createElementNS(svgNS, 'text');
   label.setAttribute('class', 'label');
@@ -1937,11 +1884,9 @@ function paintSel() {
     d.classList.toggle('cursor', c === L.cursor.c && r === L.cursor.r);
   });
   const label = $('#lSelLabel');
-  const area = $('#lSelArea');
   const dd = $$('#lReadout dd');
   if (!sel) {
     label.hidden = true;
-    area.hidden = true;
     dd.forEach((x) => { x.textContent = '—'; });
     return;
   }
@@ -1951,9 +1896,6 @@ function paintSel() {
   const nr = sel.r1 - sel.r0 + 1;
   // 疑似デスクトップの幅を 2560 px のモニターとみなして、実際のピクセルで表示する
   const scale = 2560 / W;
-  // 選んだセルをまとめた 1 つの面。セルと同じ座標で、外接矩形をそのまま使う
-  area.hidden = false;
-  Object.assign(area.style, { left: `${rect.x}px`, top: `${rect.y}px`, width: `${rect.w}px`, height: `${rect.h}px` });
   label.hidden = false;
   label.style.left = `${rect.x + rect.w / 2}px`;
   label.style.top = `${rect.y + rect.h / 2}px`;
@@ -2308,89 +2250,11 @@ const NAV = [
   ['launcher', 'ランチャー', '<rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/><path d="M1.5 6h13M5 6v7.5"/>'],
   ['look', '外観', '<path d="M1.5 13.5v-6a6 6 0 0 1 6-6h6"/><path d="M5 13.5v-6a2.5 2.5 0 0 1 2.5-2.5h6"/>'],
 ];
-// ナビの選択の印: select のばね（m 1・f 6 Hz・ζ 1.0、臨界減衰で行き過ぎない）で縦に移す。継続時間は持たない
-// 刻みは 1/240 秒、1 フレームの上限は 1/30 秒（スイッチと同じ）。動きを減らす設定と、見えていないときはすぐ置く
-let navInd = null;
-function makeNavIndicator(nav) {
-  const ind = document.createElement('i');
-  ind.className = 'snav-ind';
-  ind.setAttribute('aria-hidden', 'true');
-  nav.appendChild(ind);
-  const m = 1;
-  const k = m * Math.pow(2 * Math.PI * 6, 2);
-  const c = 2 * 1.0 * Math.sqrt(k * m);
-  const s = { y: 0, v: 0, target: 0, raf: 0, last: 0, placed: false, btn: null };
-  const draw = () => { ind.style.transform = `translateY(${s.y}px)`; };
-  const frame = (t) => {
-    const dt = s.last ? Math.min((t - s.last) / 1000, 1 / 30) : 1 / 60;
-    s.last = t;
-    for (let left = dt; left > 1e-9; left -= 1 / 240) {
-      const h = Math.min(1 / 240, left);
-      s.v += ((-k * (s.y - s.target) - c * s.v) / m) * h;
-      s.y += s.v * h;
-    }
-    if (Math.abs(s.y - s.target) < 0.05 && Math.abs(s.v) < 1) {
-      s.y = s.target;
-      s.v = 0;
-      s.raf = 0;
-      s.last = 0;
-    } else {
-      s.raf = requestAnimationFrame(frame);
-    }
-    draw();
-  };
-  const move = (btn) => {
-    if (!btn) return;
-    s.btn = btn;
-    if (!nav.offsetParent) { s.placed = false; return; }
-    s.target = btn.offsetTop + (btn.offsetHeight - ind.offsetHeight) / 2;
-    if (!s.placed || reducedMotion()) {
-      s.placed = true;
-      s.y = s.target;
-      s.v = 0;
-      draw();
-      return;
-    }
-    if (!s.raf) s.raf = requestAnimationFrame(frame);
-  };
-  // 設定の画面を開いたとき（大きさが 0 から変わったとき）に、いまの項目へすぐ置く
-  new ResizeObserver(() => { if (s.btn && nav.offsetParent) { s.placed = false; move(s.btn); } }).observe(nav);
-  return move;
-}
-// メニューとランチャーの出現: surface のばね（m 1・f 4.5 Hz・ζ 1.0）で、不透明度 0→1 と 4 px 下からの浮き上がり
-// x は残りの距離（1→0）。臨界減衰なので行き過ぎない。動きを減らす設定ではすぐ最終の状態に置く
-function appear(els) {
-  const list = [...els];
-  const done = () => list.forEach((el) => { el.style.opacity = ''; el.style.translate = ''; });
-  if (!list.length || reducedMotion()) { done(); return; }
-  const m = 1;
-  const k = m * Math.pow(2 * Math.PI * 4.5, 2);
-  const c = 2 * 1.0 * Math.sqrt(k * m);
-  let x = 1, v = 0, last = 0;
-  const draw = () => list.forEach((el) => { el.style.opacity = String(1 - x); el.style.translate = `0 ${4 * x}px`; });
-  // 最初のフレームで初めて隠す。フレームが来ない（裏のタブなど）ときは、見えたままにする
-  const frame = (t) => {
-    if (last) {
-      const dt = Math.min((t - last) / 1000, 1 / 30);
-      for (let left = dt; left > 1e-9; left -= 1 / 240) {
-        const h = Math.min(1 / 240, left);
-        v += ((-k * x - c * v) / m) * h;
-        x += v * h;
-      }
-    }
-    last = t;
-    if (Math.abs(x) < 0.002 && Math.abs(v) < 0.05) { done(); return; }
-    draw();
-    requestAnimationFrame(frame);
-  };
-  requestAnimationFrame(frame);
-}
 function initSettings() {
   const nav = $('#snav');
   nav.innerHTML = NAV.map(([id, name, d]) => `<button type="button" data-page="${id}">`
     + `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`
     + `<span>${name}</span></button>`).join('');
-  navInd = makeNavIndicator(nav);
   nav.addEventListener('click', (ev) => {
     const b = ev.target.closest('button');
     if (b) showPage(b.dataset.page);
@@ -2577,7 +2441,6 @@ function initSaveBar() {
 function showPage(id) {
   $('#feelTrial').open = false;
   $$('#snav button').forEach((b) => b.setAttribute('aria-current', String(b.dataset.page === id)));
-  if (navInd) navInd($(`#snav button[data-page="${id}"]`));
   $$('.spage').forEach((p) => p.classList.toggle('active', p.dataset.page === id));
 }
 
@@ -3214,7 +3077,21 @@ function initFeelPage() {
 
 // ---------- 04 トレイ ----------
 function initTray() {
-  // 項目は DESIGN §16 の 4 つだけ（プロファイルの切り替えは将来のリリース）
+  const profiles = ['自動（モニター構成に合わせる）', '机: 3 画面', 'ノート PC 単体'];
+  let active = 0;
+  const box = $('#trayProfiles');
+  const render = () => {
+    box.innerHTML = profiles.map((p, i) => `<button class="tm-item" type="button" role="menuitemradio" aria-checked="${i === active}" data-i="${i}">`
+      + `<span class="check">${i === active ? '<svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6.5l2.5 2.5L10 3.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>' : ''}</span>`
+      + `<span class="grow">${p}</span></button>`).join('');
+  };
+  box.addEventListener('click', (ev) => {
+    const b = ev.target.closest('[data-i]');
+    if (!b) return;
+    active = Number(b.dataset.i);
+    render();
+  });
+  render();
   // 状態ごとの図柄。assets/icons/tray-{active,paused,attention}-*.svg と同じ形（色はテーマ変数）
   let icoSeq = 0;
   const trayIcon = (state, size) => {
@@ -3245,7 +3122,7 @@ function initTray() {
     st.dataset.state = state; // 下の change から apply が呼ばれる前に書く（onchange がこの値を読む）
     st.textContent = label;
     st.className = 'tag ' + color;
-    $('#trayHeadIco').innerHTML = trayIcon(state, 20);
+    $('#trayHeadIco').innerHTML = trayIcon(state, 22);
     $('#trayTaskIco').innerHTML = trayIcon(state, 16);
     const tg = $('#trayToggle');
     if (tg.checked !== (state !== 'paused')) {
@@ -3271,7 +3148,7 @@ function initTray() {
 let wLang = 'ja';
 const WL = {
   ja: {
-    steps: ['ようこそ', '標準機能', 'ホットキー', '分割案'], title: 'ウィンドウを投げよう',
+    steps: ['ようこそ', '標準機能', 'ホットキー', '分割案'], title: 'ウィンドウを投げよう。',
     body: 'つかんで投げると、いちばん近い区画に吸い込まれて止まります。<br>このあと、標準機能、ホットキー、分割案の 3 つを設定します。',
     hint: '上の窓は動かせます。つかんで投げてみてください。', held: '離すと、近い区画へ収まります。', again: 'もう一度どうぞ。',
     back: '戻る', next: '次へ', start: 'はじめる', done: '完了', toggle: 'English', replay: '導入アニメーションをもう一度見る (モックアップ用)',
@@ -3279,7 +3156,7 @@ const WL = {
     upT: '更新を自動で確認する', upD: 'オンにすると GitHub に接続して最新版の情報だけを取得します。送るのは版を含む User-Agent だけで、識別子は送りません。既定はオフです。',
   },
   en: {
-    steps: ['Welcome', 'Standard features', 'Hotkeys', 'Layout'], title: 'Throw a window',
+    steps: ['Welcome', 'Standard features', 'Hotkeys', 'Layout'], title: 'Throw a window.',
     body: 'Grab a window and throw it. It is pulled into the nearest cell and stops there.<br>Next, you will set up standard features, hotkeys, and layout.',
     hint: 'The window above moves. Grab it and give it a throw.', held: 'Let go and it settles into the nearest cell.', again: 'Once more.',
     back: 'Back', next: 'Next', start: 'Get started', done: 'Done', toggle: '日本語', replay: 'Replay the intro (mockup only)',
@@ -3490,9 +3367,9 @@ function playIntro() {
     const v = k.fillStyle;
     if (v[0] === '#') return [1, 3, 5].map((i) => parseInt(v.slice(i, i + 2), 16));
     const m = /rgba?\(([^)]+)\)/.exec(v);
-    return m ? m[1].split(',').slice(0, 3).map((x) => Number(x)) : [31, 108, 159];
+    return m ? m[1].split(',').slice(0, 3).map((x) => Number(x)) : [37, 99, 235];
   };
-  const A = toRgb(css('--wl-accent', '#1F6C9F'));
+  const A = toRgb(css('--wl-accent', '#2563EB'));
   const I = toRgb(css('--text', '#2F3437'));
   const rgba = (c, a) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
   const surface = css('--surface', '#fff');
@@ -3850,8 +3727,6 @@ function route() {
   } else if (current === 'settings') {
     renderGrid();
   }
-  if (current === 'tray') appear($$('#screen-tray .tray-menu'));
-  if (current === 'launcher') appear($$('#screen-launcher .lpanel'));
 }
 window.addEventListener('hashchange', route);
 route();
