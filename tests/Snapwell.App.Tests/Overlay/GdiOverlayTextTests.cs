@@ -8,6 +8,80 @@ namespace Snapwell.App.Tests.Overlay;
 /// <summary>文字マスクの境界と乗算済み alpha を検証する。</summary>
 public sealed class GdiOverlayTextTests
 {
+    /// <summary>未選択でも整列ボタンの面と図は不透明に保ち、主の区画も通常の subtle と surface-2 で描く。</summary>
+    [Theory]
+    [InlineData(OverlayTheme.Light)]
+    [InlineData(OverlayTheme.Dark)]
+    public void DisabledArrangementKeepsMockupSurfaces(OverlayTheme theme)
+    {
+        using var text = new GdiOverlayText(1);
+        var palette = OverlayPalette.For(theme);
+        var layout = LauncherWindowListLayout.Create(new(0, 0, 1920, 1400), default, 1,
+            [new(1, "Window")], [], 0, expanded: true);
+        var layers = new LauncherWindowListRenderer().Render(layout, theme, 1, text);
+        foreach (var button in layout.Buttons)
+        {
+            var frame = Assert.Single(layers, layer => layer.Bounds == button.Bounds).Frame;
+            byte[] Pixel(int x, int y) => frame.Pixels.AsSpan((y * frame.Width + x) * 4, 4).ToArray();
+            Assert.Equal(new byte[] { palette.Surface.Blue, palette.Surface.Green, palette.Surface.Red, 255 },
+                Pixel(8, 40));
+            var icon = button.IconBounds(1);
+            var shape = button.IconPixelRects(1)[0];
+            Assert.Equal(new byte[] { palette.Surface2.Blue, palette.Surface2.Green, palette.Surface2.Red, 255 },
+                Pixel(icon.X + (int)shape.Center.X, icon.Y + (int)shape.Center.Y));
+            Assert.Equal(new byte[] { palette.Subtle.Blue, palette.Subtle.Green, palette.Subtle.Red, 255 },
+                Pixel(icon.X + shape.X, icon.Y + (int)shape.Center.Y));
+        }
+    }
+
+    /// <summary>ヒントを省く最小配置でも描画でき、見出し・ページ表示・行・ボタンが重ならない。</summary>
+    [Fact]
+    public void CompactWindowListRendersWithoutHint()
+    {
+        const double Scale = 2.5;
+        using var text = new GdiOverlayText(Scale);
+        var layout = LauncherWindowListLayout.Create(new(0, 0, 1536, 864), new(68, 40, 1400, 450), Scale,
+            [new(1, "Window")], [1], 0, expanded: true);
+        Assert.True(layout.Expanded);
+        Assert.Equal(0, layout.Hint.Height);
+        Assert.Equal(80, layout.Viewport.Height);
+        Assert.Equal(layout.Header.Y, layout.Previous.Y);
+        var layers = new LauncherWindowListRenderer().Render(layout, OverlayTheme.Light, Scale, text);
+        var divider = Assert.Single(layers, layer => layer.Bounds.Height == (int)Math.Round(Scale));
+        Assert.Equal(layout.Viewport.Width, divider.Bounds.Width);
+        var page = Assert.Single(layers, layer => layer.Bounds.Y == layout.Previous.Y &&
+            layer.Bounds.X > layout.Header.Right && layer.Bounds.Right == layout.Previous.X);
+        Assert.True(page.Bounds.X >= layout.Header.Right + 20);
+        Assert.All(layers, layer => Assert.True(layer.Bounds.Width > 0 && layer.Bounds.Height > 0));
+        Assert.All(layout.Buttons, button => Assert.True(button.Bounds.Y >= layout.Viewport.Bottom + 20));
+    }
+
+    /// <summary>番号は subtle の等幅 caption、チェックは on-ink、役割は十二 DIP の accent または muted で描く。</summary>
+    [Theory]
+    [InlineData(OverlayTheme.Light, 1)]
+    [InlineData(OverlayTheme.Dark, 1.5)]
+    public void WindowRowTextMatchesMockup(OverlayTheme theme, double scale)
+    {
+        using var text = new GdiOverlayText(scale);
+        var palette = OverlayPalette.For(theme);
+        var layout = LauncherWindowListLayout.Create(new(0, 0, 1920, 1400), default, scale,
+            [new(1, "Window"), new(2, "Window")], [1, 2], 0, expanded: true);
+        var layers = new LauncherWindowListRenderer().Render(layout, theme, scale, text);
+        foreach (var row in layout.Rows)
+        {
+            var expected = OverlayPainter.Create(row.Bounds.Width, row.Bounds.Height);
+            OverlayPainter.WindowRow(expected, row.Bounds, row, theme, scale);
+            text.Draw(expected, row.Bounds, new(row.Number.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                row.NumberBounds(scale), 12, Mono: true, Center: true), palette.Subtle);
+            var onInk = theme == OverlayTheme.Dark ? new OverlayColor(22, 22, 22, 255) : new(255, 255, 255, 255);
+            text.Draw(expected, row.Bounds, new("✓", row.CheckBounds(scale), 12, Center: true, Bold: true), onInk);
+            text.Draw(expected, row.Bounds, new(row.Window.Title, row.TitleBounds(scale), 12), palette.Text);
+            text.Draw(expected, row.Bounds, new(row.Main ? layout.Text!.Main : layout.Text!.Stack,
+                row.RoleLabelBounds(scale), 12), row.Main ? palette.BlueText : palette.Muted);
+            Assert.Equal(expected.Pixels, Assert.Single(layers, layer => layer.Bounds == row.Bounds).Frame.Pixels);
+        }
+    }
+
     /// <summary>描画フォントで測ったラベルの中心は、各倍率でボタンの中心に一致する。</summary>
     [Theory]
     [InlineData(1)]
@@ -259,16 +333,8 @@ public sealed class GdiOverlayTextTests
         var renderer = new LauncherPanelRenderer();
         var selection = new ZoneSelection(new(-900, -300, 900, 700), new(8, 8), new(4, 4));
         using var text = new GdiOverlayText(scale);
-        var palette = OverlayPalette.For(theme);
         void DrawText(OverlayFrame frame, PixelRect area, LauncherText item) => text.Draw(frame, area, item,
-            item.Kind switch
-            {
-                LauncherTextKind.Muted => palette.Muted,
-                LauncherTextKind.Ink => palette.Ink,
-                LauncherTextKind.Blue => palette.BlueText,
-                LauncherTextKind.Disabled => palette.Subtle,
-                _ => palette.Text,
-            });
+            OverlayPainter.LauncherTextColor(item.Kind, theme));
         foreach (var cursor in new ZoneCell[] { new(0, 0), new(1, 2), new(7, 7), new(0, 0) })
         {
             selection = selection.Select(new(0, 0), cursor);

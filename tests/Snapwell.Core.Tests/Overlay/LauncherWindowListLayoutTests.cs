@@ -7,6 +7,73 @@ namespace Snapwell.Core.Tests.Overlay;
 /// <summary>一覧の DPI 換算・ページ・選択表示を検証する。</summary>
 public sealed class LauncherWindowListLayoutTests
 {
+    /// <summary>番号とチェックの上下余白は、六 DIP を偶数丸めして同じ画素数にそろえる。</summary>
+    [Theory]
+    [InlineData(1.25, 8)]
+    [InlineData(1.75, 10)]
+    [InlineData(2.25, 14)]
+    public void RowMarkersHaveSymmetricVerticalInsets(double scale, int inset)
+    {
+        var row = new LauncherWindowRow(new(1, "Window"), new(-900, -300, 480, (int)Math.Round(32 * scale)),
+            false, false);
+        foreach (var bounds in new[] { row.NumberBounds(scale), row.CheckBounds(scale) })
+        {
+            Assert.Equal(inset, bounds.Y - row.Bounds.Y);
+            Assert.Equal(inset, row.Bounds.Bottom - bounds.Bottom);
+        }
+        Assert.Equal((int)Math.Round(16 * scale), row.NumberBounds(scale).Width);
+        Assert.Equal((int)Math.Round(20 * scale), row.CheckBounds(scale).Width);
+        Assert.Equal(row.NumberBounds(scale).Right + (int)Math.Round(8 * scale), row.CheckBounds(scale).X);
+    }
+
+    /// <summary>行と番号と役割に枠を付けず、選択の面と ink のチェックだけを描く。</summary>
+    [Theory]
+    [InlineData(OverlayTheme.Light)]
+    [InlineData(OverlayTheme.Dark)]
+    public void RowSurfacesAndCheckboxMatchMockup(OverlayTheme theme)
+    {
+        var palette = OverlayPalette.For(theme);
+        foreach (var selected in new[] { false, true })
+        {
+            var row = new LauncherWindowRow(new(1, "Window"), new(0, 0, 480, 32), selected, false, 1, true);
+            var frame = OverlayPainter.Create(480, 32);
+            OverlayPainter.WindowRow(frame, row.Bounds, row, theme, 1);
+            var background = OverlayPainter.Create(1, 1);
+            if (selected) { OverlayPainter.Fill(background, new(0, 0, 1, 1), palette.AccentTint); }
+            foreach (var (x, y) in new[] { (100, 0), (100, 16), (16, 6), (16, 16), (450, 4), (450, 16) })
+            {
+                Assert.Equal(background.Pixels, Pixel(frame, x, y));
+            }
+            Assert.Equal(new PixelRect(8, 6, 16, 20), row.NumberBounds(1));
+            var check = row.CheckBounds(1);
+            Assert.Equal(new PixelRect(32, 6, 20, 20), check);
+            var fill = selected ? palette.Ink : palette.Surface;
+            var border = selected ? palette.Ink : palette.Subtle;
+            Assert.Equal(new byte[] { fill.Blue, fill.Green, fill.Red, 255 }, Pixel(frame, 42, 16));
+            Assert.Equal(new byte[] { border.Blue, border.Green, border.Red, 255 }, Pixel(frame, 42, 6));
+        }
+    }
+
+    /// <summary>整列の面は surface、図の面は surface-2、線は不透明な subtle を使う。</summary>
+    [Theory]
+    [InlineData(OverlayTheme.Light)]
+    [InlineData(OverlayTheme.Dark)]
+    public void ArrangementUsesMockupSurfaceAndDiagramColors(OverlayTheme theme)
+    {
+        var palette = OverlayPalette.For(theme);
+        var button = new LauncherArrangeButton(ArrangeLayout.Grid, new(0, 0, 130, 64), "Grid");
+        var frame = OverlayPainter.Create(130, 64);
+        OverlayPainter.ArrangeButton(frame, button, theme, 1);
+        Assert.Equal(new byte[] { palette.Surface.Blue, palette.Surface.Green, palette.Surface.Red, 255 },
+            Pixel(frame, 8, 40));
+        var icon = button.IconBounds(1);
+        var shape = button.IconPixelRects(1)[0];
+        Assert.Equal(new byte[] { palette.Surface2.Blue, palette.Surface2.Green, palette.Surface2.Red, 255 },
+            Pixel(frame, icon.X + (int)shape.Center.X, icon.Y + (int)shape.Center.Y));
+        Assert.Equal(new byte[] { palette.Subtle.Blue, palette.Subtle.Green, palette.Subtle.Red, 255 },
+            Pixel(frame, icon.X + shape.X, icon.Y + (int)shape.Center.Y));
+    }
+
     /// <summary>高 DPI の低い作業領域でも最低一行と操作部を展開できる。</summary>
     [Theory]
     [InlineData(1920, 960)]
@@ -28,7 +95,7 @@ public sealed class LauncherWindowListLayoutTests
     /// <summary>実際のプリセット配置でも展開判定が一致し、負座標・件数・焦点・スクロールに依存しない。</summary>
     [Theory]
     [InlineData(1920, 960, true)]
-    [InlineData(1536, 864, false)]
+    [InlineData(1536, 864, true)]
     [InlineData(1920, 1040, true)]
     [InlineData(1280, 720, false)]
     public void ExpansionMatchesPredictionAcrossShortAreasAndPages(int width, int height, bool canExpand)
@@ -62,17 +129,20 @@ public sealed class LauncherWindowListLayoutTests
         }
     }
 
-    /// <summary>ボタンを縮め、次にヒントを省き、最後に一行まで減らす。下限の一画素下では展開しない。</summary>
+    /// <summary>見出しとページャーを同じ段に置き、ヒントより一行を優先する。下限の一画素下では展開しない。</summary>
     [Theory]
+    [InlineData(220, true, 32, true)]
+    [InlineData(219, true, 32, true)]
+    [InlineData(216, true, 32, true)]
     [InlineData(211, true, 32, true)]
-    [InlineData(184, true, 32, true)]
-    [InlineData(183, true, 32, false)]
-    [InlineData(156, true, 32, false)]
-    [InlineData(155, false, 0, false)]
+    [InlineData(160, true, 32, true)]
+    [InlineData(159, true, 32, false)]
+    [InlineData(132, true, 32, false)]
+    [InlineData(131, false, 0, false)]
     public void CompactStagesKeepControlsBeforeReducingRows(int available, bool expanded,
         int viewportHeight, bool hint)
     {
-        Assert.Equal(156, LauncherWindowListLayout.MinimumExpandedHeight);
+        Assert.Equal(132, LauncherWindowListLayout.MinimumExpandedHeight);
         var area = new PixelRect(-900, -200, 900, 116 + available);
         var panel = new PixelRect(-700, -200, 560, 100);
         var list = LauncherWindowListLayout.Create(area, panel, 1, [new(1, "Window")], [], 0, true);
@@ -100,7 +170,7 @@ public sealed class LauncherWindowListLayoutTests
     public void MinimumHeightAccountsForPhysicalPixelRounding(double scale)
     {
         int Px(int value) => (int)Math.Round(value * scale);
-        var minimum = Math.Max(Px(156), Px(4) + Px(28) + Px(24) + Px(64) + Px(4) + Px(32));
+        var minimum = Math.Max(Px(132), Px(28) + Px(8) + Px(64) + Px(32));
         var panel = new PixelRect(-600, -300, Px(560), 100);
         foreach (var offset in new[] { -1, 0 })
         {
@@ -119,9 +189,9 @@ public sealed class LauncherWindowListLayoutTests
 
     /// <summary>通常領域の余白・行・ページャー・ボタン・ヒントを新しい寸法にそろえる。</summary>
     [Theory]
-    [InlineData(1, 680, 174, 560, 344, 160)]
-    [InlineData(1.5, 540, 261, 840, 516, 240)]
-    [InlineData(2, 400, 348, 1120, 660, 292)]
+    [InlineData(1, 680, 174, 560, 348, 160)]
+    [InlineData(1.5, 540, 261, 840, 522, 240)]
+    [InlineData(2, 400, 348, 1120, 660, 284)]
     public void NormalAreasUseUpdatedCoordinates(double scale, int x, int y, int width,
         int height, int viewportHeight)
     {
@@ -137,7 +207,7 @@ public sealed class LauncherWindowListLayoutTests
         var pagerY = y + Px(44) + viewportHeight + Px(8);
         Assert.Equal(new(x + width - Px(122), pagerY, Px(50), Px(24)), list.Previous);
         Assert.Equal(new(x + width - Px(66), pagerY, Px(50), Px(24)), list.Next);
-        Assert.Equal(new(left, pagerY + Px(100), inner, Px(20)), list.Hint);
+        Assert.Equal(new(left, pagerY + Px(104), inner, Px(20)), list.Hint);
         for (var i = 0; i < 9; i++)
         {
             Assert.Equal(new(left, y + Px(44) + i * Px(32), inner, Px(32)), list.Rows[i].Bounds);
@@ -145,10 +215,11 @@ public sealed class LauncherWindowListLayoutTests
         for (var i = 0; i < 4; i++)
         {
             var button = list.Buttons[i];
-            var buttonX = left + i * inner / 4;
-            var right = left + (i + 1) * inner / 4;
-            Assert.Equal(new(buttonX, pagerY + Px(28), right - buttonX, Px(64)), button.Bounds);
-            Assert.Equal(new(buttonX, pagerY + Px(64), right - buttonX, Px(20)), button.LabelBounds(scale));
+            var usable = inner - 3 * Px(4);
+            var buttonX = left + i * usable / 4 + i * Px(4);
+            var right = left + (i + 1) * usable / 4 + i * Px(4);
+            Assert.Equal(new(buttonX, pagerY + Px(32), right - buttonX, Px(64)), button.Bounds);
+            Assert.Equal(new(buttonX, pagerY + Px(68), right - buttonX, Px(20)), button.LabelBounds(scale));
             Assert.Equal(new((button.Bounds.Width - Px(44)) / 2, Px(4), Px(44), Px(28)),
                 button.IconBounds(scale));
         }
@@ -167,7 +238,8 @@ public sealed class LauncherWindowListLayoutTests
         var list = LauncherWindowListLayout.Create(area, default, scale, windows, [1, 2], 0, true);
         Assert.All(list.Rows, row => Assert.Equal((int)(32 * scale), row.Bounds.Height));
         Assert.All(list.Buttons, button => Assert.Equal((int)(64 * scale), button.Bounds.Height));
-        Assert.Equal(list.Viewport.Width, list.Buttons.Sum(button => button.Bounds.Width));
+        Assert.Equal(list.Viewport.Width - 3 * (int)Math.Round(4 * scale),
+            list.Buttons.Sum(button => button.Bounds.Width));
         Assert.Equal(list.Viewport.X, list.Buttons[0].Bounds.X);
         Assert.Equal(list.Viewport.Right, list.Buttons[^1].Bounds.Right);
         Assert.InRange(list.Buttons.Max(button => button.Bounds.Width) -
@@ -184,18 +256,24 @@ public sealed class LauncherWindowListLayoutTests
         Assert.True(list.Panel.Contains(list.Previous));
         Assert.True(list.Panel.Contains(list.Next));
         Assert.True(list.Header.Bottom <= list.Viewport.Y);
-        Assert.True(list.Viewport.Bottom <= list.Previous.Y);
+        Assert.False(list.Viewport.Intersects(list.Previous));
+        Assert.False(list.Header.Intersects(list.Previous));
+        Assert.False(list.Header.Intersects(list.Next));
         Assert.Equal(4, list.Buttons.Count);
         Assert.All(list.Buttons, button =>
         {
             Assert.True(list.Panel.Contains(button.Bounds));
-            Assert.True(list.Previous.Bottom <= button.Bounds.Y);
+            Assert.True(list.Previous.Bottom + (int)Math.Round(8 * scale) <= button.Bounds.Y);
             Assert.True(button.Bounds.Contains(button.LabelBounds(scale)));
             var icon = button.IconBounds(scale);
             var label = button.LabelBounds(scale);
             Assert.True(new PixelRect(0, 0, button.Bounds.Width, button.Bounds.Height).Contains(icon));
             Assert.True(button.Bounds.Y + icon.Bottom <= label.Y);
         });
+        for (var i = 1; i < list.Buttons.Count; i++)
+        {
+            Assert.Equal((int)Math.Round(4 * scale), list.Buttons[i].Bounds.X - list.Buttons[i - 1].Bounds.Right);
+        }
         if (list.Hint.Height > 0)
         {
             Assert.True(list.Panel.Contains(list.Hint));
@@ -416,7 +494,7 @@ public sealed class LauncherWindowListLayoutTests
             OverlayPainter.ArrangeButton(frame, button, theme, scale);
             var main = button.IconPixelRects(scale)[0];
             var reference = OverlayPainter.Create(1, 1);
-            OverlayPainter.Fill(reference, new(0, 0, 1, 1), palette.Surface2);
+            OverlayPainter.Fill(reference, new(0, 0, 1, 1), palette.Surface);
             OverlayPainter.Fill(reference, new(0, 0, 1, 1), palette.BlueBackground);
             Assert.Equal(reference.Pixels, Pixel(frame, icon.X + (int)main.Center.X, icon.Y + (int)main.Center.Y));
             Assert.Equal(new byte[] { palette.BlueText.Blue, palette.BlueText.Green, palette.BlueText.Red, 255 },

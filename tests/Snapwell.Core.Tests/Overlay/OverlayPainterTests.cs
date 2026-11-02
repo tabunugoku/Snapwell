@@ -196,6 +196,7 @@ public sealed class OverlayPainterTests
     /// <summary>予測の終点は半径四の円ではなく、八 DIP 四方・角二の四角になる。</summary>
     [Theory]
     [InlineData(1)]
+    [InlineData(1.375)]
     [InlineData(1.5)]
     [InlineData(2)]
     [InlineData(2.5)]
@@ -206,7 +207,7 @@ public sealed class OverlayPainterTests
         var actual = OverlayPainter.Preview(area, new(30, 30, 20, 20), scale: scale,
             showZoneLines: false, origin: end, prediction: end);
         var expected = OverlayPainter.Create(160, 160);
-        var half = (int)(4 * scale);
+        var half = (int)Math.Round(4 * scale);
         OverlayPainter.FillRounded(expected, new(80 - half, 80 - half, 2 * half, 2 * half),
             OverlayPalette.For(OverlayTheme.Light).BlueText, 2, scale);
         for (var y = 80 - half - 1; y <= 80 + half; y++)
