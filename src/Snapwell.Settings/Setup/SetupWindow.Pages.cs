@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Documents;
+using Microsoft.UI.Xaml.Shapes;
 using Snapwell.Core.Commands;
 using Snapwell.Core.Localization;
 using Snapwell.Core.Settings;
@@ -291,15 +292,23 @@ public sealed partial class SetupWindow
                 .Select(command => HotkeyCatalog.FormatChord(hotkeys[command]))), "SnapwellRowDescriptionStyle"));
         }
         var color = status == SetupHotkeyStatus.Available ? "Green" : status == SetupHotkeyStatus.Conflict ? "Red" : "Pending";
+        var tagContent = new StackPanel { Orientation = Orientation.Horizontal };
+        if (status is SetupHotkeyStatus.Available or SetupHotkeyStatus.Conflict)
+        {
+            tagContent.Children.Add(new Ellipse
+            {
+                Style = FindStyle($"SnapwellTag{color}DotStyle"),
+            });
+        }
+        tagContent.Children.Add(Text(status == SetupHotkeyStatus.Available ? UiText.Current.Get("Setup.Hotkeys.Available")
+            : status == SetupHotkeyStatus.Conflict ? UiText.Current.Get("Setup.Hotkeys.Conflict")
+            : UiText.Current.Get("Setup.Hotkeys.Unassigned"), "SnapwellTagTextStyle"));
         var tag = new Border
         {
             Style = FindStyle($"SnapwellTag{color}Style"),
             HorizontalAlignment = HorizontalAlignment.Right,
-            Child = Text(status == SetupHotkeyStatus.Available ? UiText.Current.Get("Setup.Hotkeys.Available")
-                : status == SetupHotkeyStatus.Conflict ? UiText.Current.Get("Setup.Hotkeys.Conflict")
-                : UiText.Current.Get("Setup.Hotkeys.Unassigned"), $"SnapwellTag{color}TextStyle"),
+            Child = tagContent,
         };
-        Controls.Pill.SetAutoRadius(tag, true);
         Grid.SetColumn(tag, 1);
         controls.Children.Add(tag);
         AddRow(rows, title, control: controls);

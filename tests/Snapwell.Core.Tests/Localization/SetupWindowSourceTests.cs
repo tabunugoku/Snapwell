@@ -83,6 +83,77 @@ public sealed class SetupWindowSourceTests
             attribute.Name.LocalName.StartsWith("FocusVisual", StringComparison.Ordinal));
     }
 
+    /// <summary>使える・重複だけに意味の点を付け、タグの角と文字は中立の共通スタイルに任せる。</summary>
+    [Fact]
+    public void HotkeyTagsUseSemanticDotsWithoutRoundingTheNeutralTag()
+    {
+        var pages = Read("SetupWindow.Pages.cs");
+        Assert.DoesNotContain("Pill.SetAutoRadius(tag", pages, StringComparison.Ordinal);
+        Assert.Contains("status == SetupHotkeyStatus.Available ? \"Green\"", pages, StringComparison.Ordinal);
+        Assert.Contains("status == SetupHotkeyStatus.Conflict ? \"Red\" : \"Pending\"", pages, StringComparison.Ordinal);
+        Assert.Contains("Style = FindStyle($\"SnapwellTag{color}Style\")", pages, StringComparison.Ordinal);
+        Assert.Matches(@"if \(status is SetupHotkeyStatus.Available or SetupHotkeyStatus.Conflict\)\s*\{\s*" +
+            @"tagContent.Children.Add\(new Ellipse\s*\{\s*Style = FindStyle\(\$""SnapwellTag\{color\}DotStyle""\)", pages);
+        Assert.Contains("var tagContent = new StackPanel { Orientation = Orientation.Horizontal };", pages,
+            StringComparison.Ordinal);
+        Assert.Contains("tagContent.Children.Add(Text(", pages, StringComparison.Ordinal);
+        Assert.Contains("\"SnapwellTagTextStyle\"));", pages, StringComparison.Ordinal);
+        Assert.Contains("Child = tagContent,", pages, StringComparison.Ordinal);
+        Assert.True(pages.IndexOf("new Ellipse", StringComparison.Ordinal) <
+            pages.IndexOf("tagContent.Children.Add(Text(", StringComparison.Ordinal));
+
+        var app = XDocument.Load(Path.Combine(SourceScan.RepositoryRoot(), "src/Snapwell.Settings/App.xaml"));
+        Assert.Equal("4", Setter(Style(app, "SnapwellTagStyle"), "CornerRadius"));
+        Assert.Equal("{ThemeResource SnapwellSurface2Brush}", Setter(Style(app, "SnapwellTagStyle"), "Background"));
+        Assert.Equal("{ThemeResource SnapwellMutedBrush}", Setter(Style(app, "SnapwellTagTextStyle"), "Foreground"));
+        foreach (var color in new[] { "Green", "Red", "Pending" })
+        {
+            var tag = Style(app, $"SnapwellTag{color}Style");
+            Assert.Equal("{StaticResource SnapwellTagStyle}", (string?)tag.Attribute("BasedOn"));
+            Assert.Null(Setter(tag, "CornerRadius"));
+        }
+        var dot = Style(app, "SnapwellTagDotStyle");
+        Assert.Equal("6", Setter(dot, "Width"));
+        Assert.Equal("6", Setter(dot, "Height"));
+        Assert.Equal("0,0,6,0", Setter(dot, "Margin"));
+        foreach (var color in new[] { "Green", "Red" })
+        {
+            var style = Style(app, $"SnapwellTag{color}DotStyle");
+            Assert.Equal("{StaticResource SnapwellTagDotStyle}", (string?)style.Attribute("BasedOn"));
+            Assert.Equal($"{{ThemeResource Snapwell{color}TextBrush}}", Setter(style, "Fill"));
+        }
+    }
+
+    /// <summary>タイトルバーの全状態を新パレットにそろえ、押下の文字だけ text-2 にする。</summary>
+    [Theory]
+    [InlineData(false, "245, 245, 243", "239, 239, 237", "28, 28, 27", "82, 82, 79", "107, 107, 103")]
+    [InlineData(true, "26, 26, 25", "44, 44, 43", "237, 237, 235", "180, 180, 176", "146, 146, 142")]
+    public void TitleBarButtonsUseApprovedStateColors(bool dark, string canvas, string raised, string text,
+        string text2, string text3)
+    {
+        var source = Read("SetupWindow.xaml.cs");
+        var titleBar = source[source.IndexOf("private void UpdateTitleBarColors()", StringComparison.Ordinal)..];
+        foreach (var (name, expected) in new[] { ("canvas", canvas), ("raised", raised), ("foreground", text),
+            ("muted", text2), ("inactive", text3) })
+        {
+            var color = Regex.Match(titleBar, $@"var {name} = dark \? Color.FromArgb\(([^)]+)\) : Color.FromArgb\(([^)]+)\)");
+            Assert.True(color.Success, name);
+            Assert.Equal($"255, {expected}", color.Groups[dark ? 1 : 2].Value);
+        }
+        foreach (var (property, color) in new[] { ("Background", "canvas"), ("InactiveBackground", "canvas"),
+            ("HoverBackground", "raised"), ("PressedBackground", "raised"), ("Foreground", "foreground"),
+            ("HoverForeground", "foreground"), ("PressedForeground", "muted"), ("InactiveForeground", "inactive") })
+        {
+            Assert.Contains($"bar.Button{property}Color = {color};", titleBar, StringComparison.Ordinal);
+        }
+        foreach (var legacy in new[] { "230, 230, 227", "47, 52, 55", "155, 154, 151", "120, 119, 116",
+            "37, 37, 36", "249, 249, 248" })
+        {
+            Assert.DoesNotContain(legacy, titleBar, StringComparison.Ordinal);
+        }
+        Assert.DoesNotMatch(@"(?i)#(?:FF)?(?:F9F9F8|252524|E6E6E3|2F3437)\b", titleBar);
+    }
+
     /// <summary>Setup 内に旧い角・文字サイズ・青を再導入しない。</summary>
     [Fact]
     public void SetupSourcesHaveNoLegacyDesignLiterals()

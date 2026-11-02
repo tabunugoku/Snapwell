@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -289,17 +288,19 @@ public sealed partial class SetupWindow : Window
             return;
         }
         var dark = Root.ActualTheme == ElementTheme.Dark;
-        var foreground = dark ? Color.FromArgb(255, 230, 230, 227) : Color.FromArgb(255, 47, 52, 55);
-        var muted = dark ? Color.FromArgb(255, 155, 154, 151) : Color.FromArgb(255, 120, 119, 116);
-        var hover = dark ? Color.FromArgb(255, 37, 37, 36) : Color.FromArgb(255, 249, 249, 248);
+        var canvas = dark ? Color.FromArgb(255, 26, 26, 25) : Color.FromArgb(255, 245, 245, 243);
+        var raised = dark ? Color.FromArgb(255, 44, 44, 43) : Color.FromArgb(255, 239, 239, 237);
+        var foreground = dark ? Color.FromArgb(255, 237, 237, 235) : Color.FromArgb(255, 28, 28, 27);
+        var muted = dark ? Color.FromArgb(255, 180, 180, 176) : Color.FromArgb(255, 82, 82, 79);
+        var inactive = dark ? Color.FromArgb(255, 146, 146, 142) : Color.FromArgb(255, 107, 107, 103);
         var bar = AppWindow.TitleBar;
-        bar.ButtonBackgroundColor = Colors.Transparent;
-        bar.ButtonInactiveBackgroundColor = Colors.Transparent;
-        bar.ButtonHoverBackgroundColor = hover;
-        bar.ButtonPressedBackgroundColor = hover;
+        bar.ButtonBackgroundColor = canvas;
+        bar.ButtonInactiveBackgroundColor = canvas;
+        bar.ButtonHoverBackgroundColor = raised;
+        bar.ButtonPressedBackgroundColor = raised;
         bar.ButtonForegroundColor = foreground;
         bar.ButtonHoverForegroundColor = foreground;
-        bar.ButtonPressedForegroundColor = foreground;
-        bar.ButtonInactiveForegroundColor = muted;
+        bar.ButtonPressedForegroundColor = muted;
+        bar.ButtonInactiveForegroundColor = inactive;
     }
 }
