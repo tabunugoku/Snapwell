@@ -1,8 +1,11 @@
+using System.Diagnostics;
+using System.Reflection;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Snapwell.Core.Localization;
+using Snapwell.Core.Updates;
 using Snapwell.Settings.Pages;
 using Windows.Graphics;
 using Windows.UI;
@@ -21,6 +24,16 @@ public sealed partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        var version = DisplayVersion.Format(typeof(MainWindow).Assembly
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion);
+        VersionLabel.Visibility = version is null ? Visibility.Collapsed : Visibility.Visible;
+        if (version is not null)
+        {
+            VersionLabel.Text = UiText.Current.Format("MainWindow.Version", ("0", version));
+        }
+        GitHubLink.RegisterPropertyChangedCallback(Control.FocusStateProperty, (_, _) =>
+            GitHubKeyboardFocusOutline.Visibility = GitHubLink.FocusState == FocusState.Keyboard
+                ? Visibility.Visible : Visibility.Collapsed);
         Title = UiText.Current.Get("Window.SettingsTitle");
         Root.Language = UiText.Current.Language.ToTag();
         ExtendsContentIntoTitleBar = true;
@@ -146,13 +159,36 @@ public sealed partial class MainWindow : Window
     private void UpdateStatus()
     {
         SaveButton.IsEnabled = !_session.IsReadOnly && !_session.IsTransferInProgress;
-        Navigation.IsEnabled = !_session.IsTransferInProgress;
+        // ブラウザーを開くだけのフッターは、設定の転送中も操作できるようにする。
+        foreach (var item in Navigation.MenuItems.OfType<NavigationViewItem>())
+        {
+            item.IsEnabled = !_session.IsTransferInProgress;
+        }
+        PageHost.IsEnabled = !_session.IsTransferInProgress;
         ChangeStatus.Text = _session.IsReadOnly ? UiText.Current.Get("MainWindow.Status.ReadOnly")
             : _session.HasChanges ? UiText.Current.Get("MainWindow.Status.Changed")
             : UiText.Current.Get("MainWindow.Status.SavingApplies");
     }
 
     private void Save_Click(object sender, RoutedEventArgs e) => Save();
+
+    private void GitHubLink_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            using var process = Process.Start(new ProcessStartInfo("https://github.com/tabunugoku/Snapwell")
+            {
+                UseShellExecute = true,
+            });
+        }
+        catch (Exception exception) when (exception is System.ComponentModel.Win32Exception
+            or InvalidOperationException or System.Security.SecurityException)
+        {
+            SaveNotice.Message = UiText.Current.Get("MainWindow.GitHubOpenFailed");
+            SaveNotice.Severity = InfoBarSeverity.Error;
+            SaveNotice.IsOpen = true;
+        }
+    }
 
     private bool Save()
     {
