@@ -1,0 +1,212 @@
+/* Snapwell UI キット: tokens.css の値だけで描く部品。3 つの面で共有する */
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--sw-canvas);
+  color: var(--sw-text);
+  font: var(--sw-fw-regular) var(--sw-fs-body)/var(--sw-lh-body) var(--sw-font-ui);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+button, input, select { font: inherit; color: inherit; }
+button { cursor: default; }
+svg { display: block; }
+.mono { font-family: var(--sw-font-mono); font-variant-numeric: tabular-nums; }
+.muted { color: var(--sw-text-3); }
+.num { font-variant-numeric: tabular-nums; }
+[hidden] { display: none !important; }
+
+/* ---------- モックの外枠（製品ではない） ---------- */
+.doc-bar {
+  position: sticky; top: 0; z-index: 50;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  min-height: 48px; padding: 8px 24px;
+  background: var(--sw-surface); border-bottom: 1px solid var(--sw-line);
+}
+.doc-brand { display: flex; align-items: center; gap: 8px; font-weight: var(--sw-fw-strong); text-decoration: none; color: var(--sw-text); }
+.doc-links { display: flex; gap: 4px; flex-wrap: wrap; }
+.doc-links a {
+  height: 32px; display: inline-flex; align-items: center; padding: 0 12px; border-radius: var(--sw-r-s);
+  color: var(--sw-text-2); text-decoration: none;
+}
+.doc-links a:hover { background: var(--sw-raised); }
+.doc-links a[aria-current="page"] { color: var(--sw-text); background: var(--sw-raised); }
+.doc-controls { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+.doc-wrap { max-width: 1440px; margin: 0 auto; padding: 32px 24px 96px; }
+.doc-wrap > h1 { font: 400 var(--sw-fs-title)/var(--sw-lh-title) var(--sw-font-display); margin: 0 0 8px; }
+.doc-lead { color: var(--sw-text-2); max-width: 720px; margin: 0 0 32px; }
+.doc-section { margin: 48px 0 0; }
+.doc-section > h2 { font-size: var(--sw-fs-body); font-weight: var(--sw-fw-strong); margin: 0 0 4px; }
+.doc-section > p { color: var(--sw-text-2); margin: 0 0 16px; max-width: 760px; font-size: var(--sw-fs-desc); line-height: var(--sw-lh-desc); }
+.stage {
+  overflow-x: auto; padding: 24px; border-radius: var(--sw-r-m);
+  background-color: var(--sw-desktop);
+  background-image: linear-gradient(var(--sw-desktop-line) 1px, transparent 1px), linear-gradient(90deg, var(--sw-desktop-line) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+.stage { scroll-margin-top: 64px; }
+.stage-row { display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; }
+.state-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 12px; font-size: var(--sw-fs-desc); color: var(--sw-text-2); }
+
+/* 分割ボタン（モックの操作にも製品のチップにも使う） */
+.seg { display: inline-flex; padding: 2px; gap: 2px; border-radius: var(--sw-r-s); background: var(--sw-raised); border: 1px solid var(--sw-line); }
+.seg button {
+  height: 26px; padding: 0 10px; border: 0; border-radius: calc(var(--sw-r-s) - 2px); background: transparent;
+  color: var(--sw-text-2); font-size: var(--sw-fs-desc);
+}
+.seg button:hover { color: var(--sw-text); }
+.seg button[aria-pressed="true"] { background: var(--sw-surface); color: var(--sw-text); box-shadow: 0 0 0 1px var(--sw-line); }
+
+/* ---------- フォーカス（キーボードだけ）: 区画の青の 2 px の輪 ---------- */
+:focus { outline: none; }
+:focus-visible { outline: var(--sw-focus-w) solid var(--sw-accent); outline-offset: var(--sw-focus-gap); }
+
+/* ---------- ウィンドウ ---------- */
+.win {
+  position: relative; flex: none;
+  background: var(--sw-surface); color: var(--sw-text);
+  border: 1px solid var(--sw-line-strong); border-radius: var(--sw-r-m);
+  box-shadow: var(--sw-shadow-window); overflow: hidden;
+  display: flex; flex-direction: column;
+}
+.titlebar {
+  height: var(--sw-titlebar-h); flex: none; display: flex; align-items: center; gap: 8px;
+  padding-left: 12px; font-size: var(--sw-fs-caption); color: var(--sw-text-2);
+  background: var(--sw-canvas); border-bottom: 1px solid var(--sw-line);
+}
+.titlebar .caps { margin-left: auto; display: flex; height: 100%; }
+.titlebar .caps span { width: 46px; display: grid; place-items: center; color: var(--sw-text-2); }
+
+/* ---------- アイコン（16 px・線 1.5・文字色） ---------- */
+.ico { width: var(--sw-icon); height: var(--sw-icon); flex: none; fill: none; stroke: currentColor; stroke-width: var(--sw-icon-stroke); stroke-linecap: round; stroke-linejoin: round; }
+
+/* ---------- ボタン ---------- */
+.btn {
+  height: var(--sw-control-h); min-width: var(--sw-control-min-w); padding: 0 var(--sw-control-pad-x);
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap;
+  border: 1px solid var(--sw-line-strong); border-radius: var(--sw-r-s);
+  background: var(--sw-surface); color: var(--sw-text); font-size: var(--sw-fs-body);
+}
+.btn:hover { background: var(--sw-raised); }
+.btn:active { background: var(--sw-raised); color: var(--sw-text-2); }
+.btn.primary { background: var(--sw-ink); border-color: var(--sw-ink); color: var(--sw-on-ink); }
+.btn.primary:hover { background: var(--sw-ink-hover); border-color: var(--sw-ink-hover); }
+.btn.subtle { border-color: transparent; background: transparent; min-width: 0; }
+.btn.subtle:hover { background: var(--sw-raised); }
+.btn:disabled, .btn[aria-disabled="true"] { background: var(--sw-raised); color: var(--sw-text-3); border-color: var(--sw-line); }
+.btn.sm { height: var(--sw-compact-h); min-width: 0; padding: 0 8px; font-size: var(--sw-fs-caption); }
+.link { color: var(--sw-accent); text-decoration: none; }
+.link:hover { text-decoration: underline; }
+
+/* ---------- トグル（つまみはばねで動く） ---------- */
+.toggle {
+  position: relative; width: var(--sw-toggle-w); height: var(--sw-toggle-h); flex: none; padding: 0;
+  border-radius: var(--sw-r-pill); border: 1px solid var(--sw-text-3); background: transparent;
+}
+.toggle .fill { position: absolute; inset: -1px; border-radius: var(--sw-r-pill); background: var(--sw-ink); opacity: 0; }
+.toggle .knob {
+  position: absolute; top: calc(var(--sw-knob-inset) - 1px); left: calc(var(--sw-knob-inset) - 1px);
+  width: var(--sw-knob); height: var(--sw-knob); border-radius: 50%; background: var(--sw-text-3);
+}
+.toggle .knob i { position: absolute; inset: 0; border-radius: 50%; background: var(--sw-on-ink); opacity: 0; }
+.toggle:hover { border-color: var(--sw-text-2); }
+.toggle:disabled { opacity: 0.4; }
+.toggle-wrap { display: inline-flex; align-items: center; gap: 12px; }
+.toggle-wrap .state { font-size: var(--sw-fs-caption); color: var(--sw-text-3); min-width: 24px; }
+
+/* ---------- 入力 ---------- */
+.combo {
+  height: var(--sw-control-h); min-width: 200px; padding: 0 8px 0 var(--sw-control-pad-x);
+  display: inline-flex; align-items: center; justify-content: space-between; gap: 8px;
+  border: 1px solid var(--sw-line-strong); border-radius: var(--sw-r-s); background: var(--sw-surface); color: var(--sw-text);
+}
+.combo:hover { background: var(--sw-raised); }
+.combo .ico { color: var(--sw-text-3); }
+.textbox {
+  height: var(--sw-control-h); padding: 0 var(--sw-control-pad-x); min-width: 0;
+  border: 1px solid var(--sw-line-strong); border-bottom-color: var(--sw-text-3); border-radius: var(--sw-r-s);
+  background: var(--sw-surface); color: var(--sw-text);
+}
+.textbox::placeholder { color: var(--sw-text-3); }
+.textbox:focus { border-bottom: 2px solid var(--sw-accent); outline: none; }
+.numbox { width: 80px; text-align: right; font-family: var(--sw-font-mono); font-size: var(--sw-fs-desc); }
+.slider-row { display: flex; align-items: center; gap: 12px; }
+input[type="range"].slider { -webkit-appearance: none; appearance: none; width: 180px; height: 20px; background: transparent; margin: 0; }
+input[type="range"].slider::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: linear-gradient(90deg, var(--sw-ink) var(--p, 50%), var(--sw-line-strong) var(--p, 50%)); }
+input[type="range"].slider::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; margin-top: -8px; border-radius: 50%; background: var(--sw-surface); border: 1px solid var(--sw-line-strong); box-shadow: inset 0 0 0 5px var(--sw-surface), inset 0 0 0 12px var(--sw-ink); }
+.check { display: inline-flex; align-items: center; gap: 8px; }
+.check input { appearance: none; -webkit-appearance: none; width: 20px; height: 20px; margin: 0; border-radius: var(--sw-r-s); border: 1px solid var(--sw-text-3); background: var(--sw-surface); display: grid; place-items: center; }
+.check input:checked { background: var(--sw-ink); border-color: var(--sw-ink); }
+.check input:checked::after { content: ""; width: 10px; height: 6px; border-left: 1.5px solid var(--sw-on-ink); border-bottom: 1.5px solid var(--sw-on-ink); transform: translateY(-1px) rotate(-45deg); }
+
+/* ---------- タグ（状態の短い文言）: 大文字・字間なし。色は意味があるときだけ ---------- */
+.tag {
+  display: inline-flex; align-items: center; gap: 6px; height: var(--sw-tag-h); padding: 0 var(--sw-tag-pad-x);
+  border-radius: var(--sw-r-s); border: 1px solid var(--sw-line); white-space: nowrap;
+  font-size: var(--sw-fs-caption); line-height: var(--sw-lh-caption); color: var(--sw-text-2);
+  text-transform: var(--sw-tag-transform); letter-spacing: var(--sw-tag-tracking);
+}
+.tag::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; display: none; }
+.tag.neg { color: var(--sw-negative); border-color: transparent; background: var(--sw-negative-tint); }
+.tag.neg::before, .tag.caution::before, .tag.dot::before { display: block; }
+.tag.caution { color: var(--sw-caution); border-color: transparent; background: var(--sw-caution-tint); }
+.tag.accent { color: var(--sw-accent); border-color: var(--sw-accent-line); }
+:root[data-variant="asis"] .tag { border-radius: 999px; font-weight: 600; border-color: transparent; background: var(--sw-raised); }
+:root[data-variant="asis"] .tag::before { display: none; }
+:root[data-variant="asis"] .tag.pos { color: var(--sw-positive); background: var(--sw-asis-green-bg); }
+:root[data-variant="asis"] .tag.accent { background: var(--sw-asis-blue-bg); }
+
+/* ---------- キー ---------- */
+.kbd-group { display: inline-flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+.kbd {
+  display: inline-flex; align-items: center; justify-content: center; height: var(--sw-kbd-h); min-width: var(--sw-kbd-h);
+  padding: 0 var(--sw-kbd-pad-x); border-radius: var(--sw-r-s);
+  border: 1px solid var(--sw-line-strong); border-bottom-width: 2px; background: var(--sw-raised);
+  font: var(--sw-fs-caption)/1 var(--sw-font-mono); color: var(--sw-text);
+}
+:root[data-variant="asis"] .kbd { border-bottom-width: 1px; font-size: 11.5px; border-radius: 4px; }
+.kbd-plus { color: var(--sw-text-3); font-size: var(--sw-fs-caption); }
+
+/* ---------- 情報バー（InfoBar） ---------- */
+.infobar {
+  display: flex; gap: 12px; align-items: flex-start; padding: 12px 16px; border-radius: var(--sw-r-m);
+  border: 1px solid var(--sw-line); background: var(--sw-raised); font-size: var(--sw-fs-desc); line-height: var(--sw-lh-desc);
+}
+.infobar .ico { margin-top: 2px; }
+.infobar.error { background: var(--sw-negative-tint); border-color: transparent; }
+.infobar.error .ico { color: var(--sw-negative); }
+.infobar.warning { background: var(--sw-caution-tint); border-color: transparent; }
+.infobar.warning .ico { color: var(--sw-caution); }
+.infobar.success .ico { color: var(--sw-positive); }
+.infobar b { font-weight: var(--sw-fw-strong); }
+
+/* ---------- 署名: 投げの軌跡（4/4 の点線）と、止まる先の小さな四角 ---------- */
+.trace { stroke: var(--sw-accent); stroke-width: 1.5; stroke-dasharray: 4 4; fill: none; stroke-linecap: butt; }
+.stop-mark { fill: var(--sw-accent); }
+
+/* ---------- 投げの舞台（throw.js） ---------- */
+.throw-stage {
+  position: relative; overflow: hidden; touch-action: none; border-radius: var(--sw-r-s);
+  background-color: var(--sw-desktop);
+  background-image: linear-gradient(var(--sw-desktop-line) 1px, transparent 1px), linear-gradient(90deg, var(--sw-desktop-line) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+.throw-overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+.throw-overlay .tz { fill: var(--sw-zone-fill); }
+.throw-overlay .tz-line { fill: none; stroke: var(--sw-accent-line); stroke-width: 1.5; stroke-dasharray: 4 4; }
+.throw-card {
+  position: absolute; left: 0; top: 0; display: flex; flex-direction: column;
+  background: var(--sw-surface); border: 1px solid var(--sw-line-strong); border-radius: var(--sw-r-m);
+  box-shadow: var(--sw-shadow-window); overflow: hidden;
+}
+.throw-card.is-held { box-shadow: 0 16px 32px rgba(0, 0, 0, 0.2); }
+.throw-title { height: 36px; flex: none; display: flex; align-items: center; gap: 8px; padding: 0 12px; border-bottom: 1px solid var(--sw-line); font-size: var(--sw-fs-caption); color: var(--sw-text-2); cursor: grab; touch-action: none; }
+.throw-card.is-held .throw-title { cursor: grabbing; }
+.throw-dot { width: 8px; height: 8px; border-radius: 2px; background: var(--sw-text-3); }
+.throw-body { padding: 12px; display: grid; gap: 8px; }
+.throw-body i { display: block; height: 8px; border-radius: 4px; background: var(--sw-skeleton); }
+.throw-body i:nth-child(2) { width: 72%; } .throw-body i:nth-child(3) { width: 48%; }
+
+/* 動きを減らす:部品側のアニメーションはすべて kit.js が即値で置く */
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }
