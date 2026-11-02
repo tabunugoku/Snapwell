@@ -10,6 +10,10 @@ internal sealed class IntroPalette(FrameworkElement owner)
     internal bool Dark => owner.ActualTheme == ElementTheme.Dark;
     internal Color Accent => Dark ? Color.FromArgb(255, 140, 203, 242) : Color.FromArgb(255, 31, 108, 159);
     internal SolidColorBrush AccentBrush => Cached("accent", () => new(Accent));
+    internal SolidColorBrush ZoneFill => Cached("zoneFill", () => new(Color.FromArgb(
+        Dark ? (byte)41 : (byte)46, Accent.R, Accent.G, Accent.B)));
+    internal SolidColorBrush AccentLine => Cached("accentLine", () => new(Color.FromArgb(
+        Dark ? (byte)166 : (byte)153, Accent.R, Accent.G, Accent.B)));
     internal SolidColorBrush Background => Brush("SnapwellBackgroundBrush");
     internal SolidColorBrush Surface => Brush("SnapwellSurfaceBrush");
     internal SolidColorBrush Surface2 => Brush("SnapwellSurface2Brush");

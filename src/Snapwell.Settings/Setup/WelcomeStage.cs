@@ -7,7 +7,6 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Shapes;
 using Snapwell.Core.Setup;
-using Windows.UI;
 
 namespace Snapwell.Settings.Setup;
 
@@ -26,7 +25,8 @@ internal sealed partial class WelcomeStage : Grid, IDisposable
         RadiusX = 8,
         RadiusY = 8,
         StrokeThickness = 1.5,
-        StrokeDashArray = [4, 4],
+        // 破線の値は線幅の倍数なので、1.5 px の線で 4/4 px にする。
+        StrokeDashArray = [2.666667, 2.666667],
         IsHitTestVisible = false,
     }).ToArray();
     private readonly IntroWindowVisual _window = new(welcome: true);
@@ -48,7 +48,7 @@ internal sealed partial class WelcomeStage : Grid, IDisposable
         _demoTimer.Tick += OnDemoTick;
         _palette = new(this);
         Height = 156; MaxWidth = 520; HorizontalAlignment = HorizontalAlignment.Stretch;
-        CornerRadius = new(10); BorderThickness = new(1);
+        CornerRadius = new(8); BorderThickness = new(1);
         Children.Add(_canvas);
         foreach (var zone in _zones) { _canvas.Children.Add(zone); }
         _canvas.Children.Add(_window);
@@ -227,11 +227,6 @@ internal sealed partial class WelcomeStage : Grid, IDisposable
     {
         if (_model is null || _disposed) { return; }
         Background = _palette.Background; BorderBrush = _palette.Border;
-        var accent = _palette.Accent;
-        var zoneFill = new SolidColorBrush(Color.FromArgb(
-            _palette.Dark ? (byte)41 : (byte)46, accent.R, accent.G, accent.B));
-        var accentLine = new SolidColorBrush(Color.FromArgb(
-            _palette.Dark ? (byte)166 : (byte)153, accent.R, accent.G, accent.B));
         for (var i = 0; i < _zones.Length; i++)
         {
             var z = _model.Cells[i]; var shape = _zones[i];
@@ -239,8 +234,8 @@ internal sealed partial class WelcomeStage : Grid, IDisposable
             shape.Width = Math.Max(0, z.Width - ZoneInset * 2); shape.Height = Math.Max(0, z.Height - ZoneInset * 2);
             Canvas.SetLeft(shape, z.X + ZoneInset); Canvas.SetTop(shape, z.Y + ZoneInset);
             var selected = i == _model.Target;
-            shape.Stroke = selected ? accentLine : _palette.Border;
-            shape.Fill = selected ? zoneFill : _clear;
+            shape.Stroke = selected ? _palette.AccentLine : _palette.Border;
+            shape.Fill = selected ? _palette.ZoneFill : _clear;
         }
         _window.Paint(_model.X, _model.Y, _model.Width, _model.Height, 0, _model.Held ? .7 : .2, 0, _palette);
     }
