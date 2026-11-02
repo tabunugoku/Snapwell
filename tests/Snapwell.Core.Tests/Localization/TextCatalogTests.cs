@@ -8,6 +8,25 @@ namespace Snapwell.Core.Tests.Localization;
 /// <summary>カタログと呼び出し元の整合性、書式と落とし先を確かめる。</summary>
 public sealed class TextCatalogTests
 {
+    /// <summary>フッターの版とリンク、読み上げ名を四言語に用意する。</summary>
+    [Theory]
+    [InlineData(UiLanguage.Japanese, "GitHub のリポジトリを開く")]
+    [InlineData(UiLanguage.English, "Open the GitHub repository")]
+    [InlineData(UiLanguage.ChineseSimplified, "打开 GitHub 仓库")]
+    [InlineData(UiLanguage.ChineseTraditional, "開啟 GitHub 儲存庫")]
+    public void SidebarFooterHasVersionLinkAndAccessibleNameInEveryLanguage(UiLanguage language, string accessibleName)
+    {
+        var catalog = TextCatalog.Load(language);
+        foreach (var key in new[] { "MainWindow.Version", "MainWindow_GitHubLabel.Text",
+            "MainWindow_GitHubLink.AutomationName", "MainWindow.GitHubOpenFailed" })
+        {
+            Assert.Contains(key, catalog.Keys);
+        }
+        Assert.Equal("Snapwell 1.1.0-beta.1", catalog.Format("MainWindow.Version", ("0", "1.1.0-beta.1")));
+        Assert.Equal("GitHub", catalog.Get("MainWindow_GitHubLabel.Text"));
+        Assert.Equal(accessibleName, catalog.Get("MainWindow_GitHubLink.AutomationName"));
+    }
+
     /// <summary>日英のキーを一致させ、中国語は存在するキーの書式と複数形を検査する。</summary>
     [Fact]
     public void CatalogsHaveMatchingNonemptyKeysPlaceholdersAndPluralPairs()
