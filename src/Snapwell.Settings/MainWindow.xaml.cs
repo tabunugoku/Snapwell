@@ -176,7 +176,7 @@ public sealed partial class MainWindow : Window
     {
         try
         {
-            using var process = Process.Start(new ProcessStartInfo("https://github.com/tabunugoku/Snapwell")
+            using var process = Process.Start(new ProcessStartInfo(RepositoryLinks.Repository.AbsoluteUri)
             {
                 UseShellExecute = true,
             });

@@ -292,7 +292,7 @@ public sealed partial class GeneralPage
     private void UpdateDownload_Click(object sender, RoutedEventArgs args) => OpenUpdateLink(_updateOffer?.Asset.Url);
 
     private void UpdateReinstall_Click(object sender, RoutedEventArgs args) =>
-        OpenUpdateLink(new Uri("https://github.com/tabunugoku/Snapwell/releases"));
+        OpenUpdateLink(RepositoryLinks.Releases);
 
     private UpdateInstallBlock EvaluateInstall()
     {
