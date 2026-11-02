@@ -1,7 +1,7 @@
 {
   "summary": {
-    "ja": "日本語の表示を見直した保守版です。用語をそろえ、「版」を「バージョン」に改めました。機能の追加と削除はありません。",
-    "en": "A maintenance release that polishes the Japanese text. Wording is now consistent, and the Japanese UI says \"バージョン\" instead of \"版\". No features were added or removed."
+    "ja": "設定画面のサイドバーの下に、いま使っているバージョンと GitHub へのリンクを表示します。ほかの機能は変わりません。",
+    "en": "The Settings window now shows the current version and a GitHub link at the bottom of the sidebar. Nothing else changes."
   },
   "minimumSupported": null
 }
