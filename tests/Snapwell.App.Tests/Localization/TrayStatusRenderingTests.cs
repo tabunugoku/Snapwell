@@ -51,7 +51,7 @@ public sealed class TrayStatusRenderingTests : IDisposable
                 var lines = new List<string> { status[..firstLength] };
                 if (firstLength < status.Length)
                 {
-                    var rest = status[firstLength..];
+                    var rest = status[firstLength..].TrimStart();
                     lines.Add(Measure(text, rest) * scale <= bounds.Width ? rest
                         : Enumerable.Range(0, rest.Length).Select(length => rest[..length] + "…")
                             .Last(value => Measure(text, value) * scale <= bounds.Width));

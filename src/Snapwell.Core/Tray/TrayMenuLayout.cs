@@ -20,10 +20,13 @@ public sealed class TrayMenuLayout
     public PixelRect HeaderTitle => CenterVertically(HeaderIcon, Panel.X + Px(48), Px(80), Px(20));
     /// <summary>見出しの末尾へ 8 論理 px 重ねるモニター構成の行。</summary>
     public PixelRect MonitorRow => Rect(48, 53, 256, 28);
-    /// <summary>二行のエラー説明を置く領域。</summary>
-    public PixelRect StatusText => Rect(40, IsCompact ? 61 : 89, 264, 40);
+    /// <summary>下余白 8 px を除く内容領域の中央に置くモニター構成の文字。</summary>
+    public PixelRect MonitorText => Rect(48, 55, 256, 16);
+    /// <summary>二行までのエラー説明を置く領域。</summary>
+    public PixelRect StatusText => Rect(73, IsCompact ? 45 : 73, 231, 20 * _statusLineCount);
     /// <summary>エラー説明の先頭のアイコン。</summary>
-    public PixelRect StatusIcon => Rect(16, IsCompact ? 63 : 91, 16, 16);
+    public PixelRect StatusIcon => Rect(49, IsCompact ? 45 : 73,
+        _statusLineCount > 0 ? 16 : 0, _statusLineCount > 0 ? 16 : 0);
     /// <summary>項目内の線のアイコンを置く矩形。</summary>
     public PixelRect ItemIcon(int index) => CenterVertically(Rows[index], Rows[index].X + Px(12), Px(16), Px(16));
     /// <summary>アイコンとの間を 12 論理 px あけた項目の文字。</summary>
@@ -58,18 +61,23 @@ public sealed class TrayMenuLayout
     public int MaxScrollOffset { get; }
 
     private readonly PixelRect _workArea;
-    private readonly bool _hasStatus;
+    private readonly PixelRect _anchor;
+    private readonly TrayTaskbarEdge _edge;
+    private readonly int _statusLineCount;
     private readonly double _statusTagTextWidth;
     private readonly int _itemCount;
 
-    private TrayMenuLayout(PixelRect panel, PixelRect workArea, double scale, bool hasStatus,
+    private TrayMenuLayout(PixelRect panel, PixelRect workArea, PixelRect anchor, TrayTaskbarEdge edge,
+        double scale, int statusLineCount,
         bool compact, int scrollOffset = 0, double statusTagTextWidth = 0, int itemCount = 4)
     {
         Panel = panel;
         Scale = scale;
         IsCompact = compact;
         _workArea = workArea;
-        _hasStatus = hasStatus;
+        _anchor = anchor;
+        _edge = edge;
+        _statusLineCount = statusLineCount;
         _statusTagTextWidth = statusTagTextWidth;
         _itemCount = itemCount;
         // 三回のぼかしの半径と、下向き 8 px の影を含める。
@@ -81,13 +89,17 @@ public sealed class TrayMenuLayout
         var toggle = CenterVertically(HeaderIcon, panel.Right - Px(56), Px(40), HeaderIcon.Height);
         Toggle = new(Math.Max(panel.X, Math.Min(toggle.X, panel.Right - toggle.Width)), toggle.Y,
             Math.Min(panel.Width, toggle.Width), toggle.Height);
-        var offset = hasStatus ? 48 : 0;
+        // エラー行はメタ行へ 8 px 重なり、下余白 8 px と相殺する。
+        var offset = 20 * statusLineCount;
         var start = (compact ? 62 : 90) + offset;
         const int GroupGap = 9;
+        var contentBottom = start + 32 * itemCount + GroupGap;
+        // 最終行と同じ論理座標から丸め、非標準 DPI でも下辺を切らない。
+        var bottomInset = Px(contentBottom + 5) - Px(contentBottom);
         var viewportTop = Math.Min(panel.Bottom, panel.Y + Px(start));
         ItemsViewport = new(panel.X, viewportTop, panel.Width,
-            Math.Max(0, panel.Bottom - Px(5) - viewportTop));
-        MaxScrollOffset = Math.Max(0, Px(start + 32 * itemCount + GroupGap) - Px(start) - ItemsViewport.Height);
+            Math.Max(0, panel.Bottom - bottomInset - viewportTop));
+        MaxScrollOffset = Math.Max(0, Px(contentBottom) - Px(start) - ItemsViewport.Height);
         ScrollOffset = Math.Clamp(scrollOffset, 0, MaxScrollOffset);
         PixelRect Row(int y)
         {
@@ -105,7 +117,16 @@ public sealed class TrayMenuLayout
 
     /// <summary>ヘッダーを固定し、項目のスクロール位置だけを更新する。</summary>
     public TrayMenuLayout WithScrollOffset(int offset) =>
-        new(Panel, _workArea, Scale, _hasStatus, IsCompact, offset, _statusTagTextWidth, _itemCount);
+        new(Panel, _workArea, _anchor, _edge, Scale, _statusLineCount, IsCompact,
+            offset, _statusTagTextWidth, _itemCount);
+
+    /// <summary>実測したエラーの行数で高さを決め直し、元のアイコンと作業領域へ配置する。</summary>
+    public TrayMenuLayout WithStatusLineCount(int lineCount)
+    {
+        if (lineCount is < 0 or > 2) { throw new ArgumentOutOfRangeException(nameof(lineCount)); }
+        return lineCount == _statusLineCount ? this
+            : Create(_anchor, _workArea, _edge, Scale, lineCount, _itemCount, ScrollOffset, _statusTagTextWidth);
+    }
 
     /// <summary>実測した文字幅に左右 6 px・点 6 px・間隔 6 px を足し、タグの右端を固定する。</summary>
     public TrayMenuLayout WithStatusTagTextWidth(double textWidth)
@@ -114,7 +135,8 @@ public sealed class TrayMenuLayout
         {
             throw new ArgumentOutOfRangeException(nameof(textWidth));
         }
-        return new(Panel, _workArea, Scale, _hasStatus, IsCompact, ScrollOffset, textWidth, _itemCount);
+        return new(Panel, _workArea, _anchor, _edge, Scale, _statusLineCount, IsCompact,
+            ScrollOffset, textWidth, _itemCount);
     }
 
     /// <summary>キーボードで選んだ項目全体を表示する。</summary>
@@ -168,7 +190,11 @@ public sealed class TrayMenuLayout
 
     /// <summary>アイコン側から開き、本体を作業領域の内側へ収める。</summary>
     public static TrayMenuLayout Create(PixelRect anchor, PixelRect workArea, TrayTaskbarEdge edge,
-        double scale, bool hasStatus = false, int itemCount = 4)
+        double scale, bool hasStatus = false, int itemCount = 4) =>
+        Create(anchor, workArea, edge, scale, hasStatus ? 2 : 0, itemCount);
+
+    private static TrayMenuLayout Create(PixelRect anchor, PixelRect workArea, TrayTaskbarEdge edge,
+        double scale, int statusLineCount, int itemCount, int scrollOffset = 0, double statusTagTextWidth = 0)
     {
         if (itemCount < 4) { throw new ArgumentOutOfRangeException(nameof(itemCount)); }
         if (!double.IsFinite(scale) || scale <= 0)
@@ -179,9 +205,9 @@ public sealed class TrayMenuLayout
         var width = Math.Min(workArea.Width, (int)Math.Round(320 * scale));
         var extraHeight = (itemCount - 4) * 32;
         // 内側 230 = 余白 8 + 見出し 56 + メタ 28 - 重なり 8 + 四行 128 + 区切り二組 18。
-        var height = (int)Math.Round(((hasStatus ? 280 : 232) + extraHeight) * scale);
+        var height = (int)Math.Round((232 + 20 * statusLineCount + extraHeight) * scale);
         var compact = height > workArea.Height;
-        if (compact) { height = (int)Math.Round(((hasStatus ? 252 : 204) + extraHeight) * scale); }
+        if (compact) { height = (int)Math.Round((204 + 20 * statusLineCount + extraHeight) * scale); }
         height = Math.Min(height, workArea.Height);
 
         var gap = (int)Math.Round(8 * scale);
@@ -196,6 +222,7 @@ public sealed class TrayMenuLayout
 
         x = Math.Clamp(x, workArea.X, workArea.Right - width);
         y = Math.Clamp(y, workArea.Y, workArea.Bottom - height);
-        return new(new(x, y, width, height), workArea, scale, hasStatus, compact, itemCount: itemCount);
+        return new(new(x, y, width, height), workArea, anchor, edge, scale, statusLineCount, compact,
+            scrollOffset, statusTagTextWidth, itemCount);
     }
 }

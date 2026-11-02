@@ -25,7 +25,7 @@ public sealed class TrayMenuTypographyTests
         var actual = renderer.Render(-1, false);
         var palette = OverlayPalette.For(theme);
         using var text = new GdiOverlayText(scale);
-        var monitor = new PixelRect(layout.MonitorRow.X, layout.MonitorRow.Y, layout.MonitorRow.Width, layout.Px(16));
+        var monitor = layout.Rect(48, 55, 256, 16);
         foreach (var (value, bounds, size, color) in new[]
         {
             ("Snapwell", layout.HeaderTitle, 14.0, palette.Text),

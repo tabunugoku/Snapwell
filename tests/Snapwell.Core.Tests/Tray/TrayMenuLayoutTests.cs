@@ -19,14 +19,15 @@ public sealed class TrayMenuLayoutTests
             {
                 var layout = TrayMenuLayout.Create(new(1800, 1800, 24, 24), new(0, 0, 2000, 1800),
                     TrayTaskbarEdge.Bottom, scale, status, count);
-                Assert.Equal(layout.Px(230 + 2 + (count - 4) * 32 + (status ? 48 : 0)), layout.Panel.Height);
+                Assert.Equal(layout.Px(230 + 2 + (count - 4) * 32 + (status ? 40 : 0)), layout.Panel.Height);
                 Assert.Equal(layout.Rect(16, 23, 20, 20), layout.HeaderIcon);
                 Assert.Equal(layout.Rect(48, 23, 80, 20), layout.HeaderTitle);
                 Assert.Equal(layout.Rect(264, 23, 40, 20), layout.Toggle);
                 Assert.Equal(layout.Rect(48, 53, 256, 28), layout.MonitorRow);
-                Assert.Equal(layout.Rect(16, 91, 16, 16), layout.StatusIcon);
-                Assert.Equal(layout.Rect(40, 89, 264, 40), layout.StatusText);
-                var start = status ? 138 : 90;
+                Assert.Equal(layout.Rect(48, 55, 256, 16), layout.MonitorText);
+                Assert.Equal(layout.Rect(49, 73, status ? 16 : 0, status ? 16 : 0), layout.StatusIcon);
+                Assert.Equal(layout.Rect(73, 73, 231, status ? 40 : 0), layout.StatusText);
+                var start = status ? 130 : 90;
                 Assert.Equal(layout.Rect(4, start - 5, 312, 1), layout.Separators[0]);
                 Assert.Equal(layout.Rect(4, start + 32 * (count - 2) + 4, 312, 1), layout.Separators[1]);
                 for (var index = 0; index < count; index++)
@@ -141,8 +142,8 @@ public sealed class TrayMenuLayoutTests
     {
         var layout = TrayMenuLayout.Create(new(900, 900, 20, 20), new(0, 0, 1000, 900),
             TrayTaskbarEdge.Bottom, 2, hasStatus: true);
-        Assert.Equal(560, layout.Panel.Height);
-        Assert.Equal(layout.Rect(4, 138, 312, 32), layout.Rows[0]);
+        Assert.Equal(544, layout.Panel.Height);
+        Assert.Equal(layout.Rect(4, 130, 312, 32), layout.Rows[0]);
         Assert.All(layout.Separators, separator =>
             Assert.All(layout.Rows, row => Assert.False(row.Intersects(separator))));
     }
@@ -193,10 +194,10 @@ public sealed class TrayMenuLayoutTests
         var work = new PixelRect(-1200, -700, 1200, height);
         var layout = TrayMenuLayout.Create(new(-100, work.Bottom, 24, 24), work,
             TrayTaskbarEdge.Bottom, scale, status);
-        var compact = Math.Round((status ? 280 : 232) * scale) > height;
+        var compact = Math.Round((status ? 272 : 232) * scale) > height;
         Assert.Equal(compact, layout.IsCompact);
-        Assert.Equal(Math.Min(height, (int)Math.Round((compact ? (status ? 252 : 204)
-            : (status ? 280 : 232)) * scale)), layout.Panel.Height);
+        Assert.Equal(Math.Min(height, (int)Math.Round((compact ? (status ? 244 : 204)
+            : (status ? 272 : 232)) * scale)), layout.Panel.Height);
         Assert.True(work.Contains(layout.Bounds));
         Assert.True(work.Contains(layout.Panel));
         var items = TrayMenuModel.Create(true, launcherAvailable: true);
@@ -214,5 +215,60 @@ public sealed class TrayMenuLayoutTests
         Assert.Equal(-1, TrayMenuModel.HitTest(layout, items,
             new(layout.Rows[0].Center.X, layout.ItemsViewport.Bottom)));
         Assert.Equal(layout.MaxScrollOffset, layout.WithScrollOffset(int.MaxValue).ScrollOffset);
+    }
+
+    /// <summary>非標準の DPI でも最終行の下辺を切らず、不要なスクロールを作らない。</summary>
+    [Theory]
+    [InlineData(1.1)]
+    [InlineData(1.35)]
+    [InlineData(1.95)]
+    public void FractionalDpiKeepsViewportBottomAtLastRow(double scale)
+    {
+        foreach (var count in new[] { 4, 5 })
+        {
+            foreach (var status in new[] { false, true })
+            {
+                var layout = TrayMenuLayout.Create(new(1800, 1800, 24, 24), new(0, 0, 2000, 1800),
+                    TrayTaskbarEdge.Bottom, scale, status, count);
+                Assert.Equal(layout.Rows[^1].Bottom, layout.ItemsViewport.Bottom);
+                Assert.Equal(0, layout.MaxScrollOffset);
+                Assert.Equal(0, layout.EnsureVisible(count).ScrollOffset);
+            }
+        }
+    }
+
+    /// <summary>行数の変更でも元の辺から開き直し、圧縮・タグ・スクロールの配置へ同じ行数を引き継ぐ。</summary>
+    [Theory]
+    [InlineData(1.1)]
+    [InlineData(1.35)]
+    [InlineData(1.95)]
+    public void StatusLineCountReflowsFromOriginalAnchor(double scale)
+    {
+        foreach (var edge in Enum.GetValues<TrayTaskbarEdge>())
+        {
+            foreach (var compact in new[] { false, true })
+            {
+                var work = new PixelRect(-1200, -700, 1200, (int)((compact ? 230 : 600) * scale));
+                var original = TrayMenuLayout.Create(new(-100, work.Bottom, 24, 24), work, edge, scale);
+                var layout = original;
+                foreach (var lines in new[] { 1, 2, 1, 0 })
+                {
+                    layout = layout.WithStatusLineCount(lines).WithStatusTagTextWidth(40).WithScrollOffset(0);
+                    Assert.Equal(compact, layout.IsCompact);
+                    Assert.Equal(Math.Min(work.Height, layout.Px((compact ? 204 : 232) + 20 * lines)),
+                        layout.Panel.Height);
+                    var top = compact ? 45 : 73;
+                    Assert.Equal(layout.Rect(73, top, 231, 20 * lines), layout.StatusText);
+                    Assert.Equal(layout.Rect(49, top, lines > 0 ? 16 : 0, lines > 0 ? 16 : 0), layout.StatusIcon);
+                    var visible = layout.EnsureVisible(layout.Rows.Count);
+                    Assert.Equal(visible.Rows[^1].Bottom, visible.ItemsViewport.Bottom);
+                    Assert.True(visible.ItemsViewport.Contains(visible.Rows[^1]));
+                    Assert.True(work.Contains(layout.Panel));
+                    Assert.All(layout.Rows, row => Assert.False(layout.StatusText.Intersects(row)));
+                    Assert.All(layout.Rows, row => Assert.False(layout.StatusIcon.Intersects(row)));
+                }
+                Assert.Equal(original.Panel, layout.Panel);
+            }
+        }
     }
 }

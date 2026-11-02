@@ -355,7 +355,7 @@ public sealed class TrayMenuControllerTests
     private static TrayMenuSnapshot ScrollableSnapshot() => Snapshot(true) with
     {
         Layout = TrayMenuLayout.Create(new(1100, 400, 24, 24), new(0, 0, 1200, 400),
-            TrayTaskbarEdge.Bottom, 2.5, true),
+            TrayTaskbarEdge.Bottom, 2.5, true).WithStatusLineCount(1), // 開くときの実測と同じ一行
         Status = "状態の案内",
     };
 

@@ -20,6 +20,14 @@ internal sealed class TrayMenuRenderer : IDisposable
     /// <summary>モニター数を現在の言語の単数形または複数形で表す。</summary>
     internal static string MonitorDescription(int count) => UiText.Current.Plural("Tray.Monitors", count);
 
+    /// <summary>描画と同じ幅・フォントで行数を測り、入力にも使う配置を確定する。</summary>
+    internal static TrayMenuLayout MeasureStatusLayout(TrayMenuSnapshot snapshot)
+    {
+        if (snapshot.Status is not { } status) { return snapshot.Layout.WithStatusLineCount(0); }
+        using var text = new GdiOverlayText(snapshot.Layout.Scale);
+        return snapshot.Layout.WithStatusLineCount(StatusLines(status, snapshot.Layout, text).Count);
+    }
+
     internal TrayMenuRenderer(TrayMenuSnapshot snapshot)
     {
         _text = new(snapshot.Layout.Scale);
@@ -50,9 +58,7 @@ internal sealed class TrayMenuRenderer : IDisposable
             Text(_background, snapshot.StatusLabel, layout.StatusLabel, 12, _palette.Muted);
             if (!layout.IsCompact)
             {
-                var monitorText = new PixelRect(layout.MonitorRow.X, layout.MonitorRow.Y,
-                    layout.MonitorRow.Width, layout.Px(16));
-                Text(_background, MonitorDescription(snapshot.MonitorCount), monitorText, 12, _palette.Subtle);
+                Text(_background, MonitorDescription(snapshot.MonitorCount), layout.MonitorText, 12, _palette.Subtle);
             }
             if (snapshot.Status is { } status)
             {
@@ -202,17 +208,19 @@ internal sealed class TrayMenuRenderer : IDisposable
     }
 
     /// <summary>幅を実測して二行に折り返し、二行目の末尾だけを省略する。</summary>
-    internal IReadOnlyList<string> StatusLines(string status)
+    internal IReadOnlyList<string> StatusLines(string status) => StatusLines(status, _snapshot.Layout, _text);
+
+    private static IReadOnlyList<string> StatusLines(string status, TrayMenuLayout layout, GdiOverlayText text)
     {
-        var available = _snapshot.Layout.StatusText.Width / _snapshot.Layout.Scale;
+        var available = layout.StatusText.Width / layout.Scale;
         var first = "";
         foreach (var rune in status.EnumerateRunes())
         {
-            if (Measure(first + rune, 12) > available) { break; }
+            if (Measure(text, first + rune, 12) > available) { break; }
             first += rune;
         }
         return first.Length == status.Length ? [first]
-            : [first, Ellipsize(status[first.Length..], available, 12)];
+            : [first, Ellipsize(status[first.Length..].TrimStart(), available, 12, text)];
     }
 
     private PixelRect Local(PixelRect rect) => new(rect.X - _snapshot.Layout.Bounds.X,
@@ -227,14 +235,16 @@ internal sealed class TrayMenuRenderer : IDisposable
         OverlayPainter.StrokeRounded(frame, rect, border, radius, 1, _snapshot.Layout.Scale);
     }
 
-    private string Ellipsize(string value, double available, double size)
+    private string Ellipsize(string value, double available, double size) => Ellipsize(value, available, size, _text);
+
+    private static string Ellipsize(string value, double available, double size, GdiOverlayText text)
     {
-        if (Measure(value, size) <= available)
+        if (Measure(text, value, size) <= available)
         {
             return value;
         }
 
-        while (value.Length > 0 && Measure(value + "…", size) > available)
+        while (value.Length > 0 && Measure(text, value + "…", size) > available)
         {
             value = value[..^1];
         }
@@ -242,8 +252,8 @@ internal sealed class TrayMenuRenderer : IDisposable
         return value.Length == 0 ? "" : value + "…";
     }
 
-    private double Measure(string value, double size) =>
-        Runs(value).Sum(run => _text.Measure(run.Value, size, run.Japanese));
+    private static double Measure(GdiOverlayText text, string value, double size) =>
+        Runs(value).Sum(run => text.Measure(run.Value, size, run.Japanese));
 
     private static IEnumerable<(string Value, bool Japanese)> Runs(string value)
     {

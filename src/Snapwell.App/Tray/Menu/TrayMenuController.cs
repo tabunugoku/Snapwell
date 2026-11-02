@@ -55,7 +55,7 @@ internal sealed class TrayMenuController(ITrayMenuView view, Action<uint> comman
         _pressed = -1;
         _keyboard = false;
         _wheelRemainder = 0;
-        Paint();
+        Paint(measureStatus: true);
     }
 
     internal void Update(TrayMenuSnapshot snapshot)
@@ -81,7 +81,7 @@ internal sealed class TrayMenuController(ITrayMenuView view, Action<uint> comman
         }
 
         _pressed = -1;
-        Paint();
+        Paint(measureStatus: true);
     }
 
     internal void Wheel(int delta)
@@ -208,7 +208,7 @@ internal sealed class TrayMenuController(ITrayMenuView view, Action<uint> comman
         command((uint)id);
     }
 
-    private void Paint()
+    private void Paint(bool measureStatus = false)
     {
         if (_snapshot is not { } snapshot)
         {
@@ -217,6 +217,12 @@ internal sealed class TrayMenuController(ITrayMenuView view, Action<uint> comman
 
         try
         {
+            if (measureStatus)
+            {
+                snapshot = snapshot with { Layout = TrayMenuRenderer.MeasureStatusLayout(snapshot) };
+                _snapshot = snapshot;
+            }
+
             if (_keyboard)
             {
                 var layout = snapshot.Layout.EnsureVisible(_selected);

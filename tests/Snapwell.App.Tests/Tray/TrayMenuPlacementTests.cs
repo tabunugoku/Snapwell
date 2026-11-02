@@ -34,8 +34,8 @@ public sealed class TrayMenuPlacementTests
         var result = TrayMenuPlacement.Read(new FakeAnchor(new(20, 1100, 1, 1)), new FakeMonitors([monitor]), true, 4);
         Assert.Equal(2, result.Layout.Scale);
         Assert.True(monitor.WorkArea.Contains(result.Layout.Bounds));
-        // 二行の状態案内を含む開始位置 138、四行 128、区切り 9、下の枠と余白 5。
-        Assert.Equal((138 + 4 * 32 + 9 + 5) * 2, result.Layout.Panel.Height);
+        // 二行の状態案内を含む開始位置 130、四行 128、区切り 9、下の枠と余白 5。
+        Assert.Equal((130 + 4 * 32 + 9 + 5) * 2, result.Layout.Panel.Height);
         Assert.Equal(4, result.Layout.Rows.Count);
         Assert.Equal(result.Layout.Px(5), result.Layout.Panel.Bottom - result.Layout.Rows[^1].Bottom);
         Assert.Equal(0, result.Layout.MaxScrollOffset);

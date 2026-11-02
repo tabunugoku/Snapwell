@@ -128,7 +128,9 @@ public sealed class TrayMenuHeaderTests
         menu.Update(Snapshot(false, null, OverlayTheme.Light, 1));
         Assert.False(activePixels.SequenceEqual(view.Header));
         var pausedPixels = view.Header;
+        // 一行の状態案内は、更新時の実測で一行分の高さに決め直される。
         var attention = Snapshot(true, "異常", OverlayTheme.Light, 1);
+        attention = attention with { Layout = attention.Layout.WithStatusLineCount(1) };
         menu.Update(attention);
         Assert.False(pausedPixels.SequenceEqual(view.Header));
         var attentionPixels = view.Header;
