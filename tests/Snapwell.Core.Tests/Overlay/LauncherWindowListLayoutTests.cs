@@ -449,6 +449,7 @@ public sealed class LauncherWindowListLayoutTests
             Assert.True(row.Bounds.Contains(check));
             Assert.False(check.Intersects(row.TitleBounds(scale)));
             Assert.False(row.TitleBounds(scale).Intersects(row.RoleBounds(scale)));
+            Assert.Equal(row.RoleBounds(scale).X - Px(8), row.TitleBounds(scale).Right);
             var ring = row.IconBounds(scale);
             var edge = Pixel(frame, ring.X - row.Bounds.X, (int)ring.Center.Y - row.Bounds.Y - 1);
             var color = main ? palette.BlueText : palette.Subtle;
