@@ -53,6 +53,7 @@ public sealed record OverlayPalette(OverlayColor Dim, OverlayColor Cell, Overlay
     {
         Subtle = new(146, 146, 142, 255),
         AccentTint = new(140, 203, 242, 36),
+        OnInk = new(22, 22, 22, 255),
         GreenText = new(124, 196, 138, 255),
         YellowText = new(224, 182, 90, 255),
         RedText = new(242, 147, 140, 255),
@@ -62,6 +63,8 @@ public sealed record OverlayPalette(OverlayColor Dim, OverlayColor Cell, Overlay
     public OverlayColor Subtle { get; init; } = new(107, 107, 103, 255);
     /// <summary>一覧の選択と対象タグに使う薄いアクセント。</summary>
     public OverlayColor AccentTint { get; init; } = new(31, 108, 159, 31);
+    /// <summary>ink の面に重ねる文字色。</summary>
+    public OverlayColor OnInk { get; init; } = new(255, 255, 255, 255);
 
     /// <summary>有効を表すタグの文字色。</summary>
     public OverlayColor GreenText { get; init; } = new(47, 122, 62, 255);
@@ -412,24 +415,18 @@ public static class OverlayPainter
         }
     }
 
-    /// <summary>一覧の行の面・番号キー・チェック・役割の輪を文字と独立に描く。</summary>
+    /// <summary>一覧の選択の面・チェック・役割の輪を文字と独立に描く。</summary>
     public static void WindowRow(OverlayFrame frame, PixelRect area, LauncherWindowRow row,
         OverlayTheme theme, double scale)
     {
         var palette = OverlayPalette.For(theme);
         var rect = Local(row.Bounds, area);
-        FillRounded(frame, rect, row.Selected ? palette.AccentTint : palette.Surface2, 6, scale);
-        StrokeRounded(frame, rect, row.Selected ? palette.BlueText : palette.Border, 6, 1, scale);
-        var key = Local(row.NumberBounds(scale), area);
-        FillRounded(frame, key, palette.Surface, 4, scale);
-        StrokeRounded(frame, key, palette.BorderStrong, 4, 1, scale);
+        if (row.Selected) { FillRounded(frame, rect, palette.AccentTint, 4, scale); }
         var check = Local(row.CheckBounds(scale), area);
-        StrokeRounded(frame, check, row.Selected ? palette.BlueText : palette.Muted, 4, 1, scale);
+        FillRounded(frame, check, row.Selected ? palette.Ink : palette.Surface, 4, scale);
+        StrokeRounded(frame, check, row.Selected ? palette.Ink : palette.Subtle, 4, 1, scale);
         if (!row.Selected) { return; }
 
-        var pill = Local(row.RoleBounds(scale), area);
-        if (row.Main) { FillRounded(frame, pill, palette.AccentTint, 999, scale); }
-        StrokeRounded(frame, pill, row.Main ? palette.BlueText : palette.Border, 999, 1, scale);
         var tint = row.Main ? palette.BlueText : palette.Subtle;
         var ring = Local(row.IconBounds(scale), area);
         StrokeRounded(frame, ring, tint, ring.Width / scale / 2,
@@ -443,21 +440,21 @@ public static class OverlayPainter
 
     /// <summary>整列ボタンの面と四十四 × 二十八 DIP の区画図を描く。</summary>
     public static void ArrangeButton(OverlayFrame frame, LauncherArrangeButton button,
-        OverlayTheme theme, double scale)
+        OverlayTheme theme, double scale, bool enabled = true)
     {
         var palette = OverlayPalette.For(theme);
         var rect = new PixelRect(0, 0, frame.Width, frame.Height);
-        FillRounded(frame, rect, palette.Surface2, 6, scale);
-        StrokeRounded(frame, rect, palette.Border, 6, 1, scale);
+        FillRounded(frame, rect, palette.Surface, 4, scale);
+        StrokeRounded(frame, rect, palette.Border, 4, 1, scale);
         var icon = button.IconBounds(scale);
         var line = Math.Max(1, Math.Round(scale)) / scale;
-        StrokeRounded(frame, icon, palette.Muted with { Alpha = 153 }, 3, line, scale);
+        StrokeRounded(frame, icon, palette.Subtle, 3, line, scale);
         foreach (var (shape, index) in button.IconPixelRects(scale).Select((shape, index) => (shape, index)))
         {
             var fill = new PixelRect(icon.X + shape.X, icon.Y + shape.Y, shape.Width, shape.Height);
-            var main = button.Layout == ArrangeLayout.MainAndStack && index == 0;
-            FillRounded(frame, fill, main ? palette.BlueBackground : palette.Muted with { Alpha = 115 }, 2, scale);
-            if (main) { StrokeRounded(frame, fill, palette.BlueText, 2, 1, scale); }
+            var main = enabled && button.Layout == ArrangeLayout.MainAndStack && index == 0;
+            FillRounded(frame, fill, main ? palette.BlueBackground : palette.Surface2, 2, scale);
+            StrokeRounded(frame, fill, main ? palette.BlueText : palette.Subtle, 2, 1, scale);
         }
     }
 

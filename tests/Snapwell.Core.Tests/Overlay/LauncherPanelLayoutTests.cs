@@ -125,6 +125,13 @@ public sealed class LauncherPanelLayoutTests
         var disabled = layout.Presets[3].Bounds;
         Assert.Equal(new byte[] { palette.Surface.Blue, palette.Surface.Green, palette.Surface.Red, 255 },
             Pixel(frame, disabled.X + 4, disabled.Y + disabled.Height / 2));
+        // 共通の面を省き、無効なボタンだけが下地を透過することを区別する。
+        var buttons = OverlayPainter.Create(frame.Width, frame.Height);
+        OverlayPainter.Panel(buttons, selection, layout.WithPanelHeight(0), theme);
+        var enabled = layout.Presets.First(button => button.Enabled).Bounds;
+        Assert.Equal(new byte[4], Pixel(buttons, disabled.X + 4, disabled.Y + disabled.Height / 2));
+        Assert.Equal(new byte[] { palette.Surface.Blue, palette.Surface.Green, palette.Surface.Red, 255 },
+            Pixel(buttons, enabled.X + 4, enabled.Y + enabled.Height / 2));
     }
 
     /// <summary>パネル用の CSS 変数も明暗それぞれの値を保持する。</summary>

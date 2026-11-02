@@ -18,6 +18,7 @@ internal sealed class LauncherWindowListRenderer
         var palette = OverlayPalette.For(theme);
         void Add(object key, PixelRect bounds, Action<OverlayFrame> paint)
         {
+            if (bounds.Width <= 0 || bounds.Height <= 0) { return; }
             var fullKey = (key, theme, scale, layout.Text);
             var index = layers.Count;
             if (index < _cache.Count && Equals(_cache[index].Key, fullKey))
@@ -53,7 +54,8 @@ internal sealed class LauncherWindowListRenderer
                 });
             }
 
-            var divider = new PixelRect(layout.Header.X, layout.Panel.Y, layout.Header.Width,
+            var divider = new PixelRect(layout.Header.X, layout.Panel.Y,
+                layout.Expanded ? layout.Viewport.Width : layout.Header.Width,
                 Math.Max(1, (int)Math.Round(scale)));
             Add(divider, divider, frame =>
             {
@@ -65,7 +67,8 @@ internal sealed class LauncherWindowListRenderer
             Add((layout.Header, summary, count), layout.Header, frame =>
             {
                 var label = new PixelRect(layout.Header.X, layout.Header.Y,
-                    layout.Header.Width - (int)Math.Round(100 * scale), layout.Header.Height);
+                    layout.Header.Width - Math.Min((int)Math.Round(100 * scale), layout.Header.Width / 2),
+                    layout.Header.Height);
                 var fitted = LauncherPanelLayout.Ellipsize(summary, label.Width / scale,
                     candidate => text.Measure(candidate, 12.5, false));
                 text.Draw(frame, layout.Header, new(fitted, label, 12.5), palette.Ink);
@@ -77,8 +80,10 @@ internal sealed class LauncherWindowListRenderer
             {
                 var page = string.Create(CultureInfo.InvariantCulture,
                     $"{layout.First + (layout.Total > 0 ? 1 : 0)}–{layout.First + layout.Rows.Count} / {layout.Total}");
-                var pageBounds = new PixelRect(layout.Viewport.X, layout.Previous.Y,
-                    layout.Previous.X - layout.Viewport.X, layout.Previous.Height);
+                var pageLeft = layout.Header.Right < layout.Viewport.Right
+                    ? layout.Header.Right + (int)Math.Round(8 * scale) : layout.Viewport.X;
+                var pageBounds = new PixelRect(pageLeft, layout.Previous.Y,
+                    layout.Previous.X - pageLeft, layout.Previous.Height);
                 Add((pageBounds, page), pageBounds, frame => Label(frame, pageBounds, page, 11.5,
                     LauncherTextKind.Muted));
                 foreach (var (bounds, value, enabled) in new[]
@@ -100,11 +105,11 @@ internal sealed class LauncherWindowListRenderer
                     {
                         OverlayPainter.WindowRow(frame, clipped, row, theme, scale);
                         text.Draw(frame, clipped, new(row.Number.ToString(CultureInfo.InvariantCulture),
-                            row.NumberBounds(scale), 11.5, Mono: true, Center: true), palette.Text);
+                            row.NumberBounds(scale), 12, Mono: true, Center: true), palette.Subtle);
                         if (row.Selected)
                         {
-                            text.Draw(frame, clipped, new("✓", row.CheckBounds(scale), 11, Center: true),
-                                palette.BlueText);
+                            text.Draw(frame, clipped, new("✓", row.CheckBounds(scale), 12, Center: true, Bold: true),
+                                palette.OnInk);
                         }
 
                         var titleBounds = row.TitleBounds(scale);
@@ -113,9 +118,9 @@ internal sealed class LauncherWindowListRenderer
                         text.Draw(frame, clipped, new(title, titleBounds, 12), palette.Text);
                         if (row.Selected)
                         {
-                            var tint = row.Main ? palette.BlueText : palette.Subtle;
+                            var tint = row.Main ? palette.BlueText : palette.Muted;
                             text.Draw(frame, clipped, new(row.Main ? labels.Main : labels.Stack, row.RoleLabelBounds(scale),
-                                10.5), tint);
+                                12), tint);
                         }
                     });
                 }
@@ -137,21 +142,19 @@ internal sealed class LauncherWindowListRenderer
                 {
                     Add((button, layout.SelectedCount > 0), button.Bounds, frame =>
                     {
-                        OverlayPainter.ArrangeButton(frame, button, theme, scale);
+                        var enabled = layout.SelectedCount > 0;
+                        OverlayPainter.ArrangeButton(frame, button, theme, scale, enabled);
                         var fitted = LauncherPanelLayout.Ellipsize(button.Label, button.Bounds.Width / scale,
                             candidate => text.Measure(candidate, 12, false));
                         var label = new LauncherText(fitted, button.LabelBounds(scale), 12, Center: true);
-                        text.Draw(frame, button.Bounds, label, palette.Text, centerFontBody: true);
+                        text.Draw(frame, button.Bounds, label, enabled ? palette.Text : palette.Subtle,
+                            centerFontBody: true);
                         var key = button.ShortcutBounds(scale);
                         if (key.Width > 0)
                         {
                             text.Draw(frame, button.Bounds, new(string.Create(CultureInfo.InvariantCulture,
                                 $"Alt+{(int)button.Layout + 1}"), key, 10.5,
-                                Mono: true, Center: true), palette.Muted);
-                        }
-                        if (layout.SelectedCount == 0)
-                        {
-                            for (var i = 0; i < frame.Pixels.Length; i++) { frame.Pixels[i] = (byte)(frame.Pixels[i] * .4); }
+                                Mono: true, Center: true), enabled ? palette.Muted : palette.Subtle);
                         }
                     });
                 }
