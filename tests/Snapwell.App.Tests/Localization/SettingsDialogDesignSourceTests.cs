@@ -69,10 +69,18 @@ public sealed class SettingsDialogDesignSourceTests
     [InlineData("Default")]
     public void DialogColorsReferenceSharedThemeTokens(string theme)
     {
-        var dictionary = Resource(Load("Dialogs/DialogResources.xaml"), theme);
+        var dictionary = Resource(Load("App.xaml"), theme);
         var background = dictionary.Elements().Single(element =>
             (string?)element.Attribute(_xaml + "Key") == "ContentDialogBackground");
         Assert.Equal("SnapwellSurfaceBrush", (string?)background.Attribute("ResourceKey"));
+        var local = Resource(Load("Dialogs/DialogResources.xaml"), theme);
+        foreach (var brush in local.Elements().Where(element =>
+            ((string?)element.Attribute(_xaml + "Key"))?.StartsWith("Snapwell", StringComparison.Ordinal) == true))
+        {
+            var key = (string)brush.Attribute(_xaml + "Key")!;
+            var shared = dictionary.Elements().Single(element => (string?)element.Attribute(_xaml + "Key") == key);
+            Assert.Equal((string?)shared.Attribute("Color"), (string?)brush.Attribute("Color"));
+        }
         Assert.DoesNotContain(dictionary.Descendants().Attributes(), attribute =>
             attribute.Value.Contains("#2563EB", StringComparison.OrdinalIgnoreCase));
     }

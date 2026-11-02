@@ -8,6 +8,13 @@
     l:Loc.Uid="Transfer_Dialog"
     DefaultButton="Close"
     IsSecondaryButtonEnabled="False">
+    <ContentDialog.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="ms-appx:///Dialogs/DialogResources.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </ContentDialog.Resources>
     <StackPanel Spacing="16">
         <TextBlock l:Loc.Uid="Transfer_Lead"
                    Style="{StaticResource SnapwellRowTitleStyle}" />

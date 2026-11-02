@@ -235,7 +235,7 @@
                     </Canvas>
                     <Canvas Width="398" Height="188">
                         <Rectangle x:Name="OverlayFill" Canvas.Left="199" Width="199" Height="94" RadiusX="8" RadiusY="8"
-                                   Fill="{ThemeResource SnapwellBlueBackgroundBrush}" />
+                                   Fill="{ThemeResource SnapwellZoneFillBrush}" />
                         <Rectangle x:Name="OverlayBox" Canvas.Left="199" Width="199" Height="94" RadiusX="8" RadiusY="8"
                                    Stroke="{ThemeResource SnapwellBlueLineBrush}" StrokeThickness="1.5"
                                    StrokeDashArray="2.666667,2.666667" />

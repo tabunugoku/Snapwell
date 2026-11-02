@@ -29,6 +29,7 @@
                             <SolidColorBrush x:Key="SnapwellDimBrush" Color="#8CF5F5F3" />
                             <SolidColorBrush x:Key="SnapwellCellBrush" Color="#80FFFFFF" />
                             <SolidColorBrush x:Key="SnapwellCellBorderBrush" Color="#1A1C1C1B" />
+                            <SolidColorBrush x:Key="SnapwellZoneFillBrush" Color="#2E1F6C9F" />
                             <SolidColorBrush x:Key="SnapwellBlueBackgroundBrush" Color="#1F1F6C9F" />
                             <SolidColorBrush x:Key="SnapwellBlueTextBrush" Color="#FF1F6C9F" />
                             <SolidColorBrush x:Key="SnapwellBlueLineBrush" Color="#991F6C9F" />
@@ -38,6 +39,8 @@
                             <SolidColorBrush x:Key="SnapwellYellowBackgroundBrush" Color="#148A5A00" />
                             <SolidColorBrush x:Key="SnapwellYellowTextBrush" Color="#FF8A5A00" />
                             <SolidColorBrush x:Key="SnapwellSkeletonBrush" Color="#FFE9E9E6" />
+                            <StaticResource x:Key="ContentDialogBackground" ResourceKey="SnapwellSurfaceBrush" />
+                            <StaticResource x:Key="ContentDialogBorderBrush" ResourceKey="SnapwellBorderStrongBrush" />
 
                             <!-- 無効時もモックアップの中立色を使い、輪郭と文字を残す。 -->
                             <StaticResource x:Key="ButtonBackgroundDisabled" ResourceKey="SnapwellSurface2Brush" />
@@ -239,6 +242,7 @@
                             <SolidColorBrush x:Key="SnapwellDimBrush" Color="#801A1A19" />
                             <SolidColorBrush x:Key="SnapwellCellBrush" Color="#0DFFFFFF" />
                             <SolidColorBrush x:Key="SnapwellCellBorderBrush" Color="#1AFFFFFF" />
+                            <SolidColorBrush x:Key="SnapwellZoneFillBrush" Color="#298CCBF2" />
                             <SolidColorBrush x:Key="SnapwellBlueBackgroundBrush" Color="#248CCBF2" />
                             <SolidColorBrush x:Key="SnapwellBlueTextBrush" Color="#FF8CCBF2" />
                             <SolidColorBrush x:Key="SnapwellBlueLineBrush" Color="#A68CCBF2" />
@@ -248,6 +252,8 @@
                             <SolidColorBrush x:Key="SnapwellYellowBackgroundBrush" Color="#1FE0B65A" />
                             <SolidColorBrush x:Key="SnapwellYellowTextBrush" Color="#FFE0B65A" />
                             <SolidColorBrush x:Key="SnapwellSkeletonBrush" Color="#FF333331" />
+                            <StaticResource x:Key="ContentDialogBackground" ResourceKey="SnapwellSurfaceBrush" />
+                            <StaticResource x:Key="ContentDialogBorderBrush" ResourceKey="SnapwellBorderStrongBrush" />
 
                             <!-- 無効時もモックアップの中立色を使い、輪郭と文字を残す。 -->
                             <StaticResource x:Key="ButtonBackgroundDisabled" ResourceKey="SnapwellSurface2Brush" />
@@ -446,6 +452,7 @@
                             <SolidColorBrush x:Key="SnapwellDimBrush" Color="#801A1A19" />
                             <SolidColorBrush x:Key="SnapwellCellBrush" Color="#0DFFFFFF" />
                             <SolidColorBrush x:Key="SnapwellCellBorderBrush" Color="#1AFFFFFF" />
+                            <SolidColorBrush x:Key="SnapwellZoneFillBrush" Color="#298CCBF2" />
                             <SolidColorBrush x:Key="SnapwellBlueBackgroundBrush" Color="#248CCBF2" />
                             <SolidColorBrush x:Key="SnapwellBlueTextBrush" Color="#FF8CCBF2" />
                             <SolidColorBrush x:Key="SnapwellBlueLineBrush" Color="#A68CCBF2" />
@@ -455,6 +462,8 @@
                             <SolidColorBrush x:Key="SnapwellYellowBackgroundBrush" Color="#1FE0B65A" />
                             <SolidColorBrush x:Key="SnapwellYellowTextBrush" Color="#FFE0B65A" />
                             <SolidColorBrush x:Key="SnapwellSkeletonBrush" Color="#FF333331" />
+                            <StaticResource x:Key="ContentDialogBackground" ResourceKey="SnapwellSurfaceBrush" />
+                            <StaticResource x:Key="ContentDialogBorderBrush" ResourceKey="SnapwellBorderStrongBrush" />
 
                             <!-- 無効時もモックアップの中立色を使い、輪郭と文字を残す。 -->
                             <StaticResource x:Key="ButtonBackgroundDisabled" ResourceKey="SnapwellSurface2Brush" />

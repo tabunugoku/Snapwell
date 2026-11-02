@@ -1,7 +1,7 @@
-using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using Snapwell.Core.Localization;
 using Snapwell.Settings.Pages;
 using Windows.Graphics;
@@ -59,24 +59,24 @@ public sealed partial class MainWindow : Window
             ElementTheme.Light => false,
             _ => Application.Current.RequestedTheme == ApplicationTheme.Dark,
         };
-        var foreground = isDark
-            ? Color.FromArgb(0xFF, 0xE6, 0xE6, 0xE3)
-            : Color.FromArgb(0xFF, 0x2F, 0x34, 0x37);
-        var muted = isDark
-            ? Color.FromArgb(0xFF, 0x9B, 0x9A, 0x97)
-            : Color.FromArgb(0xFF, 0x78, 0x77, 0x74);
-        var hoverBackground = isDark
-            ? Color.FromArgb(0xFF, 0x25, 0x25, 0x24)
-            : Color.FromArgb(0xFF, 0xF9, 0xF9, 0xF8);
+        // App の既定テーマではなく、ウィンドウの現在のテーマの辞書から Win32 用の色を取る。
+        var theme = isDark ? "Dark" : "Light";
+        var resources = (ResourceDictionary)Application.Current.Resources.MergedDictionaries
+            .Last(dictionary => dictionary.ThemeDictionaries.ContainsKey(theme)).ThemeDictionaries[theme];
+        Color BrushColor(string key) => ((SolidColorBrush)resources[key]).Color;
+        var background = BrushColor("SnapwellBackgroundBrush");
+        var foreground = BrushColor("SnapwellTextBrush");
+        var muted = BrushColor("SnapwellMutedBrush");
+        var hoverBackground = BrushColor("SnapwellSurface2Brush");
 
         var titleBar = AppWindow.TitleBar;
-        titleBar.ButtonBackgroundColor = Colors.Transparent;
-        titleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
+        titleBar.ButtonBackgroundColor = background;
+        titleBar.ButtonInactiveBackgroundColor = background;
         titleBar.ButtonHoverBackgroundColor = hoverBackground;
         titleBar.ButtonPressedBackgroundColor = hoverBackground;
         titleBar.ButtonForegroundColor = foreground;
         titleBar.ButtonHoverForegroundColor = foreground;
-        titleBar.ButtonPressedForegroundColor = foreground;
+        titleBar.ButtonPressedForegroundColor = muted;
         titleBar.ButtonInactiveForegroundColor = muted;
     }
 

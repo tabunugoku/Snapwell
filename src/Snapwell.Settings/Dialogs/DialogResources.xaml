@@ -15,8 +15,11 @@
     </DataTemplate>
     <ResourceDictionary.ThemeDictionaries>
         <ResourceDictionary x:Key="Light">
-            <StaticResource x:Key="ContentDialogBackground" ResourceKey="SnapwellSurfaceBrush" />
-            <StaticResource x:Key="ContentDialogBorderBrush" ResourceKey="SnapwellBorderStrongBrush" />
+            <!-- ダイアログ内で上書きが必要な標準コントロール用。別ファイルのテーマ辞書を静的に参照しない。 -->
+            <SolidColorBrush x:Key="SnapwellInkBrush" Color="#FF1C1C1B" />
+            <SolidColorBrush x:Key="SnapwellInkHoverBrush" Color="#FF3A3A38" />
+            <SolidColorBrush x:Key="SnapwellInkTextBrush" Color="#FFFFFFFF" />
+            <SolidColorBrush x:Key="SnapwellBorderStrongBrush" Color="#2E1C1C1B" />
             <StaticResource x:Key="AccentFillColorDefaultBrush" ResourceKey="SnapwellInkBrush" />
             <StaticResource x:Key="AccentFillColorSecondaryBrush" ResourceKey="SnapwellInkHoverBrush" />
             <StaticResource x:Key="AccentFillColorTertiaryBrush" ResourceKey="SnapwellInkHoverBrush" />
@@ -41,8 +44,11 @@
             <StaticResource x:Key="ComboBoxBorderBrushFocused" ResourceKey="SnapwellBorderStrongBrush" />
         </ResourceDictionary>
         <ResourceDictionary x:Key="Dark">
-            <StaticResource x:Key="ContentDialogBackground" ResourceKey="SnapwellSurfaceBrush" />
-            <StaticResource x:Key="ContentDialogBorderBrush" ResourceKey="SnapwellBorderStrongBrush" />
+            <!-- ダイアログ内で上書きが必要な標準コントロール用。別ファイルのテーマ辞書を静的に参照しない。 -->
+            <SolidColorBrush x:Key="SnapwellInkBrush" Color="#FFEDEDEB" />
+            <SolidColorBrush x:Key="SnapwellInkHoverBrush" Color="#FFD2D2CF" />
+            <SolidColorBrush x:Key="SnapwellInkTextBrush" Color="#FF161616" />
+            <SolidColorBrush x:Key="SnapwellBorderStrongBrush" Color="#26FFFFFF" />
             <StaticResource x:Key="AccentFillColorDefaultBrush" ResourceKey="SnapwellInkBrush" />
             <StaticResource x:Key="AccentFillColorSecondaryBrush" ResourceKey="SnapwellInkHoverBrush" />
             <StaticResource x:Key="AccentFillColorTertiaryBrush" ResourceKey="SnapwellInkHoverBrush" />
@@ -67,8 +73,11 @@
             <StaticResource x:Key="ComboBoxBorderBrushFocused" ResourceKey="SnapwellBorderStrongBrush" />
         </ResourceDictionary>
         <ResourceDictionary x:Key="Default">
-            <StaticResource x:Key="ContentDialogBackground" ResourceKey="SnapwellSurfaceBrush" />
-            <StaticResource x:Key="ContentDialogBorderBrush" ResourceKey="SnapwellBorderStrongBrush" />
+            <!-- ダイアログ内で上書きが必要な標準コントロール用。別ファイルのテーマ辞書を静的に参照しない。 -->
+            <SolidColorBrush x:Key="SnapwellInkBrush" Color="#FFEDEDEB" />
+            <SolidColorBrush x:Key="SnapwellInkHoverBrush" Color="#FFD2D2CF" />
+            <SolidColorBrush x:Key="SnapwellInkTextBrush" Color="#FF161616" />
+            <SolidColorBrush x:Key="SnapwellBorderStrongBrush" Color="#26FFFFFF" />
             <StaticResource x:Key="AccentFillColorDefaultBrush" ResourceKey="SnapwellInkBrush" />
             <StaticResource x:Key="AccentFillColorSecondaryBrush" ResourceKey="SnapwellInkHoverBrush" />
             <StaticResource x:Key="AccentFillColorTertiaryBrush" ResourceKey="SnapwellInkHoverBrush" />

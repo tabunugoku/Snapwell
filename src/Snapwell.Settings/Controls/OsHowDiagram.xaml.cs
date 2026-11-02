@@ -294,10 +294,10 @@ public sealed partial class OsHowDiagram : UserControl
         StrokeDashArray = new DoubleCollection { 2.5, 2.5 },
     };
 
-    // 予測の線の終点の丸。大きさは Style の px のまま、中心を % の位置に置く。
+    // 予測の線の終点の四角。大きさは Style の DIP のまま、中心を % の位置に置く。
     private Placement Dot(double left, double top)
     {
-        var dot = new Ellipse { Style = (Style)Resources["DiagramPredictionDot"] };
+        var dot = new Rectangle { Style = (Style)Resources["DiagramPredictionDot"] };
         return Custom(dot, size =>
         {
             Canvas.SetLeft(dot, size.Width * left / 100 - dot.Width / 2);

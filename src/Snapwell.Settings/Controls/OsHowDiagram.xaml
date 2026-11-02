@@ -60,9 +60,9 @@
             <Setter Property="CornerRadius" Value="3" />
             <Setter Property="Opacity" Value="0.4" />
         </Style>
-        <!-- 吸着先・予測の線・点は、外観ページの見え方の例と同じブラシにする。点線の間隔はコードで付ける。 -->
+        <!-- 吸着先・予測の線・終点は、外観ページの見え方の例と同じブラシにする。点線の間隔はコードで付ける。 -->
         <Style x:Key="DiagramZone" TargetType="Rectangle">
-            <Setter Property="Fill" Value="{ThemeResource SnapwellBlueBackgroundBrush}" />
+            <Setter Property="Fill" Value="{ThemeResource SnapwellZoneFillBrush}" />
             <Setter Property="Stroke" Value="{ThemeResource SnapwellBlueLineBrush}" />
             <Setter Property="StrokeThickness" Value="1.5" />
             <Setter Property="RadiusX" Value="3" />
@@ -72,10 +72,12 @@
             <Setter Property="Stroke" Value="{ThemeResource SnapwellBlueTextBrush}" />
             <Setter Property="StrokeThickness" Value="1.5" />
         </Style>
-        <Style x:Key="DiagramPredictionDot" TargetType="Ellipse">
+        <Style x:Key="DiagramPredictionDot" TargetType="Rectangle">
             <Setter Property="Fill" Value="{ThemeResource SnapwellBlueTextBrush}" />
-            <Setter Property="Width" Value="6" />
-            <Setter Property="Height" Value="6" />
+            <Setter Property="Width" Value="8" />
+            <Setter Property="Height" Value="8" />
+            <Setter Property="RadiusX" Value="2" />
+            <Setter Property="RadiusY" Value="2" />
         </Style>
         <Style x:Key="DiagramThrowLine" TargetType="Line">
             <Setter Property="Stroke" Value="{ThemeResource SnapwellMutedBrush}" />
@@ -117,7 +119,7 @@
         <Button l:Loc.Uid="OsDiagram_Disclosure" x:Name="Disclosure" Click="Disclosure_Click"
                 Style="{StaticResource SnapwellButtonStyle}"
                 HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="0,2,0,0" MinWidth="0"
-                MinHeight="0" UseSystemFocusVisuals="True">
+                Height="Auto" MinHeight="32" UseSystemFocusVisuals="True">
             <Button.Template>
                 <ControlTemplate TargetType="Button">
                     <Border Background="Transparent" CornerRadius="4" Control.IsTemplateFocusTarget="True">
