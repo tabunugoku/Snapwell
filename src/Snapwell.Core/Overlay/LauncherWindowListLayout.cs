@@ -27,7 +27,8 @@ public sealed record LauncherWindowRow(LauncherWindow Window, PixelRect Bounds, 
     public PixelRect TitleBounds(double scale)
     {
         var left = CheckBounds(scale).Right + (int)Math.Round(8 * scale);
-        var right = Selected ? RoleBounds(scale).X : Bounds.Right - (int)Math.Round(8 * scale);
+        // 選択中は役割の輪との間にも 8 の余白をあけ、省略記号を輪に接しさせない。
+        var right = (Selected ? RoleBounds(scale).X : Bounds.Right) - (int)Math.Round(8 * scale);
         return new(left, Bounds.Y, Math.Max(0, right - left), Bounds.Height);
     }
 
@@ -216,7 +217,8 @@ public sealed record LauncherWindowListLayout(PixelRect Panel, PixelRect Header,
         var rows = Enumerable.Range(first, visible).Select((index, row) => new LauncherWindowRow(windows[index],
             new(left, viewport.Y + row * Px(32) - scroll, inner, Px(32)), selected.Contains(windows[index].Handle),
             index == focused, row + 1, selected.Count > 0 && windows[index].Handle == selected[0])).ToArray();
-        var pagerY = compact ? header.Y : viewport.Bottom + Px(8);
+        // 縮小時は高さ 28 の見出しと同じ中心に高さ 24 のページャーを置く。
+        var pagerY = compact ? header.Y + (header.Height - Px(24)) / 2 : viewport.Bottom + Px(8);
         // 英語の Previous も左右の余白を持つ。日本語の寸法はそのまま保つ。
         var previousWidth = Math.Max(50, text.Previous.Sum(c => c > 255 ? 12 : 6.6) + 12);
         var previous = new PixelRect(panel.Right - Px(72 + previousWidth), pagerY, Px(previousWidth), Px(24));

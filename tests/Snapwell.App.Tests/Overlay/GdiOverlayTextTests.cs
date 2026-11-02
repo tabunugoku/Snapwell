@@ -45,7 +45,7 @@ public sealed class GdiOverlayTextTests
         Assert.True(layout.Expanded);
         Assert.Equal(0, layout.Hint.Height);
         Assert.Equal(80, layout.Viewport.Height);
-        Assert.Equal(layout.Header.Y, layout.Previous.Y);
+        Assert.Equal(layout.Header.Y + layout.Header.Height / 2, layout.Previous.Y + layout.Previous.Height / 2);
         var layers = new LauncherWindowListRenderer().Render(layout, OverlayTheme.Light, Scale, text);
         var divider = Assert.Single(layers, layer => layer.Bounds.Height == (int)Math.Round(Scale));
         Assert.Equal(layout.Viewport.Width, divider.Bounds.Width);
