@@ -37,7 +37,7 @@ public sealed class TrayMenuStatusLayoutTests
                     var layout = actual.Layout;
                     Assert.Equal(layout.Px(232 + 20 * lines + (count - 4) * 32), layout.Panel.Height);
                     Assert.Equal(layout.Rect(73, 73, 231, 20 * lines), layout.StatusText);
-                    Assert.Equal(layout.Rect(49, 73, lines == 0 ? 0 : 16, lines == 0 ? 0 : 16), layout.StatusIcon);
+                    Assert.Equal(layout.Rect(49, 75, lines == 0 ? 0 : 16, lines == 0 ? 0 : 16), layout.StatusIcon);
                     Assert.Equal(layout.Rect(4, 90 + 20 * lines, 312, 32), layout.Rows[0]);
                     Assert.Equal(layout.Rows[^1].Bottom, layout.ItemsViewport.Bottom);
                     Assert.Equal(0, layout.MaxScrollOffset);

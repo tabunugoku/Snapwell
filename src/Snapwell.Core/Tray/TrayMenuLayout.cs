@@ -25,7 +25,8 @@ public sealed class TrayMenuLayout
     /// <summary>二行までのエラー説明を置く領域。</summary>
     public PixelRect StatusText => Rect(73, IsCompact ? 45 : 73, 231, 20 * _statusLineCount);
     /// <summary>エラー説明の先頭のアイコン。</summary>
-    public PixelRect StatusIcon => Rect(49, IsCompact ? 45 : 73,
+    // 文字は高さ 20 の行の中央に描くので、高さ 16 のアイコンは 2 下げて 1 行目の中心にそろえる。
+    public PixelRect StatusIcon => Rect(49, IsCompact ? 47 : 75,
         _statusLineCount > 0 ? 16 : 0, _statusLineCount > 0 ? 16 : 0);
     /// <summary>項目内の線のアイコンを置く矩形。</summary>
     public PixelRect ItemIcon(int index) => CenterVertically(Rows[index], Rows[index].X + Px(12), Px(16), Px(16));

@@ -25,7 +25,7 @@ public sealed class TrayMenuLayoutTests
                 Assert.Equal(layout.Rect(264, 23, 40, 20), layout.Toggle);
                 Assert.Equal(layout.Rect(48, 53, 256, 28), layout.MonitorRow);
                 Assert.Equal(layout.Rect(48, 55, 256, 16), layout.MonitorText);
-                Assert.Equal(layout.Rect(49, 73, status ? 16 : 0, status ? 16 : 0), layout.StatusIcon);
+                Assert.Equal(layout.Rect(49, 75, status ? 16 : 0, status ? 16 : 0), layout.StatusIcon);
                 Assert.Equal(layout.Rect(73, 73, 231, status ? 40 : 0), layout.StatusText);
                 var start = status ? 130 : 90;
                 Assert.Equal(layout.Rect(4, start - 5, 312, 1), layout.Separators[0]);
@@ -259,7 +259,7 @@ public sealed class TrayMenuLayoutTests
                         layout.Panel.Height);
                     var top = compact ? 45 : 73;
                     Assert.Equal(layout.Rect(73, top, 231, 20 * lines), layout.StatusText);
-                    Assert.Equal(layout.Rect(49, top, lines > 0 ? 16 : 0, lines > 0 ? 16 : 0), layout.StatusIcon);
+                    Assert.Equal(layout.Rect(49, top + 2, lines > 0 ? 16 : 0, lines > 0 ? 16 : 0), layout.StatusIcon);
                     var visible = layout.EnsureVisible(layout.Rows.Count);
                     Assert.Equal(visible.Rows[^1].Bottom, visible.ItemsViewport.Bottom);
                     Assert.True(visible.ItemsViewport.Contains(visible.Rows[^1]));
