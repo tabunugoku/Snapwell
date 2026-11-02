@@ -145,12 +145,24 @@
                 <Border Height="10" />
             </NavigationView.PaneHeader>
             <NavigationView.PaneFooter>
-                <Border BorderBrush="{ThemeResource SnapwellBorderBrush}" BorderThickness="0,1,0,0"
-                        Padding="10,14,10,4" HorizontalAlignment="Stretch">
+                <Border Background="{ThemeResource SnapwellFooterBackgroundBrush}"
+                        BorderBrush="{ThemeResource SnapwellBorderBrush}" BorderThickness="0,1,0,0"
+                        Margin="10,0" Padding="10,14,10,4" HorizontalAlignment="Stretch">
                     <Border.Resources>
                         <ResourceDictionary>
                             <ResourceDictionary.ThemeDictionaries>
+                                <ResourceDictionary x:Key="Light">
+                                    <SolidColorBrush x:Key="SnapwellFooterBackgroundBrush" Color="Transparent" />
+                                </ResourceDictionary>
+                                <ResourceDictionary x:Key="Dark">
+                                    <SolidColorBrush x:Key="SnapwellFooterBackgroundBrush" Color="Transparent" />
+                                </ResourceDictionary>
+                                <ResourceDictionary x:Key="Default">
+                                    <SolidColorBrush x:Key="SnapwellFooterBackgroundBrush" Color="Transparent" />
+                                </ResourceDictionary>
                                 <ResourceDictionary x:Key="HighContrast">
+                                    <!-- 親のペイン背景は Default の暗い色になるため、前景と組になる背景をフッターで持つ。 -->
+                                    <SolidColorBrush x:Key="SnapwellFooterBackgroundBrush" Color="{ThemeResource SystemColorWindowColor}" />
                                     <SolidColorBrush x:Key="SnapwellMutedBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
                                     <SolidColorBrush x:Key="SnapwellTextBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
                                     <SolidColorBrush x:Key="SnapwellBorderBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
