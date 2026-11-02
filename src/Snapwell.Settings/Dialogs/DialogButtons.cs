@@ -39,16 +39,23 @@ internal static class DialogButtons
             if (Find(dialog, "CommandSpace") is Grid commandSpace)
             {
                 commandSpace.HorizontalAlignment = HorizontalAlignment.Stretch;
-                foreach (var column in commandSpace.ColumnDefinitions) { column.Width = new GridLength(0); }
-                var buttons = commandSpace.Children.OfType<Button>()
-                    .Where(button => button.Visibility == Visibility.Visible).ToArray();
-                foreach (var button in buttons)
+                var buttons = commandSpace.Children.OfType<Button>().ToArray();
+                // 列をまたぐボタンや他の要素があるテンプレートは、元の幅を保つ（実機未確認）。
+                if (buttons.Length == commandSpace.Children.Count && buttons.All(button =>
+                    Grid.GetColumnSpan(button) == 1 && Grid.GetColumn(button) < commandSpace.ColumnDefinitions.Count))
                 {
-                    commandSpace.ColumnDefinitions[Grid.GetColumn(button)].Width = new GridLength(1, GridUnitType.Star);
-                }
-                foreach (var button in buttons.Skip(1))
-                {
-                    commandSpace.ColumnDefinitions[Grid.GetColumn(button) - 1].Width = new GridLength(8);
+                    var columns = DialogColumnLayout.Calculate(commandSpace.ColumnDefinitions.Count,
+                        buttons.Select(Grid.GetColumn).ToArray(),
+                        buttons.Select(button => button.Visibility == Visibility.Visible).ToArray());
+                    for (var index = 0; index < columns.Length; index++)
+                    {
+                        commandSpace.ColumnDefinitions[index].Width = columns[index] switch
+                        {
+                            DialogColumnKind.Button => new GridLength(1, GridUnitType.Star),
+                            DialogColumnKind.Spacing => new GridLength(8),
+                            _ => new GridLength(0),
+                        };
+                    }
                 }
             }
             foreach (var name in new[] { "PrimaryButton", "SecondaryButton", "CloseButton" })
