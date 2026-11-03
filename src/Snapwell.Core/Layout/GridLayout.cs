@@ -48,6 +48,24 @@ public sealed class GridLayout
             checked((int)(_rowStarts[bottom + 1] - _rowStarts[top] - _gap)));
     }
 
+    /// <summary>
+    /// 「中央」の区画範囲 (横 25〜75%、縦 12.5〜87.5% が目安)。割り切れないときは、左と上の余白を最寄りの区画へ丸め、
+    /// 右と下の余白を同じ数にして左右・上下対称にする。何も起きない状態を避けるため、常に範囲を返す。
+    /// </summary>
+    public static ZoneRange CenterRange(GridPlan plan)
+    {
+        var (column, columns) = CenterSpan(.25, plan.Columns);
+        var (row, rows) = CenterSpan(.125, plan.Rows);
+        return new(column, row, columns, rows);
+    }
+
+    private static (int Start, int Length) CenterSpan(double margin, int count)
+    {
+        // 余白が全体の半分以上になる細かい分割でも、少なくとも一区画は残す。
+        var start = Math.Min((int)Math.Round(margin * count, MidpointRounding.AwayFromZero), (count - 1) / 2);
+        return (start, count - start * 2);
+    }
+
     /// <summary>零から一の割合を区画範囲へ変換し、整数区画で表せなければ null を返す。</summary>
     public PixelRect? FromFractions(double x0, double x1, double y0, double y1)
     {

@@ -47,11 +47,13 @@ public static class CommandPlanner
         try
         {
             var grid = new GridLayout(monitor.WorkArea, plan, physical);
-            var centered = command == WindowCommand.CenterWindow ? grid.FromFractions(.25, .75, .125, .875) : null;
-            if (command == WindowCommand.CenterWindow && centered is null)
+            // 区画で割り切れないグリッドでも、最寄りの区画へ丸めた中央へ置く。
+            PixelRect? centered = null;
+            if (command == WindowCommand.CenterWindow)
             {
-                // ランチャーの「中央」と同じ範囲。区画で表せないグリッドでは、ほかのグリッドへ切り替えず何もしない。
-                return null;
+                var range = GridLayout.CenterRange(plan);
+                centered = grid.SpanRect(range.Column, range.Row, range.Column + range.Columns - 1,
+                    range.Row + range.Rows - 1);
             }
 
             var fractions = command switch

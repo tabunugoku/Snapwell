@@ -23,14 +23,20 @@ public sealed class CenterWindowCommandTests
         Assert.Equal(new PixelRect(486, 137, 948, 766), Plan(WindowCommand.CenterWindow, _current));
     }
 
-    /// <summary>区画の整数倍で表せないグリッドでは、別のグリッドへ切り替えず何もしない。</summary>
+    /// <summary>区画の整数倍で表せないグリッドでは、左と上の余白を最寄りの区画へ丸め、対称な中央にする。</summary>
     [Theory]
-    [InlineData(2, 2)]
-    [InlineData(4, 4)]
-    [InlineData(8, 4)]
-    [InlineData(3, 3)]
-    public void CenterWindowReturnsNullWhenGridCannotRepresentCenterRange(int columns, int rows) =>
-        Assert.Null(Plan(WindowCommand.CenterWindow, _current, plan: new(columns, rows)));
+    [InlineData(2, 2, 0, 0, 1, 1)]
+    [InlineData(4, 4, 1, 1, 2, 2)]
+    [InlineData(8, 4, 2, 1, 5, 2)]
+    [InlineData(3, 3, 1, 0, 1, 2)]
+    [InlineData(12, 12, 3, 2, 8, 9)]
+    public void CenterWindowRoundsToNearestCellsWhenGridCannotRepresentCenterRange(int columns, int rows, int c0,
+        int r0, int c1, int r1)
+    {
+        var plan = new GridPlan(columns, rows);
+        var grid = new GridLayout(_monitors[0].WorkArea, plan, new Spacing(8, 8).ToPhysical(1));
+        Assert.Equal(grid.SpanRect(c0, r0, c1, r1), Plan(WindowCommand.CenterWindow, _current, plan: plan));
+    }
 
     /// <summary>表せるグリッド（列 4・行 8）では、その区画で中央の範囲を作る。</summary>
     [Fact]
