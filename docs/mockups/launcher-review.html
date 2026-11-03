@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ランチャー UI レビュー</title>
+<style>
+:root{
+  --bg:#f4f4f2;--card:#fff;--ink:#1a1a19;--sub:#5e5d5a;--line:#e1e1de;--acc:#1f6c9f;--wall:#d9d9d4;--bad:#a23a38;--good:#2f6b3a;
+}
+@media (prefers-color-scheme:dark){:root{--bg:#161615;--card:#1f1f1e;--ink:#ecece9;--sub:#a3a29e;--line:#34342f;--acc:#8ccbf2;--wall:#101010;--bad:#f2a7a5;--good:#a6d1a9}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 "Segoe UI Variable Text","Yu Gothic UI","Segoe UI",sans-serif}
+main{max-width:1280px;margin:0 auto;padding:32px 24px 80px}
+h1{font-size:24px;margin:0 0 4px;font-weight:600}
+h2{font-size:18px;margin:48px 0 12px;font-weight:600}
+h3{font-size:14px;margin:0 0 8px;font-weight:600}
+p{margin:0 0 12px;color:var(--sub)}
+.lead{max-width:760px}
+code{font:12px Consolas,"Cascadia Mono",monospace;background:var(--line);padding:1px 5px;border-radius:4px}
+.bar{display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin:16px 0;padding:12px 16px;background:var(--card);border:1px solid var(--line);border-radius:12px;position:sticky;top:0;z-index:5}
+.bar label{font-size:12px;color:var(--sub);margin-right:4px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{all:unset;cursor:pointer;padding:4px 12px;font-size:12px;color:var(--sub)}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.seg button:focus-visible{outline:2px solid var(--acc);outline-offset:-2px}
+.matrix{display:grid;grid-template-columns:auto 1fr 1fr;gap:12px;align-items:start}
+.matrix .head{font-size:12px;color:var(--sub);font-weight:600;padding:0 4px}
+.matrix .side{writing-mode:vertical-rl;font-size:12px;color:var(--sub);font-weight:600;padding-top:8px}
+.cell{border-radius:12px;padding:20px 12px 24px;overflow:auto;border:1px solid var(--line)}
+.cell.light{background:#d9d9d4}
+.cell.dark{background:#101010}
+.stage{position:relative;margin:0 auto}
+.stage .op{position:absolute;white-space:nowrap;overflow:visible}
+.stage .t{overflow:hidden;text-overflow:clip}
+.stage .m{position:absolute;outline:1px dashed #d4522a;pointer-events:none;z-index:3}
+.stage .ml{position:absolute;font:9px/1 Consolas,monospace;color:#fff;background:#d4522a;padding:1px 3px;border-radius:2px;pointer-events:none;z-index:4;white-space:nowrap}
+.h{font:12px Consolas,monospace;color:var(--sub);text-align:center;margin-top:12px}
+table{border-collapse:collapse;width:100%;font-size:13px;background:var(--card);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+th,td{padding:8px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-size:12px;color:var(--sub);font-weight:600;background:var(--bg)}
+td.n{font-family:Consolas,monospace;white-space:nowrap}
+.tag{display:inline-block;font-size:11px;padding:0 6px;border-radius:999px;border:1px solid var(--line);color:var(--sub);margin-right:4px}
+.tag.p0{color:var(--bad);border-color:var(--bad)}
+.tag.p1{color:var(--acc);border-color:var(--acc)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 20px;margin-bottom:12px}
+ul{margin:0;padding-left:20px;color:var(--sub)}li{margin:2px 0}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+.ok{color:var(--good)}.ng{color:var(--bad)}
+</style>
+</head>
+<body>
+<main>
+<h1>ランチャー UI レビュー</h1>
+<p class="lead">対象は、ホットキーで開くランチャー (区画のパネル + ウィンドウ一覧)。トレイメニューのレビュー (PR 148) で決めたトークン (4 の倍数の格子、文字 12 / 13、補助文字のコントラスト 4.5 以上、<code>Hover</code>、2 px の焦点枠) を、ランチャーにも適用する案。as is は <code>LauncherPanelLayout</code> と <code>LauncherWindowListLayout</code> の式から再現した。実描画との差は、実装後に GDI で書き出して確かめる。</p>
+
+<div class="bar" id="bar">
+  <span><label>状態</label><span class="seg" data-k="view"></span></span>
+  <span><label>言語</label><span class="seg" data-k="lang"></span></span>
+  <span><label>キー焦点</label><span class="seg" data-k="focus"></span></span>
+  <span><label>寸法線</label><span class="seg" data-k="redline"></span></span>
+  <span><label>倍率</label><span class="seg" data-k="zoom"></span></span>
+</div>
+
+<h2>1. as is / to be (明 / 暗)</h2>
+<div class="matrix" id="matrix"></div>
+<p style="margin-top:12px">拡大率 1.0 の論理 px。寸法線は橙の破線 (左上の数字が x,y と 幅×高さ)。as is の端数 (27.2 / 29.2 / 18.8 / 19.2) は式のとおりで、表示は 0.1 px まで丸めている。to be はプリセットのボタン幅が +8 (アイコンとラベルの余白) なので、1 行に入る個数が減り、この見本 (6 個・日本語) では 2 行に折り返してパネルが 180 になる。折り返しは文言と選んだプリセットの数に依存する (as is も個数が増えれば折り返す)。</p>
+
+<h2>2. 監査 (as is の問題)</h2>
+<table id="findings"></table>
+
+<h2>3. 方向</h2>
+<div class="cols" id="direction"></div>
+
+<h2>4. 判断してほしい点</h2>
+<div id="decisions"></div>
+
+<h2>5. Codex に渡す数値仕様</h2>
+<p>単位は論理 px、物理 px は × 拡大率の四捨五入。座標は上段のパネルの左上が原点 (一覧は同じ x、y はパネルの下端から)。「パネル」= 区画のパネル、「一覧」= ウィンドウ一覧。</p>
+<table id="rows"></table>
+
+<h2>6. 高さの表 (拡大率 1.0)</h2>
+<table id="heights"></table>
+
+<h2>7. 色のコントラスト</h2>
+<table id="contrast"></table>
+
+<h2>8. 受け入れ条件</h2>
+<div class="card"><ul id="accept"></ul></div>
+
+<script type="application/json" id="data">
+{
+"findings":[
+ {"id":"F1","p":"P0","t":"高さ・位置が 4 の倍数でない","d":"上段 27.2、プリセット 29.2、タグ 18.8、ラベル 19.2、パネル高 124.4。パネルの左余白は 15、一覧は 14 で、左端が 1 px ずれている。","w":"LauncherPanelLayout.Create / LauncherWindowListLayout.Create"},
+ {"id":"F2","p":"P0","t":"キーボードの焦点が描かれない","d":"LauncherWindowRow.Focused はレイアウトに入っているが、LauncherWindowListRenderer は使っていない (選択 = 青、それ以外は同じ見た目)。Tab/矢印で動かす行が見えない。","w":"LauncherWindowListRenderer.cs:94-150"},
+ {"id":"F3","p":"P0","t":"補助文字のコントラストが 4.5 未満","d":"ライトの Muted (#787774) が Surface 上で 4.48、Surface2 (行・ボタン) 上で 4.25。しかも 10.5 / 11.5 px の小さい文字に使っている。","w":"OverlayPalette (トレイと共有、PR 148 で #6B6A67)"},
+ {"id":"F4","p":"P1","t":"文字サイズが 10.5 / 11.5 / 12 / 12.5 の 4 種","d":"トレイのトークン (12 / 13) とそろっていない。10.5 は役割の文字・Alt+n・タグで、読みにくい。","w":"全レンダラー"},
+ {"id":"F5","p":"P1","t":"タグが太字 + 字間 0.05em の小さい文字","d":"「対象」のタグが 10.5 / 700 / 字間つき。装飾的で、ほかの面にない書式。","w":"LauncherPanelLayout.cs:154-157"},
+ {"id":"F6","p":"P1","t":"▾ ▸ と ✓ がフォントのグリフ","d":"見出しの開閉と選択のチェックが文字。フォールバックで字形と大きさが環境でずれる。役割の ◉/○ は図形化済みで、これだけ未対応。","w":"LauncherWindowListRenderer.cs:64,118"},
+ {"id":"F7","p":"P1","t":"ホバー状態がない","d":"プリセット、分割案、整列ボタン、行、前へ/次へのどれも、ポインタを乗せても変わらない。ボタンに見えない前へ/次へは高さ 22 の文字だけ。","w":"LauncherController (hover の状態を持たない)"},
+ {"id":"F8","p":"P1","t":"行・ボタンの寸法が 4 の倍数でない","d":"行 28 (ピッチ 32)、キー面 20×22、役割 76×20、整列ボタン 76、ページャー 22、ヒント 18。","w":"LauncherWindowListLayout.Create"},
+ {"id":"F9","p":"P2","t":"スクロールバー幅が行高 28 を基準にしている","d":"width = 行高 × 10 / 28。行高を変えると 10 でなくなる。","w":"LauncherWindowListLayout.Scrollbar"}
+],
+"rows":[
+ ["P1","パネル","内側の余白 (左 / 上 / 下)","15 / 13 / 13","16 / 16 / 16","F1"],
+ ["P2","パネル","上段 (タグ・対象名・分割案) の行高","27.2","32","F1"],
+ ["P3","パネル","タグ: 高さ / 文字 / 字間","18.8 / 10.5・700 / 0.05em","24 / 12・600 / 0","F4 F5"],
+ ["P4","パネル","対象名: 文字 / タグとの間","12.5 / 10","13 / 8","F4"],
+ ["P5","パネル","分割案: 高さ / 幅 / 角 / 矢印の中心 (右から)","27.2 / max(最長+34, 78) / 6 / 14","32 / max(最長+36, 80) / 8 / 16","F1"],
+ ["P6","パネル","上段 → プリセットの間","10","8","F1"],
+ ["P7","パネル","プリセット: 高さ / 横の間 / 行の間 / 角","29.2 / 6 / 6 / 6","32 / 8 / 8 / 8","F1 F8"],
+ ["P8","パネル","プリセット: 幅 / アイコン (x,y,w,h) / ラベル x","42+文字 / 9, 8.6, 18×12 / 33","50+文字 / 12, 10, 18×12 / 38","F1"],
+ ["P9","パネル","プリセットのラベル: 高さ / y / 文字","19.2 / +5 / 12","20 / +6 / 12","F1"],
+ ["P10","パネル","プリセット → キー案内の間","10","12","F1"],
+ ["P11","パネル","キー案内: 行高 / 行の間 / キー面の最小幅 / 文字","22 / 4 (ピッチ 26) / 22 / 11.5","24 / 8 (ピッチ 32) / 24 / 12","F4 F8"],
+ ["P12","パネル","キー案内: 組と組の間 / 文字の色","14 / Muted","16 / Muted (#6B6A67)","F3"],
+ ["P13","パネル","パネルの外形: 幅 / 余白 (画面端) / 角","560 (上限) / 14 / 12","560 / 16 / 12","F1"],
+ ["W1","一覧","左右の余白","14","16 (パネルと同じ)","F1"],
+ ["W2","一覧","折りたたみ: 全体の高さ / 見出し (y, 高さ)","44 / 8, 28","48 / 8, 32","F8"],
+ ["W3","一覧","見出しの文字 / 件数の文字","12.5 / 11.5","13 / 12","F4"],
+ ["W4","一覧","開閉の印 (▾▸)","フォントの文字","図形: 9×5 の三角、見出しの左端 x16、縦は見出しの中央、色 Ink","F6"],
+ ["W5","一覧","区切り線 (見出しの上): x / 幅","14 / 内側幅","16 / 528","F1"],
+ ["W6","一覧","行: 高さ / ピッチ / 角","28 / 32 / 6","32 / 36 / 8","F8"],
+ ["W7","一覧","行: 番号キー (x, y, w×h)","10, 3, 20×22","12, 4, 24×24","F8"],
+ ["W8","一覧","行: チェック (x, y, w×h) / 印","40, 6, 16×16 / 文字 ✓","44, 8, 16×16 / 図形: 10×7 の折れ線、太さ 2、BlueText","F6"],
+ ["W9","一覧","行: タイトルの x / 文字","チェックの右 + 8 (= 64) / 12","68 / 12","F8"],
+ ["W10","一覧","行: 役割 (右の余白 / w×h / 文字)","8 / 76×20 / 10.5","8 / 80×24 / 12","F4 F8"],
+ ["W11","一覧","行: 役割の輪 (x, 直径) / 輪とラベルの間","9, 10 / 5","10, 10 / 6","F8"],
+ ["W12","一覧","行: キーボード焦点","描かない","行の内側に 2 の BlueText の枠、角 8 (選択中の行も枠を 2 に)","F2"],
+ ["W13","一覧","表示範囲 (viewport): 上端 y / 最大高","44 / min(160, n×32)","48 / min(176, n×36 − 4)","F8"],
+ ["W14","一覧","スクロールバー: 幅 / つまみ (x, w)","行高×10/28 (=10) / 3, 4","12 / 4, 4 (行高に依存しない)","F9"],
+ ["W15","一覧","ページャー: 上の間 / 高さ / 文字","8 / 22 / 11.5","8 / 24 / 12","F4 F8"],
+ ["W16","一覧","前へ / 次へ: 幅 / 間 / 右端","前へ max(50, 文字+12), 次へ 50 / 22 / 右 16 (次へ)","前へ max(56, 文字+16), 次へ 56 / 8 / 右 16","F7"],
+ ["W17","一覧","整列ボタン: ページャーの下の間 / 高さ / 横の間 / 角","6 (= +30 から 24) / 76 / 6 / 6","8 / 80 / 8 / 8","F8"],
+ ["W18","一覧","整列ボタン: アイコン y / ラベル y・高さ / Alt+n y・高さ・文字","6 / 36・18 / 下−20・16・10.5","8 / 40・16 / 60・16・12","F4 F8"],
+ ["W19","一覧","ヒント: ボタンの下の間 / 高さ / 文字","6 / 18 / 11.5","8 / 20 / 12","F4 F8"],
+ ["W20","一覧","下の余白 (ヒントの下)","14","16","F1"],
+ ["W21","一覧","コンパクト (縮小): 見出し y / ページャーの間 / ボタン高 / ヒントを足す条件","4 / 0 / 70 / chrome+6+18","4 / 0 / 72 / chrome+8+20","F8"],
+ ["W22","一覧","展開できる最小の高さ (MinimumExpandedHeight)","158 (見出し32・一行28・ページャー24・ボタン70・余白4 の式)","168 (4 + 32 + 32 + 24 + 72 + 4)","F8"],
+ ["H1","両方","ホバー (任意、判断 D2)","なし","プリセット・分割案・整列ボタン・前へ/次へ・行: 面を Hover (ライト #F0F0EE / ダーク #2D2D2C)、枠を BorderStrong に","F7"],
+ ["K1","共通","色","Muted (ライト) #787774","#6B6A67 (PR 148 の OverlayPalette。新たな変更なし)","F3"]
+],
+"heights":[
+ ["折りたたみ (パネル 1 行 + 見出し)","124.4 + 44 = 168.4","140 + 48 = 188"],
+ ["パネルのみ (プリセット 1 行・キー 1 行)","124.4","140"],
+ ["パネルのみ (プリセット 2 行・キー 1 行)","124.4 + 35.2 = 159.6","140 + 40 = 180"],
+ ["展開・窓 1 件 (一覧の高さ)","196 + 32 = 228","208 + 36 = 244"],
+ ["展開・窓 3 件","196 + 96 = 292","208 + 108 = 316"],
+ ["展開・窓 5 件以上","196 + 160 = 356","208 + 180 − 4 → 388 (= 48 + 176 + 164)"],
+ ["一覧の chrome (行以外)","196","212 (= 48 − 4 + 164 + 4)。式: 一覧の高さ = 208 + 36n (n ≤ 5)"]
+],
+"accept":[
+ "拡大率 1.0 で、パネルと一覧のすべての矩形 (行・ボタン・キー面・ピル) の x・y・幅・高さが、文字の幅に依存するもの (プリセットの幅・キーの幅・タグの幅) とアイコンの内部を除き 4 の倍数。",
+ "パネルの内容の左端 x16 と一覧の内容の左端 x16 が一致する。",
+ "拡大率 1.0 で、パネル (プリセット 1 行・キー 1 行) の高さが 140、折りたたみの一覧が 48、展開 (窓 1 / 3 / 5 件) が 244 / 316 / 388。",
+ "文字の大きさは 12 と 13 だけ (タグ 12・600、見出しと対象名 13)。10.5 / 11.5 / 12.5 が残らない。",
+ "ライトの Muted と Surface / Surface2 / Hover のコントラストが 4.5 以上。ダークも 4.5 以上。",
+ "Focused の行が、選択の有無にかかわらず 2 px の BlueText の枠で描かれる。選択中で焦点なしの行は枠 1。",
+ "▾ ▸ ✓ が図形で、フォントなしでも同じ形になる (描画結果が言語・フォントに依存しない)。",
+ "拡大率 1.25・1.5・2.0 で、行・ボタンの丸めの誤差が 1 px を超えない。",
+ "スクロールバーの幅が行高に依存しない (12)。",
+ "既存の動作 (ヒットテスト、ページ送り、選択上限、コンパクトへの縮小、ドラッグ中の再配置) が変わらない。LauncherPanelLayoutTests など既存のテストの値は更新してよいが、判断ではなく数値に追従させる。",
+ "判断 D2 を採るとき: ホバー中の項目が変わったときだけ再描画される (全レイヤーを毎回作り直さない)。"
+],
+"decisions":[
+ {"id":"D1","q":"行・ボタンの密度は 32 (トレイと統一) にするか、いまの 28 を保つか","rec":"32 (推奨)","d":"32 でパネルが 124 → 140、一覧 5 件が 356 → 388 になる。28 にすると 132 / 364 程度に収まるが、トレイ・設定画面の行 32 とそろわない。低い画面ではコンパクトが効く。"},
+ {"id":"D2","q":"ホバー状態 (H1) を今回に含めるか","rec":"別の PR にする (推奨)","d":"LauncherController にポインタの位置の状態を持たせ、再描画の鍵に入れる変更が要る。寸法・色・焦点枠とは性質が違うので分ける。含める場合も仕様は H1 のとおり。"},
+ {"id":"D3","q":"▾ ▸ ✓ の図形化 (F6) を今回に含めるか","rec":"含める (推奨、別コミット)","d":"役割の ◉/○ は図形化済みで、同じ方式 (整数ピクセルの矩形・線) で描く。回帰の範囲は一覧の見出しと行だけ。"},
+ {"id":"D4","q":"着手の順序","rec":"PR 148 のマージ後に実装","d":"Muted の変更 (#6B6A67) と Hover は PR 148 で入る。ランチャーはそれに依存するので、PR 148 を main に入れてから worktree を切る。"}
+],
+"direction":[
+ {"h":"トーン","b":"画面の上に一瞬だけ出る操作盤。静かな面 (Surface / Surface2) と細い線で、色は選択 (青) だけ。"},
+ {"h":"トークン","b":"4 の倍数の格子。文字 12 / 13。行 32。内側の余白 16。角: パネル 12、コントロール 8、キー 4。焦点枠 2 px の BlueText。"},
+ {"h":"署名の細部","b":"キー面 (キーキャップ)。番号キーも、Alt+n も、操作のヒントも、同じ寸法 24 の面で表す。"},
+ {"h":"変えないもの","b":"構成、順序、操作、文言、色の系統、物理モデルの動き。"}
+]
+}
+</script>
+
+<script>
+const D = JSON.parse(document.getElementById('data').textContent);
+const T = {
+  light:{surface:'#ffffff',surface2:'#f9f9f8',border:'#eaeaea',borderStrong:'#dadad7',text:'#2f3437',ink:'#111111',blueBg:'#e1f3fe',blueText:'#1f6c9f',hover:'#f0f0ee',muted_as:'#787774',muted_to:'#6b6a67'},
+  dark:{surface:'#202020',surface2:'#252524',border:'rgba(255,255,255,.078)',borderStrong:'rgba(255,255,255,.141)',text:'#e6e6e3',ink:'#f2f2f0',blueBg:'rgba(31,108,159,.28)',blueText:'#8ccbf2',hover:'#2d2d2c',muted_as:'#9b9a97',muted_to:'#9b9a97'}
+};
+const LANG = {
+  ja:{target:'対象',heading:'選択したウィンドウを整列',prev:'前へ',next:'次へ',main:'メイン',stack:'スタック',none:'未選択',sel:n=>`${n} / 9 件を選択`,
+      arrange:['グリッド','左右に並べる','縦に重ねる','メインとスタック'],hint:'1–9 選択の切り替え · Alt+1–4 整列',
+      hints:[[['←','→','↑','↓'],'移動'],[['Shift'],'+ 矢印キーで範囲'],[['Enter'],'配置'],[['Esc'],'閉じる']],
+      presets:['左半分','右半分','上半分','下半分','中央','最大化'],
+      wins:['リリースノート – エディタ','プロジェクトボード – ブラウザ','ターミナル','写真','ログ.txt']},
+  en:{target:'Target',heading:'Arrange selected windows',prev:'Previous',next:'Next',main:'Main',stack:'Stack',none:'None selected',sel:n=>`Selected ${n} / 9`,
+      arrange:['Grid','Side by side','Stacked','Main and stack'],hint:'1–9 Toggle selection · Alt+1–4 Arrange',
+      hints:[[['←','→','↑','↓'],'Move'],[['Shift'],'+ arrow keys: range'],[['Enter'],'Place'],[['Esc'],'Close']],
+      presets:['Left half','Right half','Top half','Bottom half','Center','Maximize'],
+      wins:['Release notes – Editor','Project board – Browser','Terminal','Photos','log.txt']}
+};
+const FONT='"Segoe UI Variable Text","Yu Gothic UI","Segoe UI",sans-serif';
+const cv=document.createElement('canvas').getContext('2d');
+function mw(s,size,o={}){cv.font=`${o.weight||400} ${size}px ${o.mono?'Cascadia Mono, Consolas, monospace':FONT}`;return Math.ceil(cv.measureText(s).width);}
+const PRESET_ICON=[[0,0,.5,1],[.5,0,1,1],[0,0,1,.5],[0,.5,1,1],[.25,.25,.75,.75],[0,0,1,1]];
+
+const S={view:'list2',lang:'ja',focus:'on',redline:'on',zoom:'1'};
+const OPT={
+  view:[['panel','パネルのみ'],['collapsed','折りたたみ'],['list0','展開・未選択'],['list2','展開・2 件選択']],
+  lang:[['ja','日本語'],['en','English']],
+  focus:[['on','あり'],['off','なし']],
+  redline:[['on','あり'],['off','なし']],
+  zoom:[['1','1×'],['1.5','1.5×']]
+};
+
+// 操作列 (ops) を作る。座標はカード左上が原点。
+function build(variant,theme){
+  const asIs=variant==='as', c=T[theme], L=LANG[S.lang];
+  const muted=asIs?c.muted_as:c.muted_to;
+  const ops=[]; const rect=(x,y,w,h,r,fill,stroke,sw,extra={})=>ops.push({k:'r',x,y,w,h,r,fill,stroke,sw:sw||1,...extra});
+  const text=(x,y,w,h,s,size,color,o={})=>ops.push({k:'t',x,y,w,h,s,size,color,...o});
+  const W=560;
+  const g=asIs?{pad:15,top:13,topH:27.2,tagH:18.8,tagSize:10.5,tagW:700,tagLs:.05,tgtSize:12.5,tgtGap:10,planPad:34,planMin:78,planR:6,gap1:10,btnH:29.2,btnGap:6,rowGap:6,btnPadW:42,iconX:9,iconY:8.6,lblX:33,lblY:5,lblH:19.2,gap2:10,keyH:22,keyRow:26,keyMin:22,keySize:11.5,grp:14,bot:13,r:6}
+              :{pad:16,top:16,topH:32,tagH:24,tagSize:12,tagW:600,tagLs:0,tgtSize:13,tgtGap:8,planPad:36,planMin:80,planR:8,gap1:8,btnH:32,btnGap:8,rowGap:8,btnPadW:50,iconX:12,iconY:10,lblX:38,lblY:6,lblH:20,gap2:12,keyH:24,keyRow:32,keyMin:24,keySize:12,grp:16,bot:16,r:8};
+  const inner=W-2*g.pad; const x0=g.pad; let y=g.top;
+  // 上段
+  const tagTxt=L.target; const tagW=mw(tagTxt,g.tagSize,{weight:g.tagW})+16+(g.tagLs?2*g.tagSize*g.tagLs:0);
+  const tagY=y+(g.topH-g.tagH)/2;
+  rect(x0,tagY,tagW,g.tagH,999,c.blueBg,null,0,{lab:'tag'});
+  text(x0,tagY,tagW,g.tagH,tagTxt,g.tagSize,c.blueText,{weight:g.tagW,ls:g.tagLs,center:1});
+  const planTxt='8 × 8'; const planW=Math.max(mw(planTxt,12)+g.planPad,g.planMin);
+  rect(x0+inner-planW,y,planW,g.topH,g.planR,c.surface,c.border,1,{lab:'plan'});
+  text(x0+inner-planW+6,y,planW-26,g.topH,planTxt,12,c.text);
+  const arrowR=asIs?14:16; const ax=x0+inner-arrowR;
+  ops.push({k:'a',x:ax,y:y+g.topH/2,color:c.text});
+  text(x0+tagW+g.tgtGap,y,inner-tagW-planW-2*g.tgtGap,g.topH,S.lang==='ja'?'リリースノート – エディタ':'Release notes – Editor',g.tgtSize,c.text);
+  y+=g.topH+g.gap1;
+  // プリセット
+  let used=0; const top0=y;
+  L.presets.forEach((name,i)=>{
+    const bw=Math.min(inner,g.btnPadW+mw(name,12));
+    if(used>0&&used+bw>inner){used=0;y+=g.btnH+g.rowGap;}
+    const bx=x0+used;
+    rect(bx,y,bw,g.btnH,g.r,c.surface2,c.border,1,{lab:i===0?'preset':null});
+    const f=PRESET_ICON[i];
+    rect(bx+g.iconX,y+g.iconY,18,12,2,'transparent',muted,1.2);
+    rect(bx+g.iconX+1.5+f[0]*15,y+g.iconY+1.5+f[1]*9,(f[2]-f[0])*15,(f[3]-f[1])*9,1,muted,null,0);
+    text(bx+g.lblX,y+g.lblY,bw-g.lblX-(asIs?9:12),g.lblH,name,12,c.text);
+    used+=bw+g.btnGap;
+  });
+  y+=g.btnH+g.gap2;
+  // キー案内
+  used=0; let hx=x0;
+  L.hints.forEach(([keys,label])=>{
+    const kw=keys.map(k=>Math.max(g.keyMin,mw(k,g.keySize,{mono:1})+14));
+    const lw=mw(label,g.keySize===12?12:11.5);
+    const gw=kw.reduce((a,b)=>a+b,0)+lw+6;
+    if(used>0&&used+gw>inner){used=0;hx=x0;y+=g.keyRow;}
+    keys.forEach((k,i)=>{rect(hx,y,kw[i],g.keyH,4,c.surface2,c.borderStrong,1,{lab:i===0&&k==='←'?'key':null});
+      text(hx,y,kw[i],g.keyH,k,g.keySize,c.text,{mono:1,center:1});hx+=kw[i];});
+    hx+=6; text(hx,y,lw,g.keyH,label,g.keySize===12?12:11.5,muted); hx+=lw;
+    used+=gw+g.grp; hx+=g.grp;
+  });
+  y+=g.keyH+g.bot;
+  const panelH=y;
+  let total=panelH;
+  // 一覧
+  const showList=S.view!=='panel';
+  if(showList){
+    const lg=asIs?{lx:14,hdr:28,hy:8,collapsed:44,vy:44,pitch:32,rowH:28,vmax:160,pg:8,pgH:22,btnGap:30,btnH:76,btnSp:6,hintGap:112,hintH:18,hintSz:11.5,keyX:10,keyY:3,keyW:20,keyH:22,chkX:40,chkY:6,roleW:76,roleH:20,roleSz:10.5,ttl:64,rr:6,hSz:12.5,cSz:11.5,bot:14,roleOff:84}
+                 :{lx:16,hdr:32,hy:8,collapsed:48,vy:48,pitch:36,rowH:32,vmax:176,pg:8,pgH:24,btnGap:32,btnH:80,btnSp:8,hintGap:0,hintH:20,hintSz:12,keyX:12,keyY:4,keyW:24,keyH:24,chkX:44,chkY:8,roleW:80,roleH:24,roleSz:12,ttl:68,rr:8,hSz:13,cSz:12,bot:16,roleOff:88};
+    const ly=panelH; const lx=lg.lx; const li=W-2*lx;
+    const expanded=S.view==='list0'||S.view==='list2';
+    ops.push({k:'l',x:lx,y:ly,w:li,color:c.border});
+    // 見出し
+    const hy=ly+lg.hy; const nsel=S.view==='list2'?2:0;
+    if(asIs) text(lx,hy,li-100,lg.hdr,`${expanded?'▾':'▸'} ${L.heading}`,lg.hSz,c.ink);
+    else { ops.push({k:'c',x:lx,y:hy+lg.hdr/2,open:expanded,color:c.ink}); text(lx+20,hy,li-100-20,lg.hdr,L.heading,lg.hSz,c.ink); }
+    text(lx+li-100,hy,100,lg.hdr,nsel?L.sel(nsel):L.none,lg.cSz,nsel?c.blueText:muted,{center:1});
+    if(!expanded){ total=ly+lg.collapsed; }
+    else{
+      const n=Math.min(5,L.wins.length); const vh=asIs?Math.min(lg.vmax,n*lg.pitch):Math.min(lg.vmax,n*lg.pitch-4);
+      const vy=ly+lg.vy;
+      for(let i=0;i<n;i++){
+        const ry=vy+i*lg.pitch; const sel=nsel&&i<2; const foc=S.focus==='on'&&i===1;
+        const main=sel&&i===0;
+        const focusRing=!asIs&&foc;
+        rect(lx,ry,li,lg.rowH,lg.rr,sel?c.blueBg:c.surface2,focusRing?c.blueText:(sel?c.blueText:c.border),focusRing?2:1,{lab:i===0?'row':null});
+        rect(lx+lg.keyX,ry+lg.keyY,lg.keyW,lg.keyH,4,c.surface,c.borderStrong,1,{lab:i===0?'num':null});
+        text(lx+lg.keyX,ry+lg.keyY,lg.keyW,lg.keyH,String(i+1),asIs?11.5:12,c.text,{mono:1,center:1});
+        rect(lx+lg.chkX,ry+lg.chkY,16,16,4,'transparent',sel?c.blueText:muted,1,{lab:i===0?'chk':null});
+        if(sel){ if(asIs) text(lx+lg.chkX,ry+lg.chkY,16,16,'✓',11,c.blueText,{center:1}); else ops.push({k:'v',x:lx+lg.chkX+3,y:ry+lg.chkY+4,color:c.blueText}); }
+        const rw=sel?lg.roleW+8:0;
+        text(lx+lg.ttl,ry,li-lg.ttl-8-rw,lg.rowH,L.wins[i],12,c.text);
+        if(sel){
+          const px=lx+li-lg.roleOff+(asIs?0:0), pw=lg.roleW; const py=ry+4;
+          const rr=asIs?lg.roleH:lg.roleH;
+          const tint=main?c.blueText:muted;
+          if(main) rect(lx+li-8-pw,py,pw,rr,999,c.blueBg,c.blueText,1,{lab:i===0?'role':null}); else rect(lx+li-8-pw,py,pw,rr,999,'transparent',c.border,1,{lab:i===0?'role':null});
+          const cx=lx+li-8-pw+9, cy=py+rr/2;
+          rect(cx,cy-5,10,10,5,'transparent',tint,1);
+          if(main) rect(cx+2,cy-3,6,6,3,tint,null,0);
+          text(cx+10+5,py,pw-9-10-5,rr,main?L.main:L.stack,lg.roleSz,tint);
+        }
+        if(foc&&asIs) {} // as is は焦点を描かない
+      }
+      // ページャー
+      const py=vy+vh+lg.pg;
+      text(lx,py,li-160,lg.pgH,`1–${n} / ${n}`,asIs?11.5:12,muted);
+      const nextW=asIs?50:56, prevTxt=L.prev; const prevW=asIs?Math.max(50,mw(prevTxt,12)+12):Math.max(56,mw(prevTxt,12)+16);
+      const nextX=lx+li-(asIs?2:0)-nextW-(asIs?0:0); // 右端
+      const nx=W-(asIs?66:16+56)-0+(asIs?0:0);
+      const nX=asIs?W-66:W-16-nextW; const pX=asIs?W-72-prevW:nX-8-prevW;
+      text(pX,py,prevW,lg.pgH,prevTxt,12,muted,{center:1,lab:'pg'});
+      text(nX,py,nextW,lg.pgH,L.next,12,c.blueText,{center:1});
+      ops.push({k:'m',x:nX,y:py,w:nextW,h:lg.pgH,lab:'next'});
+      // 整列ボタン
+      const by=py+(asIs?lg.btnGap:lg.btnGap); const dim=nsel===0?.4:1;
+      for(let i=0;i<4;i++){
+        const bx=lx+Math.round(i*(li+lg.btnSp)/4); const bx2=lx+Math.round((i+1)*(li+lg.btnSp)/4)-lg.btnSp; const bw=bx2-bx;
+        const gr=[];
+        rect(bx,by,bw,lg.btnH,lg.rr,c.surface2,c.border,1,{lab:i===0?'btn':null,op:dim});
+        const iconY=asIs?6:8; const ix=bx+(bw-44)/2;
+        rect(ix,by+iconY,44,28,3,'transparent',muted,1,{op:dim*.6});
+        const shapes=[[[3,3,18,10],[23,3,18,10],[3,15,18,10],[23,15,18,10]],[[3,4,11,20],[16.5,4,11,20],[30,4,11,20]],[[4,3,36,6],[4,11,36,6],[4,19,36,6]],[[3,3,22,22],[28,3,13,6],[28,11,13,6],[28,19,13,6]]][i];
+        shapes.forEach((s,j)=>rect(ix+s[0],by+iconY+s[1],s[2],s[3],2,(i===3&&j===0)?c.blueText:muted,null,0,{op:(i===3&&j===0)?dim:dim*.45}));
+        text(bx,by+(asIs?36:40),bw,asIs?18:16,L.arrange[i],12,c.text,{center:1,op:dim});
+        text(bx,by+(asIs?lg.btnH-20:60),bw,16,`Alt+${i+1}`,asIs?10.5:12,muted,{center:1,mono:1,op:dim});
+      }
+      const hyY=asIs?py+lg.hintGap:by+lg.btnH+8;
+      text(lx,hyY,li,lg.hintH,L.hint,lg.hintSz,muted);
+      total=hyY+lg.hintH+lg.bot;
+      if(vh<n*lg.pitch-4-1&&false){}
+    }
+  }
+  return {ops,H:total,W,panelH};
+}
+
+function paint(host,variant,theme){
+  const {ops,H,W,panelH}=build(variant,theme); const c=T[theme]; const z=+S.zoom;
+  host.innerHTML=''; const st=document.createElement('div'); st.className='stage';
+  st.style.width=(W*z)+'px'; st.style.height=(H*z)+'px';
+  const card=document.createElement('div'); card.className='op';
+  Object.assign(card.style,{left:0,top:0,width:W*z+'px',height:H*z+'px',background:c.surface,border:`1px solid ${c.border}`,borderRadius:12*z+'px',boxSizing:'border-box',boxShadow:theme==='light'?'0 8px 24px rgba(0,0,0,.18)':'0 8px 24px rgba(0,0,0,.6)'});
+  st.appendChild(card);
+  const f=(n)=>(Math.round(n*10)/10);
+  ops.forEach(o=>{
+    const d=document.createElement('div'); d.className='op';
+    const s=d.style;
+    if(o.k==='r'){
+      Object.assign(s,{left:o.x*z+'px',top:o.y*z+'px',width:o.w*z+'px',height:o.h*z+'px',borderRadius:o.r*z+'px',background:o.fill||'transparent',
+        boxShadow:o.stroke?`inset 0 0 0 ${o.sw*z}px ${o.stroke}`:'none',opacity:o.op??1});
+      st.appendChild(d);
+      if(o.lab&&S.redline==='on'){mk(st,o.x,o.y,o.w,o.h,z);}
+    }else if(o.k==='t'){
+      Object.assign(s,{left:o.x*z+'px',top:o.y*z+'px',width:o.w*z+'px',height:o.h*z+'px',lineHeight:o.h*z+'px',fontSize:o.size*z+'px',color:o.color,
+        fontWeight:o.weight||400,textAlign:o.center?'center':'left',letterSpacing:o.ls?o.ls+'em':'0',fontFamily:o.mono?'"Cascadia Mono",Consolas,monospace':FONT,opacity:o.op??1,overflow:'hidden',textOverflow:'ellipsis'});
+      d.textContent=o.s; st.appendChild(d);
+      if(o.lab&&S.redline==='on'){mk(st,o.x,o.y,o.w,o.h,z);}
+    }else if(o.k==='l'){
+      Object.assign(s,{left:o.x*z+'px',top:o.y*z+'px',width:o.w*z+'px',height:'1px',background:o.color}); st.appendChild(d);
+    }else if(o.k==='a'){ // 下向き三角 9x5
+      Object.assign(s,{left:(o.x-4.5)*z+'px',top:(o.y-2.5)*z+'px',width:0,height:0,borderLeft:4.5*z+'px solid transparent',borderRight:4.5*z+'px solid transparent',borderTop:5*z+'px solid '+o.color}); st.appendChild(d);
+    }else if(o.k==='c'){ // 開閉の三角 (to be の図形)
+      Object.assign(s,{left:o.x*z+'px',top:(o.y-2.5)*z+'px',width:0,height:0,borderLeft:4.5*z+'px solid transparent',borderRight:4.5*z+'px solid transparent',[o.open?'borderTop':'borderBottom']:5*z+'px solid '+o.color,opacity:o.open?1:0});
+      if(!o.open){ Object.assign(s,{left:(o.x+2)*z+'px',top:(o.y-4.5)*z+'px',borderLeft:'5px solid '+o.color,borderRight:'0',borderTop:4.5*z+'px solid transparent',borderBottom:4.5*z+'px solid transparent',width:0,height:0,opacity:1}); s.borderLeftWidth=5*z+'px'; }
+      st.appendChild(d);
+    }else if(o.k==='v'){ // チェック 10x7
+      Object.assign(s,{left:o.x*z+'px',top:o.y*z+'px',width:10*z+'px',height:6*z+'px',borderLeft:2*z+'px solid '+o.color,borderBottom:2*z+'px solid '+o.color,transform:'rotate(-45deg) scale(.7)',transformOrigin:'50% 50%',top:(o.y-1)*z+'px'});
+      st.appendChild(d);
+    }else if(o.k==='m'){ if(S.redline==='on') mk(st,o.x,o.y,o.w,o.h,z); }
+  });
+  host.appendChild(st);
+  const hh=document.createElement('div'); hh.className='h'; hh.textContent=`全体 ${W}×${f(H)}`+(S.view!=='panel'?`  (パネル ${f(panelH)})`:''); host.appendChild(hh);
+}
+function mk(st,x,y,w,h,z){
+  const m=document.createElement('div'); m.className='m'; Object.assign(m.style,{left:x*z+'px',top:y*z+'px',width:w*z+'px',height:h*z+'px'}); st.appendChild(m);
+  const l=document.createElement('div'); l.className='ml'; const f=n=>Math.round(n*10)/10; l.textContent=`${f(x)},${f(y)} ${f(w)}×${f(h)}`;
+  Object.assign(l.style,{left:x*z+'px',top:(y*z-11)+'px'}); st.appendChild(l);
+}
+function renderMatrix(){
+  const m=document.getElementById('matrix'); m.innerHTML='';
+  const mkEl=(cls,txt)=>{const e=document.createElement('div');e.className=cls;e.textContent=txt;return e;};
+  m.append(mkEl('head',''),mkEl('head','as is (いまの実装)'),mkEl('head','to be (提案)'));
+  ['light','dark'].forEach(theme=>{
+    m.append(mkEl('side',theme==='light'?'ライト':'ダーク'));
+    ['as','to'].forEach(v=>{const cell=document.createElement('div');cell.className='cell '+theme;m.append(cell);paint(cell,v,theme);});
+  });
+}
+function renderBar(){
+  document.querySelectorAll('.seg').forEach(seg=>{
+    const k=seg.dataset.k; seg.innerHTML='';
+    OPT[k].forEach(([v,label])=>{const b=document.createElement('button');b.textContent=label;b.setAttribute('aria-pressed',String(S[k]===v));b.onclick=()=>{S[k]=v;renderBar();renderMatrix();};seg.appendChild(b);});
+  });
+}
+function tbl(id,head,rows,cls){
+  const t=document.getElementById(id); t.innerHTML='<thead><tr>'+head.map(h=>`<th>${h}</th>`).join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map((c,i)=>`<td class="${cls&&cls[i]||''}">${c}</td>`).join('')+'</tr>').join('')+'</tbody>';
+}
+tbl('findings',['#','優先','問題','内容','場所'],D.findings.map(f=>[f.id,`<span class="tag ${f.p==='P0'?'p0':f.p==='P1'?'p1':''}">${f.p}</span>`,f.t,f.d,`<code>${f.w}</code>`]),['n']);
+document.getElementById('direction').innerHTML=D.direction.map(d=>`<div class="card"><h3>${d.h}</h3><p style="margin:0">${d.b}</p></div>`).join('');
+document.getElementById('decisions').innerHTML=D.decisions.map(d=>`<div class="card"><h3>${d.id}. ${d.q}</h3><p style="margin:0 0 4px"><b>推奨: ${d.rec}</b></p><p style="margin:0">${d.d}</p></div>`).join('');
+tbl('rows',['ID','対象','項目','as is','to be','指摘'],D.rows,['n','','','n','n','n']);
+tbl('heights',['状態','as is','to be'],D.heights,['','n','n']);
+document.getElementById('accept').innerHTML=D.accept.map(a=>`<li>${a}</li>`).join('');
+// コントラスト
+function lum(h){const c=[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)/255).map(v=>v<=.03928?v/12.92:((v+.055)/1.055)**2.4);return .2126*c[0]+.7152*c[1]+.0722*c[2];}
+const cr=(a,b)=>{const x=lum(a),y=lum(b);return ((Math.max(x,y)+.05)/(Math.min(x,y)+.05)).toFixed(2);};
+const pair=(t,fg,bg)=>{const v=cr(fg,bg);return `<span class="${+v>=4.5?'ok':'ng'}">${v}</span>`;};
+tbl('contrast',['組み合わせ','as is','to be'],[
+ ['ライト Muted / Surface (#FFFFFF)',pair(0,'#787774','#ffffff'),pair(0,'#6b6a67','#ffffff')],
+ ['ライト Muted / Surface2 (#F9F9F8、行・ボタン)',pair(0,'#787774','#f9f9f8'),pair(0,'#6b6a67','#f9f9f8')],
+ ['ライト Muted / Hover (#F0F0EE)','—',pair(0,'#6b6a67','#f0f0ee')],
+ ['ダーク Muted / Surface (#202020)',pair(0,'#9b9a97','#202020'),pair(0,'#9b9a97','#202020')],
+ ['ダーク Muted / Surface2 (#252524)',pair(0,'#9b9a97','#252524'),pair(0,'#9b9a97','#252524')],
+ ['ダーク Muted / Hover (#2D2D2C)','—',pair(0,'#9b9a97','#2d2d2c')],
+ ['ライト BlueText / BlueBackground (#E1F3FE)',pair(0,'#1f6c9f','#e1f3fe'),pair(0,'#1f6c9f','#e1f3fe')]
+],['','n','n']);
+renderBar(); renderMatrix();
+</script>
+</main>
+</body>
+</html>

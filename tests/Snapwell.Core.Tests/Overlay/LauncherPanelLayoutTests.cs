@@ -47,8 +47,8 @@ public sealed class LauncherPanelLayoutTests
         var selection = new ZoneSelection(new(-1920, -300, 1920, 1040), new(8, 8), new(8, 8));
         var layout = LauncherPanelLayout.Create(selection, scale);
         Assert.Equal((int)(560 * scale), layout.Panel.Width);
-        Assert.Equal(-300 + (int)(14 * scale), layout.Panel.Y);
-        Assert.Equal(layout.Panel.X + (int)(15 * scale), layout.Top.X);
+        Assert.Equal(-300 + (int)(16 * scale), layout.Panel.Y);
+        Assert.Equal(layout.Panel.X + (int)(16 * scale), layout.Top.X);
         Assert.Equal(8, layout.Presets.Count);
         Assert.Equal("8 × 8", LauncherPanelLayout.PlanName(selection.Grid.Plan));
     }

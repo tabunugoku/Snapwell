@@ -11,8 +11,8 @@ public sealed record LauncherWindowRow(LauncherWindow Window, PixelRect Bounds, 
     int Number = 0, bool Main = false)
 {
     /// <summary>右端に固定幅で置く役割の表示。行をまたいで縦にそろう。選択中の行だけ有効。</summary>
-    public PixelRect RoleBounds(double scale) => new(Bounds.Right - (int)Math.Round(84 * scale),
-        Bounds.Y + (int)Math.Round(4 * scale), (int)Math.Round(76 * scale), Bounds.Height - 2 * (int)Math.Round(4 * scale));
+    public PixelRect RoleBounds(double scale) => new(Bounds.Right - (int)Math.Round(88 * scale),
+        Bounds.Y + (int)Math.Round(4 * scale), (int)Math.Round(80 * scale), (int)Math.Round(24 * scale));
 
     /// <summary>ラジオ形式アイコンの輪の線幅。整数ピクセルにそろえ、拡大率でもぼやけない。</summary>
     public static int IconRingThickness(double scale) => Math.Max(1, (int)Math.Round(scale));
@@ -22,7 +22,7 @@ public sealed record LauncherWindowRow(LauncherWindow Window, PixelRect Bounds, 
     {
         var role = RoleBounds(scale);
         var diameter = Math.Max(2, (int)Math.Round(5 * scale)) * 2;
-        return new(role.X + (int)Math.Round(9 * scale), role.Y + (role.Height - diameter) / 2, diameter, diameter);
+        return new(role.X + (int)Math.Round(10 * scale), role.Y + (role.Height - diameter) / 2, diameter, diameter);
     }
 
     /// <summary>輪の内側に隙間を一つ空けて置く塗りつぶしの点。輪と同じ中心で、整数ピクセルにそろう。</summary>
@@ -37,7 +37,7 @@ public sealed record LauncherWindowRow(LauncherWindow Window, PixelRect Bounds, 
     public PixelRect RoleLabelBounds(double scale)
     {
         var role = RoleBounds(scale);
-        var left = IconBounds(scale).Right + (int)Math.Round(5 * scale);
+        var left = IconBounds(scale).Right + (int)Math.Round(6 * scale);
         return new(left, role.Y, role.Right - left, role.Height);
     }
 }
@@ -48,20 +48,20 @@ public sealed record LauncherArrangeButton(ArrangeLayout Layout, PixelRect Bound
     /// <summary>ラベルはアイコンと独立にボタンの幅いっぱいへ置く。</summary>
     public PixelRect LabelBounds(double scale) =>
         new(Bounds.X, Bounds.Y + (IsCompact(scale)
-                ? Math.Min((int)Math.Round(32 * scale),
-                    Bounds.Height - (int)Math.Round(20 * scale) - (int)Math.Round(18 * scale))
-                : (int)Math.Round(36 * scale)),
-            Bounds.Width, (int)Math.Round(18 * scale));
+                ? Math.Min((int)Math.Round(36 * scale),
+                    Bounds.Height - (int)Math.Round(20 * scale) - (int)Math.Round(16 * scale))
+                : (int)Math.Round(40 * scale)),
+            Bounds.Width, (int)Math.Round(16 * scale));
 
     /// <summary>ボタンの左上を原点にした、44 × 28 のアイコンの枠。</summary>
     public PixelRect IconBounds(double scale)
     {
         var width = (int)Math.Round(44 * scale);
-        return new((Bounds.Width - width) / 2, (int)Math.Round((IsCompact(scale) ? 2 : 6) * scale),
+        return new((Bounds.Width - width) / 2, (int)Math.Round((IsCompact(scale) ? 4 : 8) * scale),
             width, (int)Math.Round(28 * scale));
     }
 
-    private bool IsCompact(double scale) => Bounds.Height < (int)Math.Round(76 * scale);
+    private bool IsCompact(double scale) => Bounds.Height < (int)Math.Round(80 * scale);
 
     /// <summary>
     /// アイコン枠の左上を原点にした整数ピクセルの矩形。左右・上下の中心に対して対称に丸め、端を画素にそろえる。
@@ -98,8 +98,8 @@ public sealed record LauncherWindowListLayout(PixelRect Panel, PixelRect Header,
 {
     /// <summary>一ページの件数は選択上限と同じ九件。</summary>
     public const int PageSize = 9;
-    /// <summary>縮小時の展開下限。見出し32・一行28・ページャー24・ボタン70・下余白4の合計。</summary>
-    public const int MinimumExpandedHeight = 158;
+    /// <summary>縮小時の展開下限。上余白4・見出し32・一行32・ページャー24・ボタン72・下余白4の合計。</summary>
+    public const int MinimumExpandedHeight = 168;
     /// <summary>展開中か。</summary>
     public bool Expanded { get; init; }
     /// <summary>一覧の表示範囲。行はこの範囲で切り取る。</summary>
@@ -112,10 +112,12 @@ public sealed record LauncherWindowListLayout(PixelRect Panel, PixelRect Header,
         get
         {
             if (Rows.Count == 0 || Rows[^1].Bounds.Bottom + Scroll <= Viewport.Bottom) { return default; }
-            var width = Math.Max(1, (int)Math.Round(Rows[0].Bounds.Height * 10.0 / 28));
+            var width = Math.Max(1, (int)Math.Round(12 * Scale));
             return new(Viewport.Right - width, Viewport.Y, width, Viewport.Height);
         }
     }
+    /// <summary>行高に依存しない部品の寸法換算に使う拡大率。</summary>
+    public double Scale { get; init; } = 1;
     /// <summary>選択上限などの状態を知らせる。</summary>
     public string Status { get; init; } = "";
     /// <summary>開くときに取得し、ドラッグ中の再配置でも使い回す表示文。</summary>
@@ -127,21 +129,21 @@ public sealed record LauncherWindowListLayout(PixelRect Panel, PixelRect Header,
         var (_, width, available) = MeasureSpace(area, existingPanel, scale);
         int Px(double value) => (int)Math.Round(value * scale);
         // 部品ごとの丸めでも一行を欠けさせない。
-        var minimum = Math.Max(Px(MinimumExpandedHeight), CompactChromeHeight(scale) + Px(28));
+        var minimum = Math.Max(Px(MinimumExpandedHeight), CompactChromeHeight(scale) + Px(32));
         return width >= Px(300) && available >= minimum;
     }
 
     private static int CompactChromeHeight(double scale) =>
-        (int)Math.Round(4 * scale) + (int)Math.Round(28 * scale) + (int)Math.Round(24 * scale) +
-        (int)Math.Round(70 * scale) + (int)Math.Round(4 * scale);
+        (int)Math.Round(4 * scale) + (int)Math.Round(32 * scale) + (int)Math.Round(24 * scale) +
+        (int)Math.Round(72 * scale) + (int)Math.Round(4 * scale);
 
     private static (int Top, int Width, int Available) MeasureSpace(
         PixelRect area, PixelRect existingPanel, double scale)
     {
         int Px(double value) => (int)Math.Round(value * scale);
-        var top = existingPanel.Height > 0 ? existingPanel.Bottom : area.Y + Px(14);
-        var width = existingPanel.Width > 0 ? existingPanel.Width : Math.Min(Px(560), area.Width - Px(28));
-        return (top, width, area.Bottom - Px(14) - top);
+        var top = existingPanel.Height > 0 ? existingPanel.Bottom : area.Y + Px(16);
+        var width = existingPanel.Width > 0 ? existingPanel.Width : Math.Min(Px(560), area.Width - Px(32));
+        return (top, width, area.Bottom - Px(16) - top);
     }
 
     /// <summary>ページとスクロールを独立に保ち、展開状態に応じて配置する。</summary>
@@ -152,60 +154,62 @@ public sealed record LauncherWindowListLayout(PixelRect Panel, PixelRect Header,
         text ??= LauncherWindowListText.Create();
         int Px(double value) => (int)Math.Round(value * scale);
         var (top, width, available) = MeasureSpace(area, existingPanel, scale);
-        if (width < Px(300) || available < Px(44))
+        if (width < Px(300) || available < Px(48))
         {
             return new(default, default, default, default, default, [], [], 0, windows.Count, selected.Count)
-            { Text = text };
+            { Text = text, Scale = scale };
         }
 
         var first = windows.Count == 0 ? 0 : Math.Clamp(focused, 0, windows.Count - 1) / PageSize * PageSize;
         var visible = Math.Min(PageSize, windows.Count - first);
         expanded &= CanExpand(area, existingPanel, scale);
-        var compact = expanded && available < Px(212);
-        var preferredViewport = Math.Min(Px(160), visible * Px(32));
-        var chromeHeight = compact ? CompactChromeHeight(scale) : Px(196);
+        var compact = expanded && available < Px(244);
+        var preferredViewport = Math.Min(Px(176), Math.Max(0, visible * Px(36) - Px(4)));
+        var chromeHeight = compact ? CompactChromeHeight(scale) : Px(212);
         // ボタンと余白を縮めても足りなければヒントを省き、最後に表示行数を減らす。
-        var showHint = !compact || available >= chromeHeight + Px(6) + Px(18) + preferredViewport;
-        if (compact && showHint) { chromeHeight += Px(6) + Px(18); }
+        var showHint = !compact || available >= chromeHeight + Px(8) + Px(20) + preferredViewport;
+        if (compact && showHint) { chromeHeight += Px(8) + Px(20); }
         var viewportHeight = expanded ? Math.Min(preferredViewport, available - chromeHeight) : 0;
-        var height = expanded ? chromeHeight + viewportHeight : Px(44);
+        var height = expanded ? chromeHeight + viewportHeight : Px(48);
         var panel = new PixelRect(area.X + (area.Width - width) / 2, top, width, height);
-        var left = panel.X + Px(14);
-        var inner = panel.Width - Px(28);
-        var header = new PixelRect(left, top + Px(compact ? 4 : 8), inner, Px(28));
+        var left = panel.X + Px(16);
+        var inner = panel.Width - Px(32);
+        var header = new PixelRect(left, top + Px(compact ? 4 : 8), inner, Px(32));
         if (!expanded)
         {
             return new(panel, header, default, default, default, [], [], first, windows.Count, selected.Count)
-            { Status = status, Text = text };
+            { Status = status, Text = text, Scale = scale };
         }
 
-        var viewport = new PixelRect(left, compact ? header.Bottom : top + Px(44), inner, viewportHeight);
-        scroll = Math.Clamp(scroll, 0, Math.Max(0, visible * Px(32) - viewportHeight));
+        var viewport = new PixelRect(left, compact ? header.Bottom : top + Px(48), inner, viewportHeight);
+        scroll = Math.Clamp(scroll, 0, Math.Max(0, visible * Px(36) - Px(4) - viewportHeight));
         if (compact && visible > 0)
         {
-            var focusedTop = (Math.Clamp(focused, first, first + visible - 1) - first) * Px(32);
-            scroll = Math.Clamp(scroll, Math.Max(0, focusedTop + Px(28) - viewportHeight), focusedTop);
+            var focusedTop = (Math.Clamp(focused, first, first + visible - 1) - first) * Px(36);
+            scroll = Math.Clamp(scroll, Math.Max(0, focusedTop + Px(32) - viewportHeight), focusedTop);
         }
         var rows = Enumerable.Range(first, visible).Select((index, row) => new LauncherWindowRow(windows[index],
-            new(left, viewport.Y + row * Px(32) - scroll, inner, Px(28)), selected.Contains(windows[index].Handle),
+            new(left, viewport.Y + row * Px(36) - scroll, inner, Px(32)), selected.Contains(windows[index].Handle),
             index == focused, row + 1, selected.Count > 0 && windows[index].Handle == selected[0])).ToArray();
         var pagerY = viewport.Bottom + (compact ? 0 : Px(8));
-        // 英語の Previous も左右の余白を持つ。日本語の寸法はそのまま保つ。
-        var previousWidth = Math.Max(50, text.Previous.Sum(c => c > 255 ? 12 : 6.6) + 12);
-        var previous = new PixelRect(panel.Right - Px(72 + previousWidth), pagerY, Px(previousWidth), Px(22));
-        var next = new PixelRect(panel.Right - Px(66), pagerY, Px(50), Px(22));
+        // 翻訳の幅を含め、前後の操作の間に同じ余白を確保する。
+        var previousWidth = Math.Max(56, Math.Ceiling(text.Previous.Sum(c => c > 255 ? 12 : 6.6) * scale) / scale + 16);
+        var previous = new PixelRect(panel.Right - Px(80 + previousWidth), pagerY, Px(previousWidth), Px(24));
+        var next = new PixelRect(panel.Right - Px(72), pagerY, Px(56), Px(24));
         var buttons = Enumerable.Range(0, 4).Select(i =>
         {
-            var x = left + i * (inner + Px(6)) / 4;
-            var right = left + (i + 1) * (inner + Px(6)) / 4 - Px(6);
+            // 四分割の端を論理 4 px にそろえ、余りは各ボタンへ配る。
+            int Edge(int index) => Px(4 * Math.Round(index * (inner / scale + 8) / 16));
+            var x = left + Edge(i);
+            var right = left + (i == 3 ? inner : Edge(i + 1) - Px(8));
             return new LauncherArrangeButton((ArrangeLayout)i,
-                new(x, pagerY + Px(compact ? 24 : 30), right - x, Px(compact ? 70 : 76)),
+                new(x, pagerY + Px(compact ? 24 : 32), right - x, Px(compact ? 72 : 80)),
                 text.ArrangeLabels[i]);
         }).ToArray();
         var hint = showHint
-            ? new PixelRect(left, compact ? buttons[0].Bounds.Bottom + Px(6) : pagerY + Px(112), inner, Px(18))
+            ? new PixelRect(left, compact ? buttons[0].Bounds.Bottom + Px(8) : pagerY + Px(120), inner, Px(20))
             : default;
         return new(panel, header, previous, next, hint, rows, buttons, first, windows.Count, selected.Count)
-        { Expanded = true, Viewport = viewport, Scroll = scroll, Status = status, Text = text };
+        { Expanded = true, Viewport = viewport, Scroll = scroll, Status = status, Text = text, Scale = scale };
     }
 }

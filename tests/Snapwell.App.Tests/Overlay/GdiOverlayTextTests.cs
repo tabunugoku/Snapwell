@@ -107,7 +107,7 @@ public sealed class GdiOverlayTextTests
         var area = new PixelRect(-100, -80, 1920, 1080);
         var selection = new ZoneSelection(area, new(8, 8), new(8, 8));
         var before = LauncherPanelLayout.Create(selection, scale, "対象の例", true, text.Measure);
-        foreach (var item in before.Text.Where(item => item.Size <= 11.5))
+        foreach (var item in before.Text.Where(item => item.Size <= 12))
         {
             var frame = OverlayPainter.Create(item.Bounds.Width, item.Bounds.Height);
             var width = text.Measure(item.Value, item.Size, item.Mono, item.Bold);
@@ -173,7 +173,7 @@ public sealed class GdiOverlayTextTests
         var area = new PixelRect(0, 0, 120, 50);
         var frame = OverlayPainter.Create(120, 50);
         var bounds = new PixelRect(10, 5, 80, 40);
-        text.Draw(frame, area, new(new string('W', 1000), bounds, 12.5), new(255, 255, 255, 255));
+        text.Draw(frame, area, new(new string('W', 1000), bounds, 13), new(255, 255, 255, 255));
         Assert.Contains(frame.Pixels, pixel => pixel > 0);
         for (var y = 0; y < frame.Height; y++)
         {
@@ -198,7 +198,7 @@ public sealed class GdiOverlayTextTests
         Assert.NotNull(layout);
         Assert.Equal(selection.WorkArea.Width, frame.Width);
         Assert.Equal(8, layout.Presets.Count);
-        Assert.Equal("対象の例", Assert.Single(layout.Text, text => text.Size == 12.5).Value);
+        Assert.Equal("対象の例", Assert.Single(layout.Text, text => text.Size == 13).Value);
         Assert.Contains(layout.Text, text => text.Value == " + 矢印 範囲");
         Assert.Contains(layout.Text, text => text.Value == " 配置");
         Assert.Contains(layout.Text, text => text.Value == " 閉じる");
@@ -219,7 +219,7 @@ public sealed class GdiOverlayTextTests
         Assert.All(layout.Text, item => Assert.True(
             (text.Measure(item.Value, item.Size, item.Mono, item.Bold) + item.Value.Length * item.LetterSpacing) *
             scale <= item.Bounds.Width + .00001, item.Value));
-        Assert.EndsWith("…", Assert.Single(layout.Text, item => item.Size == 12.5).Value);
+        Assert.EndsWith("…", Assert.Single(layout.Text, item => item.Size == 13).Value);
     }
 
     /// <summary>選択だけの変化ではパネルを作り直さず、静的な状態の変更では作り直す。</summary>

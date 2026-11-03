@@ -394,12 +394,12 @@ internal sealed class LauncherController : IDisposable
         if (_scrollDragging || (pointer.Kind == OverlayPointerKind.Down && list.Scrollbar.Contains(pointer.Position)))
         {
             _scrollDragging = pointer.Kind != OverlayPointerKind.Up;
-            var maximum = Math.Max(0, list.Rows.Count * (int)Math.Round(32 * _scale) - list.Viewport.Height);
+            var maximum = Math.Max(0, list.Rows.Count * (int)Math.Round(36 * _scale) - (int)Math.Round(4 * _scale) - list.Viewport.Height);
             _windowScroll = (int)Math.Round(Math.Clamp((pointer.Position.Y - list.Viewport.Y) /
                 Math.Max(1, list.Viewport.Height), 0, 1) * maximum);
             // 縮小配置で焦点行を表示する際も、スクロール操作を元の行へ引き戻さない。
             _focusedWindow = list.First + Math.Min(list.Rows.Count - 1,
-                (int)Math.Ceiling(_windowScroll / Math.Max(1, Math.Round(32 * _scale))));
+                (int)Math.Ceiling(_windowScroll / Math.Max(1, Math.Round(36 * _scale))));
             Draw();
             return true;
         }

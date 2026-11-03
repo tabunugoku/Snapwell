@@ -209,7 +209,7 @@ public sealed class OverlayPainterTests
                 Assert.Equal(expectedWidth, rows[0].Count());
                 Assert.Single(rows[^1]);
                 var axis = rows[0].Min(point => point.X) + rows[0].Max(point => point.X);
-                Assert.InRange(Math.Abs((axis + 1) / 2.0 - (layout.Plan.Right - 14 * scale)), 0, 1);
+                Assert.InRange(Math.Abs((axis + 1) / 2.0 - (layout.Plan.Right - 16 * scale)), 0, 1);
                 Assert.InRange(Math.Abs((rows[0].Key + rows[^1].Key + 1) / 2.0 - layout.Plan.Center.Y), 0, .5);
                 var previousWidth = expectedWidth;
                 for (var row = 0; row < rows.Length; row++)
