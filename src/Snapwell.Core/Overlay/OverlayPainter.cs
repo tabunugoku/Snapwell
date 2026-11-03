@@ -129,12 +129,12 @@ public static class OverlayPainter
         var frame = Create(workArea.Width, workArea.Height);
         var rect = Local(target, workArea);
         var palette = OverlayPalette.For(theme);
-        FillRounded(frame, rect, palette.BlueBackground, 8, scale);
-        // SVG の枠はパスの中央に置かれる。半径も線と空白も論理 px から換算する。
+        FillRounded(frame, rect, palette.ZoneSelected, 8, scale);
+        // 隣の区画へ重ならないよう内側に描き、端数の線幅によるにじみを避ける。
         if (showZoneLines)
         {
-            PaintRounded(frame, rect.X, rect.Y, rect.Width, rect.Height, 8 * scale, palette.BlueLine,
-                Math.Max(1, 1.5 * scale), centered: true, dashScale: scale);
+            PaintRounded(frame, rect.X, rect.Y, rect.Width, rect.Height, 8 * scale, palette.BlueText,
+                Math.Max(1, Math.Round(2 * scale, MidpointRounding.AwayFromZero)), dashScale: scale);
         }
 
         if (showPredictionLine && origin is { } start && double.IsFinite(start.X) && double.IsFinite(start.Y) &&
@@ -161,7 +161,7 @@ public static class OverlayPainter
             return;
         }
 
-        var radius = Math.Max(1, 1.5 * scale) / 2;
+        var radius = Math.Max(1, Math.Round(2 * scale, MidpointRounding.AwayFromZero)) / 2;
         var left = (int)Math.Clamp(Math.Floor(Math.Min(start.X, end.X) - radius), area.X, area.Right);
         var right = (int)Math.Clamp(Math.Ceiling(Math.Max(start.X, end.X) + radius), area.X, area.Right);
         var top = (int)Math.Clamp(Math.Floor(Math.Min(start.Y, end.Y) - radius), area.Y, area.Bottom);
@@ -184,9 +184,10 @@ public static class OverlayPainter
             {
                 var offset = new Vec2(x + 0.5, y + 0.5) - start;
                 var along = (offset.X * delta.X + offset.Y * delta.Y) / length;
-                var across = Math.Abs(offset.X * delta.Y - offset.Y * delta.X) / length;
-                // モックアップの 4 / 4 の点線と 1.5 論理 px の幅を使う。
-                if (along >= 0 && along <= length && along % (8 * scale) < 4 * scale && across <= radius)
+                var across = (offset.X * delta.Y - offset.Y * delta.X) / length;
+                // 片側を含めないことで、奇数幅の両端が画素の中心に来ても一画素太らない。
+                if (along >= 0 && along <= length && along % (12 * scale) < 6 * scale &&
+                    across >= -radius && across < radius)
                 {
                     Fill(frame, new(x - area.X, y - area.Y, 1, 1), color);
                 }
@@ -630,7 +631,7 @@ public static class OverlayPainter
                 if (coverage > 0 && dashScale > 0)
                 {
                     var along = PerimeterPosition(px, py, width, height, radius) / dashScale;
-                    coverage *= Math.Clamp(Math.Min(6 - along % 11, along % 11 + 0.5), 0, 1);
+                    coverage *= along % 12 < 6 ? 1 : 0;
                 }
 
                 if (coverage > 0)
