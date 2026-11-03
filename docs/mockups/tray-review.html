@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>トレイ UI レビュー</title>
+<meta name="color-scheme" content="light dark">
+<style>
+/* このページ自体の配色（メニューの見本は .stage 内で、実装と同じ値を別に持つ） */
+:root {
+  --bg: #F5F3EE; --panel: #FFFFFF; --fg: #141413; --fg2: #4A4945; --fg3: #6B6A67;
+  --line: rgba(20, 20, 19, 0.12); --accent: #1F6C9F; --red: #D6403F; --tint: rgba(20, 20, 19, 0.05);
+  --mono: 'Cascadia Mono', Consolas, monospace;
+  --ui: 'Segoe UI Variable Text', 'Segoe UI', 'Yu Gothic UI', 'Hiragino Sans', system-ui, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0C0C0B; --panel: #151514; --fg: #F2F2F0; --fg2: #C9C8C4; --fg3: #9B9A97;
+    --line: rgba(242, 242, 240, 0.12); --accent: #8CCBF2; --red: #FF7B79; --tint: rgba(242, 242, 240, 0.06);
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html, body { background: var(--bg); }
+body { margin: 0; color: var(--fg); font: 14px/1.6 var(--ui); }
+.wrap { max-width: 1240px; margin: 0 auto; padding: 32px 24px 96px; }
+h1 { font-size: 28px; font-weight: 600; margin: 0 0 4px; letter-spacing: 0; }
+h2 { font-size: 20px; font-weight: 600; margin: 56px 0 12px; }
+h3 { font-size: 15px; font-weight: 600; margin: 24px 0 8px; }
+p { margin: 0 0 12px; }
+.sub { color: var(--fg3); max-width: 60em; }
+code, .mono { font-family: var(--mono); font-size: 12.5px; }
+a { color: var(--accent); }
+
+.bar { position: sticky; top: 0; z-index: 20; background: var(--bg); border-bottom: 1px solid var(--line);
+  display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; padding: 12px 0; margin: 24px 0 0; }
+.bar label { color: var(--fg3); font-size: 12px; margin-right: 8px; }
+.seg { display: inline-flex; padding: 2px; border-radius: 6px; background: var(--tint); box-shadow: inset 0 0 0 1px var(--line); }
+.seg button { border: 0; background: transparent; color: var(--fg3); font: inherit; font-size: 12.5px; padding: 4px 10px; border-radius: 4px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--panel); color: var(--fg); box-shadow: 0 0 0 1px var(--line); }
+.chk { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; }
+
+.matrix { display: grid; grid-template-columns: 56px 1fr 1fr; gap: 12px; margin-top: 20px; }
+.colhead { font-weight: 600; font-size: 13px; color: var(--fg2); padding: 0 0 4px; }
+.rowhead { writing-mode: vertical-rl; transform: rotate(180deg); font-weight: 600; font-size: 13px; color: var(--fg2); text-align: center; padding: 8px 0; }
+.rowhead small { font-weight: 400; color: var(--fg3); }
+.cell { border-radius: 12px; overflow: hidden; box-shadow: 0 0 0 1px var(--line); }
+
+/* ---- 見本の舞台 ---- */
+.stage { position: relative; width: 100%; min-height: 360px; overflow: hidden; }
+.stage.light { --wall: #ECEAE5; --wall-dot: rgba(0, 0, 0, 0.06); --tb: rgba(255, 255, 255, 0.82); --tbline: #EAEAEA; --tbfg: #787774; --shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.06); }
+.stage.dark { --wall: #161615; --wall-dot: rgba(242, 242, 240, 0.08); --tb: rgba(32, 32, 32, 0.88); --tbline: rgba(255, 255, 255, 0.08); --tbfg: #9B9A97; --shadow: 0 8px 24px rgba(0, 0, 0, 0.55); }
+.stage { background-color: var(--wall); background-image: radial-gradient(var(--wall-dot) 1px, transparent 1.4px); background-size: 22px 22px; background-position: 11px 11px; }
+.taskbar { position: absolute; left: 0; right: 0; bottom: 0; height: 40px; background: var(--tb); box-shadow: inset 0 1px 0 var(--tbline); display: flex; align-items: center; justify-content: flex-end; gap: 12px; padding-right: 16px; }
+.taskbar .clock { font: 10px/1.2 var(--mono); color: var(--tbfg); text-align: right; }
+.taskbar svg { display: block; }
+
+/* ---- メニューの見本。座標はすべて論理 px で、パネルの外縁が原点 ---- */
+.m { position: absolute; width: 320px; border-radius: 8px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--border), var(--shadow);
+  font-family: 'Segoe UI Variable Text', 'Segoe UI', 'Yu Gothic UI', sans-serif; color: var(--text); font-synthesis: none; }
+.m > * { position: absolute; white-space: nowrap; }
+.m .sep { height: 1px; background: var(--border); }
+.m .row { border-radius: 4px; }
+.m .row.hover { background: var(--hover); }
+.m .row.key { box-shadow: inset 0 0 0 var(--ring) var(--blue); }
+.m .lbl { font-size: 13px; line-height: 32px; color: var(--text); }
+.m .lbl.off { color: var(--muted); opacity: 0.5; }
+.m .lbl.upd { color: var(--blue); }
+.m .info { font-size: var(--info); line-height: var(--infoh); color: var(--muted); overflow: hidden; text-overflow: ellipsis; }
+.m .word { font-size: 13px; font-weight: 600; color: var(--ink); line-height: 24px; }
+.m .tag { font-size: 10.5px; font-weight: 600; border-radius: 9999px; text-align: center; padding: 0 8px; }
+.m .stat { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+.m .stat i { width: 6px; height: 6px; border-radius: 50%; background: var(--sc); display: block; }
+.m .track { width: 40px; height: 20px; border-radius: 10px; box-shadow: inset 0 0 0 1px var(--muted); }
+.m .track.on { background: var(--ink); box-shadow: none; }
+.m .thumb { width: 12px; height: 12px; border-radius: 6px; background: var(--muted); }
+.m .thumb.on { background: var(--thumbon); }
+.m svg { display: block; }
+
+.stage.light .m.asis { --surface: #FFFFFF; --hover: #F9F9F8; --border: #EAEAEA; --text: #2F3437; --muted: #787774; --ink: #111111; --blue: #1F6C9F; --thumbon: #FFFFFF; --ring: 1px; --info: 11.5px; --infoh: 22px;
+  --gbg: #EDF3EC; --gtx: #346538; --ybg: #FBF3DB; --ytx: #956400; --rbg: #FDEBEC; --rtx: #9F2F2D; }
+.stage.light .m.tobe { --surface: #FFFFFF; --hover: #F0F0EE; --border: #EAEAEA; --text: #2F3437; --muted: #6B6A67; --ink: #111111; --blue: #1F6C9F; --thumbon: #FFFFFF; --ring: 2px; --info: 12px; --infoh: 24px;
+  --gtx: #346538; --ytx: #956400; --rtx: #9F2F2D; }
+.stage.dark .m.asis { --surface: #202020; --hover: #252524; --border: rgba(255, 255, 255, 0.08); --text: #E6E6E3; --muted: #9B9A97; --ink: #F2F2F0; --blue: #8CCBF2; --thumbon: #111111; --ring: 1px; --info: 11.5px; --infoh: 22px;
+  --gbg: rgba(52, 101, 56, 0.30); --gtx: #A6D1A9; --ybg: rgba(149, 100, 0, 0.28); --ytx: #E8C46A; --rbg: rgba(159, 47, 45, 0.28); --rtx: #F2A7A5; }
+.stage.dark .m.tobe { --surface: #202020; --hover: #2D2D2C; --border: rgba(255, 255, 255, 0.08); --text: #E6E6E3; --muted: #9B9A97; --ink: #F2F2F0; --blue: #8CCBF2; --thumbon: #111111; --ring: 2px; --info: 12px; --infoh: 24px;
+  --gtx: #A6D1A9; --ytx: #E8C46A; --rtx: #F2A7A5; }
+
+/* 寸法の赤線 */
+.guide { position: absolute; pointer-events: none; display: none; }
+.measure .guide { display: block; }
+.guide.v { top: -6px; width: 0; border-left: 1px dashed var(--red); opacity: 0.7; }
+.guide.v b { position: absolute; top: -14px; left: 3px; font: 10px/1 var(--mono); color: var(--red); font-weight: 400; background: transparent; }
+.guide.seg2 { width: 0; border-left: 1px solid var(--red); }
+.guide.seg2::before, .guide.seg2::after { content: ''; position: absolute; left: -3px; width: 7px; border-top: 1px solid var(--red); }
+.guide.seg2::before { top: 0; } .guide.seg2::after { bottom: 0; }
+.guide.seg2 b { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); font: 10px/1 var(--mono); color: var(--red); font-weight: 400; }
+.cap { padding: 8px 12px; font-size: 12px; color: var(--fg3); background: var(--panel); border-top: 1px solid var(--line); min-height: 40px; }
+
+/* 表 */
+table { border-collapse: collapse; width: 100%; background: var(--panel); border-radius: 8px; box-shadow: 0 0 0 1px var(--line); }
+th, td { text-align: left; vertical-align: top; padding: 8px 12px; border-bottom: 1px solid var(--line); font-size: 13px; }
+th { color: var(--fg3); font-weight: 500; font-size: 12px; background: var(--tint); }
+tr:last-child td { border-bottom: 0; }
+td.id { font: 12px var(--mono); color: var(--fg3); white-space: nowrap; }
+td.asis { color: var(--fg2); } td.tobe { color: var(--fg); font-weight: 500; }
+td .ref { display: block; font: 11.5px var(--mono); color: var(--fg3); font-weight: 400; margin-top: 2px; }
+.pill { display: inline-block; font-size: 11.5px; padding: 0 8px; border-radius: 9999px; background: var(--tint); color: var(--fg2); }
+.dir { display: grid; grid-template-columns: 120px 1fr; gap: 6px 16px; background: var(--panel); border-radius: 8px; padding: 16px 20px; box-shadow: 0 0 0 1px var(--line); }
+.dir dt { color: var(--fg3); font-size: 12px; padding-top: 2px; } .dir dd { margin: 0; }
+.ask { background: var(--panel); border-radius: 8px; padding: 4px 20px 8px; box-shadow: 0 0 0 1px var(--line); }
+.ask li { margin: 12px 0; } .ask b { font-weight: 600; }
+.actions { display: flex; gap: 8px; margin: 12px 0; flex-wrap: wrap; }
+.btn { font: inherit; font-size: 13px; height: 28px; padding: 0 14px; border-radius: 6px; border: 1px solid var(--line); background: transparent; color: var(--fg); cursor: pointer; }
+.btn.p { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+pre { background: var(--panel); border-radius: 8px; padding: 16px; box-shadow: 0 0 0 1px var(--line); overflow: auto; font: 12px/1.6 var(--mono); max-height: 420px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (max-width: 960px) { .matrix { grid-template-columns: 1fr; } .rowhead { writing-mode: horizontal-tb; transform: none; text-align: left; } .colhead.hide-sm { display: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>トレイ UI レビュー</h1>
+  <p class="sub">通知領域のアイコンから開くメニュー（<code>src/Snapwell.App/Tray/Menu</code>）と、トレイのアイコン。現状は実装の値（<code>TrayMenuLayout</code>・<code>TrayMenuRenderer</code>・<code>OverlayPalette</code>）をそのまま写しています。実機の画面ではなく、寸法と色の再現です。影だけは実装の近似です。見本の座標は 1 論理 px = 1 CSS px です。</p>
+
+  <div class="bar" id="bar">
+    <span><label>状態</label><span class="seg" id="segState" role="group" aria-label="状態">
+      <button data-v="active" aria-pressed="true">有効</button><button data-v="paused" aria-pressed="false">一時停止中</button><button data-v="error" aria-pressed="false">異常（状態文あり）</button><button data-v="update" aria-pressed="false">更新あり</button><button data-v="compact" aria-pressed="false">低い画面</button></span></span>
+    <span><label>操作</label><span class="seg" id="segInter" role="group" aria-label="操作">
+      <button data-v="none" aria-pressed="true">なし</button><button data-v="hover" aria-pressed="false">ホバー</button><button data-v="key" aria-pressed="false">キーボード</button></span></span>
+    <span><label>言語</label><span class="seg" id="segLang" role="group" aria-label="言語">
+      <button data-v="ja" aria-pressed="true">日本語</button><button data-v="en" aria-pressed="false">English</button></span></span>
+    <label class="chk"><input type="checkbox" id="chkMeasure" checked> 寸法を表示（赤）</label>
+  </div>
+
+  <div class="matrix" id="matrix"></div>
+
+  <h2>判定</h2>
+  <p><span class="pill">軽い</span> トレイのメニューは、もともと静かで、この製品だけのものです（物理モーションのスイッチ、製品の印が状態で形を変えるアイコン）。装飾の削除ではなく、<b>寸法の整列・コントラスト・状態の見せ方</b>を直す磨き込みにします。画面の作りと機能は変えません。</p>
+
+  <h2>方向</h2>
+  <dl class="dir">
+    <dt>製品</dt><dd>Windows 11 の通知領域から、有効・一時停止、整列、ランチャー、設定、終了を選ぶ小さなメニュー。</dd>
+    <dt>性格</dt><dd>静か、正確、軽い。</dd>
+    <dt>世界</dt><dd>タスクバーと OS の面。メニューの面は無彩色の段で、色はアクセントと状態の点にだけ使う。</dd>
+    <dt>見せ場</dt><dd>ヘッダーの物理モーションのスイッチと、製品の印。ほかは色も効果も足さない。</dd>
+    <dt>署名</dt><dd>状態を「点」で示す。トレイのアイコンの右上の図形（四角・中空・丸）と同じ文法を、メニューでは 6 px の点にする。</dd>
+  </dl>
+
+  <h2>判断をお願いしたい点</h2>
+  <ol class="ask">
+    <li><b>Q1 状態タグ（緑・黄・赤の塗りの丸薬）を、点＋文字にする。</b> 推奨。通常の「有効」まで色の塗りで目立たせず、文字は残す（<code>TrayIconPolicy</code> の「色だけに頼らず状態を文字でも伝える」の意図は守る）。残す案は、丸薬のまま寸法だけそろえる。</li>
+    <li><b>Q2 ラベルの前の 34 px の空きを詰める。</b> 推奨。プロファイル用のチェック欄の名残で、いまは何も入っていない。代わりに線のアイコンを入れる案もあるが、描画の部品とテストが増える。</li>
+    <li><b>Q3 ランチャーの行にホットキーを薄く添える</b>（例 Ctrl+Alt+Space）。この見本と仕様には<b>含めていない</b>。設定値をメニューに渡す配線が要るため、やるなら別の項目にする。</li>
+  </ol>
+
+  <h2>監査</h2>
+  <table id="audit"><thead><tr><th>ID</th><th>層</th><th>現状（as is）</th><th>修正（to be）</th><th>仕様の行</th></tr></thead><tbody></tbody></table>
+  <p class="sub" style="margin-top:12px">変えないもの: パネルの幅 320・角 8・行の高さ 32、スイッチの形と物理モーション、トレイのアイコン 3 状態 × 明暗（<code>assets/icons</code>）、ホバーの文言、すべての文言、文字の描画方式（四倍解像度）。</p>
+
+  <h2>Codex に渡す数値（論理 px。物理 px は × 拡大率の四捨五入）</h2>
+  <p class="sub">座標はパネル外縁の左上が原点。上の見本はこの表の値から描いています。</p>
+  <div class="actions">
+    <button class="btn p" id="copyMd">依頼用の仕様（Markdown）をコピー</button>
+    <button class="btn" id="copyJson">数値だけ（JSON）をコピー</button>
+    <span class="sub" id="copied" role="status"></span>
+  </div>
+  <table id="spec"><thead><tr><th>ID</th><th>要素</th><th>現状</th><th>目標</th></tr></thead><tbody></tbody></table>
+
+  <h3>高さ（<code>TrayMenuLayout.Create</code>）</h3>
+  <table id="heights"><thead><tr><th>場合</th><th>現状</th><th>目標</th></tr></thead><tbody></tbody></table>
+
+  <h3>受け入れ条件</h3>
+  <ul id="accept"></ul>
+
+  <h2>この次に見る画面</h2>
+  <p class="sub">トレイで決めた値は、ほかの画面にも同じ文法で当てます。共通にする値: 4 px の格子、文字は 12 / 13、補助文字 4.5 : 1 以上、ホバーは面の段（<code>Hover</code>）、キーボードの焦点は 2 px、状態は点。</p>
+  <ol>
+    <li>ランチャー（<code>LauncherPanelLayout</code>・<code>LauncherWindowListRenderer</code>）。<code>Muted</code> と 11.5 の補助文字を共有しているので、先に影響を確かめる。</li>
+    <li>区画のプレビューとオーバーレイ（<code>OverlayPainter</code>）。</li>
+    <li>設定画面（WinUI 3、<code>src/Snapwell.Settings</code>）。</li>
+    <li>ようこそ・導入（<code>Setup</code>）。</li>
+    <li>ホームページ（<code>site/</code>）。</li>
+  </ol>
+  <p class="sub">レビューの元になった資料: <code>docs/mockups/snapwell.html</code> の「04 トレイメニュー」は、未実装のプロファイル欄を含む古い図です。実装とは別物なので、この見本を最新の基準にします。</p>
+</div>
+
+<script type="application/json" id="data">
+{
+  "findings": [
+    {"id":"F1","layer":"余白","asis":"左端が 7・13・17・18・34・49 の 6 本","tobe":"8（行・区切り線）・16（アイコン・補助行・ラベル）・44（社名）の 3 本","rows":"L2 L3 L11"},
+    {"id":"F2","layer":"余白","asis":"4 の倍数でない値: 7, 13, 17, 18, 49, 89, 9, 19, 22","tobe":"配置の値はすべて 4 の倍数。中央に置くための 14 だけが例外","rows":"L1–L14"},
+    {"id":"F3","layer":"余白","asis":"ヘッダーのアイコンとスイッチが下寄り（上 18 / 下 13）","tobe":"高さ 48 の中央（上 14 / 下 14）","rows":"L4 L5"},
+    {"id":"F4","layer":"余白","asis":"ラベルの前に、何も入っていない 34 px（チェック欄の名残）","tobe":"16 px。補助行・アイコンと同じ列","rows":"L11"},
+    {"id":"F5","layer":"色","asis":"補助文字 #787774 は白の上で 4.47 : 1（11.5 px の文字で 4.5 に届かない）","tobe":"#6B6A67（5.41 : 1）。ダークの #9B9A97 は変えない","rows":"K1"},
+    {"id":"F6","layer":"色","asis":"ホバーの面がほぼ見えない（ライト 1.05 : 1、ダーク 1.06 : 1）","tobe":"ライト #F0F0EE（1.14 : 1）、ダーク #2D2D2C（1.18 : 1）。Surface2 は他の画面と共有なので触らず、Hover を足す","rows":"K2"},
+    {"id":"F7","layer":"色","asis":"状態が緑・黄・赤の塗りの丸薬。通常の「有効」まで色が乗る","tobe":"6 px の点（色は意味だけ）＋ 12 px の文字。背景の塗りは廃止（Q1）","rows":"L6 K3"},
+    {"id":"F8","layer":"導線","asis":"更新の項目が、ほかの項目と同じ見た目","tobe":"ラベルをアクセント色（#1F6C9F / #8CCBF2）にする。位置と寸法は変えない","rows":"K4"},
+    {"id":"F9","layer":"文字","asis":"10.5（太字）・11.5・13 の半端な 3 サイズ。小さい太字が 1 か所","tobe":"12 と 13 の 2 サイズ。太字は社名（13 / 600）だけ","rows":"T1–T4"},
+    {"id":"F10","layer":"細部","asis":"キーボードの焦点枠が 1 px","tobe":"2 px（内側、角 4、BlueText）","rows":"K5"},
+    {"id":"F11","layer":"不具合","asis":"低い画面（コンパクト）で、ヘッダーの線（y51）と項目の前の線（y53）が 2 px 隔てて 2 本並ぶ","tobe":"コンパクトでは項目の前の線を描かない（ヘッダーの線だけ）","rows":"L9"}
+  ],
+  "rows": [
+    {"id":"L1","el":"パネル 幅 / 角","asis":"320 / 8","tobe":"320 / 8（変更なし）","ref":"TrayMenuLayout.cs:157"},
+    {"id":"L2","el":"行・区切り線の横位置","asis":"行 x7 w306、区切り線 x7 w306（ヘッダー）と x13 w294（他）","tobe":"行 x8 w304、区切り線 3 本とも x8 w304 h1","ref":"TrayMenuLayout.cs:70-81"},
+    {"id":"L3","el":"左端の列","asis":"アイコン x18、補助行 x17、ラベル x34、社名 x49","tobe":"アイコン x16、補助行 x16、ラベル x16、社名 x44","ref":"TrayMenuLayout.cs:18,59 / TrayMenuRenderer.cs:43,57,62,74"},
+    {"id":"L4","el":"ヘッダーの高さ / 区切り線 / アイコン","asis":"高さ 52、線 y51、アイコン (18,18) 20×20","tobe":"高さ 48、線 y48（h1）、アイコン (16,14) 20×20","ref":"TrayMenuLayout.cs:18,80"},
+    {"id":"L5","el":"スイッチ（トラック 40×20、つまみ 12）","asis":"x263 y18","tobe":"x264 y14（右の余白 16）。つまみは x+4 から 20 動く（変更なし）","ref":"TrayMenuLayout.cs:59,120"},
+    {"id":"L6","el":"状態の表示","asis":"丸薬 高さ19、文字 10.5 / 600、左右 8、右端 = スイッチの左 − 10、縦はアイコンの中心","tobe":"点 径6 + 間 6 + 文字 12 / 400。背景なし。右端 = スイッチの左 − 12。縦はアイコンの中心（y24）","ref":"TrayMenuLayout.cs:20 / TrayMenuRenderer.cs:45-54"},
+    {"id":"L7","el":"補助行「モニター」（コンパクトでは出さない）","asis":"rect(17, 58, 286, 22)、11.5","tobe":"rect(16, 52, 288, 24)、12","ref":"TrayMenuRenderer.cs:55-59"},
+    {"id":"L8","el":"状態文の行（Status あり）","asis":"rect(17, 80, 286, 24) / コンパクト rect(17, 54, 286, 22)、11.5","tobe":"rect(16, 76, 288, 24) / コンパクト rect(16, 52, 288, 24)、12","ref":"TrayMenuRenderer.cs:60-65"},
+    {"id":"L9","el":"項目の前の区切り線","asis":"y = start − 5。コンパクトでは y53 になり、ヘッダーの線 y51 と 2 本並ぶ","tobe":"y = 補助行の下端 + 4（通常）。コンパクトでは描かない","ref":"TrayMenuLayout.cs:80"},
+    {"id":"L10","el":"最初の項目の y（start）","asis":"通常 89 / コンパクト 58（Status あり + 24）","tobe":"通常 84 / コンパクト 52（Status あり + 24）","ref":"TrayMenuLayout.cs:63"},
+    {"id":"L11","el":"項目の行","asis":"x7 w306 h32、ピッチ 32、ラベル x34、13 / 400","tobe":"x8 w304 h32、ピッチ 32、ラベル x16、13 / 400","ref":"TrayMenuLayout.cs:70-77 / TrayMenuRenderer.cs:67-77"},
+    {"id":"L12","el":"2 つの組のあいだ","asis":"間 9（線は組の上端 + 4）/ コンパクト 間 2（線は + 0）","tobe":"間 8（線は + 4）/ コンパクト 間 4（線は + 2）","ref":"TrayMenuLayout.cs:64,78"},
+    {"id":"L13","el":"下の余白","asis":"8 / コンパクト 4","tobe":"8 / コンパクト 4（変更なし）","ref":"TrayMenuLayout.cs:67"},
+    {"id":"L14","el":"高さの式と Max スクロール","asis":"表の「現状」の列。MaxScrollOffset も start と groupGap から導く","tobe":"表の「目標」の列。MaxScrollOffset・ItemsViewport の式を新しい start / groupGap に合わせる","ref":"TrayMenuLayout.cs:66-68,159-161"},
+    {"id":"T1","el":"社名「Snapwell」","asis":"13 / 600","tobe":"13 / 600（変更なし）","ref":"TrayMenuRenderer.cs:43"},
+    {"id":"T2","el":"項目のラベル","asis":"13 / 400","tobe":"13 / 400（変更なし）","ref":"TrayMenuRenderer.cs:74"},
+    {"id":"T3","el":"補助行・状態文","asis":"11.5 / 400","tobe":"12 / 400","ref":"TrayMenuRenderer.cs:57,63"},
+    {"id":"T4","el":"状態の文字","asis":"10.5 / 600（丸薬の中）","tobe":"12 / 400","ref":"TrayMenuRenderer.cs:29,53"},
+    {"id":"K1","el":"補助文字 Muted（ライト）","asis":"rgb(120,119,116) = #787774","tobe":"rgb(107,106,103) = #6B6A67。ダークは変更なし。OverlayPalette 共通なのでランチャーなども同時に変わる","ref":"OverlayPainter.cs:48"},
+    {"id":"K2","el":"ホバーの面（新しい Hover）","asis":"Surface2: ライト #F9F9F8 / ダーク #252524","tobe":"Hover: ライト #F0F0EE / ダーク #2D2D2C。トレイの行だけが使う","ref":"OverlayPainter.cs:40-60 / TrayMenuRenderer.cs:120"},
+    {"id":"K3","el":"状態タグの背景色（6 色）","asis":"Green/Yellow/RedBackground を丸薬に塗る","tobe":"背景は使わない。点の色は既存の Green/Yellow/RedText。Background の 3 プロパティは、他に使い道がなければ削除","ref":"OverlayPainter.cs:62-73 / TrayMenuRenderer.cs:45-52"},
+    {"id":"K4","el":"更新の項目のラベル色","asis":"Text","tobe":"BlueText（#1F6C9F / #8CCBF2）。無効にはならない","ref":"TrayMenuRenderer.cs:71"},
+    {"id":"K5","el":"キーボードの焦点枠（スイッチ・項目）","asis":"BlueText 1 px、角 4","tobe":"BlueText 2 px、角 4（内側）","ref":"TrayMenuRenderer.cs:96,125"}
+  ],
+  "heights": [
+    ["通常","234","228"],["通常 + 状態文","258","252"],["コンパクト","192","188"],["コンパクト + 状態文","216","212"],["更新の項目が 1 つ増えるごと","+ 32","+ 32"]
+  ],
+  "accept": [
+    "上の表の数値どおりに TrayMenuLayout（Rows / Separators / Toggle / HeaderIcon / ItemsViewport / MaxScrollOffset と高さ）を直す。StatusTag は StatusIndicator のような名前に直してよい",
+    "TrayMenuRenderer: 丸薬を点＋文字に置き換える。補助行 12、更新の項目は BlueText、焦点枠 2 px、ホバーは新しい OverlayPalette.Hover",
+    "OverlayPalette: Hover を足す。ライトの Muted を #6B6A67 にする。使われなくなった Background を削除する（他で使っていれば残す）",
+    "tests/Snapwell.Core.Tests/Tray（TrayMenuLayoutTests・TrayMenuCenteringTests・TrayMenuIconDrawingTests・TrayUpdateMenuTests）と tests/Snapwell.App.Tests/Tray・Localization（TrayMenuHeaderTests・TrayMenuTextCenteringTests・TrayStatusRenderingTests）の期待値を、この表に合わせて更新する。新しい値の根拠をテスト名に書く",
+    "コントラストのテストを足す: ライトの Muted / Surface ≥ 4.5、ダークも ≥ 4.5。Hover は Surface との比 ≥ 1.1",
+    "4 倍数の検査を足す: 拡大率 1.0 のとき、行・区切り線・補助行の x / y / 幅 / 高さが、ヘッダーの中央合わせ（y14）以外はすべて 4 の倍数（または 1）",
+    "変えない: スイッチの物理モーション（TrayMenuToggleAnimation）、アイコン、文言（ja / en / zh）、トレイのコマンド番号、フックとポーリング",
+    "拡大率 1.0 / 1.25 / 1.5 / 2.0 で、行とスイッチの丸め誤差が 1 px を超えないこと（既存のテストの方式に合わせる）",
+    "dotnet build（App を win-x64 / win-arm64）、dotnet test --no-restore、dotnet format --verify-no-changes --no-restore が通ること",
+    "docs/MANUAL_TEST.md のトレイの節に「実機未確認」の項目を足す（明暗 × 100% / 150% DPI、4 状態、キーボード、ホバー）。docs/I18N.md の 298 行の根拠は幅 320 のまま変わらない",
+    "Muted の変更でランチャーの補助文字が変わる。ランチャーの見た目が崩れていないことを、同じ PR の説明に書く"
+  ]
+}
+</script>
+
+<script>
+(() => {
+  const D = JSON.parse(document.getElementById('data').textContent);
+  const S = { state: 'active', inter: 'none', lang: 'ja', measure: true };
+
+  const T = {
+    ja: { arrange: '現在のモニターを整列', launcher: 'ランチャーを開く', settings: '設定を開く', exit: '終了（標準の動作に戻す）',
+      upd: '新しいバージョン 1.0.5 があります', mon: 'モニター構成: 3 画面', Active: '有効', Paused: '一時停止中', Error: '異常',
+      err: 'ホットキーを登録できませんでした' },
+    en: { arrange: 'Arrange this monitor', launcher: 'Open launcher', settings: 'Open settings', exit: 'Exit and restore Windows',
+      upd: 'Version 1.0.5 is available', mon: 'Monitors: 3', Active: 'Active', Paused: 'Paused', Error: 'Error',
+      err: 'Could not register the hotkey' }
+  };
+
+  /* ---- レイアウト: 現状は TrayMenuLayout.cs の式の写し、目標は表の式 ---- */
+  function common(s) {
+    const n = 4 + (s.state === 'update' ? 1 : 0);
+    return { n, status: s.state === 'error', compact: s.state === 'compact' };
+  }
+  function asIs(s) {
+    const { n, status, compact } = common(s);
+    const start = (compact ? 58 : 89) + (status ? 24 : 0), gg = compact ? 2 : 9;
+    const H = (compact ? (status ? 216 : 192) : (status ? 258 : 234)) + (n - 4) * 32;
+    const rows = [...Array(n)].map((_, i) => ({ x: 7, y: start + 32 * i + (i >= n - 2 ? gg : 0), w: 306, h: 32, lx: 34 }));
+    const seps = [[7, 51, 306], [13, start - 5, 294], [13, start + 32 * (n - 2) + (compact ? 0 : 4), 294]];
+    const g1 = rows[n - 3].y + 32;
+    const marks = [
+      { y: 0, h: 52, l: '52' },
+      { y: 52, h: start - 52, l: String(start - 52) },
+      { y: start, h: 32 * (n - 2), l: String(32 * (n - 2)) },
+      { y: g1, h: gg, l: String(gg) },
+      { y: rows[n - 2].y, h: 64, l: '64' },
+      { y: rows[n - 1].y + 32, h: H - rows[n - 1].y - 32, l: String(H - rows[n - 1].y - 32) }
+    ];
+    return { H, n, status, compact, rows, seps, cols: [7, 13, 17, 18, 34, 49],
+      icon: { x: 18, y: 18 }, word: { x: 49, y: 16 }, toggle: { x: 263, y: 18 },
+      tag: { kind: 'pill', right: 263 - 10, cy: 28 },
+      info: compact ? null : { x: 17, y: 58, w: 286, h: 22 },
+      stat: status ? { x: 17, y: compact ? 54 : 80, w: 286, h: compact ? 22 : 24 } : null, marks };
+  }
+  function toBe(s) {
+    const { n, status, compact } = common(s);
+    const info = compact ? null : { x: 16, y: 52, w: 288, h: 24 };
+    let stat = null, e = 48 + 4;
+    if (compact) { if (status) { stat = { x: 16, y: 52, w: 288, h: 24 }; e = 76; } }
+    else { e = 76; if (status) { stat = { x: 16, y: 76, w: 288, h: 24 }; e = 100; } }
+    const sep2 = compact ? null : e + 4;
+    const start = compact ? e : e + 8;
+    const gg = compact ? 4 : 8;
+    const H = (compact ? (status ? 212 : 188) : (status ? 252 : 228)) + (n - 4) * 32;
+    const rows = [...Array(n)].map((_, i) => ({ x: 8, y: start + 32 * i + (i >= n - 2 ? gg : 0), w: 304, h: 32, lx: 16 }));
+    const seps = [[8, 48, 304]];
+    if (sep2 !== null) seps.push([8, sep2, 304]);
+    seps.push([8, start + 32 * (n - 2) + (compact ? 2 : 4), 304]);
+    const g1 = rows[n - 3].y + 32;
+    const pad = H - rows[n - 1].y - 32;
+    const marks = [
+      { y: 0, h: 48, l: '48' },
+      { y: 48, h: start - 48, l: String(start - 48) },
+      { y: start, h: 32 * (n - 2), l: String(32 * (n - 2)) },
+      { y: g1, h: gg, l: String(gg) },
+      { y: rows[n - 2].y, h: 64, l: '64' },
+      { y: rows[n - 1].y + 32, h: pad, l: String(pad) }
+    ];
+    return { H, n, status, compact, rows, seps, cols: [8, 16, 44], icon: { x: 16, y: 14 }, word: { x: 44, y: 12 },
+      toggle: { x: 264, y: 14 }, tag: { kind: 'dot', right: 264 - 12, cy: 24 }, info, stat, marks };
+  }
+
+  /* ---- 部品 ---- */
+  const ico = (kind, c, px, t) => {
+    const f = `<rect x="3" y="3" width="38" height="38" rx="9" fill="none" stroke="${c.ink}" stroke-width="4"/>`;
+    let b;
+    if (kind === 'paused') b = `<g opacity=".38">${f}<rect x="24.5" y="8.5" width="11" height="11" rx="2" fill="none" stroke="${c.ink}" stroke-width="3"/></g>`;
+    else if (kind === 'error') { const id = 'b' + Math.random().toString(36).slice(2, 8);
+      b = f + `<mask id="${id}" maskUnits="userSpaceOnUse" x="0" y="0" width="44" height="44"><rect width="44" height="44" fill="#fff"/><path d="M30 8.8V14.2" stroke="#000" stroke-width="3" stroke-linecap="round"/><circle cx="30" cy="18.4" r="1.7" fill="#000"/></mask><circle cx="30" cy="14" r="8.5" fill="${c.red}" mask="url(#${id})"/>`; }
+    else b = f + `<rect x="23" y="7" width="14" height="14" rx="3" fill="${c.blue}"/>`;
+    return `<svg width="${px}" height="${px}" viewBox="0 0 44 44" aria-hidden="true">${b}</svg>`;
+  };
+  const C = {
+    light: { ink: '#111111', blue: '#1F6C9F', red: '#9F2F2D' },
+    dark: { ink: '#F2F2F0', blue: '#8CCBF2', red: '#F2A7A5' }
+  };
+
+  function menuHtml(L, variant, theme, s, tx) {
+    const kind = L.status ? 'error' : s.state === 'paused' ? 'paused' : 'active';
+    const enabled = s.state !== 'paused';
+    const lab = [];
+    if (s.state === 'update') lab.push(['upd', true, 'upd']);
+    lab.push(['arrange', enabled], ['launcher', enabled], ['settings', true], ['exit', true]);
+    const tagKey = kind === 'error' ? 'Error' : kind === 'paused' ? 'Paused' : 'Active';
+    const tone = kind === 'error' ? 'r' : kind === 'paused' ? 'y' : 'g';
+    // 操作: 見せる行は 2 番目の有効な項目
+    const target = L.rows.findIndex((_, i) => (lab[i][1]));
+    const pick = s.state === 'update' ? 1 : (enabled ? 1 : 2); // 項目の並びの 2 番目（無効なら次の有効な行）
+    let h = '';
+    L.seps.forEach(([x, y, w]) => { h += `<div class="sep" style="left:${x}px;top:${y}px;width:${w}px"></div>`; });
+    L.rows.forEach((r, i) => {
+      const cls = (s.inter === 'hover' && i === pick) ? ' hover' : (s.inter === 'key' && i === pick) ? ' key' : '';
+      h += `<div class="row${cls}" style="left:${r.x}px;top:${r.y}px;width:${r.w}px;height:${r.h}px"></div>`;
+      const [k, on, u] = lab[i];
+      h += `<div class="lbl${on ? '' : ' off'}${(u && variant === 'tobe') ? ' upd' : ''}" style="left:${r.lx}px;top:${r.y}px">${tx[k]}</div>`;
+    });
+    h += `<div style="left:${L.icon.x}px;top:${L.icon.y}px">${ico(kind, C[theme], 20)}</div>`;
+    h += `<div class="word" style="left:${L.word.x}px;top:${L.word.y}px">Snapwell</div>`;
+    if (L.tag.kind === 'pill') {
+      h += `<div class="tag" style="right:${320 - L.tag.right}px;top:${L.tag.cy - 9.5}px;height:19px;line-height:19px;background:var(--${tone}bg);color:var(--${tone}tx)">${tx[tagKey]}</div>`;
+    } else {
+      h += `<div class="stat" style="--sc:var(--${tone}tx);right:${320 - L.tag.right}px;top:${L.tag.cy - 12}px;height:24px"><i></i><span>${tx[tagKey]}</span></div>`;
+    }
+    const on = enabled;
+    const tl = L.toggle.x, tt = L.toggle.y;
+    h += `<div class="track${on ? ' on' : ''}" style="left:${tl}px;top:${tt}px"></div>`;
+    h += `<div class="thumb${on ? ' on' : ''}" style="left:${tl + 4 + (on ? 20 : 0)}px;top:${tt + 4}px"></div>`;
+    if (s.inter === 'key' && pick < 0) h += '';
+    if (L.info) h += `<div class="info" style="left:${L.info.x}px;top:${L.info.y}px;width:${L.info.w}px;height:${L.info.h}px">${tx.mon}</div>`;
+    if (L.stat) h += `<div class="info" style="left:${L.stat.x}px;top:${L.stat.y}px;width:${L.stat.w}px;height:${L.stat.h}px">${tx.err}</div>`;
+    return h;
+  }
+
+  function cell(variant, theme) {
+    const s = S, tx = T[s.lang];
+    const L = variant === 'asis' ? asIs(s) : toBe(s);
+    const maxH = Math.max(asIs(s).H, toBe(s).H);
+    const stageH = maxH + 40 + 8 + 40;
+    const right = 72, top = stageH - 40 - 8 - L.H;
+    const kind = L.status ? 'error' : s.state === 'paused' ? 'paused' : 'active';
+    let guides = '';
+    // 近い列のラベルが重ならないよう、交互に上へずらす
+    L.cols.forEach((x, i) => { guides += `<div class="guide v" style="left:${x}px;height:${L.H + 12}px"><b style="top:${-14 - 11 * (i % 3)}px">${x}</b></div>`; });
+    L.marks.forEach(m => { if (m.h > 0) guides += `<div class="guide seg2" style="left:${320 + 10}px;top:${m.y}px;height:${m.h}px"><b>${m.l}</b></div>`; });
+    return `<div class="cell"><div class="stage ${theme}${s.measure ? ' measure' : ''}" style="height:${stageH}px">
+      <div class="m ${variant}" style="right:${right}px;top:${top}px;height:${L.H}px">${menuHtml(L, variant, theme, s, tx)}${guides}</div>
+      <div class="taskbar" aria-hidden="true">${ico(kind, C[theme], 16)}<span class="clock">10:24<br>2026/11/03</span></div>
+    </div><div class="cap">${caption(variant, L)}</div></div>`;
+  }
+  const caption = (variant, L) => `高さ ${L.H}・左端 ${L.cols.join(' / ')}${variant === 'tobe' ? '' : ''}`;
+
+  function render() {
+    const mx = document.getElementById('matrix');
+    mx.innerHTML = `<div></div><div class="colhead">ライト</div><div class="colhead">ダーク</div>`
+      + `<div class="rowhead">as is <small>現状</small></div>${cell('asis', 'light')}${cell('asis', 'dark')}`
+      + `<div class="rowhead">to be <small>目標</small></div>${cell('tobe', 'light')}${cell('tobe', 'dark')}`;
+  }
+
+  /* ---- 表 ---- */
+  function tables() {
+    const esc = (v) => String(v).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+    document.querySelector('#audit tbody').innerHTML = D.findings.map(f =>
+      `<tr><td class="id">${f.id}</td><td>${f.layer}</td><td class="asis">${esc(f.asis)}</td><td class="tobe">${esc(f.tobe)}</td><td class="id">${f.rows}</td></tr>`).join('');
+    document.querySelector('#spec tbody').innerHTML = D.rows.map(r =>
+      `<tr><td class="id">${r.id}</td><td>${esc(r.el)}<span class="ref">${esc(r.ref)}</span></td><td class="asis">${esc(r.asis)}</td><td class="tobe">${esc(r.tobe)}</td></tr>`).join('');
+    document.querySelector('#heights tbody').innerHTML = D.heights.map(h => `<tr><td>${h[0]}</td><td class="asis">${h[1]}</td><td class="tobe">${h[2]}</td></tr>`).join('');
+    document.getElementById('accept').innerHTML = D.accept.map(a => `<li>${esc(a)}</li>`).join('');
+  }
+
+  const markdown = () => {
+    const out = ['# トレイメニューの磨き込み（数値仕様）', '',
+      '出典: `docs/mockups/tray-review.html`。単位は論理 px（物理 px は拡大率を掛けて四捨五入）。座標はパネル外縁の左上が原点。',
+      '見本の HTML と食い違ったら、この表を正とする。', '',
+      '## 変更の表', '', '| ID | 要素 | 現状 | 目標 | 場所 |', '|---|---|---|---|---|'];
+    D.rows.forEach(r => out.push(`| ${r.id} | ${r.el} | ${r.asis} | ${r.tobe} | \`${r.ref}\` |`));
+    out.push('', '## 高さ', '', '| 場合 | 現状 | 目標 |', '|---|---|---|');
+    D.heights.forEach(h => out.push(`| ${h[0]} | ${h[1]} | ${h[2]} |`));
+    out.push('', '## 受け入れ条件', '');
+    D.accept.forEach((a, i) => out.push(`${i + 1}. ${a}`));
+    return out.join('\n');
+  };
+  const copy = async (text, ok) => {
+    const el = document.getElementById('copied');
+    try { await navigator.clipboard.writeText(text); el.textContent = ok + 'をコピーしました'; }
+    catch (e) { el.textContent = 'コピーできませんでした。下の表から選んでコピーしてください'; }
+  };
+  document.getElementById('copyMd').onclick = () => copy(markdown(), 'Markdown');
+  document.getElementById('copyJson').onclick = () => copy(JSON.stringify({ rows: D.rows, heights: D.heights }, null, 2), 'JSON');
+  window.__trayMarkdown = markdown;
+
+  /* ---- 操作 ---- */
+  const bind = (id, key) => document.getElementById(id).addEventListener('click', (ev) => {
+    const b = ev.target.closest('button'); if (!b) return;
+    S[key] = b.dataset.v;
+    document.querySelectorAll(`#${id} button`).forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    render();
+  });
+  bind('segState', 'state'); bind('segInter', 'inter'); bind('segLang', 'lang');
+  document.getElementById('chkMeasure').addEventListener('change', (ev) => { S.measure = ev.target.checked; render(); });
+  tables(); render();
+})();
+</script>
+</body>
+</html>
