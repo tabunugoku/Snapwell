@@ -15,10 +15,14 @@ public sealed class TrayMenuLayout
     /// <summary>ヘッダーのスイッチ。</summary>
     public PixelRect Toggle { get; }
     /// <summary>ヘッダー共通の中心線を決めるアイコン。</summary>
-    public PixelRect HeaderIcon => Rect(18, 18, 20, 20);
-    /// <summary>ヘッダーの状態タグ。</summary>
+    public PixelRect HeaderIcon => Rect(16, 14, 20, 20);
+    /// <summary>背景を持たない状態の点と文字の領域。</summary>
     public PixelRect StatusTag => CenterVertically(HeaderIcon,
-        Toggle.X - Px(10) - Px(_statusTagTextWidth + 16), Px(_statusTagTextWidth + 16), Px(19));
+        Toggle.X - Px(12) - Px(_statusTagTextWidth + 12), Px(_statusTagTextWidth + 12), Px(24));
+    /// <summary>通常表示でモニター構成を描く補助行。</summary>
+    public PixelRect MonitorDescriptionBounds => Rect(16, 52, 288, 24);
+    /// <summary>圧縮時も文字の高さと左右の余白を保つ状態文の行。</summary>
+    public PixelRect StatusDescriptionBounds => Rect(16, IsCompact ? 52 : 76, 288, 24);
     /// <summary>項目の矩形。</summary>
     public IReadOnlyList<PixelRect> Rows { get; }
     /// <summary>区切り線の矩形。</summary>
@@ -56,12 +60,12 @@ public sealed class TrayMenuLayout
         var top = Math.Max(workArea.Y, panel.Y - padding);
         Bounds = new(left, top, Math.Min(workArea.Right, panel.Right + padding) - left,
             Math.Min(workArea.Bottom, panel.Bottom + padding) - top);
-        var toggle = CenterVertically(HeaderIcon, panel.X + Px(263), Px(40), HeaderIcon.Height);
+        var toggle = CenterVertically(HeaderIcon, panel.X + Px(264), Px(40), Px(20));
         Toggle = new(Math.Max(panel.X, Math.Min(toggle.X, panel.Right - toggle.Width)), toggle.Y,
             Math.Min(panel.Width, toggle.Width), toggle.Height);
         var offset = hasStatus ? 24 : 0;
-        var start = (compact ? 58 : 89) + offset;
-        var groupGap = compact ? 2 : 9;
+        var start = (compact ? 52 : 84) + offset;
+        var groupGap = compact ? 4 : 8;
         var viewportTop = Math.Min(panel.Bottom, panel.Y + Px(start));
         ItemsViewport = new(panel.X, viewportTop, panel.Width,
             Math.Max(0, panel.Bottom - Px(compact ? 4 : 8) - viewportTop));
@@ -69,23 +73,26 @@ public sealed class TrayMenuLayout
         ScrollOffset = Math.Clamp(scrollOffset, 0, MaxScrollOffset);
         PixelRect Row(int y)
         {
-            var row = Rect(7, y, 306, 32);
+            var row = Rect(8, y, 304, 32);
             return new(row.X, row.Y - ScrollOffset, Math.Max(0, Math.Min(row.Right, panel.Right) - row.X),
                 row.Height);
         }
         Rows = Array.AsReadOnly(Enumerable.Range(0, itemCount)
             .Select(index => Row(start + 32 * index + (index >= itemCount - 2 ? groupGap : 0))).ToArray());
-        var groupSeparator = Rect(13, start + 32 * (itemCount - 2) + (compact ? 0 : 4), 294, 1);
-        Separators = Array.AsReadOnly<PixelRect>(
-            [Rect(7, 51, 306, 1), Rect(13, start - 5, 294, 1),
-                new(groupSeparator.X, groupSeparator.Y - ScrollOffset, groupSeparator.Width, groupSeparator.Height)]);
+        var groupSeparator = Rect(8, start + 32 * (itemCount - 2) + (compact ? 2 : 4), 304, 1);
+        var scrolledSeparator = new PixelRect(groupSeparator.X, groupSeparator.Y - ScrollOffset,
+            groupSeparator.Width, groupSeparator.Height);
+        // 圧縮時は補助行を省くため、ヘッダーの線だけで項目との境界を示す。
+        Separators = Array.AsReadOnly<PixelRect>(compact
+            ? [Rect(8, 48, 304, 1), scrolledSeparator]
+            : [Rect(8, 48, 304, 1), Rect(8, start - 4, 304, 1), scrolledSeparator]);
     }
 
     /// <summary>ヘッダーを固定し、項目のスクロール位置だけを更新する。</summary>
     public TrayMenuLayout WithScrollOffset(int offset) =>
         new(Panel, _workArea, Scale, _hasStatus, IsCompact, offset, _statusTagTextWidth, _itemCount);
 
-    /// <summary>実測した論理 px の文言幅に左右 8 px の余白を足し、タグの右端を固定する。</summary>
+    /// <summary>文字の実測幅と点・間隔だけを確保し、状態表示の右端を固定する。</summary>
     public TrayMenuLayout WithStatusTagTextWidth(double textWidth)
     {
         if (!double.IsFinite(textWidth) || textWidth < 0)
@@ -156,9 +163,9 @@ public sealed class TrayMenuLayout
 
         var width = Math.Min(workArea.Width, (int)Math.Round(320 * scale));
         var extraHeight = (itemCount - 4) * 32;
-        var height = (int)Math.Round(((hasStatus ? 258 : 234) + extraHeight) * scale);
+        var height = (int)Math.Round(((hasStatus ? 252 : 228) + extraHeight) * scale);
         var compact = height > workArea.Height;
-        if (compact) { height = (int)Math.Round(((hasStatus ? 216 : 192) + extraHeight) * scale); }
+        if (compact) { height = (int)Math.Round(((hasStatus ? 212 : 188) + extraHeight) * scale); }
         height = Math.Min(height, workArea.Height);
 
         var gap = (int)Math.Round(8 * scale);

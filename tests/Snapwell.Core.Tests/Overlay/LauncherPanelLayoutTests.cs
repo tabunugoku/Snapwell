@@ -139,7 +139,7 @@ public sealed class LauncherPanelLayoutTests
     {
         var expected = theme == OverlayTheme.Light
             ? new OverlayColor[] { new(255, 255, 255, 255), new(249, 249, 248, 255), new(234, 234, 234, 255),
-                new(218, 218, 215, 255), new(47, 52, 55, 255), new(120, 119, 116, 255), new(17, 17, 17, 255) }
+                new(218, 218, 215, 255), new(47, 52, 55, 255), new(107, 106, 103, 255), new(17, 17, 17, 255) }
             : new OverlayColor[] { new(32, 32, 32, 255), new(37, 37, 36, 255), new(255, 255, 255, 20),
                 new(255, 255, 255, 36), new(230, 230, 227, 255), new(155, 154, 151, 255), new(242, 242, 240, 255) };
         var palette = OverlayPalette.For(theme);

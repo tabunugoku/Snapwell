@@ -20,7 +20,7 @@ public sealed class TrayMenuTextCenteringTests
     {
         foreach (var (height, ascent, inkTop) in new[] { (16, 12, 3), (18, 15, 4), (13, 10, 0) })
         {
-            var box = (int)Math.Round(22 * scale) * 4;
+            var box = (int)Math.Round(24 * scale) * 4;
             var line = (int)Math.Round(height * scale * 4);
             var up = (int)Math.Round(ascent * scale * 4);
             var extra = (int)Math.Round(inkTop * scale * 4);
@@ -70,7 +70,7 @@ public sealed class TrayMenuTextCenteringTests
         using var text = new GdiOverlayText(scale);
         foreach (var (value, size, mono, height) in new[]
         {
-            ("有効", 10.5, true, 19), ("Ctrl", 11.5, true, 22), ("Space", 11.5, true, 22),
+            ("有効", 12.0, true, 24), ("モニター 2 台", 12.0, true, 24), ("2 monitors", 12.0, false, 24),
             ("Snapwell", 13.0, false, 24), ("区画 ABC", 13.0, true, 32),
         })
         {
