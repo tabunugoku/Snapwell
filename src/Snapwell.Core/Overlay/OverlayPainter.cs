@@ -43,11 +43,11 @@ public sealed record OverlayPalette(OverlayColor Dim, OverlayColor Cell, Overlay
     OverlayColor Text, OverlayColor Muted, OverlayColor Ink)
 {
     private static readonly OverlayPalette _light = new(new(247, 246, 243, 140), new(255, 255, 255, 140),
-        new(0, 0, 0, 20), new(225, 243, 254, 255), new(31, 108, 159, 140), new(31, 108, 159, 255),
+        new(0, 0, 0, 36), new(225, 243, 254, 255), new(31, 108, 159, 140), new(31, 108, 159, 255),
         new(255, 255, 255, 255), new(249, 249, 248, 255), new(234, 234, 234, 255), new(218, 218, 215, 255),
         new(47, 52, 55, 255), new(107, 106, 103, 255), new(17, 17, 17, 255));
     private static readonly OverlayPalette _dark = new(new(25, 25, 24, 128), new(255, 255, 255, 13),
-        new(255, 255, 255, 23), new(31, 108, 159, 71), new(140, 203, 242, 153), new(140, 203, 242, 255),
+        new(255, 255, 255, 36), new(31, 108, 159, 71), new(140, 203, 242, 153), new(140, 203, 242, 255),
         new(32, 32, 32, 255), new(37, 37, 36, 255), new(255, 255, 255, 20), new(255, 255, 255, 36),
         new(230, 230, 227, 255), new(155, 154, 151, 255), new(242, 242, 240, 255))
     {
@@ -57,6 +57,8 @@ public sealed record OverlayPalette(OverlayColor Dim, OverlayColor Cell, Overlay
         RedText = new(242, 167, 165, 255),
     };
 
+    /// <summary>配置先の画面を透かす選択区画専用の塗り。</summary>
+    public OverlayColor ZoneSelected { get; init; } = new(31, 108, 159, 71);
     /// <summary>トレイの行を背景から区別するホバー色。</summary>
     public OverlayColor Hover { get; init; } = new(240, 240, 238, 255);
     /// <summary>有効を表す状態の点の色。</summary>
@@ -224,17 +226,17 @@ public static class OverlayPainter
                 var range = selection.Range;
                 var selected = column >= range.Column && column < range.Column + range.Columns &&
                     row >= range.Row && row < range.Row + range.Rows;
-                FillRounded(frame, rect, selected ? palette.BlueBackground : palette.Cell, 4, scale);
+                FillRounded(frame, rect, selected ? palette.ZoneSelected : palette.Cell, 8, scale);
                 if (showZoneLines)
                 {
-                    StrokeRounded(frame, rect, selected ? palette.BlueLine : palette.CellBorder, 4, 1, scale);
+                    StrokeRounded(frame, rect, selected ? palette.BlueLine : palette.CellBorder, 8, 1, scale);
                 }
                 if (selection.Cursor == new ZoneCell(column, row))
                 {
                     var inset = Math.Max(1, scale);
                     PaintRounded(frame, rect.X + inset, rect.Y + inset,
                         Math.Max(0, rect.Width - 2 * inset), Math.Max(0, rect.Height - 2 * inset),
-                        Math.Max(0, 4 * scale - inset), palette.BlueText, Math.Max(1, 2 * scale));
+                        Math.Max(0, 8 * scale - inset), palette.BlueText, Math.Max(1, 2 * scale));
                 }
             }
         }
@@ -264,8 +266,8 @@ public static class OverlayPainter
     {
         var palette = OverlayPalette.For(theme);
         var rect = Local(layout.SelectionLabel, area);
-        FillRounded(frame, rect, palette.Surface, 6, scale);
-        StrokeRounded(frame, rect, palette.Border, 6, 1, scale);
+        FillRounded(frame, rect, palette.Surface, 8, scale);
+        StrokeRounded(frame, rect, palette.BorderStrong, 8, 1, scale);
         drawText?.Invoke(frame, area, layout.Text[0]);
     }
 
