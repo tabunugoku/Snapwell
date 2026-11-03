@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ドラッグ中のプレビュー レビュー</title>
+<style>
+:root{--bg:#f4f4f2;--card:#fff;--ink:#1a1a19;--sub:#5e5d5a;--line:#e1e1de;--acc:#1f6c9f;--bad:#a23a38;--good:#2f6b3a}
+@media (prefers-color-scheme:dark){:root{--bg:#161615;--card:#1f1f1e;--ink:#ecece9;--sub:#a3a29e;--line:#34342f;--acc:#8ccbf2;--bad:#f2a7a5;--good:#a6d1a9}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 "Segoe UI Variable Text","Yu Gothic UI","Segoe UI",sans-serif}
+main{max-width:1280px;margin:0 auto;padding:32px 24px 80px}
+h1{font-size:24px;margin:0 0 4px;font-weight:600}h2{font-size:18px;margin:48px 0 12px;font-weight:600}h3{font-size:14px;margin:0 0 8px;font-weight:600}
+p{margin:0 0 12px;color:var(--sub)}.lead{max-width:760px}
+code{font:12px Consolas,monospace;background:var(--line);padding:1px 5px;border-radius:4px}
+.bar{display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin:16px 0;padding:12px 16px;background:var(--card);border:1px solid var(--line);border-radius:12px;position:sticky;top:0;z-index:5}
+.bar label{font-size:12px;color:var(--sub);margin-right:4px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{all:unset;cursor:pointer;padding:4px 12px;font-size:12px;color:var(--sub)}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.seg button:focus-visible{outline:2px solid var(--acc);outline-offset:-2px}
+.matrix{display:grid;grid-template-columns:auto 1fr 1fr;gap:12px;align-items:start}
+.matrix .head{font-size:12px;color:var(--sub);font-weight:600;padding:0 4px}
+.matrix .side{writing-mode:vertical-rl;font-size:12px;color:var(--sub);font-weight:600;padding-top:8px}
+.cell{border-radius:12px;padding:12px;overflow:auto;border:1px solid var(--line)}
+.stage{position:relative;overflow:hidden;border-radius:8px}
+.o{position:absolute}
+.m{position:absolute;outline:1px dashed #d4522a;pointer-events:none;z-index:9}
+.ml{position:absolute;font:9px/1 Consolas,monospace;color:#fff;background:#d4522a;padding:1px 3px;border-radius:2px;z-index:10;pointer-events:none;white-space:nowrap}
+.h{font:12px Consolas,monospace;color:var(--sub);text-align:center;margin-top:8px}
+table{border-collapse:collapse;width:100%;font-size:13px;background:var(--card);border:1px solid var(--line)}
+th,td{padding:8px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-size:12px;color:var(--sub);font-weight:600;background:var(--bg)}
+td.n{font-family:Consolas,monospace;white-space:nowrap}
+.tag{display:inline-block;font-size:11px;padding:0 6px;border-radius:999px;border:1px solid var(--line);color:var(--sub)}
+.tag.p0{color:var(--bad);border-color:var(--bad)}.tag.p1{color:var(--acc);border-color:var(--acc)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 20px;margin-bottom:12px}
+ul{margin:0;padding-left:20px;color:var(--sub)}li{margin:2px 0}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.ok{color:var(--good)}.ng{color:var(--bad)}
+</style>
+</head>
+<body>
+<main>
+<h1>ドラッグ中のプレビュー レビュー</h1>
+<p class="lead">対象は、ウィンドウをドラッグしている間、置き先を示す角丸の矩形 (<code>OverlayPainter.Preview</code>)。塗りと破線の枠、任意の予測線と終点の点で成る。ランチャーのオーバーレイ (PR 150) と同じ「置き先の区画」を示すので、色と角をそろえる。as is は <code>Preview</code> と <code>PredictionLine</code> の値から再現した。</p>
+
+<div class="bar">
+  <span><label>置き先</label><span class="seg" data-k="target"></span></span>
+  <span><label>区画の線</label><span class="seg" data-k="lines"></span></span>
+  <span><label>予測線</label><span class="seg" data-k="pred"></span></span>
+  <span><label>寸法線</label><span class="seg" data-k="redline"></span></span>
+</div>
+
+<h2>1. as is / to be (明 / 暗)</h2>
+<div class="matrix" id="matrix"></div>
+<p style="margin-top:12px">見本は 800×450 の作業領域、拡大率 1.0。背景のウィンドウは透け方を見るための仮のもの。ドラッグ中のウィンドウ (影つきの枠) は、プレビューの上に重なる。</p>
+
+<h2>2. 監査 (as is の問題)</h2>
+<table id="findings"></table>
+
+<h2>3. 方向</h2>
+<div class="cols" id="direction"></div>
+
+<h2>4. 判断してほしい点</h2>
+<div id="decisions"></div>
+
+<h2>5. Codex に渡す数値仕様</h2>
+<p>単位は論理 px、物理 px は × 拡大率の四捨五入。色は RGBA。</p>
+<table id="rows"></table>
+
+<h2>6. 色の見え方 (合成後)</h2>
+<p>壁 (ライト #ECECEA、ダーク #1A1A1A) の上に重ねた結果の、枠と塗りの輝度比。</p>
+<table id="contrast"></table>
+
+<h2>7. 受け入れ条件</h2>
+<div class="card"><ul id="accept"></ul></div>
+
+<script type="application/json" id="data">
+{
+"findings":[
+ {"id":"Q1","p":"P0","t":"塗りがテーマで別物","d":"ライトは BlueBackground (#E1F3FE、不透明) で、置き先の下の画面を完全に隠す。ダークは (31,108,159) の alpha 71 で透ける。ライトの塗りと壁の面の差は 1.04 : 1 しかなく、ほぼ見えない。ランチャーの選択セルは PR 150 で ZoneSelected (alpha 71) に直したので、同じ「置き先」を示す面なのにプレビューだけ旧来のまま。","w":"OverlayPainter.Preview:136"},
+ {"id":"Q2","p":"P0","t":"枠が薄く、太さが端数","d":"BlueLine (alpha 140) で太さ 1.5。拡大率 1.0 では 1.5 px の線が半画素にまたがってにじむ。壁に対する輝度比は、ライトが 2.2 : 1 で非文字の 3 : 1 に届かない (ダークは 4.4 : 1 で足りる)。ドラッグ中はいちばん見てほしい手がかり。","w":"OverlayPainter.Preview:140"},
+ {"id":"Q3","p":"P1","t":"破線の周期が 11 で、予測線の 8 とも違う","d":"枠は 6 描いて 5 空け (周期 11)、予測線は 4 / 4 (周期 8)。4 の倍数の格子に乗らず、同じ画面の二つの破線が別のリズムになる。","w":"PaintRounded:633 / PredictionLine:193"},
+ {"id":"Q4","p":"P1","t":"枠が置き先の外へはみ出す","d":"centered: true で線の中心が矩形の縁に来るため、太さの半分が置き先の外に出る。区画の間隔 0 で隣り合うと、枠が隣へ重なる。","w":"OverlayPainter.Preview:140"},
+ {"id":"Q5","p":"P2","t":"角丸 8 は妥当","d":"セル (PR 150 で 8)、Windows 11 のウィンドウの角 (CornerPreference: Round) と同じ。変えない。","w":"Preview:136"}
+],
+"rows":[
+ ["V1","塗り","BlueBackground: ライト (225,243,254,255) / ダーク (31,108,159,71)","ZoneSelected (PR 150 で追加済み): 両テーマ (31,108,159,71)。ダークは変更なし","Q1"],
+ ["V2","枠の色","BlueLine: ライト (31,108,159,140) / ダーク (140,203,242,153)","BlueText: ライト (31,108,159,255) / ダーク (140,203,242,255)。BlueLine はセルの枠が使うので変えない","Q2"],
+ ["V3","枠の太さ","max(1, 1.5 × 拡大率) (端数)","max(1, round(2 × 拡大率)) の整数 px (1.0 で 2)","Q2"],
+ ["V4","枠の位置","線の中心が矩形の縁 (centered: true。太さの半分が外へ出る)","線の外縁が矩形の縁 (内側に描く。置き先の矩形からはみ出さない)","Q4"],
+ ["V5","枠の破線","6 描き 5 空け (周期 11 論理 px)","6 描き 6 空け (周期 12 論理 px)。位相は周囲長の 0 から","Q3"],
+ ["V6","角","8","変更なし (枠は内側なので内側の半径は 8、太さ分は PaintRounded の計算に任せる)","Q5"],
+ ["V7","予測線: 太さ","max(1, 1.5 × 拡大率)","max(1, round(2 × 拡大率)) (V3 と同じ)","Q2"],
+ ["V8","予測線: 破線","4 描き 4 空け (周期 8)","6 描き 6 空け (周期 12)","Q3"],
+ ["V9","予測線: 色 / 終点の点","BlueLine / 半径 4・BlueText","変更なし","—"],
+ ["V10","区画の線を隠す設定 (showZoneLines = false)","枠を描かない (塗りだけ)","変更なし","—"],
+ ["V11","描画の範囲","作業領域と同寸の透明なフレーム。置き先の外は alpha 零","変更なし","—"]
+],
+"accept":[
+ "ライトの Preview の塗りが、ZoneSelected (31,108,159,71) を壁へ重ねた結果になる。不透明でない (中央の画素の alpha が 255 未満)。ダークの塗りは変わらない。",
+ "枠の色が BlueText (ライト・ダークとも alpha 255 の画素が出る)。BlueLine の値は変わらない。",
+ "拡大率 1.0 で枠が 2 px、1.25・1.5・2.0 で round(2 × 拡大率) px の整数。端数の半透明の画素が太さ方向に出ない。",
+ "枠の画素が、target の矩形の外へ出ない (矩形の外側の画素が alpha 零)。",
+ "枠の破線が、周囲長 12 論理 px の周期で 6 描き 6 空け。角でも切れ目が連続する。",
+ "予測線の太さが枠と同じ整数 px、破線が周期 12 で 6 / 6。終点の点と色は変わらない。",
+ "showZoneLines = false では枠が描かれず、塗りと (有効なら) 予測線だけが出る。",
+ "既存の動作 (Local での切り詰め、負の座標のモニター、作業領域の外へ出る target、alpha 零の領域の入力透過) が変わらない。既存テストの期待値は、本表の数値に追従させる。"
+],
+"decisions":[
+ {"id":"D1","q":"枠を内側に描くか (V4)","rec":"内側 (推奨)","d":"置き先の矩形より外へ出ないので、間隔 0 の隣の区画へ重ならない。見た目は 2 px 太るぶん内側が 1 px 狭くなるだけ。いまの「縁の中心」を保つなら V4 を外す。"},
+ {"id":"D2","q":"予測線 (V7, V8) も同時にそろえるか","rec":"そろえる (推奨)","d":"既定で無効の機能 (ShowPredictionLine = false) だが、同じ画面の破線なので同時に直す。差分は PredictionLine の二行。"},
+ {"id":"D3","q":"枠をアクセント (BlueText) の実線の濃さにするか","rec":"BlueText (推奨)","d":"BlueLine (alpha 140) のままだと壁に対し 2.3 : 1。濃くすると「置き先」が強く見えすぎるなら、alpha 200 程度の中間もある。数値で指定したいときはお知らせください。"}
+],
+"direction":[
+ {"h":"トーン","b":"ドラッグしながら視線の端で読む印。面は静かに透かし、枠だけで輪郭を示す。"},
+ {"h":"トークン","b":"置き先の塗りは ZoneSelected (28% の青)。枠は 2 px の BlueText。角 8。破線は 6 / 6。"},
+ {"h":"署名の細部","b":"置き先の破線の矩形。ランチャーの選択セルと同じ青の面で、「ここに置かれる」を一貫して示す。"},
+ {"h":"変えないもの","b":"角丸 8、描画範囲、設定 (区画の線・予測線) の意味、物理モデルの動き。"}
+]
+}
+</script>
+
+<script>
+const D=JSON.parse(document.getElementById('data').textContent);
+const C={
+ light:{wall:'#ececea',win:'#fbfbfa',winLine:'#d0d0cc',fillAs:'rgba(225,243,254,1)',fillTo:'rgba(31,108,159,.278)',lineAs:'rgba(31,108,159,.549)',lineTo:'#1f6c9f',dot:'#1f6c9f'},
+ dark:{wall:'#1a1a1a',win:'#262626',winLine:'#3a3a3a',fillAs:'rgba(31,108,159,.278)',fillTo:'rgba(31,108,159,.278)',lineAs:'rgba(140,203,242,.6)',lineTo:'#8ccbf2',dot:'#8ccbf2'}
+};
+const S={target:'right',lines:'on',pred:'off',redline:'on'};
+const OPT={target:[['right','右半分'],['tl','左上 1/4'],['cell','1 セル']],lines:[['on','あり'],['off','なし']],pred:[['off','なし'],['on','あり']],redline:[['on','あり'],['off','なし']]};
+function paint(host,variant,theme){
+  const c=C[theme],as=variant==='as',W=800,H=450;
+  const st=document.createElement('div');st.className='stage';st.style.cssText=`width:${W}px;height:${H}px;background:${c.wall}`;
+  const add=(x,y,w,h,css)=>{const d=document.createElement('div');d.className='o';d.style.cssText=`left:${x}px;top:${y}px;width:${w}px;height:${h}px;${css}`;st.appendChild(d);return d;};
+  add(40,36,330,230,`background:${c.win};border:1px solid ${c.winLine};border-radius:8px`);
+  add(41,37,328,28,`background:${c.winLine};opacity:.5;border-radius:8px 8px 0 0`);
+  for(let i=0;i<5;i++)add(60,84+i*22,180+(i%3)*40,8,`background:${c.winLine};border-radius:4px`);
+  add(420,150,340,260,`background:${c.win};border:1px solid ${c.winLine};border-radius:8px`);
+  let t={x:408,y:8,w:384,h:434}; if(S.target==='tl')t={x:8,y:8,w:384,h:213}; if(S.target==='cell')t={x:208,y:117,w:120,h:100};
+  // 塗り
+  add(t.x,t.y,t.w,t.h,`border-radius:8px;background:${as?c.fillAs:c.fillTo}`);
+  // 枠 (SVG)
+  if(S.lines==='on'){
+    const sw=as?1.5:2, col=as?c.lineAs:c.lineTo, dash=as?'6 5':'6 6';
+    const pad=as?sw/2:0; // as is は縁の中心 (外へ半分はみ出す)、to be は内側
+    const svgNS='http://www.w3.org/2000/svg';
+    const ext=as?sw:0;
+    const svg=document.createElementNS(svgNS,'svg');svg.setAttribute('width',t.w+ext*2);svg.setAttribute('height',t.h+ext*2);
+    svg.style.cssText=`position:absolute;left:${t.x-ext}px;top:${t.y-ext}px;overflow:visible`;
+    const r=document.createElementNS(svgNS,'rect');
+    const inset=as?ext:sw/2;
+    r.setAttribute('x',inset);r.setAttribute('y',inset);r.setAttribute('width',t.w-(as?0:sw));r.setAttribute('height',t.h-(as?0:sw));
+    r.setAttribute('rx',as?8:8-sw/2);r.setAttribute('fill','none');r.setAttribute('stroke',col);r.setAttribute('stroke-width',sw);r.setAttribute('stroke-dasharray',dash);
+    svg.appendChild(r);st.appendChild(svg);
+  }
+  // 予測線
+  if(S.pred==='on'){
+    const x1=210,y1=150,x2=t.x+t.w/2,y2=t.y+t.h/2; const len=Math.hypot(x2-x1,y2-y1);
+    const svgNS='http://www.w3.org/2000/svg';const svg=document.createElementNS(svgNS,'svg');svg.setAttribute('width',W);svg.setAttribute('height',H);svg.style.cssText='position:absolute;left:0;top:0';
+    const l=document.createElementNS(svgNS,'line');l.setAttribute('x1',x1);l.setAttribute('y1',y1);l.setAttribute('x2',x2);l.setAttribute('y2',y2);
+    l.setAttribute('stroke',as?c.lineAs:c.lineAs);l.setAttribute('stroke-width',as?1.5:2);l.setAttribute('stroke-dasharray',as?'4 4':'6 6');svg.appendChild(l);
+    const d=document.createElementNS(svgNS,'circle');d.setAttribute('cx',x2);d.setAttribute('cy',y2);d.setAttribute('r',4);d.setAttribute('fill',c.dot);svg.appendChild(d);st.appendChild(svg);
+  }
+  // ドラッグ中のウィンドウ (影つき)
+  add(100,110,300,200,`background:${c.win};border:1px solid ${c.winLine};border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,${theme==='light'?.28:.6})`);
+  add(101,111,298,28,`background:${c.winLine};opacity:.5;border-radius:8px 8px 0 0`);
+  if(S.redline==='on'&&S.lines==='on'){
+    const m=document.createElement('div');m.className='m';m.style.cssText=`left:${t.x}px;top:${t.y}px;width:${t.w}px;height:${t.h}px`;st.appendChild(m);
+    const l=document.createElement('div');l.className='ml';l.textContent=`target ${t.w}×${t.h} · ${as?'stroke 1.5 center · dash 6/5':'stroke 2 inside · dash 6/6'}`;l.style.cssText=`left:${t.x+6}px;top:${t.y+6}px`;st.appendChild(l);
+  }
+  host.appendChild(st);
+  const hh=document.createElement('div');hh.className='h';hh.textContent=as?'fill BlueBackground · border BlueLine 1.5':'fill ZoneSelected · border BlueText 2';host.appendChild(hh);
+}
+function renderMatrix(){const m=document.getElementById('matrix');m.innerHTML='';const e=(c,t)=>{const d=document.createElement('div');d.className=c;d.textContent=t;return d;};
+ m.append(e('head',''),e('head','as is (いまの実装)'),e('head','to be (提案)'));
+ ['light','dark'].forEach(t=>{m.append(e('side',t==='light'?'ライト':'ダーク'));['as','to'].forEach(v=>{const c=document.createElement('div');c.className='cell';m.append(c);paint(c,v,t);});});}
+function renderBar(){document.querySelectorAll('.seg').forEach(seg=>{const k=seg.dataset.k;seg.innerHTML='';OPT[k].forEach(([v,l])=>{const b=document.createElement('button');b.textContent=l;b.setAttribute('aria-pressed',String(S[k]===v));b.onclick=()=>{S[k]=v;renderBar();renderMatrix();};seg.appendChild(b);});});}
+function tbl(id,head,rows,cls){document.getElementById(id).innerHTML='<thead><tr>'+head.map(h=>`<th>${h}</th>`).join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map((c,i)=>`<td class="${cls&&cls[i]||''}">${c}</td>`).join('')+'</tr>').join('')+'</tbody>';}
+tbl('findings',['#','優先','問題','内容','場所'],D.findings.map(f=>[f.id,`<span class="tag ${f.p==='P0'?'p0':f.p==='P1'?'p1':''}">${f.p}</span>`,f.t,f.d,`<code>${f.w}</code>`]),['n']);
+document.getElementById('direction').innerHTML=D.direction.map(d=>`<div class="card"><h3>${d.h}</h3><p style="margin:0">${d.b}</p></div>`).join('');
+document.getElementById('decisions').innerHTML=D.decisions.map(d=>`<div class="card"><h3>${d.id}. ${d.q}</h3><p style="margin:0 0 4px"><b>推奨: ${d.rec}</b></p><p style="margin:0">${d.d}</p></div>`).join('');
+tbl('rows',['ID','項目','as is','to be','指摘'],D.rows,['n','','n','n','n']);
+document.getElementById('accept').innerHTML=D.accept.map(a=>`<li>${a}</li>`).join('');
+const L=v=>{v/=255;return v<=.03928?v/12.92:((v+.055)/1.055)**2.4;};const lum=([r,g,b])=>.2126*L(r)+.7152*L(g)+.0722*L(b);
+const over=(f,b,a)=>[0,1,2].map(i=>f[i]*a+b[i]*(1-a));const hex=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
+const ratio=(a,b)=>{const x=lum(a),y=lum(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05);};
+const rowsC=[];
+[['light','ライト',hex('#ececea'),[31,108,159],[31,108,159],140/255,[225,243,254]],['dark','ダーク',hex('#1a1a1a'),[140,203,242],[140,203,242],153/255,null]].forEach(([k,n,wall,lineTo,_x,aA])=>{
+ const lineAs=over(k==='light'?[31,108,159]:[140,203,242],wall,aA);
+ const f=v=>`<span class="${v>=3?'ok':'ng'}">${v.toFixed(2)}</span>`;
+ rowsC.push([`${n}: 枠 / 壁 (非文字は 3 以上)`,f(ratio(lineAs,wall)),f(ratio(lineTo,wall))]);
+ const fillAs=k==='light'?[225,243,254]:over([31,108,159],wall,71/255), fillTo=over([31,108,159],wall,71/255);
+ rowsC.push([`${n}: 塗り / 壁 (面の差)`,ratio(fillAs,wall).toFixed(2),ratio(fillTo,wall).toFixed(2)]);
+});
+tbl('contrast',['組み合わせ','as is','to be'],rowsC,['','n','n']);
+renderBar();renderMatrix();
+</script>
+</main>
+</body>
+</html>

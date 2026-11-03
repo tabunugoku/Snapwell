@@ -88,14 +88,14 @@ public sealed class OverlayPainterTests
     [Theory]
     [InlineData(OverlayTheme.Light)]
     [InlineData(OverlayTheme.Dark)]
-    public void PreviewUsesThemedFillAndCenteredDashedBorder(OverlayTheme theme)
+    public void PreviewUsesTranslucentFillAndInsideDashedBorder(OverlayTheme theme)
     {
         var palette = OverlayPalette.For(theme);
         var frame = OverlayPainter.Preview(new(-100, -80, 140, 140), new(-90, -70, 100, 100), theme, 2);
-        Assert.Equal(Composite(palette.BlueBackground), Pixel(frame, 60, 60));
-        Assert.Equal(Composite(palette.BlueLine, Composite(palette.BlueBackground)), Pixel(frame, 30, 10));
-        Assert.Equal(Composite(palette.BlueBackground), Pixel(frame, 42, 10));
-        Assert.True(Pixel(frame, 30, 9)[3] > 0);
+        Assert.Equal(Composite(palette.ZoneSelected), Pixel(frame, 60, 60));
+        Assert.Equal(Composite(palette.BlueText), Pixel(frame, 30, 10));
+        Assert.Equal(Composite(palette.ZoneSelected), Pixel(frame, 42, 10));
+        Assert.Equal(new byte[4], Pixel(frame, 30, 9));
         Assert.Equal(new byte[4], Pixel(frame, 10, 10));
     }
 
