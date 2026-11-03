@@ -29,8 +29,8 @@ public sealed class LauncherEnglishRenderingTests : IDisposable
             [new(1, "Window")], [1], 0, expanded: true);
         Assert.True(text.Measure(list.Text!.Previous, 12, false) * scale <= list.Previous.Width);
         Assert.True(text.Measure(list.Text.Next, 12, false) * scale <= list.Next.Width);
-        Assert.True(text.Measure(list.Text.SelectionCount(9), 11.5, false) <= 100);
-        Assert.True(text.Measure(list.Text.Hint, 11.5, false) * scale <= list.Hint.Width);
+        Assert.True(text.Measure(list.Text.SelectionCount(9), 12, false) <= 100);
+        Assert.True(text.Measure(list.Text.Hint, 12, false) * scale <= list.Hint.Width);
         foreach (var button in list.Buttons)
         {
             Assert.True(text.Measure(button.Label, 12, false) * scale <= button.LabelBounds(scale).Width);

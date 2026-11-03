@@ -140,53 +140,53 @@ public sealed class LauncherPanelLayout
             (["Enter"], UiText.Current.Get("LauncherUi.Hint.Place")),
             (["Esc"], UiText.Current.Get("LauncherUi.Hint.Close")),
         };
-        var width = Math.Min(560, area.Width / scale - 28);
+        var width = Math.Min(560, area.Width / scale - 32);
         var left = (area.Width / scale - width) / 2;
-        var inner = width - 30;
+        var inner = width - 32;
         // 全体を表示できない高さではパネルだけを省く。区画のキー操作は続けられる。
         if (inner >= 110)
         {
-            var x = left + 15;
-            var y = 27.0;
-            const double TopHeight = 27.2;
+            var x = left + 16;
+            var y = 32.0;
+            const double TopHeight = 32;
             result.Top = Rect(x, y, inner, TopHeight);
             var tag = UiText.Current.Get("LauncherUi.Target");
-            var tagWidth = Width(tag, 10.5, bold: true) + 16 + 2 * 10.5 * .05;
-            result.Tag = Rect(x, y + (TopHeight - 18.8) / 2, tagWidth, 18.8);
-            result._text.Add(new(tag, result.Tag, 10.5, LauncherTextKind.Blue,
-                Center: true, Bold: true, LetterSpacing: 10.5 * .05));
-            var planWidth = Math.Max(Plans.Max(p => Width(PlanName(p), 12)) + 34, 78);
+            var tagWidth = Width(tag, 12, bold: true) + 16;
+            result.Tag = Rect(x, y + (TopHeight - 24) / 2, tagWidth, 24);
+            result._text.Add(new(tag, result.Tag, 12, LauncherTextKind.Blue,
+                Center: true, Bold: true));
+            var planWidth = Math.Max(Plans.Max(p => Width(PlanName(p), 12)) + 36, 80);
             result.Plan = Rect(x + inner - planWidth, y, planWidth, TopHeight);
-            result.Target = Rect(x + tagWidth + 10, y, Math.Max(0, inner - tagWidth - planWidth - 20), TopHeight);
+            result.Target = Rect(x + tagWidth + 8, y, Math.Max(0, inner - tagWidth - planWidth - 16), TopHeight);
             result._text.Add(new(Ellipsize(target, result.Target.Width / scale,
-                value => Width(value, 12.5)), result.Target, 12.5));
+                value => Width(value, 13)), result.Target, 13));
             result._text.Add(new(PlanName(selection.Grid.Plan),
                 Rect(x + inner - planWidth + 6, y, planWidth - 26, TopHeight), 12));
-            y += TopHeight + 10;
+            y += TopHeight + 8;
             var presetsTop = y;
             var used = 0.0;
-            const double ButtonHeight = 29.2;
+            const double ButtonHeight = 32;
             for (var index = 0; index < LauncherPreset.All.Count; index++)
             {
                 var preset = LauncherPreset.All[index];
                 if (!shown.Contains(preset.Id)) { continue; }
-                var buttonWidth = Math.Min(inner, 42 + Width(preset.Name, 12));
+                var buttonWidth = Math.Min(inner, 50 + Width(preset.Name, 12));
                 if (used > 0 && used + buttonWidth > inner)
                 {
                     used = 0;
-                    y += ButtonHeight + 6;
+                    y += ButtonHeight + 8;
                 }
 
                 var enabled = preset.KeepSize || preset.RangeFor(selection.Grid.Plan) is not null;
                 var buttonBounds = Rect(x + used, y, buttonWidth, ButtonHeight);
                 result._presets.Add(new(index, buttonBounds,
-                    new(area.X + (x + used + 9) * scale, area.Y + (y + 8.6) * scale, 18 * scale, 12 * scale), enabled));
-                var labelBounds = Rect(x + used + 33, y + 5, buttonWidth - 42, 19.2);
+                    new(area.X + (x + used + 12) * scale, area.Y + (y + 10) * scale, 18 * scale, 12 * scale), enabled));
+                var labelBounds = Rect(x + used + 38, y + 6, buttonWidth - 50, 20);
                 // 加減算の端数で実測幅を下回らないよう、確定した物理幅で省略を判定する。
                 result._text.Add(new(Ellipsize(preset.Name, labelBounds.Width / scale, value => Width(value, 12)),
                     labelBounds,
                     12, enabled ? LauncherTextKind.Text : LauncherTextKind.Disabled));
-                used += buttonWidth + 6;
+                used += buttonWidth + 8;
             }
 
             if (shown.Length == 0)
@@ -197,14 +197,14 @@ public sealed class LauncherPanelLayout
             }
 
             result.PresetsBounds = Rect(x, presetsTop, inner, y + ButtonHeight - presetsTop);
-            y += ButtonHeight + 10;
+            y += ButtonHeight + 12;
             var keysTop = y;
             used = 0;
             var hintX = area.X + Px(x);
             PixelRect HintRect(double w)
             {
                 // 行頭は元の丸めを保ち、幅を切り上げて右端から次を配置する。
-                var bounds = Rect(x, y, w, 22);
+                var bounds = Rect(x, y, w, 24);
                 var hint = new PixelRect(hintX, bounds.Y, bounds.Width, bounds.Height);
                 hintX = hint.Right;
                 return hint;
@@ -214,39 +214,39 @@ public sealed class LauncherPanelLayout
                 var parts = group.Template.Split("{keys}", StringSplitOptions.None);
                 var prefix = parts[0];
                 var suffix = parts[1];
-                var keyWidths = group.Keys.Select(key => Math.Max(22, Width(key, 11.5, true) + 14)).ToArray();
-                var groupWidth = keyWidths.Sum() + Width(prefix, 11.5) + Width(suffix, 11.5);
+                var keyWidths = group.Keys.Select(key => Math.Max(24, Width(key, 12, true) + 14)).ToArray();
+                var groupWidth = keyWidths.Sum() + Width(prefix, 12) + Width(suffix, 12);
                 if (used > 0 && used + groupWidth > inner)
                 {
                     used = 0;
-                    y += 26;
+                    y += 32;
                     hintX = area.X + Px(x);
                 }
 
                 if (prefix.Length > 0)
                 {
-                    var prefixWidth = Width(prefix, 11.5);
+                    var prefixWidth = Width(prefix, 12);
                     result._text.Add(new(prefix, HintRect(prefixWidth),
-                        11.5, LauncherTextKind.Muted));
+                        12, LauncherTextKind.Muted));
                     used += prefixWidth;
                 }
                 for (var index = 0; index < group.Keys.Length; index++)
                 {
                     var key = HintRect(keyWidths[index]);
                     result._keys.Add(key);
-                    result._text.Add(new(group.Keys[index], key, 11.5, Mono: true, Center: true));
+                    result._text.Add(new(group.Keys[index], key, 12, Mono: true, Center: true));
                     used += keyWidths[index];
                 }
 
-                var suffixWidth = Width(suffix, 11.5);
-                result._text.Add(new(suffix, HintRect(suffixWidth), 11.5, LauncherTextKind.Muted));
-                used += suffixWidth + 14;
-                hintX += Px(14);
+                var suffixWidth = Width(suffix, 12);
+                result._text.Add(new(suffix, HintRect(suffixWidth), 12, LauncherTextKind.Muted));
+                used += suffixWidth + 16;
+                hintX += Px(16);
             }
 
-            result.KeysBounds = Rect(x, keysTop, inner, y + 22 - keysTop);
-            result.Panel = Rect(left, 14, width, y + 22 + 13 - 14);
-            if (!area.Contains(result.Panel) || result.Tag.Right + Px(20) > result.Plan.X ||
+            result.KeysBounds = Rect(x, keysTop, inner, y + 24 - keysTop);
+            result.Panel = Rect(left, 16, width, y + 24);
+            if (!area.Contains(result.Panel) || result.Tag.Right + Px(16) > result.Plan.X ||
                 result._text.Any(text => !result.Panel.Contains(text.Bounds)))
             {
                 result = new()

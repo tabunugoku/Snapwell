@@ -328,7 +328,7 @@ public static class OverlayPainter
         }
         Box(layout.Panel, 12, palette.Surface, palette.Border);
         FillRounded(frame, Local(layout.Tag, area), palette.BlueBackground, 9999, scale);
-        Box(layout.Plan, 6, palette.Surface, palette.Border);
+        Box(layout.Plan, 8, palette.Surface, palette.Border);
         if (layout.Plan.Width > 0)
         {
             FillDownArrow(frame, Local(layout.Plan, area), palette.Text, scale);
@@ -345,8 +345,8 @@ public static class OverlayPainter
             // disabled の opacity は背景も含むボタン全体にかけ、下の面へ合成する。
             var layer = Create(rect.Width, rect.Height);
             var full = new PixelRect(0, 0, rect.Width, rect.Height);
-            FillRounded(layer, full, palette.Surface2, 6, scale);
-            StrokeRounded(layer, full, palette.Border, 6, 1, scale);
+            FillRounded(layer, full, palette.Surface2, 8, scale);
+            StrokeRounded(layer, full, palette.Border, 8, 1, scale);
             var icon = button.IconBorder;
             PaintRounded(layer, icon.X - button.Bounds.X, icon.Y - button.Bounds.Y, icon.Width, icon.Height,
                 1.5 * scale, palette.Muted, Math.Max(1, scale), centered: true);
@@ -388,7 +388,7 @@ public static class OverlayPainter
         // 幅を奇数にそろえ、全行で同じ中心と連続した整数の Y 座標を使う。
         var width = (int)Math.Round(9 * scale) | 1;
         var height = Math.Max(1, (int)Math.Round(5 * scale));
-        var centerX = plan.Right - (int)Math.Round(14 * scale);
+        var centerX = plan.Right - (int)Math.Round(16 * scale);
         var top = plan.Y + (plan.Height - height) / 2;
         for (var row = 0; row < height; row++)
         {

@@ -9,9 +9,9 @@ public sealed class LauncherMeasuredLayoutTests
 {
     /// <summary>描画解像度によらず、偽の元サイズ測定でパネルと小さい文字の寸法を固定する。</summary>
     [Theory]
-    [InlineData(1, 580, -66, 560, 186, 595, -49, 44, 19, 59, 530, 48, 27, 22)]
-    [InlineData(1.5, 440, -59, 840, 278, 462, -33, 65, 28, 128, 795, 72, 41, 33)]
-    [InlineData(2, 300, -52, 1120, 371, 330, -18, 86, 38, 197, 1060, 96, 54, 44)]
+    [InlineData(1, 580, -64, 560, 212, 596, -44, 42, 24, 76, 528, 56, 27, 24)]
+    [InlineData(1.5, 440, -56, 840, 318, 464, -26, 63, 36, 154, 792, 84, 41, 36)]
+    [InlineData(2, 300, -48, 1120, 424, 332, -8, 83, 48, 232, 1056, 112, 54, 48)]
     public void OriginalMeasurementKeepsLayoutDimensions(double scale, int panelX, int panelY,
         int panelWidth, int panelHeight, int textX, int tagY, int tagWidth, int tagHeight,
         int keysY, int keysWidth, int keysHeight, int keyWidth, int keyHeight)
@@ -34,7 +34,7 @@ public sealed class LauncherMeasuredLayoutTests
         var selection = new ZoneSelection(new(-2000, -300, 1920, 1080), new(8, 8), new(8, 8));
         var layout = LauncherPanelLayout.Create(selection, scale, "短い対象名", measure: Measure);
         Assert.True(layout.Panel.Height > 0);
-        Assert.Equal("短い対象名", Assert.Single(layout.Text, text => text.Size == 12.5).Value);
+        Assert.Equal("短い対象名", Assert.Single(layout.Text, text => text.Size == 13).Value);
         Assert.All(layout.Text, text =>
         {
             var width = Measure(text.Value, text.Size, text.Mono, text.Bold) +
@@ -59,7 +59,7 @@ public sealed class LauncherMeasuredLayoutTests
         Assert.True(selection.WorkArea.Contains(layout.Panel));
         Assert.True(layout.Presets.Select(button => button.Bounds.Y).Distinct().Count() > 1);
         Assert.True(layout.Keys.Select(key => key.Y).Distinct().Count() > 1);
-        var shortened = Assert.Single(layout.Text, text => text.Size == 12.5);
+        var shortened = Assert.Single(layout.Text, text => text.Size == 13);
         Assert.EndsWith("…", shortened.Value);
         Assert.Contains(shortened.Value.Length - 1, StringInfo.ParseCombiningCharacters(target));
         Assert.All(layout.Text, text => Assert.True(
