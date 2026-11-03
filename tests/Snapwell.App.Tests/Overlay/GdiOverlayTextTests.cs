@@ -76,7 +76,7 @@ public sealed class GdiOverlayTextTests
         var widths = runs.Select(run => (int)Math.Round(text.Measure(run, 12, true) * scale)).ToArray();
         var measured = text.Measure(label.Value, 12, true) * scale;
         Assert.InRange(Math.Abs(measured - widths.Sum()), 0, .00001);
-        Assert.Equal((int)Math.Ceiling(measured + 22 * scale), layout.SelectionLabel.Width);
+        Assert.Equal((int)Math.Round(measured + 24 * scale, MidpointRounding.AwayFromZero), layout.SelectionLabel.Width);
         Assert.InRange(Math.Abs(selection.Bounds.Center.X - label.Bounds.Center.X), 0, 1);
 
         var actual = OverlayPainter.Create(label.Bounds.Width, label.Bounds.Height);

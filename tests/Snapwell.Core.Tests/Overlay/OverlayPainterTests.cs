@@ -75,9 +75,9 @@ public sealed class OverlayPainterTests
     public void PaletteMatchesMockupTokens(OverlayTheme theme)
     {
         var expected = theme == OverlayTheme.Light
-            ? new OverlayColor[] { new(247, 246, 243, 140), new(255, 255, 255, 140), new(0, 0, 0, 20),
+            ? new OverlayColor[] { new(247, 246, 243, 140), new(255, 255, 255, 140), new(0, 0, 0, 36),
                 new(225, 243, 254, 255), new(31, 108, 159, 140), new(31, 108, 159, 255) }
-            : new OverlayColor[] { new(25, 25, 24, 128), new(255, 255, 255, 13), new(255, 255, 255, 23),
+            : new OverlayColor[] { new(25, 25, 24, 128), new(255, 255, 255, 13), new(255, 255, 255, 36),
                 new(31, 108, 159, 71), new(140, 203, 242, 153), new(140, 203, 242, 255) };
         var palette = OverlayPalette.For(theme);
         Assert.Equal(expected, new[] { palette.Dim, palette.Cell, palette.CellBorder,
@@ -150,7 +150,7 @@ public sealed class OverlayPainterTests
             var rect = selection.Grid.CellRect(column, 0);
             var x = rect.X - selection.WorkArea.X;
             var middle = rect.Y - selection.WorkArea.Y + rect.Height / 2;
-            var background = Composite(column < 2 ? palette.BlueBackground : palette.Cell, dim);
+            var background = Composite(column < 2 ? palette.ZoneSelected : palette.Cell, dim);
             Assert.Equal(background, Pixel(frame, x + rect.Width / 2, middle));
             Assert.Equal(Composite(column < 2 ? palette.BlueLine : palette.CellBorder, background),
                 Pixel(frame, x, middle));

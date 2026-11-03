@@ -295,7 +295,7 @@ public sealed class LauncherPanelLayout
         result._keys.AddRange(_keys);
         result._options.AddRange(_options);
         var area = selection.WorkArea;
-        int Px(double value) => (int)Math.Ceiling(value * scale);
+        int Px(double value) => (int)Math.Round(value * scale, MidpointRounding.AwayFromZero);
         var range = selection.Range;
         var bounds = selection.Bounds;
         // ドラッグ中は開始時のテンプレートだけを使い、共有カタログを引き直さない。
@@ -304,8 +304,8 @@ public sealed class LauncherPanelLayout
             .Replace("{rows}", range.Rows.ToString(CultureInfo.InvariantCulture), StringComparison.Ordinal)
             .Replace("{width}", bounds.Width.ToString(CultureInfo.InvariantCulture), StringComparison.Ordinal)
             .Replace("{height}", bounds.Height.ToString(CultureInfo.InvariantCulture), StringComparison.Ordinal);
-        var labelWidth = Math.Min(area.Width, Px(measure(label, 12, true, false) + 22));
-        var labelHeight = Math.Min(area.Height, Px(29.2));
+        var labelWidth = Math.Min(area.Width, Px(measure(label, 12, true, false) + 24));
+        var labelHeight = Math.Min(area.Height, Px(32));
         result.SelectionLabel = new((int)Math.Clamp(bounds.Center.X - labelWidth / 2.0,
             area.X, area.Right - labelWidth), (int)Math.Clamp(bounds.Center.Y - labelHeight / 2.0,
             area.Y, area.Bottom - labelHeight), labelWidth, labelHeight);
