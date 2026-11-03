@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ランチャーのオーバーレイ レビュー</title>
+<style>
+:root{--bg:#f4f4f2;--card:#fff;--ink:#1a1a19;--sub:#5e5d5a;--line:#e1e1de;--acc:#1f6c9f;--bad:#a23a38;--good:#2f6b3a}
+@media (prefers-color-scheme:dark){:root{--bg:#161615;--card:#1f1f1e;--ink:#ecece9;--sub:#a3a29e;--line:#34342f;--acc:#8ccbf2;--bad:#f2a7a5;--good:#a6d1a9}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 "Segoe UI Variable Text","Yu Gothic UI","Segoe UI",sans-serif}
+main{max-width:1280px;margin:0 auto;padding:32px 24px 80px}
+h1{font-size:24px;margin:0 0 4px;font-weight:600}h2{font-size:18px;margin:48px 0 12px;font-weight:600}h3{font-size:14px;margin:0 0 8px;font-weight:600}
+p{margin:0 0 12px;color:var(--sub)}.lead{max-width:760px}
+code{font:12px Consolas,monospace;background:var(--line);padding:1px 5px;border-radius:4px}
+.bar{display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin:16px 0;padding:12px 16px;background:var(--card);border:1px solid var(--line);border-radius:12px;position:sticky;top:0;z-index:5}
+.bar label{font-size:12px;color:var(--sub);margin-right:4px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{all:unset;cursor:pointer;padding:4px 12px;font-size:12px;color:var(--sub)}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.seg button:focus-visible{outline:2px solid var(--acc);outline-offset:-2px}
+.matrix{display:grid;grid-template-columns:auto 1fr 1fr;gap:12px;align-items:start}
+.matrix .head{font-size:12px;color:var(--sub);font-weight:600;padding:0 4px}
+.matrix .side{writing-mode:vertical-rl;font-size:12px;color:var(--sub);font-weight:600;padding-top:8px}
+.cell{border-radius:12px;padding:12px;overflow:auto;border:1px solid var(--line)}
+.stage{position:relative;overflow:hidden;border-radius:8px}
+.o{position:absolute;white-space:nowrap}
+.m{position:absolute;outline:1px dashed #d4522a;pointer-events:none;z-index:9}
+.ml{position:absolute;font:9px/1 Consolas,monospace;color:#fff;background:#d4522a;padding:1px 3px;border-radius:2px;z-index:10;pointer-events:none;white-space:nowrap}
+.h{font:12px Consolas,monospace;color:var(--sub);text-align:center;margin-top:8px}
+table{border-collapse:collapse;width:100%;font-size:13px;background:var(--card);border:1px solid var(--line)}
+th,td{padding:8px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-size:12px;color:var(--sub);font-weight:600;background:var(--bg)}
+td.n{font-family:Consolas,monospace;white-space:nowrap}
+.tag{display:inline-block;font-size:11px;padding:0 6px;border-radius:999px;border:1px solid var(--line);color:var(--sub)}
+.tag.p0{color:var(--bad);border-color:var(--bad)}.tag.p1{color:var(--acc);border-color:var(--acc)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 20px;margin-bottom:12px}
+ul{margin:0;padding-left:20px;color:var(--sub)}li{margin:2px 0}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.ok{color:var(--good)}.ng{color:var(--bad)}
+</style>
+</head>
+<body>
+<main>
+<h1>ランチャーのオーバーレイ レビュー</h1>
+<p class="lead">対象は、ランチャーを開いたとき画面全体に重なる層 (背景の暗幕、区画のセル、選択範囲、カーソル、選択ラベル)。パネルとウィンドウ一覧は別のレビュー (launcher-review) で、ここには含めない (見本では省略)。as is は <code>OverlayPainter.PaintLauncher</code> と <code>SelectionLabel</code> の値から再現した。ドラッグ中のプレビュー (<code>OverlayPainter.Preview</code>) は次の画面で扱う。</p>
+
+<div class="bar">
+  <span><label>選択</label><span class="seg" data-k="sel"></span></span>
+  <span><label>区画の線</label><span class="seg" data-k="lines"></span></span>
+  <span><label>分割</label><span class="seg" data-k="plan"></span></span>
+  <span><label>寸法線</label><span class="seg" data-k="redline"></span></span>
+</div>
+
+<h2>1. as is / to be (明 / 暗)</h2>
+<div class="matrix" id="matrix"></div>
+<p style="margin-top:12px">見本は 800×450 の作業領域、間隔 8・端 8、拡大率 1.0。背景のウィンドウは、暗幕と区画の透け方を見るための仮のもの。パネルは省略している。</p>
+
+<h2>2. 監査 (as is の問題)</h2>
+<table id="findings"></table>
+
+<h2>3. 方向</h2>
+<div class="cols" id="direction"></div>
+
+<h2>4. 判断してほしい点</h2>
+<div id="decisions"></div>
+
+<h2>5. Codex に渡す数値仕様</h2>
+<p>単位は論理 px、物理 px は × 拡大率の四捨五入。色は RGBA (A は 0–255)。</p>
+<table id="rows"></table>
+
+<h2>6. 色の見え方 (合成後)</h2>
+<p>背景 (ライト #ECECEA、ダーク #1A1A1A) の上に、暗幕、セル、枠を重ねたときの、セルの面と枠の輝度比。</p>
+<table id="contrast"></table>
+
+<h2>7. 受け入れ条件</h2>
+<div class="card"><ul id="accept"></ul></div>
+
+<script type="application/json" id="data">
+{
+"findings":[
+ {"id":"O1","p":"P0","t":"選択セルの塗りがテーマで別物","d":"ライトは BlueBackground (#E1F3FE、不透明) で、下の画面を完全に隠す。ダークは (31,108,159) の alpha 71 で透ける。ほかのセル (ライト: 白 alpha 140) は透けるため、ライトだけ選択セルが「べた塗り」で浮く。","w":"OverlayPainter.cs:233 (BlueBackground を共有)"},
+ {"id":"O2","p":"P0","t":"セルの枠がほぼ見えない","d":"CellBorder がライトで黒 alpha 20 (8%)、ダークで白 alpha 23 (9%)。合成後の面と枠の輝度比は、ライト 1.19 : 1、ダーク 1.33 : 1。グリッドの区切りが機能なのに、明るい壁紙では消える。","w":"OverlayPalette.CellBorder"},
+ {"id":"O3","p":"P1","t":"角丸の値が面ごとにばらつく","d":"セル 4、カーソルの内側の枠 3、選択ラベル 6、ドラッグのプレビュー 8。パネルの入力や分割案は 6 (レビューでは 8 へ)。同じ「区画」を示す面で、セルとプレビューの角が違う。","w":"PaintLauncher / SelectionLabel / Preview"},
+ {"id":"O4","p":"P1","t":"選択ラベルの寸法が端数と非対称","d":"高さ 29.2、幅 = 文字幅 + 22。パネルの端数 (29.2) と同じ式を共有している。枠も Border (#EAEAEA) で、ライトの白いセルの上では輪郭が出ない。","w":"LauncherPanelLayout.WithSelection / SelectionLabel"},
+ {"id":"O5","p":"P2","t":"カーソルの枠はすでにトークンどおり","d":"2 px・BlueText・内側 1 px は、トレイの焦点枠 (2 px、BlueText) と同じ。変えない。角だけ、セルの角に従う (セル − 1)。","w":"PaintLauncher:238-244"}
+],
+"rows":[
+ ["Z1","セルの角","セル: 4 / カーソルの枠: 4 − inset (=3)","セル: 8 / カーソルの枠: 8 − inset (=7)","O3"],
+ ["Z2","セルの枠の色 (CellBorder)","ライト 黒 (0,0,0,20) / ダーク 白 (255,255,255,23)","ライト 黒 (0,0,0,36) / ダーク 白 (255,255,255,36)","O2"],
+ ["Z3","選択セルの塗り","BlueBackground: ライト (225,243,254,255) / ダーク (31,108,159,71)","新トークン ZoneSelected: 両テーマ (31,108,159,71)。ダークは変更なし。BlueBackground は共有なので変えない","O1"],
+ ["Z4","選択セルの枠","BlueLine 太さ 1","変更なし (ライト (31,108,159,140) / ダーク (140,203,242,153))","—"],
+ ["Z5","カーソルの枠","2 px / 内側 1 px / BlueText","変更なし (角のみ Z1)","O5"],
+ ["Z6","選択ラベル: 高さ","29.2 (Px(29.2))","32","O4"],
+ ["Z7","選択ラベル: 幅","文字幅 + 22","文字幅 + 24 (左右 12)","O4"],
+ ["Z8","選択ラベル: 角 / 枠","6 / Border","8 / BorderStrong","O3 O4"],
+ ["Z9","選択ラベル: 文字","12 mono / Ink","変更なし","—"],
+ ["Z10","背景の暗幕 (Dim)","ライト (247,246,243,140) / ダーク (25,25,24,128)","変更なし","—"],
+ ["Z11","セルの面 (Cell)","ライト 白 alpha 140 / ダーク 白 alpha 13","変更なし","—"],
+ ["Z12","区画の線を隠す設定 (showZoneLines = false)","枠を描かない","変更なし (選択セルの枠も描かない)","—"]
+],
+"accept":[
+ "ZoneSelected が OverlayPalette に増え、ライトとダークで (31,108,159,71)。BlueBackground の値は変わらない (パネルのタグ・行・役割の面が変わらない)。",
+ "PaintLauncher の選択セルの中央の画素が、ZoneSelected を暗幕とセルの上に重ねた結果になる。ライトでも下の暗幕・壁が透ける (不透明でない)。",
+ "セルの角の画素 (0,0) が、拡大率 1.0 でセルの塗りに覆われない (角 8)。拡大率 1.25・1.5・2.0 で、角の半径が 8 × 拡大率に追従する。",
+ "CellBorder が、ライト (0,0,0,36)、ダーク (255,255,255,36)。合成後の面と枠の輝度比が、ライト・ダークとも 1.3 以上 (本ページの表で確認)。",
+ "カーソルの枠が 2 px の BlueText のまま、角が 7 (セル 8 − inset 1)。",
+ "拡大率 1.0 で、選択ラベルの高さが 32、幅が測定した文字幅 + 24。左右対称で、画面端では作業領域内に収まる (既存の Clamp を保つ)。",
+ "選択ラベルの角が 8、枠が BorderStrong。",
+ "showZoneLines = false で、選択セルを含むすべての枠が描かれない (既存の動作)。",
+ "既存の動作 (ヒットテスト、選択範囲、Cursor の移動、PanelBuildCount などの再利用、alpha 零の領域を作らない暗幕) が変わらない。既存テストの期待値は、本表の数値に追従させる。"
+],
+"decisions":[
+ {"id":"D1","q":"ライトの選択セルを透ける塗りにするか","rec":"透ける塗りに統一 (推奨)","d":"いまのライトは不透明な水色で、選択した区画の下の画面が見えない。ダークと同じ 28% の青 (alpha 71)にすると、置く先の画面を見ながら選べる。見た目が変わる点なので確認したい。"},
+ {"id":"D2","q":"角を 8 にそろえるか","rec":"そろえる (推奨)","d":"セル 4 → 8、ラベル 6 → 8。ドラッグのプレビュー (8) と同じ角になる。小さいセル (12×6 分割の低い画面) でも半径 8 は収まる。"},
+ {"id":"D3","q":"実装の順序","rec":"ランチャーの PR のマージ後 (推奨)","d":"選択ラベルの寸法は LauncherPanelLayout.cs (WithSelection) にあり、いま Codex がそのファイルを編集中。重ねると衝突するので、codex/launcher-polish を main に入れてから worktree を切る。"},
+ {"id":"D4","q":"ドラッグのプレビュー (Preview) の扱い","rec":"次の画面として別にレビュー (推奨)","d":"BlueBackground・BlueLine・角 8 を共有している。Z3 の新トークンに合わせるかは、プレビューのレビューで決める。今回は触らない。"}
+],
+"direction":[
+ {"h":"トーン","b":"画面全体に薄く重なる幕と、置く先を示す区画。色は選択 (青) だけで、幕とセルは壁紙を透かす。"},
+ {"h":"トークン","b":"角 8 (コントロール・ラベル・セルで共通)。枠は機能の線として 14% (alpha 36)。焦点 (カーソル) は 2 px の BlueText。"},
+ {"h":"署名の細部","b":"選択ラベルの「3 × 2 マス · 1280 × 720」。マス数とピクセルの両方を mono で示す。"},
+ {"h":"変えないもの","b":"構成、幕の濃さ、セルの面、カーソルの枠、選択範囲の挙動、物理モデルの動き。"}
+]
+}
+</script>
+
+<script>
+const D=JSON.parse(document.getElementById('data').textContent);
+const C={
+ light:{dim:[247,246,243,140],cell:[255,255,255,140],bAs:[0,0,0,20],bTo:[0,0,0,36],selAs:[225,243,254,255],selTo:[31,108,159,71],line:[31,108,159,140],cur:'#1f6c9f',surface:'#fff',border:'#eaeaea',borderStrong:'#dadad7',ink:'#111',wall:'#ececea',win:'#fbfbfa',winLine:'#d0d0cc',txt:'#2f3437'},
+ dark:{dim:[25,25,24,128],cell:[255,255,255,13],bAs:[255,255,255,23],bTo:[255,255,255,36],selAs:[31,108,159,71],selTo:[31,108,159,71],line:[140,203,242,153],cur:'#8ccbf2',surface:'#202020',border:'rgba(255,255,255,.078)',borderStrong:'rgba(255,255,255,.141)',ink:'#f2f2f0',wall:'#1a1a1a',win:'#262626',winLine:'#3a3a3a',txt:'#e6e6e3'}
+};
+const rgba=a=>`rgba(${a[0]},${a[1]},${a[2]},${a[3]/255})`;
+const S={sel:'r22',lines:'on',plan:'6x4',redline:'on'};
+const OPT={sel:[['c','カーソルのみ'],['r22','2×2 の範囲'],['r31','3×1 の範囲']],lines:[['on','あり'],['off','なし']],plan:[['6x4','6 × 4'],['12x6','12 × 6']],redline:[['on','あり'],['off','なし']]};
+function paint(host,variant,theme){
+  const c=C[theme],as=variant==='as',W=800,H=450,gap=8,edge=8;
+  const [cols,rows]=S.plan==='6x4'?[6,4]:[12,6];
+  const cw=(W-2*edge-(cols-1)*gap)/cols, ch=(H-2*edge-(rows-1)*gap)/rows;
+  const st=document.createElement('div');st.className='stage';st.style.cssText=`width:${W}px;height:${H}px;background:${c.wall}`;
+  const add=(x,y,w,h,css,txt)=>{const d=document.createElement('div');d.className='o';d.style.cssText=`left:${x}px;top:${y}px;width:${w}px;height:${h}px;${css}`;if(txt)d.textContent=txt;st.appendChild(d);return d;};
+  // 仮の壁紙のウィンドウ
+  add(40,36,360,230,`background:${c.win};border:1px solid ${c.winLine};border-radius:8px`);
+  add(41,37,358,28,`background:${c.winLine};opacity:.5;border-radius:8px 8px 0 0`);
+  add(300,170,440,230,`background:${c.win};border:1px solid ${c.winLine};border-radius:8px`);
+  for(let i=0;i<6;i++){add(60,84+i*22,200+(i%3)*40,8,`background:${c.winLine};border-radius:4px`);}
+  add(0,0,W,H,`background:${rgba(c.dim)}`);
+  // 選択
+  let r={c0:2,r0:1,nc:1,nr:1},cursor=[2,1];
+  if(S.sel==='r22'){r={c0:1,r0:1,nc:2,nr:2};cursor=[2,2];}
+  if(S.sel==='r31'){r={c0:1,r0:2,nc:3,nr:1};cursor=[3,2];}
+  const rad=as?4:8; let selBox=null;
+  const cells=[];
+  for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){
+    // 12x6 では選択範囲を中央付近に取り直す
+    const k=S.plan==='6x4'?1:2; const c0=r.c0*k,r0=r.r0*(S.plan==='6x4'?1:1),nc=r.nc*k,nr=r.nr;
+    const sel=i>=c0&&i<c0+nc&&j>=r0&&j<r0+nr;
+    const x=edge+i*(cw+gap),y=edge+j*(ch+gap);
+    const fill=sel?rgba(as?c.selAs:c.selTo):rgba(c.cell);
+    const b=add(x,y,cw,ch,`border-radius:${rad}px;background:${fill};`+(S.lines==='on'?`box-shadow:inset 0 0 0 1px ${sel?rgba(c.line):rgba(as?c.bAs:c.bTo)}`:''));
+    if(sel){selBox=selBox||{x,y,x2:x+cw,y2:y+ch};selBox.x=Math.min(selBox.x,x);selBox.y=Math.min(selBox.y,y);selBox.x2=Math.max(selBox.x2,x+cw);selBox.y2=Math.max(selBox.y2,y+ch);}
+    cells.push([i,j,x,y]);
+    if(i===(cursor[0]*(S.plan==='6x4'?1:2)+(S.plan==='6x4'?0:1)>=0?cursor[0]*(S.plan==='6x4'?1:2):0)&&j===cursor[1]&&(S.plan==='6x4'||true)){
+      const cur=(S.plan==='6x4')?cursor:[cursor[0]*2+1,cursor[1]];
+      if(i===cur[0]){const rr=(as?4:8)-1;add(x+1,y+1,cw-2,ch-2,`border-radius:${rr}px;box-shadow:inset 0 0 0 2px ${c.cur}`);}
+    }
+    if(S.redline==='on'&&i===1&&j===0&&!sel){mk(st,x,y,cw,ch,`cell r${rad}`);}
+  }
+  // ラベル
+  const lw=Math.ceil((8+Math.round(selBox?(selBox.x2-selBox.x)/8:0))*7.2)+(as?22:24); // mono 12px の概算
+  const text=S.lang==='en'?'':'';
+  const nc=Math.round((selBox.x2-selBox.x+gap)/(cw+gap)),nr=Math.round((selBox.y2-selBox.y+gap)/(ch+gap));
+  const txt=`${nc} × ${nr} マス · ${Math.round(selBox.x2-selBox.x)*1.6|0} × ${Math.round(selBox.y2-selBox.y)*1.6|0}`;
+  const tw=Math.ceil(txt.length*7.2); const w=tw+(as?22:24), h=as?29.2:32;
+  const lx=(selBox.x+selBox.x2)/2-w/2, ly=(selBox.y+selBox.y2)/2-h/2;
+  add(lx,ly,w,h,`background:${c.surface};border-radius:${as?6:8}px;box-shadow:inset 0 0 0 1px ${as?c.border:c.borderStrong}`);
+  add(lx,ly,w,h,`font:12px/${h}px "Cascadia Mono",Consolas,monospace;color:${c.ink};text-align:center`,txt);
+  if(S.redline==='on')mk(st,lx,ly,w,h,`label ${w}×${h}`);
+  host.appendChild(st);
+  const hh=document.createElement('div');hh.className='h';hh.textContent=`cell ${cw.toFixed(1)}×${ch.toFixed(1)} · radius ${rad}`;host.appendChild(hh);
+}
+function mk(st,x,y,w,h,label){const m=document.createElement('div');m.className='m';m.style.cssText=`left:${x}px;top:${y}px;width:${w}px;height:${h}px`;st.appendChild(m);const l=document.createElement('div');l.className='ml';l.textContent=label;l.style.cssText=`left:${x}px;top:${Math.max(0,y-11)}px`;st.appendChild(l);}
+function renderMatrix(){const m=document.getElementById('matrix');m.innerHTML='';const e=(c,t)=>{const d=document.createElement('div');d.className=c;d.textContent=t;return d;};
+ m.append(e('head',''),e('head','as is (いまの実装)'),e('head','to be (提案)'));
+ ['light','dark'].forEach(t=>{m.append(e('side',t==='light'?'ライト':'ダーク'));['as','to'].forEach(v=>{const c=document.createElement('div');c.className='cell';m.append(c);paint(c,v,t);});});}
+function renderBar(){document.querySelectorAll('.seg').forEach(seg=>{const k=seg.dataset.k;seg.innerHTML='';OPT[k].forEach(([v,l])=>{const b=document.createElement('button');b.textContent=l;b.setAttribute('aria-pressed',String(S[k]===v));b.onclick=()=>{S[k]=v;renderBar();renderMatrix();};seg.appendChild(b);});});}
+function tbl(id,head,rows,cls){document.getElementById(id).innerHTML='<thead><tr>'+head.map(h=>`<th>${h}</th>`).join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map((c,i)=>`<td class="${cls&&cls[i]||''}">${c}</td>`).join('')+'</tr>').join('')+'</tbody>';}
+tbl('findings',['#','優先','問題','内容','場所'],D.findings.map(f=>[f.id,`<span class="tag ${f.p==='P0'?'p0':'p1'}">${f.p}</span>`,f.t,f.d,`<code>${f.w}</code>`]),['n']);
+document.getElementById('direction').innerHTML=D.direction.map(d=>`<div class="card"><h3>${d.h}</h3><p style="margin:0">${d.b}</p></div>`).join('');
+document.getElementById('decisions').innerHTML=D.decisions.map(d=>`<div class="card"><h3>${d.id}. ${d.q}</h3><p style="margin:0 0 4px"><b>推奨: ${d.rec}</b></p><p style="margin:0">${d.d}</p></div>`).join('');
+tbl('rows',['ID','項目','as is','to be','指摘'],D.rows,['n','','n','n','n']);
+document.getElementById('accept').innerHTML=D.accept.map(a=>`<li>${a}</li>`).join('');
+// 合成後の輝度比
+const L=v=>{v/=255;return v<=.03928?v/12.92:((v+.055)/1.055)**2.4;};
+const lum=([r,g,b])=>.2126*L(r)+.7152*L(g)+.0722*L(b);
+const over=(f,b)=>{const a=f[3]/255;return [0,1,2].map(i=>f[i]*a+b[i]*(1-a));};
+const hex=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
+function ratio(a,b){const x=lum(a),y=lum(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05);}
+const rowsC=[];
+['light','dark'].forEach(t=>{const c=C[t];const base=over(c.dim,hex(c.wall));const cell=over(c.cell,base);
+ const as=ratio(cell,over(c.bAs,cell)),to=ratio(cell,over(c.bTo,cell));
+ const f=v=>`<span class="${v>=1.3?'ok':'ng'}">${v.toFixed(2)}</span>`;
+ rowsC.push([`${t==='light'?'ライト':'ダーク'}: セルの面 / 枠`,f(as),f(to)]);
+ const selAs=over(c.selAs,base),selTo=over(c.selTo,base);
+ rowsC.push([`${t==='light'?'ライト':'ダーク'}: 選択セル / 通常セル (面の差)`,ratio(selAs,cell).toFixed(2),ratio(selTo,cell).toFixed(2)]);
+});
+tbl('contrast',['組み合わせ','as is','to be'],rowsC,['','n','n']);
+renderBar();renderMatrix();
+</script>
+</main>
+</body>
+</html>
