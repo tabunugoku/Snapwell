@@ -45,31 +45,25 @@ public sealed record OverlayPalette(OverlayColor Dim, OverlayColor Cell, Overlay
     private static readonly OverlayPalette _light = new(new(247, 246, 243, 140), new(255, 255, 255, 140),
         new(0, 0, 0, 20), new(225, 243, 254, 255), new(31, 108, 159, 140), new(31, 108, 159, 255),
         new(255, 255, 255, 255), new(249, 249, 248, 255), new(234, 234, 234, 255), new(218, 218, 215, 255),
-        new(47, 52, 55, 255), new(120, 119, 116, 255), new(17, 17, 17, 255));
+        new(47, 52, 55, 255), new(107, 106, 103, 255), new(17, 17, 17, 255));
     private static readonly OverlayPalette _dark = new(new(25, 25, 24, 128), new(255, 255, 255, 13),
         new(255, 255, 255, 23), new(31, 108, 159, 71), new(140, 203, 242, 153), new(140, 203, 242, 255),
         new(32, 32, 32, 255), new(37, 37, 36, 255), new(255, 255, 255, 20), new(255, 255, 255, 36),
         new(230, 230, 227, 255), new(155, 154, 151, 255), new(242, 242, 240, 255))
     {
-        GreenBackground = new(52, 101, 56, 77),
+        Hover = new(45, 45, 44, 255),
         GreenText = new(166, 209, 169, 255),
-        YellowBackground = new(149, 100, 0, 71),
         YellowText = new(232, 196, 106, 255),
-        RedBackground = new(159, 47, 45, 71),
         RedText = new(242, 167, 165, 255),
     };
 
-    /// <summary>有効を表すタグの背景色。</summary>
-    public OverlayColor GreenBackground { get; init; } = new(237, 243, 236, 255);
-    /// <summary>有効を表すタグの文字色。</summary>
+    /// <summary>トレイの行を背景から区別するホバー色。</summary>
+    public OverlayColor Hover { get; init; } = new(240, 240, 238, 255);
+    /// <summary>有効を表す状態の点の色。</summary>
     public OverlayColor GreenText { get; init; } = new(52, 101, 56, 255);
-    /// <summary>一時停止を表すタグの背景色。</summary>
-    public OverlayColor YellowBackground { get; init; } = new(251, 243, 219, 255);
-    /// <summary>一時停止を表すタグの文字色。</summary>
+    /// <summary>一時停止を表す状態の点の色。</summary>
     public OverlayColor YellowText { get; init; } = new(149, 100, 0, 255);
-    /// <summary>異常を表すタグの背景色。</summary>
-    public OverlayColor RedBackground { get; init; } = new(253, 235, 236, 255);
-    /// <summary>異常を表すアイコンとタグの文字色。</summary>
+    /// <summary>異常を表すアイコンと状態の点の色。</summary>
     public OverlayColor RedText { get; init; } = new(159, 47, 45, 255);
 
     /// <summary>指定したテーマの配色を返す。</summary>

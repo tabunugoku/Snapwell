@@ -24,26 +24,27 @@ public sealed class TrayMenuHeaderTests
         Assert.Equal(label, snapshot.StatusLabel);
     }
 
-    /// <summary>最も長いタグも実測幅に左右の余白を足し、タイトルとスイッチから離す。</summary>
+    /// <summary>状態の点と文字をタイトルから離し、スイッチまで 12 px 空ける。</summary>
     [Theory]
     [InlineData(1)]
+    [InlineData(1.25)]
     [InlineData(1.5)]
     [InlineData(2)]
-    public void MeasuredTagsFitBetweenTitleAndToggleAtEveryScale(double scale)
+    public void MeasuredIndicatorIncludesDotAndGapAndKeepsTwelvePixelToggleGap(double scale)
     {
         using var text = new GdiOverlayText(scale);
         var widths = new List<int>();
         foreach (var label in new[] { "有効", "一時停止中", "異常" })
         {
             var layout = Snapshot(true, null, OverlayTheme.Light, scale).Layout
-                .WithStatusTagTextWidth(text.Measure(label, 10.5, true, true));
+                .WithStatusTagTextWidth(text.Measure(label, 12, true));
             var title = TrayMenuLayout.CenterVertically(layout.HeaderIcon,
-                layout.Panel.X + layout.Px(49), layout.Px(110), layout.Px(24));
+                layout.Panel.X + layout.Px(44), layout.Px(110), layout.Px(24));
             Assert.True(layout.Panel.Contains(layout.StatusTag));
             Assert.False(title.Intersects(layout.StatusTag));
             Assert.True(title.Right < layout.StatusTag.X);
-            Assert.Equal(layout.Px(10), layout.Toggle.X - layout.StatusTag.Right);
-            Assert.Equal(layout.Px(text.Measure(label, 10.5, true, true) + 16), layout.StatusTag.Width);
+            Assert.Equal(layout.Px(12), layout.Toggle.X - layout.StatusTag.Right);
+            Assert.Equal(layout.Px(text.Measure(label, 12, true) + 12), layout.StatusTag.Width);
             Assert.Equal(layout.StatusTag, layout.WithScrollOffset(int.MaxValue).StatusTag);
             widths.Add(layout.StatusTag.Width);
         }
@@ -78,7 +79,7 @@ public sealed class TrayMenuHeaderTests
             contrasts.Add(contrast);
             if (state == 0) { Assert.Contains(pixels, color => color.Blue > color.Red + 20); }
             if (state == 2) { Assert.Contains(pixels, color => color.Red > color.Blue + 20); }
-            var tag = snapshot.Layout.WithStatusTagTextWidth(text.Measure(snapshot.StatusLabel, 10.5, true, true))
+            var tag = snapshot.Layout.WithStatusTagTextWidth(text.Measure(snapshot.StatusLabel, 12, true))
                 .StatusTag;
             var colors = Pixels(frame, snapshot.Layout.Bounds, tag).ToArray();
             Assert.Contains(colors, color => state switch
