@@ -49,13 +49,13 @@ public sealed class CenterWindowHotkeyTests
         Assert.Equal(SizeMode.None, request.SizeMode);
     }
 
-    /// <summary>区画で中央の範囲を表せないグリッドでは、移動を要求しない。</summary>
+    /// <summary>区画で中央の範囲を表せないグリッドでも、最寄りの区画へ丸めた中央への移動を要求する。</summary>
     [Fact]
-    public void CenterWindowDoesNothingOnGridWithoutCenterRange()
+    public void CenterWindowRoundsToNearestCellsOnGridWithoutExactCenterRange()
     {
-        var fixture = new Fixture(new PortableSettings { Grid = new(2, 2) });
+        var fixture = new Fixture(new PortableSettings { Grid = new(12, 12) });
         fixture.Executor.Handle(new((int)WindowCommand.CenterWindow));
-        Assert.Empty(fixture.Motion.Requests);
+        Assert.Single(fixture.Motion.Requests);
     }
 
     /// <summary>サイズ維持の中央は、作業領域の中央へ現在のサイズのまま動く。</summary>

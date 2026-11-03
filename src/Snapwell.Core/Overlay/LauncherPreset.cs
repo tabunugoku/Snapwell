@@ -90,6 +90,9 @@ public sealed record LauncherPreset(string Id, string Name, double X0, double X1
     {
         if (KeepSize) { return null; }
 
+        // 割り切れないグリッドでも「中央」は最寄りの区画へ丸めて使えるようにする。
+        if (Id == "center") { return GridLayout.CenterRange(plan); }
+
         var values = new[] { X0 * plan.Columns, X1 * plan.Columns, Y0 * plan.Rows, Y1 * plan.Rows };
         if (values.Any(value => Math.Abs(value - Math.Round(value)) >= 1e-9))
         {

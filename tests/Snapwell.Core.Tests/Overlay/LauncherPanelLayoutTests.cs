@@ -90,8 +90,9 @@ public sealed class LauncherPanelLayoutTests
         Assert.Equal(new ZoneRange(4, 0, 4, 6), LauncherPreset.All[12].RangeFor(GridPlan.TwelveBySix));
         Assert.Equal(new ZoneRange(4, 0, 8, 6), LauncherPreset.All[11].RangeFor(GridPlan.TwelveBySix));
         Assert.Equal(new ZoneRange(2, 1, 4, 6), LauncherPreset.All[13].RangeFor(GridPlan.EightByEight));
-        Assert.Null(LauncherPreset.All[13].RangeFor(GridPlan.TwelveBySix));
-        Assert.Null(LauncherPreset.All[13].RangeFor(GridPlan.SixByFour));
+        // 「中央」は割り切れないグリッドでも、最寄りの区画へ丸めて対称に置く。
+        Assert.Equal(new ZoneRange(3, 1, 6, 4), LauncherPreset.All[13].RangeFor(GridPlan.TwelveBySix));
+        Assert.Equal(new ZoneRange(2, 1, 2, 2), LauncherPreset.All[13].RangeFor(GridPlan.SixByFour));
     }
 
     /// <summary>選択の中央に実際の物理ピクセルの寸法を表示する。</summary>
