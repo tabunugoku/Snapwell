@@ -19,7 +19,7 @@
   "General_UpdateDownload.Content": "Download in browser",
   "General_UpdateSkip.Content": "Skip this version",
   "General_UpdateSaveFailed": "Couldn’t save the update settings. Check the file location and permissions.",
-  "Setup_UpdateTitle.Text": "Updates",
+  "Setup_UpdateTitle.Text": "Check for updates automatically",
   "Setup_UpdateDescription.Text": "When enabled, Snapwell connects to GitHub to fetch only the latest version information. Only a User-Agent containing the version is sent; no identifiers are sent. Off by default.",
   "Setup_UpdateToggle.AutomationName": "Check for updates automatically",
   "Update_Install.Content": "Update and restart",

@@ -19,7 +19,7 @@
   "General_UpdateDownload.Content": "ブラウザーでダウンロード",
   "General_UpdateSkip.Content": "このバージョンをスキップ",
   "General_UpdateSaveFailed": "更新の設定を保存できませんでした。ファイルの場所とアクセス権を確認してください。",
-  "Setup_UpdateTitle.Text": "更新",
+  "Setup_UpdateTitle.Text": "更新を自動で確認する",
   "Setup_UpdateDescription.Text": "オンにすると GitHub に接続して最新バージョンの情報だけを取得します。送るのはバージョンを含む User-Agent だけで、識別子は送りません。既定はオフです。",
   "Setup_UpdateToggle.AutomationName": "更新を自動で確認する",
   "Update_Install.Content": "更新して再起動",

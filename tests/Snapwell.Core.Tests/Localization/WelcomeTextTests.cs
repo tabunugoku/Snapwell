@@ -37,8 +37,8 @@ public sealed class WelcomeTextTests
 
     /// <summary>指定された日英の文言と cell の用語を保つ。</summary>
     [Theory]
-    [InlineData(UiLanguage.Japanese, "ウィンドウを投げよう。", "はじめる", "もう一度どうぞ。")]
-    [InlineData(UiLanguage.English, "Throw a window.", "Get started", "Once more.")]
+    [InlineData(UiLanguage.Japanese, "ウィンドウを投げよう", "はじめる", "もう一度どうぞ。")]
+    [InlineData(UiLanguage.English, "Throw a window", "Get started", "Once more.")]
     public void WelcomeLabelsMatchApprovedCopy(UiLanguage language, string title, string start, string again)
     {
         var catalog = TextCatalog.Load(language);
@@ -50,6 +50,22 @@ public sealed class WelcomeTextTests
             Assert.Contains("nearest cell", catalog.Get("Setup.Welcome.Body"));
             Assert.Contains("nearest cell", catalog.Get("Setup.Welcome.HintHeld"));
         }
+    }
+
+    /// <summary>更新の見出しを一般設定と読み上げ名にそろえ、通信の開示を保つ。</summary>
+    [Theory]
+    [InlineData(UiLanguage.Japanese, "更新を自動で確認する",
+        "オンにすると GitHub に接続して最新バージョンの情報だけを取得します。送るのはバージョンを含む User-Agent だけで、識別子は送りません。既定はオフです。")]
+    [InlineData(UiLanguage.English, "Check for updates automatically",
+        "When enabled, Snapwell connects to GitHub to fetch only the latest version information. Only a User-Agent containing the version is sent; no identifiers are sent. Off by default.")]
+    public void UpdateHeadingMatchesSettingAndAccessibleNameWithoutChangingDisclosure(
+        UiLanguage language, string title, string description)
+    {
+        var catalog = TextCatalog.Load(language);
+        Assert.Equal(title, catalog.Get("Setup_UpdateTitle.Text"));
+        Assert.Equal(catalog.Get("General_UpdateAutoTitle.Text"), catalog.Get("Setup_UpdateTitle.Text"));
+        Assert.Equal(catalog.Get("Setup_UpdateToggle.AutomationName"), catalog.Get("Setup_UpdateTitle.Text"));
+        Assert.Equal(description, catalog.Get("Setup_UpdateDescription.Text"));
     }
 
     private static string[] Placeholders(string text) => Regex.Matches(text, @"(?<!\{)\{([^{}]+)\}(?!\})")

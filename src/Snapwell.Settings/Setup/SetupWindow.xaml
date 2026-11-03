@@ -7,12 +7,12 @@
         <Grid.Resources>
             <Style x:Key="SetupHeadingStyle" TargetType="TextBlock" BasedOn="{StaticResource SnapwellPageTitleStyle}">
                 <Setter Property="FontSize" Value="28" />
-                <Setter Property="LineHeight" Value="32.2" />
+                <Setter Property="LineHeight" Value="32" />
                 <Setter Property="TextWrapping" Value="Wrap" />
-                <Setter Property="Margin" Value="0,0,0,6" />
+                <Setter Property="Margin" Value="0,0,0,8" />
             </Style>
             <Style x:Key="SetupLeadStyle" TargetType="TextBlock" BasedOn="{StaticResource SnapwellLeadTextStyle}">
-                <Setter Property="Margin" Value="0,0,0,18" />
+                <Setter Property="Margin" Value="0,0,0,20" />
             </Style>
             <Style x:Key="SetupConsentTextStyle" TargetType="TextBlock" BasedOn="{StaticResource SnapwellHintTextStyle}">
                 <Setter Property="FontSize" Value="13" />
@@ -20,7 +20,7 @@
             </Style>
             <Style x:Key="SetupStepStyle" TargetType="Border">
                 <Setter Property="BorderThickness" Value="0,2,0,0" />
-                <Setter Property="BorderBrush" Value="{ThemeResource SnapwellBorderBrush}" />
+                <Setter Property="BorderBrush" Value="{ThemeResource SnapwellBorderStrongBrush}" />
                 <Setter Property="Padding" Value="0,8,0,0" />
             </Style>
             <Style x:Key="SetupDoneStepStyle" TargetType="Border" BasedOn="{StaticResource SetupStepStyle}">
@@ -91,7 +91,7 @@
                     <InfoBar x:Name="ErrorNotice" Grid.Row="1" Severity="Error" IsOpen="False" Margin="20,0,20,14" />
                     <Border x:Name="NavigationFooter" Grid.Row="2" BorderBrush="{ThemeResource SnapwellBorderBrush}"
                             BorderThickness="0,1,0,0" Background="{ThemeResource SnapwellSurface2Brush}"
-                            CornerRadius="0,0,12,12" Padding="20,14">
+                            CornerRadius="0,0,12,12" Padding="20,16">
                         <Grid>
                             <Button x:Name="BackButton" l:Loc.Uid="Setup_Back" Click="Back_Click"
                                     HorizontalAlignment="Left" Style="{StaticResource SnapwellActionButtonStyle}" />

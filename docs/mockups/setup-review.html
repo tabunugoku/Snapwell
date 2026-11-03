@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ようこそ・導入 レビュー</title>
+<style>
+:root{--bg:#f4f4f2;--card:#fff;--ink:#1a1a19;--sub:#5e5d5a;--line:#e1e1de;--acc:#1f6c9f;--bad:#a23a38;--good:#2f6b3a}
+@media (prefers-color-scheme:dark){:root{--bg:#161615;--card:#1f1f1e;--ink:#ecece9;--sub:#a3a29e;--line:#34342f;--acc:#8ccbf2;--bad:#f2a7a5;--good:#a6d1a9}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 "Segoe UI Variable Text","Yu Gothic UI","Segoe UI",sans-serif}
+main{max-width:1440px;margin:0 auto;padding:32px 24px 80px}
+h1{font-size:24px;margin:0 0 4px;font-weight:600}h2{font-size:18px;margin:48px 0 12px;font-weight:600}h3{font-size:14px;margin:0 0 8px;font-weight:600}
+p{margin:0 0 12px;color:var(--sub)}.lead{max-width:800px}
+code{font:12px Consolas,monospace;background:var(--line);padding:1px 5px;border-radius:4px}
+.bar{display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin:16px 0;padding:12px 16px;background:var(--card);border:1px solid var(--line);border-radius:12px;position:sticky;top:0;z-index:5}
+.bar label{font-size:12px;color:var(--sub);margin-right:4px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{all:unset;cursor:pointer;padding:4px 12px;font-size:12px;color:var(--sub)}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.seg button:focus-visible{outline:2px solid var(--acc);outline-offset:-2px}
+.matrix{display:grid;grid-template-columns:auto 1fr 1fr;gap:12px;align-items:start}
+.matrix .head{font-size:12px;color:var(--sub);font-weight:600;padding:0 4px}
+.matrix .side{writing-mode:vertical-rl;font-size:12px;color:var(--sub);font-weight:600;padding-top:8px}
+.cell{border-radius:12px;padding:8px;overflow:auto;border:1px solid var(--line)}
+.h{font:12px Consolas,monospace;color:var(--sub);text-align:center;margin-top:8px}
+table{border-collapse:collapse;width:100%;font-size:13px;background:var(--card);border:1px solid var(--line)}
+th,td{padding:8px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-size:12px;color:var(--sub);font-weight:600;background:var(--bg)}
+td.n{font-family:Consolas,monospace;white-space:nowrap}
+.tag{display:inline-block;font-size:11px;padding:0 6px;border-radius:999px;border:1px solid var(--line);color:var(--sub)}
+.tag.p0{color:var(--bad);border-color:var(--bad)}.tag.p1{color:var(--acc);border-color:var(--acc)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 20px;margin-bottom:12px}
+ul{margin:0;padding-left:20px;color:var(--sub)}li{margin:2px 0}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.ok{color:var(--good)}.ng{color:var(--bad)}
+
+/* ---- ウィザードの見本 (820×720 論理 px、表示は zoom) ---- */
+.zoomer{zoom:.74}
+.wz{width:820px;height:720px;position:relative;border-radius:8px;overflow:hidden;font:14px/22.4px "Segoe UI Variable Text","Yu Gothic UI","Segoe UI",sans-serif;color:var(--w-text);background:var(--w-bg);border:1px solid var(--w-strong)}
+.wz.t-light{--w-bg:#f7f6f3;--w-surface:#fff;--w-surface2:#f9f9f8;--w-border:#eaeaea;--w-strong:#dadad7;--w-text:#2f3437;--w-ink:#111;--w-inktext:#fff;--w-wall:#eceae5;--w-cell:rgba(0,0,0,.08);--w-gbg:#edf3ec;--w-gt:#346538;--w-rbg:#fdebec;--w-rt:#9f2f2d;--w-blue:#2563eb}
+.wz.t-dark{--w-bg:#191918;--w-surface:#202020;--w-surface2:#252524;--w-border:rgba(255,255,255,.08);--w-strong:rgba(255,255,255,.14);--w-text:#e6e6e3;--w-ink:#f2f2f0;--w-inktext:#111;--w-wall:#2a2a28;--w-cell:rgba(255,255,255,.09);--w-gbg:rgba(52,101,56,.3);--w-gt:#a6d1a9;--w-rbg:rgba(159,47,45,.28);--w-rt:#f2a7a5;--w-blue:#6aa8ff}
+.wz.as{--w-muted:#787774}.wz.t-dark.as,.wz.t-dark.to{--w-muted:#9b9a97}.wz.t-light.to{--w-muted:#6b6a67}.wz.t-light.as{--w-muted:#787774}
+.wz .cap{height:32px;padding:0 16px;display:flex;align-items:center;font-size:12.5px;color:var(--w-muted)}
+.wz .page{position:absolute;left:24px;right:24px;top:52px;bottom:24px;display:flex;flex-direction:column}
+.wz .steps{display:grid;grid-template-columns:repeat(4,1fr);column-gap:8px;margin-bottom:16px}
+.wz .st{border-top:2px solid var(--line-up);padding-top:8px;font-size:12px;line-height:20px;color:var(--w-muted)}
+.wz.as{--line-up:var(--w-border)}.wz.to{--line-up:var(--w-strong)}
+.wz .st.done{border-top-color:var(--w-muted)}
+.wz .st.cur{border-top-color:var(--w-ink);color:var(--w-ink)}
+.wz .panel{flex:1;min-height:0;background:var(--w-surface);border:1px solid var(--w-border);border-radius:12px;display:flex;flex-direction:column;overflow:hidden}
+.wz .body{flex:1;min-height:0;padding:28px 32px;overflow:hidden}
+.wz .foot{display:flex;align-items:center;justify-content:space-between;background:var(--w-surface2);border-top:1px solid var(--w-border);position:relative}
+.wz.as .foot{padding:14px 20px}.wz.to .foot{padding:16px 20px}
+.wz .foot .cnt{position:absolute;left:0;right:0;text-align:center;font-size:12.5px;color:var(--w-muted);pointer-events:none}
+.wz .btn{height:28px;min-width:72px;padding:0 14px 2px;border-radius:6px;font-size:13px;line-height:26px;text-align:center;border:1px solid var(--w-strong);background:transparent;color:var(--w-text)}
+.wz .btn.dis{background:var(--w-surface2);color:var(--w-muted);border-color:var(--w-border)}
+.wz .btn.pri{background:var(--w-ink);color:var(--w-inktext);border-color:var(--w-ink)}
+.wz .btn.gone{visibility:hidden}
+.wz h2{font-family:"Yu Mincho","Hiragino Mincho ProN",serif;font-weight:500;letter-spacing:-.02em;color:var(--w-ink);margin:0}
+.wz .hd{font-size:28px}
+.wz.as .hd{line-height:32.2px;margin-bottom:6px}.wz.to .hd{line-height:32px;margin-bottom:8px}
+.wz .ld{font-size:14px;line-height:22.4px;color:var(--w-muted);margin:0}
+.wz.as .ld{margin-bottom:18px}.wz.to .ld{margin-bottom:20px}
+.wz .rows{border:1px solid var(--w-border);border-radius:8px;background:var(--w-surface);overflow:hidden}
+.wz .row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 16px;border-top:1px solid var(--w-border)}
+.wz .row:first-child{border-top:0}
+.wz .rt{font-size:14px;line-height:22.4px;color:var(--w-ink)}
+.wz .rd{font-size:12.5px;line-height:20px;color:var(--w-muted)}
+.wz .kbd{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 6px;border:1px solid var(--w-strong);border-radius:4px;background:var(--w-surface2);font:11.5px/20px Consolas,"Cascadia Mono",monospace;color:var(--w-text);margin-right:4px;vertical-align:middle}
+.wz .kbd:last-child{margin-right:0}
+.wz .keys{display:inline-flex;align-items:center;vertical-align:middle}
+.wz .tg{display:inline-block;padding:1px 8px;border-radius:999px;font-size:10.5px;font-weight:600;line-height:16.8px;letter-spacing:.05em}
+.wz .tg.g{background:var(--w-gbg);color:var(--w-gt)}.wz .tg.r{background:var(--w-rbg);color:var(--w-rt)}
+.wz .chk{display:flex;align-items:center;gap:8px;margin-top:16px;font-size:13px;color:var(--w-text)}
+.wz .chk i{flex:none;width:20px;height:20px;border:1px solid var(--w-muted);border-radius:4px}
+.wz .hint{font-size:12.5px;line-height:20px;color:var(--w-muted)}
+.wz .stage{position:relative;width:519px;height:155px;margin:0 auto;border:1px solid var(--w-strong);border-radius:12px;background:var(--w-bg);overflow:hidden}
+.wz .stage .z{position:absolute;border:1.5px dashed var(--w-muted);border-radius:8px;opacity:.7}
+.wz .stage .w{position:absolute;border:1px solid var(--w-strong);border-radius:8px;background:var(--w-surface)}
+.wz .stage .w b{display:block;height:14px;background:var(--w-surface2);border-radius:8px 8px 0 0}
+.wz .wt{text-align:center;font-size:32px;color:var(--w-ink)}
+.wz.as .wt{line-height:38px;margin-top:14px}.wz.to .wt{line-height:40px;margin-top:16px}
+.wz .wb{max-width:440px;margin:8px auto 0;text-align:center;color:var(--w-muted);font-size:14px}
+.wz.as .wb{line-height:23.8px}.wz.to .wb{line-height:24px}
+.wz .wh{text-align:center;font-size:12px;line-height:20px;color:var(--w-muted)}
+.wz.as .wh{margin:10px 0 14px}.wz.to .wh{margin:8px 0 16px}
+.wz .tgl{width:40px;height:20px;border-radius:10px;background:var(--w-ink);position:relative;flex:none}
+.wz .tgl:after{content:"";position:absolute;right:4px;top:4px;width:12px;height:12px;border-radius:6px;background:var(--w-inktext)}
+.wz .plans{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.wz .plan{border:1px solid var(--w-border);border-radius:8px;padding:12px;background:var(--w-surface)}
+.wz .plan.sel{border:2px solid var(--w-ink);padding:11px}
+.wz .mini{width:100%;aspect-ratio:16/9;border-radius:4px;background:var(--w-wall);margin-bottom:8px;position:relative;overflow:hidden}
+.wz .pn{font-size:14px;font-weight:600;color:var(--w-ink);line-height:22.4px}
+.wz .pd{font-size:12px;line-height:20px;color:var(--w-muted)}
+.wz .sl{display:flex;align-items:center;gap:10px;width:320px;margin-top:8px}
+.wz .sl .tr{flex:1;height:4px;border-radius:2px;background:var(--w-strong);position:relative}
+.wz .sl .tr i{position:absolute;left:0;top:0;bottom:0;width:33%;background:var(--w-ink);border-radius:2px}
+.wz .sl .tr u{position:absolute;left:33%;top:-8px;width:20px;height:20px;margin-left:-10px;border-radius:10px;background:var(--w-ink)}
+.mk{position:relative}
+.red .mk{outline:1px dashed #d4522a;outline-offset:1px}
+.red .mk:after{content:attr(data-t);position:absolute;left:0;top:-16px;font:11px/14px Consolas,monospace;color:#fff;background:#d4522a;padding:0 4px;border-radius:2px;white-space:nowrap;z-index:9}
+.red .mk.in:after{top:auto;bottom:2px;left:2px}
+.red .mk.rt:after{left:auto;right:0}
+</style>
+</head>
+<body>
+<main>
+<h1>ようこそ・導入 レビュー</h1>
+<p class="lead">対象は、初回起動で出る設定ウィザード (<code>SetupWindow</code>、<code>Snapwell.Settings</code>)。約 10 秒の導入アニメーションのあと、「ようこそ → 標準機能 → ホットキー → 分割案」の 4 手順を案内する。実機 (ARM64、ダーク、1.5 倍、日本語) で 4 手順すべてを確認してから起こした。見本は 820×720 (ウィンドウの論理 px) の再現で、コードの値をそのまま使っている。ライトは実機で切り替えられなかったため、トークンから起こした。</p>
+
+<div class="bar">
+  <span><label>手順</label><span class="seg" data-k="step"></span></span>
+  <span><label>寸法の印</label><span class="seg" data-k="redline"></span></span>
+</div>
+
+<h2>1. as is / to be (明 / 暗)</h2>
+<div class="matrix" id="matrix"></div>
+<p style="margin-top:12px">見本の「ようこそ」の舞台 (つかんで投げられる窓と 3 区画) は静止画の代用。導入アニメーションと舞台の動きは変えない。ホットキーの「重複」は実機で出ていた状態 (別のアプリが Ctrl+Alt+Space を登録済み) を再現している。</p>
+
+<h2>2. 監査 (as is の問題)</h2>
+<p>実機 4 手順と <code>SetupWindow.xaml</code>・<code>SetupWindow.Pages.cs</code>・<code>App.xaml</code> から。全体としては、色・書体 (見出しの明朝、等幅のキー表示、白黒の主ボタン)・手順の帯・投げられる舞台がよくまとまっていて、手を入れるのは細部だけ (磨き込みの範囲)。</p>
+<table id="findings"></table>
+
+<h2>3. 方向</h2>
+<div class="cols" id="direction"></div>
+
+<h2>4. 判断してほしい点</h2>
+<div id="decisions"></div>
+
+<h2>5. Codex に渡す数値仕様</h2>
+<p>単位は論理 px (DIP)。<code>SetupWindow.xaml</code> と <code>App.xaml</code> の値を書き換える。</p>
+<table id="rows"></table>
+
+<h2>6. 色の見え方</h2>
+<p>文字は 4.5 以上、状態を示す線 (非文字) は 3 以上が目安。</p>
+<table id="contrast"></table>
+
+<h2>7. 受け入れ条件</h2>
+<div class="card"><ul id="accept"></ul></div>
+
+<script type="application/json" id="data">
+{
+"findings":[
+ {"id":"U1","p":"P0","t":"ライトの補助文字が 4.5 に届かない","d":"SnapwellMutedBrush のライト #787774 は、白い面で 4.48、ページの背景 (#F7F6F3) で 4.14 (どちらも 4.5 未満)。手順の帯のラベル、リード、行の説明、ヒント、件数がこの色。ダークの #9B9A97 は足りている。ランチャーとトレイで決めた補助文字 (ライト #6B6A67) と値がずれている。","w":"App.xaml:21"},
+ {"id":"U2","p":"P1","t":"「標準機能」の 3 行目だけ見出しの行がない","d":"1・2 行目は「見出し 14 (濃い) + 説明 12.5 (淡い)」。3 行目は見出しがなく、最初の行が「Win + 矢印」の 12.5 (淡い) になり、行の型が崩れる。","w":"Pages.cs ShowStandardFeatures"},
+ {"id":"U3","p":"P1","t":"「ホットキー」で、U I J K だけキー表示でない","d":"Ctrl・Alt はキー表示 (枠つき) なのに、同じ行の U I J K は淡い平文。同じ種類のものが二通りに描かれる。","w":"ja/en.json Setup.Hotkeys.ArrowsTemplate"},
+ {"id":"U4","p":"P1","t":"最初の手順で「戻る」が死んだボタンとして出る","d":"無効のまま淡い枠つきで見える。押せないものを出しているだけで、導入のあとの最初の画面で目に入る。","w":"SetupWindow.xaml:92"},
+ {"id":"U5","p":"P1","t":"寸法が 4 の格子に乗っていない","d":"見出しの行高 32.2 と下余白 6、リードの下余白 18、「ようこそ」の本文の行高 23.8 (14 × 1.7)・ヒントの余白 10 / 14・舞台から題名まで 14・題名の行高 38、フッターの縦の余白 14。","w":"SetupWindow.xaml / Pages.cs"},
+ {"id":"U6","p":"P1","t":"「ようこそ」の文言","d":"題名に句点 (ウィンドウを投げよう。/ Throw a window.)。ほかの手順の題名は句点なし。更新の行の見出しが「更新」だけで、設定の「一般」とトグルの AutomationName は「更新を自動で確認する」。","w":"setup/*.json、update/*.json"},
+ {"id":"U7","p":"P2","t":"これからの手順の帯がほぼ見えない","d":"線が SnapwellBorder (ライト #EAEAEA) で、背景 #F7F6F3 に対し 1.11。ダークは白 8% で 1.25。いま・済みの 2 段階は読めるが、「これから」が背景に溶ける。BorderStrong にすると 1.30 / 1.53 で、まだ 3 には届かないが、ラベルが状態を伝えるので線は補助と割り切る。","w":"SetupWindow.xaml:32"},
+ {"id":"U8","p":"P2","t":"ウィンドウの余白と手順ごとの空き","d":"820×720 固定で、ホットキーの手順は下の約 290 が空く (ようこそ約 90、標準機能約 190、分割案約 150)。手順で窓の大きさが変わらないほうが落ち着くので、サイズは変えない。","w":"SetupWindow.xaml.cs:33"},
+ {"id":"U9","p":"P2","t":"全体の部品 (設定画面と共通) は、設定画面のレビューで決める","d":"タグの文字 10.5、主・副ボタンの角 6 (ほかは 8)、本文 12.5 / 14 の基準、行高 22.4 / 20 / 20.8。ここで直すと設定画面の全ページに及ぶので、今回は触らない。","w":"App.xaml"}
+],
+"rows":[
+ ["W1","補助文字 (SnapwellMutedBrush、ライト)","#787774","#6B6A67。ダークは #9B9A97 のまま。App.xaml の Light の 1 か所。設定画面の全ページにも反映される (望ましい)","U1"],
+ ["W2","見出し (SetupHeadingStyle)","FontSize 28、LineHeight 32.2、Margin 0,0,0,6","FontSize 28、LineHeight 32、Margin 0,0,0,8","U5"],
+ ["W3","リード (SetupLeadStyle)","Margin 0,0,0,18","Margin 0,0,0,20","U5"],
+ ["W4","「ようこそ」の寸法","舞台→題名 14、題名 FontSize 32 / LineHeight 38、本文 LineHeight 23.8 (FontSize × 1.7)、ヒント Margin 0,10,0,14","舞台→題名 16、題名 FontSize 32 / LineHeight 40、本文 LineHeight 24、ヒント Margin 0,8,0,16","U5"],
+ ["W5","フッター","Padding 20,14","Padding 20,16 (高さ 28 のボタンで 60)","U5"],
+ ["W6","「戻る」","手順 1 でも表示 (IsEnabled = false)。導入の再生中も表示","手順 1 と導入の再生中は Visibility = Collapsed。手順 2 以降は表示・有効。件数 (中央) と「次へ」(右) の位置は変えない","U4"],
+ ["W7","手順の帯の線","いま: Ink、済み: Muted、これから: SnapwellBorder (太さ 2、上余白 8 は変えない)","いま: Ink、済み: Muted、これから: SnapwellBorderStrong (ライト #DADAD7、ダーク 白 14%)","U7"],
+ ["W8","標準機能の 3 行目","見出しなし。1 行目: キー「Win」+「+ 矢印」(12.5、淡い)、2 行目: 「Snapwell の操作に置き換え」(12.5、淡い)","見出しの行 (SnapwellRowTitleStyle、14 / 22.4、濃い): キー「Win」+「+ 矢印」。説明の行 (SnapwellRowDescriptionStyle): 「Snapwell の操作に置き換え」。1・2 行目と同じ型。キー表示の下げ (Margin 0,0,0,-6) は 14 の文字の中心に合わせて見直す","U2"],
+ ["W9","ホットキーの 2 行目 (半分・四分割)","Ctrl・Alt のキー表示 + 平文「+ 矢印 / U I J K」","Ctrl・Alt のキー表示 + 平文「+ 矢印 /」+ U・I・J・K を 1 文字ずつのキー表示 (間隔 4)。テンプレートは「{keys} + 矢印 / {letters}」(英語は「{keys} + arrows / {letters}」) とし、SplitKeyTemplate で扱う","U3"],
+ ["W10","「ようこそ」の文言","題名「ウィンドウを投げよう。」/ \"Throw a window.\"。更新の見出し「更新」/ \"Updates\"","題名「ウィンドウを投げよう」/ \"Throw a window\"。更新の見出し「更新を自動で確認する」/ \"Check for updates automatically\"。説明文 (プライバシーの開示) は変えない","U6"],
+ ["W11","変えないもの","—","ウィンドウ 820×720、カードの角 12、行の角 8、分割案カードの角 8 (選択 2 px の Ink)、投げられる舞台と導入アニメーション、保存する値と順序 (同意・完了)、フォーカスの見た目、タグ・ボタンの部品 (U9)","—"]
+],
+"accept":[
+ "SnapwellMutedBrush のライトが #6B6A67。ダークは #9B9A97 のまま。ほかの SnapwellMuted 参照 (設定画面) もこの値になる。",
+ "SetupHeadingStyle が LineHeight 32 / Margin 0,0,0,8、SetupLeadStyle が Margin 0,0,0,20。「ようこそ」の舞台→題名 16、題名 LineHeight 40、本文 LineHeight 24、ヒント Margin 0,8,0,16。NavigationFooter の Padding 20,16。",
+ "「戻る」は、手順 1 と導入の再生中は表示されず (Collapsed)、手順 2〜4 で表示・有効。Core の判断 (例: SetupPresentation.IsBackVisible(step, introActive)) を単体テストで確かめる。手順を戻って 1 に着いたときも隠れる。",
+ "手順の帯: 現在 Ink、済み Muted、これから BorderStrong。",
+ "標準機能の 3 行目が、見出し (14、濃い) + 説明 (12.5、淡い) の型で、1・2 行目と文字の位置がそろう。キー表示と文字の上下の中心がずれない (実機で確認)。",
+ "ホットキーの「半分・四分割」の行で、U・I・J・K が Ctrl・Alt と同じキー表示で出る。ja / en の翻訳テスト (プレースホルダーの一致) が通り、重複・使えます・未割り当ての表示と判定は変わらない。",
+ "題名に句点がない (ja / en)。更新の見出しが「更新を自動で確認する」/ \"Check for updates automatically\"。ja / en の文字列の対応 (キーの過不足なし) を保つ。",
+ "XAML を変えたため、Snapwell.Settings.exe --setup を実際に起動し、導入 → 4 手順 (戻る・進む・完了) がすべて開くこと、ライト・ダークの両方で文字が読めることを実機で確認する (ビルドとテストでは XAML の読み込み失敗が出ない)。確認中は保存する値 (同意・分割案・間隔) を変えない。",
+ "ビルドは win-x64 / win-arm64 の両方 (Snapwell.Settings も)。dotnet test と dotnet format が通る。"
+],
+"decisions":[
+ {"id":"D1","q":"補助文字のライトを #6B6A67 にするか (W1)","rec":"する (推奨)","d":"白い面で 4.48 → 5.41、背景で 4.14 → 5.00。ランチャーとトレイで決めた値と同じになり、アプリ全体で補助文字の色が一つになる。設定画面の全ページにも及ぶが、色が少し濃くなるだけで構成は変わらない。設定画面のレビューで再度確認する。"},
+ {"id":"D2","q":"「標準機能」の 3 行目と「ホットキー」の U I J K の型をそろえるか (W8, W9)","rec":"そろえる (推奨)","d":"どちらも「同じ種類のものが二通りに描かれる」問題。3 行目は見出し行を作り、U I J K はキー表示にする。ホットキーの文字列はテンプレートの変更 (翻訳の差し替え) を伴う。"},
+ {"id":"D3","q":"手順 1 の「戻る」を隠すか (W6)","rec":"隠す (推奨)","d":"押せないものを見せない。導入の再生中も隠す (いまは無効で見える)。レイアウトは変えない。"},
+ {"id":"D4","q":"「ようこそ」の題名の句点を外し、更新の見出しを「更新を自動で確認する」にするか (W10)","rec":"する (推奨)","d":"題名は他の手順にそろえる。更新の見出しは、設定の「一般」とトグルの読み上げ名と同じ言葉になる。説明文は変えない。"}
+],
+"direction":[
+ {"h":"トーン","b":"初回の 3 分で、落ち着いて「これは自分の道具だ」と思える静けさ。色は白黒と淡い灰で、動くのは投げられる窓だけ。"},
+ {"h":"トークン","b":"4 の格子、補助文字は 4.5 以上、行は「見出し 14 + 説明 12.5」の型、キー表示は同じ種類を同じ描き方で。"},
+ {"h":"署名の細部","b":"破線の区画と、つかんで投げられる窓。導入から「ようこそ」へ続く。ここには手を入れない。"},
+ {"h":"変えないもの","b":"導入、舞台、手順の順序、同意と保存の挙動、窓の大きさ、明朝の見出し、白黒の主ボタン。"}
+]
+}
+</script>
+
+<script>
+const D=JSON.parse(document.getElementById('data').textContent);
+const S={step:'0',redline:'off'};
+const OPT={step:[['0','1 ようこそ'],['1','2 標準機能'],['2','3 ホットキー'],['3','4 分割案']],redline:[['off','なし'],['on','あり']]};
+const kb=(...k)=>`<span class="keys">${k.map(x=>`<span class="kbd">${x}</span>`).join('')}</span>`;
+const row=(t,d,c,x='')=>`<div class="row"><div><div class="rt ${x}">${t}</div>${d?`<div class="rd">${d}</div>`:''}</div>${c||''}</div>`;
+function body(step,v){
+  const as=v==='as';
+  if(step==0){
+    const title=as?'ウィンドウを投げよう。':'ウィンドウを投げよう';
+    const upd=as?'更新':'更新を自動で確認する';
+    return `<div class="stage"><div class="z" style="left:16px;top:16px;width:230px;height:121px"></div><div class="z" style="left:262px;top:16px;width:240px;height:56px"></div><div class="w" style="left:258px;top:80px;width:248px;height:62px"><b></b></div></div>
+    <h2 class="wt mk in" data-t="${as?'32 / lh 38 / mt 14':'32 / lh 40 / mt 16'}">${title}</h2>
+    <p class="wb mk in" data-t="${as?'lh 23.8':'lh 24'}">つかんで投げると、いちばん近い区画に吸い込まれて止まります。<br>このあと、標準機能、ホットキー、分割案の 3 つを設定します。</p>
+    <p class="wh mk in" data-t="${as?'mt 10 / mb 14':'mt 8 / mb 16'}">上のウィンドウは動かせます。つかんで投げてみてください。</p>
+    <div class="rows">${row(upd,'オンにすると GitHub に接続して最新バージョンの情報だけを取得します。送るのはバージョンを含む User-Agent だけで、識別子は送りません。既定はオフです。','<div class="tgl"></div>')}</div>`;
+  }
+  if(step==1){
+    const r3=as
+     ? `<div class="row"><div><div class="rd mk in" data-t="見出しなし 12.5" style="line-height:22px">${kb('Win')} + 矢印</div><div class="rd">Snapwell の操作に置き換え</div></div></div>`
+     : `<div class="row"><div><div class="rt mk in" data-t="見出し 14 (濃い)">${kb('Win')} + 矢印</div><div class="rd">Snapwell の操作に置き換え</div></div></div>`;
+    return `<h2 class="hd mk" data-t="${as?'lh 32.2 / mb 6':'lh 32 / mb 8'}">標準のスナップを止めますか？</h2><p class="ld mk in" data-t="${as?'mb 18':'mb 20'}">Windows のスナップと同時に動くと、位置が取り合いになります。Snapwell が有効な間だけ、次の設定を変えます。</p>
+    <div class="rows">${row('ドラッグでのスナップ','オン → オフ')}${row('スナップ レイアウト・スナップ バー','オン → オフ')}${r3}</div>
+    <div class="chk"><i></i><span>Snapwell が変更前の値を保存し、無効にしたとき・終了したとき・異常終了のあとに起動したときに元へ戻すことを理解しました。</span></div>
+    <div class="hint" style="margin-top:8px">止めない場合も Snapwell は使えます。その場合は、ドラッグすると Windows と Snapwell のスナップが両方動きます。</div>`;
+  }
+  if(step==2){
+    const arrows=as? `${kb('Ctrl','Alt')} <span class="rd">+ 矢印 / U I J K</span>` : `${kb('Ctrl','Alt')} <span class="rd">+ 矢印 /</span> ${kb('U','I','J','K')}`;
+    return `<h2 class="hd mk" data-t="${as?'lh 32.2 / mb 6':'lh 32 / mb 8'}">ホットキーの確認</h2><p class="ld mk in" data-t="${as?'mb 18':'mb 20'}">この PC で使われているキーと重ならないかを確かめました。</p>
+    <div class="rows">${row('ランチャーを開く','',`<div style="display:flex;gap:8px;align-items:center">${kb('Ctrl','Alt','Space')}<span class="tg r">重複</span></div>`)}${row('半分・四分割','',`<div class="mk rt in" data-t="${as?'U I J K = 平文':'U I J K = キー表示'}" style="display:flex;gap:8px;align-items:center;white-space:nowrap">${arrows}<span class="tg g">使えます</span></div>`)}</div>
+    <div class="hint" style="margin-top:10px">重なっているキーは、あとで設定の「ホットキー」で変えられます。</div>`;
+  }
+  const mini=(c,r)=>{let g='';for(let i=1;i<c;i++)g+=`<i style="position:absolute;left:${i*100/c}%;top:0;bottom:0;width:1px;background:var(--w-cell)"></i>`;for(let j=1;j<r;j++)g+=`<i style="position:absolute;top:${j*100/r}%;left:0;right:0;height:1px;background:var(--w-cell)"></i>`;return g;};
+  const pl=(c,r,d,sel)=>`<div class="plan ${sel?'sel':''}"><div class="mini">${mini(c,r)}</div><div class="pn">${c} × ${r}</div><div class="pd">${d}</div></div>`;
+  return `<h2 class="hd mk" data-t="${as?'lh 32.2 / mb 6':'lh 32 / mb 8'}">分割案を選ぶ</h2><p class="ld mk in" data-t="${as?'mb 18':'mb 20'}">1 区画が配置の基本単位です。あとからモニターごとに変えられます。</p>
+  <div class="plans">${pl(8,8,'おすすめ。半分・四分割を作れます',1)}${pl(12,6,'1/3 や 2/3 も作れます')}${pl(6,4,'大きな区画で手早く')}</div>
+  <div style="margin-top:16px"><div class="rt">ウィンドウの間隔</div><div class="sl"><div class="tr"><i></i><u></u></div><span style="font:12px Consolas,monospace">8 px</span></div></div>`;
+}
+function wizard(step,v,theme){
+  const as=v==='as',n=['ようこそ','標準機能','ホットキー','分割案'],cnt=`${+step+1} / 4`;
+  const st=n.map((t,i)=>`<div class="st ${i<step?'done':i==step?'cur':''}">${t}</div>`).join('');
+  const back=step==0?(as?'<div class="btn dis">戻る</div>':'<div class="btn gone mk" data-t="Collapsed">戻る</div>'):'<div class="btn">戻る</div>';
+  const nxt=['はじめる','次へ','次へ','完了'][step];
+  return `<div class="wz t-${theme} ${v}"><div class="cap">Snapwell</div><div class="page"><div class="steps ${as?'':''}">${st}</div><div class="panel"><div class="body">${body(step,v)}</div><div class="foot mk" data-t="${as?'padding 20,14':'padding 20,16'}" style="position:relative">${back}<div class="cnt">${cnt}</div><div class="btn pri">${nxt}</div></div></div></div></div>`;
+}
+function renderMatrix(){const m=document.getElementById('matrix');m.className='matrix'+(S.redline==='on'?' red':'');m.innerHTML='';
+ const e=(c,t)=>{const d=document.createElement('div');d.className=c;d.textContent=t;return d;};
+ m.append(e('head',''),e('head','as is (いまの実装)'),e('head','to be (提案)'));
+ ['light','dark'].forEach(t=>{m.append(e('side',t==='light'?'ライト':'ダーク'));['as','to'].forEach(v=>{const c=document.createElement('div');c.className='cell';c.innerHTML=`<div class="zoomer">${wizard(+S.step,v,t)}</div>`;m.append(c);});});}
+function renderBar(){document.querySelectorAll('.seg').forEach(seg=>{const k=seg.dataset.k;seg.innerHTML='';OPT[k].forEach(([v,l])=>{const b=document.createElement('button');b.textContent=l;b.setAttribute('aria-pressed',S[k]===v);b.onclick=()=>{S[k]=v;renderBar();renderMatrix();};seg.appendChild(b);});});}
+function tbl(id,head,rows,cls){document.getElementById(id).innerHTML='<thead><tr>'+head.map(h=>`<th>${h}</th>`).join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map((c,i)=>`<td class="${cls&&cls[i]||''}">${c}</td>`).join('')+'</tr>').join('')+'</tbody>';}
+tbl('findings',['#','優先','問題','内容','場所'],D.findings.map(f=>[f.id,`<span class="tag ${f.p==='P0'?'p0':f.p==='P1'?'p1':''}">${f.p}</span>`,f.t,f.d,`<code>${f.w}</code>`]),['n']);
+document.getElementById('direction').innerHTML=D.direction.map(d=>`<div class="card"><h3>${d.h}</h3><p style="margin:0">${d.b}</p></div>`).join('');
+document.getElementById('decisions').innerHTML=D.decisions.map(d=>`<div class="card"><h3>${d.id}. ${d.q}</h3><p style="margin:0 0 4px"><b>推奨: ${d.rec}</b></p><p style="margin:0">${d.d}</p></div>`).join('');
+tbl('rows',['ID','項目','as is','to be','指摘'],D.rows,['n','','','','n']);
+document.getElementById('accept').innerHTML=D.accept.map(a=>`<li>${a}</li>`).join('');
+const L=v=>{v/=255;return v<=.03928?v/12.92:((v+.055)/1.055)**2.4;};const lum=([r,g,b])=>.2126*L(r)+.7152*L(g)+.0722*L(b);
+const hex=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));const over=(f,b,a)=>[0,1,2].map(i=>f[i]*a+b[i]*(1-a));
+const ratio=(a,b)=>{const x=lum(a),y=lum(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05);};
+const f=(v,t)=>`<span class="${v>=t?'ok':'ng'}">${v.toFixed(2)}</span>`;
+const lb=hex('#f7f6f3'),ls=hex('#ffffff'),db=hex('#191918'),ds=hex('#202020');
+const rowsC=[
+ ['ライト: 補助文字 / 面 (白) — 行の説明・リード',f(ratio(hex('#787774'),ls),4.5),f(ratio(hex('#6b6a67'),ls),4.5)],
+ ['ライト: 補助文字 / 背景 #F7F6F3 — 手順の帯のラベル・ヒント',f(ratio(hex('#787774'),lb),4.5),f(ratio(hex('#6b6a67'),lb),4.5)],
+ ['ダーク: 補助文字 / 面 #202020 (変更なし)',f(ratio(hex('#9b9a97'),ds),4.5),f(ratio(hex('#9b9a97'),ds),4.5)],
+ ['ライト: これからの線 / 背景 (非文字、3 を目安)',f(ratio(hex('#eaeaea'),lb),3),f(ratio(hex('#dadad7'),lb),3)],
+ ['ダーク: これからの線 / 背景 (非文字)',f(ratio(over([255,255,255],db,.08),db),3),f(ratio(over([255,255,255],db,.14),db),3)]
+];
+tbl('contrast',['組み合わせ','as is','to be'],rowsC,['','n','n']);
+renderBar();renderMatrix();
+</script>
+</main>
+</body>
+</html>
