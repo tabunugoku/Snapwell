@@ -18,7 +18,7 @@
                             <SolidColorBrush x:Key="SnapwellBorderBrush" Color="#FFEAEAEA" />
                             <SolidColorBrush x:Key="SnapwellBorderStrongBrush" Color="#FFDADAD7" />
                             <SolidColorBrush x:Key="SnapwellTextBrush" Color="#FF2F3437" />
-                            <SolidColorBrush x:Key="SnapwellMutedBrush" Color="#FF787774" />
+                            <SolidColorBrush x:Key="SnapwellMutedBrush" Color="#FF6B6A67" />
                             <SolidColorBrush x:Key="SnapwellInkBrush" Color="#FF111111" />
                             <SolidColorBrush x:Key="SnapwellInkTextBrush" Color="#FFFFFFFF" />
                             <SolidColorBrush x:Key="SnapwellInkHoverBrush" Color="#FF333333" />

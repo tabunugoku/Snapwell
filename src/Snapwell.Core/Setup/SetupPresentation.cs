@@ -12,6 +12,10 @@ public static class SetupPresentation
     public static bool ShouldPlayIntro(SetupStep step, bool animationsEnabled, bool welcomeShown) =>
         step == SetupStep.Welcome && animationsEnabled && !welcomeShown;
 
+    /// <summary>導入中と戻る先がない最初の手順では、戻るボタンを表示しない。</summary>
+    public static bool IsBackVisible(SetupStep step, bool introActive) =>
+        !introActive && step > SetupStep.Welcome;
+
     /// <summary>巡回または投げた窓の移動に描画購読を使えるかを返す。巡回待ちはタイマーに委譲する。</summary>
     public static bool ShouldSubscribeWelcomeRendering(bool motionAllowed, bool touched, bool settled, bool visible) =>
         motionAllowed && visible && (!touched || !settled);

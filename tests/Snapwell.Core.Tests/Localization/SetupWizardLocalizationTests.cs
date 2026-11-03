@@ -35,6 +35,21 @@ public sealed class SetupWizardLocalizationTests : IDisposable
         Assert.All(parts, part => Assert.True(part.Placeholder is null ? part.Text.Length > 0 : part.Text.Length == 0));
     }
 
+    /// <summary>矢印と文字キーの図を翻訳の語順で組み立て、文字キーを平文に残さない。</summary>
+    [Theory]
+    [InlineData(UiLanguage.Japanese, " + 矢印 / ")]
+    [InlineData(UiLanguage.English, " + arrows / ")]
+    public void HalvesTemplateSeparatesModifierAndLetterKeycaps(UiLanguage language, string separator)
+    {
+        var template = TextCatalog.Load(language).Get("Setup.Hotkeys.ArrowsTemplate");
+        var parts = SetupWizard.SplitKeyTemplate(template, "keys", "letters");
+
+        Assert.Equal(new (string Text, string? Placeholder)[]
+        {
+            (string.Empty, "keys"), (separator, null), (string.Empty, "letters"),
+        }, parts);
+    }
+
     /// <summary>全ページ・状態・ボタンの静的参照に、日本語と英語を用意する。</summary>
     [Fact]
     public void EveryWizardReferenceHasJapaneseAndEnglishText()

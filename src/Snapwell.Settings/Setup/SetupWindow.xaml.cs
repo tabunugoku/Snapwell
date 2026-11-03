@@ -213,6 +213,8 @@ public sealed partial class SetupWindow : Window
             NextButton.IsEnabled = false;
         }
         else { NextButton.Focus(FocusState.Programmatic); }
+        BackButton.Visibility = SetupPresentation.IsBackVisible(_wizard.Step, _introActive)
+            ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void StartIntro()
@@ -261,6 +263,8 @@ public sealed partial class SetupWindow : Window
         RevealWelcome(1);
         _welcomeStage?.RefreshActivity();
         BackButton.IsEnabled = _wizard.CanGoBack;
+        BackButton.Visibility = SetupPresentation.IsBackVisible(_wizard.Step, _introActive)
+            ? Visibility.Visible : Visibility.Collapsed;
         NextButton.IsEnabled = !_loadFailed;
         NextButton.Focus(FocusState.Programmatic);
     }

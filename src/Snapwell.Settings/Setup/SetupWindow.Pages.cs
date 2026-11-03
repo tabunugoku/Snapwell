@@ -44,9 +44,10 @@ public sealed partial class SetupWindow
     }
 
     // インラインの図を使い、英文が長くなっても文と図を同じ段落で折り返す。
-    private RichTextBlock InlineDescription(string template, params (string Name, string[] Keys)[] keycaps)
+    private RichTextBlock InlineText(string template, string textStyle, double keyOffset,
+        params (string Name, string[] Keys)[] keycaps)
     {
-        var description = Text(string.Empty, "SnapwellRowDescriptionStyle");
+        var description = Text(string.Empty, textStyle);
         var line = new RichTextBlock
         {
             TextWrapping = TextWrapping.Wrap,
@@ -63,7 +64,7 @@ public sealed partial class SetupWindow
             {
                 var keys = Keys(keycaps.First(item => item.Name == name).Keys);
                 // 図の下端が文字のベースラインに載るため、下へ送って周りの文字と上下の中央をそろえる。
-                keys.Margin = new Thickness(0, 0, 0, -6);
+                keys.Margin = new Thickness(0, 0, 0, keyOffset);
                 paragraph.Inlines.Add(new InlineUIContainer { Child = keys });
             }
             else { paragraph.Inlines.Add(new Run { Text = part.Text }); }
@@ -114,7 +115,7 @@ public sealed partial class SetupWindow
         hint.FontSize = 12;
         hint.TextAlignment = TextAlignment.Center;
         hint.TextWrapping = TextWrapping.Wrap;
-        hint.Margin = new(0, 10, 0, 14);
+        hint.Margin = new(0, 8, 0, 16);
         var stage = new WelcomeStage(() => !_introActive && _wizard.Step == SetupStep.Welcome && IsSetupVisible(),
             IsMotionAllowed, (held, touched) => hint.Text = held
             ? UiText.Current.Get("Setup.Welcome.HintHeld") : touched
@@ -123,15 +124,15 @@ public sealed partial class SetupWindow
         _welcomeStage = stage;
         welcome.Children.Add(stage);
         var title = Text(UiText.Current.Get("Setup.Welcome.Title"), "SetupHeadingStyle");
-        title.FontSize = 32; title.LineHeight = 38;
+        title.FontSize = 32; title.LineHeight = 40;
         title.TextAlignment = TextAlignment.Center;
-        title.Margin = new(0, 14, 0, 0);
+        title.Margin = new(0, 16, 0, 0);
         AutomationProperties.SetHeadingLevel(title, AutomationHeadingLevel.Level1);
         welcome.Children.Add(title);
         var body = Text(UiText.Current.Get("Setup.Welcome.Body"), "SnapwellLeadTextStyle");
         body.TextAlignment = TextAlignment.Center;
         body.TextWrapping = TextWrapping.Wrap;
-        body.MaxWidth = 440; body.LineHeight = body.FontSize * 1.7; body.Margin = new(0, 8, 0, 0);
+        body.MaxWidth = 440; body.LineHeight = 24; body.Margin = new(0, 8, 0, 0);
         welcome.Children.Add(body);
         welcome.Children.Add(hint);
         PageHost.Children.Add(welcome);
@@ -222,8 +223,10 @@ public sealed partial class SetupWindow
             Text(UiText.Current.Get("Setup.Standard.OnToOff"), "SnapwellRowDescriptionStyle"));
         AddRow(rows, UiText.Current.Get("Setup.Standard.Layouts"),
             Text(UiText.Current.Get("Setup.Standard.OnToOff"), "SnapwellRowDescriptionStyle"));
-        var win = new StackPanel { Spacing = 4 };
-        win.Children.Add(InlineDescription(UiText.Current.Get("Setup.Standard.ArrowsTemplate"), ("keys", ["Win"])));
+        var win = new StackPanel();
+        // 14 DIP の見出しではキーの下げ幅を 1 DIP 減らし、説明より高い文字の中心に合わせる（実機未確認）。
+        win.Children.Add(InlineText(UiText.Current.Get("Setup.Standard.ArrowsTemplate"),
+            "SnapwellRowTitleStyle", -5, ("keys", ["Win"])));
         win.Children.Add(Text(UiText.Current.Get("Setup.Standard.Replace"), "SnapwellRowDescriptionStyle"));
         // 変更内容はモックアップと同じ順序・文言で示す。
         AddRow(rows, "", win);
@@ -284,8 +287,8 @@ public sealed partial class SetupWindow
         else if (commands.Length > 1 && commands.All(command =>
             hotkeys.TryGetValue(command, out var value) && defaults.TryGetValue(command, out var expected) && value == expected))
         {
-            controls.Children.Add(InlineDescription(UiText.Current.Get("Setup.Hotkeys.ArrowsTemplate"),
-                ("keys", ["Ctrl", "Alt"])));
+            controls.Children.Add(InlineText(UiText.Current.Get("Setup.Hotkeys.ArrowsTemplate"),
+                "SnapwellRowDescriptionStyle", -6, ("keys", ["Ctrl", "Alt"]), ("letters", ["U", "I", "J", "K"])));
         }
         else
         {
