@@ -145,10 +145,9 @@
                 <Border Height="10" />
             </NavigationView.PaneHeader>
             <NavigationView.PaneFooter>
-                <Border Background="{ThemeResource SnapwellFooterBackgroundBrush}"
-                        BorderBrush="{ThemeResource SnapwellBorderBrush}" BorderThickness="0,1,0,0"
-                        Margin="10,0" Padding="10,14,10,4" HorizontalAlignment="Stretch">
-                    <Border.Resources>
+                <!-- 要素自身の ThemeResource は自分の Resources を探さない。背景と枠線の上書きを効かせるため、辞書は外側の Grid に置く。 -->
+                <Grid Margin="10,0" HorizontalAlignment="Stretch">
+                    <Grid.Resources>
                         <ResourceDictionary>
                             <ResourceDictionary.ThemeDictionaries>
                                 <ResourceDictionary x:Key="Light">
@@ -170,7 +169,10 @@
                                 </ResourceDictionary>
                             </ResourceDictionary.ThemeDictionaries>
                         </ResourceDictionary>
-                    </Border.Resources>
+                    </Grid.Resources>
+                    <Border Background="{ThemeResource SnapwellFooterBackgroundBrush}"
+                            BorderBrush="{ThemeResource SnapwellBorderBrush}" BorderThickness="0,1,0,0"
+                            Padding="10,14,10,4">
                     <StackPanel Spacing="6">
                         <TextBlock x:Name="VersionLabel" Style="{StaticResource SnapwellHintTextStyle}"
                                    FontSize="12" Typography.NumeralAlignment="Tabular" />
@@ -220,7 +222,8 @@
                                     IsHitTestVisible="False" Visibility="Collapsed" />
                         </Grid>
                     </StackPanel>
-                </Border>
+                    </Border>
+                </Grid>
             </NavigationView.PaneFooter>
             <NavigationView.MenuItemContainerStyle>
                 <Style TargetType="NavigationViewItem">
