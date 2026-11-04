@@ -28,7 +28,7 @@
   "Rules_LimitHint.Text": "ルールは 200 件までです。追加するには、先にルールを削除してください。",
   "Rules_Exclusions.Header": "Snapwell が最初から対象外にしているもの",
   "Rules_Exclusions.AutomationName": "Snapwell が最初から対象外にしているもの",
-  "Rules_ExclusionHint.Text": "次のウィンドウは、ルールでは変えられません（「強制的に対象」にしても対象になりません）。",
+  "Rules_ExclusionHint.Text": "次のウィンドウはルールでは変えられません（「強制的に対象」にしても対象になりません）。",
   "Rules_HiddenExclusion.Text": "• 表示されていない・最小化されている・別の仮想デスクトップにあるなど、システムに隠された（クローク中の）ウィンドウ",
   "Rules_OwnExclusion.Text": "• Snapwell 自身のウィンドウ、子ウィンドウ",
   "Rules_ShellExclusion.Text": "• デスクトップ、タスクバー、スタート メニューなどのシェル、通知領域の隠れたアイコンの一覧",

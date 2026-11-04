@@ -37,7 +37,7 @@ window.FILM_TEXT = {
     c6h: 'ホットキーとルール', c6p: 'ホットキーはすべて変えられます。アプリごとのルールも作れます。',
     c7h: '標準スナップの置き換え', c7p: '使うかどうかは選べます。変えた設定は元に戻します。',
     c8h: '設定の持ち運び', c8p: '書き出しと取り込み、選んだフォルダーでの同期に対応します。',
-    endh: '投げたウィンドウがその場に収まる。', endp: 'Windows 11 のウィンドウマネージャー · x64 と ARM64 のネイティブ版', endu: 'tabunugoku.github.io/Snapwell',
+    endh: 'ウィンドウを投げる。その場に収まる。', endp: 'Windows 11 のウィンドウマネージャー · x64 と ARM64 のネイティブ版', endu: 'tabunugoku.github.io/Snapwell',
     rFeel: '操作感', rSpeed: '離した速さ', rZone: '収まる先',
     feel: { standard: '標準', crisp: 'きびきび', smooth: 'なめらか', bouncy: 'はずむ' },
     zones: ['左上', '上中央', '右上', '左下', '下中央', '右下'],

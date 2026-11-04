@@ -9,7 +9,7 @@
   "Look_ZonePreviewToggle.AutomationName": "区画のプレビュー",
   "Look_CornerExamplesTitle.Text": "ウィンドウの角の見え方",
   "Look_CornerExamplesHint.Text": "最大化中のウィンドウと枠のないウィンドウは変えません。枠のないウィンドウは、アプリごとのルールで個別に指定できます。",
-  "Look_CornerDefaultDescription.Text": "何も変えません。角が丸か直角かは、Windows とアプリ次第です",
+  "Look_CornerDefaultDescription.Text": "何も変えません。角が丸か直角かは Windows とアプリ次第です",
   "Look_CornerRoundDescription.Text": "通常のウィンドウを標準の丸（約 8 px）にします",
   "Look_CornerSmallDescription.Text": "丸みを控えめにします（約 4 px）",
   "Look_CornerNoneDescription.Text": "通常のウィンドウを直角にします",
