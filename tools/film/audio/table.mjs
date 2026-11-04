@@ -9,9 +9,12 @@ const file = resolve(process.argv[2] || resolve(here, 'cues.json'));
 const cfg = JSON.parse(readFileSync(resolve(here, 'sounds.json'), 'utf8'));
 const { duration, fps, cues } = JSON.parse(readFileSync(file, 'utf8'));
 const rows = [];
+const seen = {};
 for (const c of cues) {
   const m = cfg.cue_map[c.name];
   if (!m) continue;
+  seen[c.name] = (seen[c.name] || 0) + 1;
+  if (m.only && !m.only.includes(seen[c.name])) continue;
   const t = c.t + (m.offset || 0);
   rows.push(`| ${t.toFixed(2)} | ${c.name}${c.k !== undefined ? ` ${c.k}` : ''}${c.preset ? ` (${c.preset})` : ''} | ${m.sound} | ${m.gain} |`);
 }

@@ -67,6 +67,22 @@
   }
   $$('[data-set-lang]').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.setLang)));
 
+  // 紹介映像は言語に合わせて差し替える。再生位置と一時停止の状態は引き継ぐ
+  const film = $('#filmVideo');
+  if (film) {
+    langHooks.push(() => {
+      if (film.dataset.lang === lang) return;
+      const t = film.currentTime; const paused = film.paused;
+      film.dataset.lang = lang;
+      film.poster = `video/poster-${lang}.jpg`;
+      $$('source', film).forEach((s) => { s.src = `video/snapwell-${lang}.${s.type === 'video/webm' ? 'webm' : 'mp4'}`; });
+      film.load();
+      if (t > 0) {
+        film.addEventListener('loadedmetadata', () => { film.currentTime = t; if (!paused) film.play().catch(() => {}); }, { once: true });
+      }
+    });
+  }
+
   // ---------------------------------------------------------------- 入場: ばねの連鎖
   /** 要素の列を順に立ち上げる。次の要素は、前のばねが 22% を越えた瞬間に動き出す（遅延タイマーなし）。 */
   function chain(els, onDone) {

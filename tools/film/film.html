@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>Snapwell film</title>
-<link rel="stylesheet" href="lib/site.css">
+<link rel="stylesheet" href="film-tokens.css">
 <link rel="stylesheet" href="film.css">
 <!-- 偽の時計: フレームの進行は render.mjs が __tick() で 1 コマずつ進める。feel より先に読み込む -->
 <script src="clock.js"></script>
@@ -11,24 +11,35 @@
 <body>
 <div class="frame" id="frame">
   <div class="stagebox" id="stagebox">
-    <div class="monitor" data-ui id="monitor">
-      <div class="workarea"><div class="launcher" id="launcher"></div><i class="cursor" id="cursor"><svg viewBox="0 0 20 24" width="22" height="26"><path d="M2 1 L2 18 L6.4 14 L9.6 21.5 L12.6 20.2 L9.4 12.8 L15.6 12.8 Z" fill="#111" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg></i></div>
-      <div class="taskbar"><i class="tb-app start"></i><i class="tb-app"></i><i class="tb-app"></i><i class="tb-app"></i><span class="clock">10:24<br>2026/10/22</span></div>
+    <div class="sc" id="scMon">
+      <div class="monitor" data-ui id="monitor">
+        <div class="workarea"><div class="launcher" id="launcher"></div><i class="contact" id="contact"></i><i class="cursor" id="cursor"><svg viewBox="0 0 20 24" width="22" height="26"><path d="M2 1 L2 18 L6.4 14 L9.6 21.5 L12.6 20.2 L9.4 12.8 L15.6 12.8 Z" fill="#111" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg></i></div>
+        <div class="taskbar"><i class="tb-app start"></i><i class="tb-app"></i><i class="tb-app"></i><i class="tb-app"></i><span class="clock">10:24<br>2026/10/22</span></div>
+      </div>
     </div>
+    <div class="sc" id="scDual"><div class="monitor dual" data-ui id="dual"><div class="workarea" id="dualArea"></div></div></div>
+    <div class="sc" id="scHot"><div class="pane" id="paneHot"></div></div>
+    <div class="sc" id="scRep"><div class="pane" id="paneRep"></div></div>
+    <div class="sc" id="scTrav"><div class="pane" id="paneTrav"></div></div>
   </div>
 
   <div class="left">
-    <div class="cap" id="c1"><p class="cap-h">Throw a window.</p><p class="cap-p">Let go, and it picks the nearest zone.</p></div>
-    <div class="cap" id="c2"><p class="cap-h">It lands in place.</p><p class="cap-p">A spring pulls it in. A magnet takes the last pixels.</p></div>
-    <div class="cap" id="c3"><p class="cap-h">Pick the feel.</p><p class="cap-p">Crisp, Smooth, Bouncy. The same throw, a different weight.</p></div>
-    <div class="cap" id="c4"><p class="cap-h">Or place it exactly.</p><p class="cap-p">The launcher shows your zones. Sweep across any span, then press Enter.</p>
-      <p class="keys" id="keysL"><span class="key">Ctrl</span><span class="key">Alt</span><span class="key">Space</span><span class="key key-gap">Enter</span></p></div>
-    <div class="cap" id="c5"><p class="cap-h">One key tidies everything.</p><p class="cap-p">Grid, row, column, or main and stack.</p>
-      <p class="keys" id="keysA"><span class="key">Ctrl</span><span class="key">Alt</span><span class="key">A</span></p></div>
+    <div class="cap" id="c1"><p class="cap-h" data-t="c1h"></p><p class="cap-p" data-t="c1p"></p></div>
+    <div class="cap" id="c2"><p class="cap-h" data-t="c2h"></p><p class="cap-p" data-t="c2p"></p>
+      <p class="keys"><span class="key">Ctrl</span><span class="key">Alt</span><span class="key">Space</span><span class="key key-gap">Enter</span></p></div>
+    <div class="cap" id="c3"><p class="cap-h" data-t="c3h"></p><p class="cap-p" id="c3p"></p>
+      <p class="keys"><span class="key">Ctrl</span><span class="key">Alt</span><span class="key off" id="c3shift">Shift</span><span class="key" id="c3k">A</span></p></div>
+    <div class="cap" id="c4"><p class="cap-h" data-t="c4h"></p><p class="cap-p" data-t="c4p"></p>
+      <p class="keys"><span class="key">Ctrl</span><span class="key">Alt</span><span class="key">Shift</span><span class="key">L</span></p></div>
+    <div class="cap" id="c5"><p class="cap-h" data-t="c5h"></p><p class="cap-p" data-t="c5p"></p>
+      <p class="keys"><span class="key">Ctrl</span><span class="key">Alt</span><span class="key">PageDown</span></p></div>
+    <div class="cap" id="c6"><p class="cap-h" data-t="c6h"></p><p class="cap-p" data-t="c6p"></p></div>
+    <div class="cap" id="c7"><p class="cap-h" data-t="c7h"></p><p class="cap-p" data-t="c7p"></p></div>
+    <div class="cap" id="c8"><p class="cap-h" data-t="c8h"></p><p class="cap-p" data-t="c8p"></p></div>
     <dl class="readout film-readout" id="readout">
-      <dt>Feel</dt><dd id="r-feel">Standard</dd>
-      <dt>Release speed</dt><dd id="r-speed">—</dd>
-      <dt>Lands in</dt><dd id="r-zone">—</dd>
+      <dt data-t="rFeel"></dt><dd id="r-feel">—</dd>
+      <dt data-t="rSpeed"></dt><dd id="r-speed">—</dd>
+      <dt data-t="rZone"></dt><dd id="r-zone">—</dd>
     </dl>
   </div>
 
@@ -39,11 +50,12 @@
 
   <div class="end" id="end">
     <div class="logo" id="endLogo"><span class="logo-mark"></span><span class="logo-name">Snapwell</span></div>
-    <p class="end-h">Throw a window. It lands in place.</p>
-    <p class="end-p">A window manager for Windows 11 · Native on x64 and ARM64 · v1.0.0</p>
-    <p class="end-url">tabunugoku.github.io/Snapwell</p>
+    <p class="end-h" data-t="endh"></p>
+    <p class="end-p" data-t="endp"></p>
+    <p class="end-url" data-t="endu"></p>
   </div>
 </div>
+<script src="film-text.js"></script>
 <script src="../../site/js/feel.js"></script>
 <script src="../../site/js/presets.js"></script>
 <script src="../../site/js/brand-mark.js"></script>
