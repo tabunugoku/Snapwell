@@ -14,7 +14,7 @@
   "Rules.Match.WithTitles": "{summary}（{names}）",
   "Rules.Condition.Class": "ウィンドウ クラス {name}",
   "Rules.Condition.Title": "タイトル {pattern}",
-  "Rules_Title.Text": "アプリごとのルール",
+  "Rules_Title.Text": "アプリのルール",
   "Rules_Lead.Text": "特定のアプリのウィンドウについて、対象から外す・位置だけを動かす・ウィンドウの角を変える、といった例外を決められます。上のルールから順に調べ、「配置」と「角」はそれぞれ、指定のある最初のルールを使います。",
   "Rules_EnabledColumn.Text": "有効",
   "Rules_ConditionColumn.Text": "条件",

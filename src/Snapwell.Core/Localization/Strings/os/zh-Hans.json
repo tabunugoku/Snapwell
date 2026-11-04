@@ -1,7 +1,7 @@
 {
   "Os.Snap.LinkedStopped": "一并停止",
   "Os.Snap.Unchanged": "Windows 默认",
-  "Os_Title.Text": "Windows 内置功能",
+  "Os_Title.Text": "Windows 功能",
   "Os_Lead.Text": "Snapwell 启用时，可停止 Windows 布局功能或替换为 Snapwell 操作。各项下方会比较两者。原设置会保存，并在停用、退出或崩溃后再次启动时恢复。",
   "Os_DragTitle.Text": "拖动贴靠",
   "Os_DragDescription.Text": "将拖到屏幕边缘时占据半屏或 1/4 屏幕的 Windows 贴靠，替换为 Snapwell 按格吸附。",

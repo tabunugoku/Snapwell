@@ -1,7 +1,7 @@
 {
   "Os.Snap.LinkedStopped": "一併停止",
   "Os.Snap.Unchanged": "Windows 預設",
-  "Os_Title.Text": "Windows 內建功能",
+  "Os_Title.Text": "Windows 功能",
   "Os_Lead.Text": "Snapwell 啟用時，可停止 Windows 配置功能或取代為 Snapwell 動作。各項下方會比較兩者。原設定會儲存，並在停用、結束或當機後再次啟動時還原。",
   "Os_DragTitle.Text": "拖曳貼齊",
   "Os_DragDescription.Text": "將拖到螢幕邊緣時占據半個螢幕或 1/4 螢幕的 Windows 貼齊，取代為 Snapwell 依格吸附。",
