@@ -159,6 +159,7 @@ public sealed partial class RulesPage : Page
             IsEnabled = enabled && !_session.IsReadOnly,
             Width = 28,
             Height = 28,
+            CornerRadius = new(8),
             MinWidth = 28,
             MinHeight = 28,
             Padding = new(0, 0, 0, 2),

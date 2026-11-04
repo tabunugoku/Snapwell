@@ -1,7 +1,7 @@
 {
   "Os.Snap.LinkedStopped": "Stopped together",
   "Os.Snap.Unchanged": "Windows default",
-  "Os_Title.Text": "Built-in Windows features",
+  "Os_Title.Text": "Windows features",
   "Os_Lead.Text": "While Snapwell is active, stop Windows placement features or replace them with Snapwell actions. Each section compares the two. Previous values are saved and restored when Snapwell is turned off, exits, or next starts after a crash.",
   "Os_DragTitle.Text": "Snap by dragging",
   "Os_DragDescription.Text": "Replaces Windows snapping to halves or quarters at the screen edge with Snapwell snapping to cells.",

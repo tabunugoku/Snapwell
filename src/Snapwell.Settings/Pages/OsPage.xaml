@@ -6,7 +6,7 @@
     xmlns:controls="using:Snapwell.Settings.Controls"
     x:Class="Snapwell.Settings.Pages.OsPage">
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Padding="32,28,32,40" HorizontalAlignment="Stretch">
+        <StackPanel Padding="32,32,32,40" HorizontalAlignment="Stretch">
             <TextBlock l:Loc.Uid="Os_Title" Style="{StaticResource SnapwellPageTitleStyle}" />
             <TextBlock l:Loc.Uid="Os_Lead" Style="{StaticResource SnapwellLeadTextStyle}" />
             <InfoBar x:Name="ErrorNotice" IsOpen="False" Severity="Error" Margin="0,0,0,12" />

@@ -1,7 +1,7 @@
 {
   "Os.Snap.LinkedStopped": "連動して停止",
   "Os.Snap.Unchanged": "標準のまま",
-  "Os_Title.Text": "Windows の標準機能",
+  "Os_Title.Text": "標準機能",
   "Os_Lead.Text": "Snapwell が有効な間だけ、Windows の標準の配置機能を止めたり、Snapwell の操作に置き換えたりします。各項目の下に、Windows では何が起きるか・Snapwell ではどうなるかを示します。止める前の値を保存しておき、無効にしたとき・終了したとき・異常終了のあとに起動したときに戻します。",
   "Os_DragTitle.Text": "ドラッグでのスナップ",
   "Os_DragDescription.Text": "端へ持っていくと半分や 4 分の 1 に広がる標準の動きを、Snapwell の区画への吸着に置き換えます",

@@ -6,7 +6,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <Page.Resources>
         <Style x:Key="RuleRowStyle" TargetType="Grid" BasedOn="{StaticResource SnapwellRowGridStyle}">
-            <Setter Property="Padding" Value="12,10" />
+            <Setter Property="Padding" Value="12,12" />
             <Setter Property="ColumnSpacing" Value="12" />
             <Setter Property="BorderBrush" Value="{ThemeResource SnapwellBorderBrush}" />
             <Setter Property="BorderThickness" Value="0,0,0,1" />
@@ -21,7 +21,7 @@
         </Style>
     </Page.Resources>
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Padding="32,28,32,40">
+        <StackPanel Padding="32,32,32,40">
             <TextBlock l:Loc.Uid="Rules_Title" Style="{StaticResource SnapwellPageTitleStyle}" />
             <TextBlock l:Loc.Uid="Rules_Lead" Style="{StaticResource SnapwellLeadTextStyle}" />
             <Border Style="{StaticResource SnapwellRowsBorderStyle}">
@@ -43,7 +43,7 @@
                                    Style="{StaticResource SnapwellHintTextStyle}" />
                     </Grid>
                     <StackPanel x:Name="RuleRows" />
-                    <TextBlock l:Loc.Uid="Rules_EmptyHint" x:Name="EmptyHint" Margin="12,10"
+                    <TextBlock l:Loc.Uid="Rules_EmptyHint" x:Name="EmptyHint" Margin="12,12"
                                Style="{StaticResource SnapwellHintTextStyle}" />
                 </StackPanel>
             </Border>
@@ -55,9 +55,14 @@
             </StackPanel>
             <TextBlock l:Loc.Uid="Rules_LimitHint" x:Name="LimitHint" Margin="0,8,0,0" Visibility="Collapsed"
                        Style="{StaticResource SnapwellHintTextStyle}" />
-            <Expander l:Loc.Uid="Rules_Exclusions" IsExpanded="False" HorizontalAlignment="Stretch"
-                      HorizontalContentAlignment="Left" Margin="0,14,0,0">
-                <StackPanel Spacing="6">
+            <Expander Style="{StaticResource SnapwellExpanderStyle}" l:Loc.Uid="Rules_Exclusions" IsExpanded="False" HorizontalAlignment="Stretch"
+                      HorizontalContentAlignment="Left" Margin="0,16,0,0">
+                <Expander.HeaderTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding}" Style="{StaticResource SnapwellRowTitleStyle}" />
+                    </DataTemplate>
+                </Expander.HeaderTemplate>
+                <StackPanel Spacing="8">
                     <TextBlock l:Loc.Uid="Rules_ExclusionHint" Style="{StaticResource SnapwellHintTextStyle}" />
                     <TextBlock l:Loc.Uid="Rules_HiddenExclusion" Style="{StaticResource SnapwellHintTextStyle}" />
                     <TextBlock l:Loc.Uid="Rules_OwnExclusion" Style="{StaticResource SnapwellHintTextStyle}" />

@@ -10,18 +10,18 @@
                BasedOn="{StaticResource SnapwellDemoSwitchStyle}" />
         <Style x:Key="FeelCardButtonStyle" TargetType="Button" BasedOn="{StaticResource SnapwellButtonStyle}">
             <Setter Property="Padding" Value="12" />
-            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="CornerRadius" Value="12" />
             <Setter Property="HorizontalAlignment" Value="Stretch" />
             <Setter Property="VerticalAlignment" Value="Stretch" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
             <Setter Property="VerticalContentAlignment" Value="Stretch" />
         </Style>
         <Style x:Key="ChipButtonStyle" TargetType="Button" BasedOn="{StaticResource SnapwellButtonStyle}">
-            <Setter Property="Padding" Value="12,5" />
+            <Setter Property="Padding" Value="14,0" />
             <Setter Property="FontSize" Value="13" />
         </Style>
         <Style x:Key="SelectedChipButtonStyle" TargetType="Button" BasedOn="{StaticResource SnapwellButtonStyle}">
-            <Setter Property="Padding" Value="11,4" />
+            <Setter Property="Padding" Value="13,0" />
             <Setter Property="FontSize" Value="13" />
             <Setter Property="Foreground" Value="{ThemeResource SnapwellInkBrush}" />
             <Setter Property="BorderBrush" Value="{ThemeResource SnapwellInkBrush}" />
@@ -34,12 +34,12 @@
         </Style>
     </Page.Resources>
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-        <StackPanel x:Name="Editor" Padding="32,28,32,40" HorizontalAlignment="Stretch">
+        <StackPanel x:Name="Editor" Padding="32,32,32,40" HorizontalAlignment="Stretch">
             <TextBlock l:Loc.Uid="Feel_Title" Style="{StaticResource SnapwellPageTitleStyle}" />
             <TextBlock l:Loc.Uid="Feel_Lead"
                        Style="{StaticResource SnapwellLeadTextStyle}" />
 
-            <Grid ColumnSpacing="10">
+            <Grid ColumnSpacing="12">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
@@ -55,7 +55,7 @@
                             <RowDefinition Height="*" />
                             <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
-                        <TextBlock l:Loc.Uid="Feel_PresetName_Standard" FontWeight="SemiBold" FontSize="13" LineHeight="20.8"
+                        <TextBlock l:Loc.Uid="Feel_PresetName_Standard" FontWeight="SemiBold" FontSize="13" LineHeight="20"
                                    Foreground="{ThemeResource SnapwellInkBrush}" />
                         <Viewbox Grid.Row="1" VerticalAlignment="Bottom" Height="54" Stretch="Fill" Margin="0,8,0,0">
                             <Canvas Width="160" Height="54">
@@ -80,7 +80,7 @@
                             <RowDefinition Height="*" />
                             <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
-                        <TextBlock l:Loc.Uid="Feel_PresetName_Crisp" FontWeight="SemiBold" FontSize="13" LineHeight="20.8"
+                        <TextBlock l:Loc.Uid="Feel_PresetName_Crisp" FontWeight="SemiBold" FontSize="13" LineHeight="20"
                                    Foreground="{ThemeResource SnapwellInkBrush}" />
                         <Viewbox Grid.Row="1" VerticalAlignment="Bottom" Height="54" Stretch="Fill" Margin="0,8,0,0">
                             <Canvas Width="160" Height="54">
@@ -105,7 +105,7 @@
                             <RowDefinition Height="*" />
                             <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
-                        <TextBlock l:Loc.Uid="Feel_PresetName_Smooth" FontWeight="SemiBold" FontSize="13" LineHeight="20.8"
+                        <TextBlock l:Loc.Uid="Feel_PresetName_Smooth" FontWeight="SemiBold" FontSize="13" LineHeight="20"
                                    Foreground="{ThemeResource SnapwellInkBrush}" />
                         <Viewbox Grid.Row="1" VerticalAlignment="Bottom" Height="54" Stretch="Fill" Margin="0,8,0,0">
                             <Canvas Width="160" Height="54">
@@ -130,7 +130,7 @@
                             <RowDefinition Height="*" />
                             <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
-                        <TextBlock l:Loc.Uid="Feel_PresetName_Bouncy" FontWeight="SemiBold" FontSize="13" LineHeight="20.8"
+                        <TextBlock l:Loc.Uid="Feel_PresetName_Bouncy" FontWeight="SemiBold" FontSize="13" LineHeight="20"
                                    Foreground="{ThemeResource SnapwellInkBrush}" />
                         <Viewbox Grid.Row="1" VerticalAlignment="Bottom" Height="54" Stretch="Fill" Margin="0,8,0,0">
                             <Canvas Width="160" Height="54">
@@ -153,15 +153,15 @@
             <TextBlock l:Loc.Uid="Feel_CurveThrowNote" Margin="0,4,0,0"
                        Style="{StaticResource SnapwellHintTextStyle}" TextWrapping="Wrap" />
 
-            <Expander l:Loc.Uid="Feel_TrialExpander" x:Name="TrialExpander" IsExpanded="False"
-                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Margin="0,14,0,0"
+            <Expander Style="{StaticResource SnapwellExpanderStyle}" l:Loc.Uid="Feel_TrialExpander" x:Name="TrialExpander" IsExpanded="False"
+                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Margin="0,16,0,0"
                       Expanding="Trial_Expanding" Collapsed="Trial_Collapsed">
                 <Expander.Header>
-                    <TextBlock l:Loc.Uid="Feel_TrialTitle" Style="{StaticResource SnapwellGroupTitleStyle}"
+                    <TextBlock l:Loc.Uid="Feel_TrialTitle" Style="{StaticResource SnapwellRowTitleStyle}"
                                Margin="0" />
                 </Expander.Header>
                 <Border Style="{StaticResource SnapwellRowsBorderStyle}" Padding="12">
-                    <StackPanel Spacing="10">
+                    <StackPanel Spacing="12">
                         <Canvas x:Name="TrialStage" Height="400" HorizontalAlignment="Stretch"
                                 Background="{ThemeResource SnapwellWallBrush}" SizeChanged="TrialStage_SizeChanged"
                                 PointerPressed="TrialStage_PointerPressed" PointerMoved="TrialStage_PointerMoved"
@@ -258,7 +258,7 @@
                 </Border>
             </Expander>
 
-            <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,22,0,8" VerticalAlignment="Center">
+            <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,24,0,8" VerticalAlignment="Center">
                 <TextBlock l:Loc.Uid="Feel_DetailsTitle" Style="{StaticResource SnapwellGroupTitleStyle}"
                            Margin="0" VerticalAlignment="Center" />
                 <TextBlock x:Name="FeelStateText" Style="{StaticResource SnapwellGroupTitleStyle}"
@@ -299,7 +299,7 @@
                                     VerticalAlignment="Center">
                             <Slider l:Loc.Uid="Feel_MassSlider" x:Name="MassSlider" Width="200" Minimum="0" Maximum="1000"
                                      />
-                            <NumberBox l:Loc.Uid="Feel_MassBox" x:Name="MassBox" Width="130" Minimum="0.15" Maximum="8"
+                            <NumberBox l:Loc.Uid="Feel_MassBox" x:Name="MassBox" Width="132" Minimum="0.15" Maximum="8"
                                        SmallChange="0.05" LargeChange="0.5"
                                        SpinButtonPlacementMode="Compact"
                                        ValidationMode="InvalidInputOverwritten" />
@@ -320,7 +320,7 @@
                                     VerticalAlignment="Center">
                             <Slider l:Loc.Uid="Feel_FrequencySlider" x:Name="FrequencySlider" Width="200" Minimum="0" Maximum="1000"
                                      />
-                            <NumberBox l:Loc.Uid="Feel_FrequencyBox" x:Name="FrequencyBox" Width="130" Minimum="0.4" Maximum="7"
+                            <NumberBox l:Loc.Uid="Feel_FrequencyBox" x:Name="FrequencyBox" Width="132" Minimum="0.4" Maximum="7"
                                        SmallChange="0.05" LargeChange="0.5"
                                        SpinButtonPlacementMode="Compact"
                                        ValidationMode="InvalidInputOverwritten" />
@@ -341,7 +341,7 @@
                                     VerticalAlignment="Center">
                             <Slider l:Loc.Uid="Feel_DampingRatioSlider" x:Name="DampingRatioSlider" Width="200" Minimum="0" Maximum="1000"
                                      />
-                            <NumberBox l:Loc.Uid="Feel_DampingRatioBox" x:Name="DampingRatioBox" Width="130" Minimum="0.1" Maximum="1.6"
+                            <NumberBox l:Loc.Uid="Feel_DampingRatioBox" x:Name="DampingRatioBox" Width="132" Minimum="0.1" Maximum="1.6"
                                        SmallChange="0.01" LargeChange="0.1"
                                        SpinButtonPlacementMode="Compact"
                                        ValidationMode="InvalidInputOverwritten" />
@@ -362,7 +362,7 @@
                                     VerticalAlignment="Center">
                             <Slider l:Loc.Uid="Feel_MagnetStrengthSlider" x:Name="MagnetStrengthSlider" Width="200" Minimum="0" Maximum="1000"
                                      />
-                            <NumberBox l:Loc.Uid="Feel_MagnetStrengthBox" x:Name="MagnetStrengthBox" Width="130" Minimum="0" Maximum="2"
+                            <NumberBox l:Loc.Uid="Feel_MagnetStrengthBox" x:Name="MagnetStrengthBox" Width="132" Minimum="0" Maximum="2"
                                        SmallChange="0.05" LargeChange="0.1"
                                        SpinButtonPlacementMode="Compact"
                                        ValidationMode="InvalidInputOverwritten" />
@@ -382,7 +382,7 @@
                                     VerticalAlignment="Center">
                             <Slider l:Loc.Uid="Feel_SnapRadiusSlider" x:Name="SnapRadiusSlider" Width="200" Minimum="0" Maximum="1000"
                                      />
-                            <NumberBox l:Loc.Uid="Feel_SnapRadiusBox" x:Name="SnapRadiusBox" Width="130" Minimum="8" Maximum="96"
+                            <NumberBox l:Loc.Uid="Feel_SnapRadiusBox" x:Name="SnapRadiusBox" Width="132" Minimum="8" Maximum="96"
                                        SmallChange="1" LargeChange="8"
                                        SpinButtonPlacementMode="Compact"
                                        ValidationMode="InvalidInputOverwritten" />
