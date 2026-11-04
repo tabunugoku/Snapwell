@@ -43,8 +43,8 @@
       "prompt": "A soft magnetic click as a flat object settles into place, small muted thud with a tiny snap, dry",
       "duration": 0.6,
       "influence": 0.6,
-      "target": -29,
-      "trim": 0.35
+      "target": -40,
+      "trim": 0.15
     },
     "key": {
       "prompt": "A single laptop keyboard key press, soft and quiet, short",
