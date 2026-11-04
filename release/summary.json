@@ -1,7 +1,7 @@
 {
   "summary": {
-    "ja": "設定画面のサイドバーの下に、いま使っているバージョンと GitHub へのリンクを表示します。ほかの機能は変わりません。",
-    "en": "The Settings window now shows the current version and a GitHub link at the bottom of the sidebar. Nothing else changes."
+    "ja": "トレイのメニュー、ランチャー、ドラッグ中のプレビュー、設定画面、ようこその見た目を整えました。割り切れないグリッドでも「中央」が左右・上下対称に効きます。",
+    "en": "Polished the tray menu, launcher, drag preview, Settings window and welcome screen. Center now works symmetrically even on grids that do not divide evenly."
   },
   "minimumSupported": null
 }
