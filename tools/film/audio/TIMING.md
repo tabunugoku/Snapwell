@@ -18,10 +18,5 @@
 | 19.02 | arrange | arrange | 0 |
 | 21.40 | nudge | nudge | 0 |
 | 23.10 | monitor | monitor | 0 |
-| 23.82 | land | land | 0 |
-| 27.20 | toggle | toggle | 0 |
-| 27.80 | toggle | toggle | 0 |
-| 29.60 | toggle | toggle | 0 |
-| 30.90 | toggle | toggle | 0 |
 | 31.10 | restore | restore | 0 |
 | 35.20 | end-in | logo | 0 |

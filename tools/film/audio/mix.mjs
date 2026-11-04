@@ -29,12 +29,12 @@ cues.forEach((c, i) => {
   if (m.only && !m.only.includes(seen[c.name])) return;
   // 同じ音が続くときの単調さを抑えるため、きっかけごとに決まった ±1 dB の揺らぎを足す
   const wob = (((i * 7) % 5) - 2) * 0.5;
-  hits.push({ file: resolve(here, 'sfx', `${m.sound}.mp3`), t: c.t + (m.offset || 0), gain: m.gain + wob });
+  hits.push({ trim: cfg.sounds[m.sound].trim, file: resolve(here, 'sfx', `${m.sound}.mp3`), t: c.t + (m.offset || 0), gain: m.gain + wob });
 });
 // 生成された音は大きさがまちまち (鳴っている部分の RMS が -9 dB から -40 dB) で、ピークでそろえると聞こえの大きさが大きくずれる。
 // そこで、各音の鳴っている部分 (前後の無音を除く) の RMS を sounds.json の target にそろえ、ピークは -3 dB までに抑える。cue_map の gain はそのきっかけだけの上げ下げ。
-const measure = (file) => {
-  const r = spawnSync('ffmpeg', ['-nostats', '-i', file, '-af', 'silenceremove=start_periods=1:start_threshold=-50dB:stop_periods=-1:stop_threshold=-50dB:stop_duration=0.1,astats=metadata=0', '-f', 'null', '-'], { encoding: 'utf8' });
+const measure = (file, trim) => {
+  const r = spawnSync('ffmpeg', ['-nostats', ...(trim ? ['-t', String(trim)] : []), '-i', file, '-af', 'silenceremove=start_periods=1:start_threshold=-50dB:stop_periods=-1:stop_threshold=-50dB:stop_duration=0.1,astats=metadata=0', '-f', 'null', '-'], { encoding: 'utf8' });
   const last = (re) => { const m = [...(r.stderr || '').matchAll(re)].pop(); return m ? Number(m[1]) : 0; };
   return { rms: last(/RMS level dB: (-?[\d.]+)/g), peak: last(/Peak level dB: (-?[\d.]+)/g) };
 };
@@ -43,7 +43,7 @@ for (const h of hits) {
   if (!existsSync(h.file)) continue;
   if (!base.has(h.file)) {
     const name = basename(h.file, '.mp3');
-    const { rms, peak } = measure(h.file);
+    const { rms, peak } = measure(h.file, h.trim);
     base.set(h.file, Math.min(cfg.sounds[name].target - rms, -3 - peak));
   }
   h.gain += base.get(h.file);
@@ -60,7 +60,7 @@ const run = (a) => {
   if (r.status !== 0) throw new Error('ffmpeg が失敗した');
 };
 const inputs = hits.flatMap((h) => ['-i', h.file]);
-const chains = hits.map((h, i) => `[${i}:a]adelay=${Math.round(h.t * 1000)}:all=1,volume=${h.gain.toFixed(1)}dB[a${i}]`);
+const chains = hits.map((h, i) => `[${i}:a]${h.trim ? `atrim=0:${h.trim},afade=t=out:st=${(h.trim - 0.06).toFixed(2)}:d=0.06,` : ''}adelay=${Math.round(h.t * 1000)}:all=1,volume=${h.gain.toFixed(1)}dB[a${i}]`);
 const mixIn = hits.map((_, i) => `[a${i}]`).join('');
 const sfxGraph = `${chains.join(';')};${mixIn}amix=inputs=${hits.length}:normalize=0:duration=longest,apad,atrim=0:${duration},asetpts=N/SR/TB`;
 if (!useBgm) {
