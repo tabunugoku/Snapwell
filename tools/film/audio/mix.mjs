@@ -70,7 +70,7 @@ if (!useBgm) {
   const b = bgmCfg.mix;
   const bgmIdx = hits.length;
   const graph = `${sfxGraph},asplit=2[sfxA][sfxB];`
-    + `[${bgmIdx}:a]atrim=0:${duration},asetpts=N/SR/TB,loudnorm=I=${b.lufs}:TP=-3:LRA=7,`
+    + `[${bgmIdx}:a]atrim=0:${duration},asetpts=N/SR/TB,loudnorm=I=${b.lufs}:TP=-3:LRA=7,apad,atrim=0:${duration},`
     + `afade=t=in:d=${b.fadeIn},afade=t=out:st=${(duration - b.fadeOut).toFixed(2)}:d=${b.fadeOut},apad[bgm0];`
     + `[bgm0][sfxA]sidechaincompress=threshold=${b.duckThreshold}:ratio=${b.duckRatio}:attack=15:release=350[bgm1];`
     + `[sfxB][bgm1]amix=inputs=2:normalize=0:duration=longest,alimiter=limit=0.89,atrim=0:${duration}[aout]`;
