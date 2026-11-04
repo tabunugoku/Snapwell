@@ -1,4 +1,4 @@
-// 効果音と BGM を重ねる: node mix.mjs --lang en|ja [--video <無音の mp4 と webm のあるフォルダ。既定 out/<lang>>] [--cues <既定 out/<lang>/cues.json>] [--out <既定 out/with-sound/<lang>>] [--no-bgm]
+// 効果音と BGM を重ねる: node mix.mjs --lang en|ja [--video <無音の mp4 と webm のあるフォルダ。既定 out/<lang>>] [--cues <既定 out/<lang>/cues.json>] [--out <既定 out/with-sound/<lang>>] [--no-bgm] [--bgm <BGM の mp3。既定 audio/bgm/bgm.mp3>]
 // render.mjs が書いた cues.json の時刻に、sfx/ の効果音を置き、audio/bgm/bgm.mp3 があれば効果音の鳴る間だけ下げて (サイドチェーン) 重ね、無音の映像へ足す (映像は再エンコードしない)。
 // 音は言語に依らないので、同じ sfx と bgm を ja・en の両方に使う。足りない効果音があれば何もせず、generate-sfx.mjs を先に走らせるよう案内して終わる。
 import { readFileSync, existsSync, mkdirSync } from 'node:fs';
@@ -15,7 +15,7 @@ const cuesFile = resolve(arg('cues', resolve(videoDir, 'cues.json')));
 const out = resolve(arg('out', resolve(film, 'out', 'with-sound', lang)));
 const cfg = JSON.parse(readFileSync(resolve(here, 'sounds.json'), 'utf8'));
 const bgmCfg = JSON.parse(readFileSync(resolve(here, 'bgm.json'), 'utf8'));
-const bgmFile = resolve(here, 'bgm', 'bgm.mp3');
+const bgmFile = resolve(arg('bgm', resolve(here, 'bgm', 'bgm.mp3')));
 const useBgm = !process.argv.includes('--no-bgm') && existsSync(bgmFile);
 const { duration, cues } = JSON.parse(readFileSync(cuesFile, 'utf8'));
 
@@ -62,7 +62,7 @@ if (!useBgm) {
   const bgmIdx = hits.length;
   const graph = `${sfxGraph},asplit=2[sfxA][sfxB];`
     + `[${bgmIdx}:a]atrim=0:${duration},asetpts=N/SR/TB,loudnorm=I=${b.lufs}:TP=-3:LRA=7,`
-    + `afade=t=in:d=${b.fadeIn},afade=t=out:st=${(duration - b.fadeOut).toFixed(2)}:d=${b.fadeOut}[bgm0];`
+    + `afade=t=in:d=${b.fadeIn},afade=t=out:st=${(duration - b.fadeOut).toFixed(2)}:d=${b.fadeOut},apad[bgm0];`
     + `[bgm0][sfxA]sidechaincompress=threshold=${b.duckThreshold}:ratio=${b.duckRatio}:attack=15:release=350[bgm1];`
     + `[sfxB][bgm1]amix=inputs=2:normalize=0:duration=longest,alimiter=limit=0.89,atrim=0:${duration}[aout]`;
   run(['-y', ...inputs, '-i', bgmFile, '-filter_complex', graph, '-map', '[aout]', '-ar', '44100', resolve(out, 'mix.wav')]);
