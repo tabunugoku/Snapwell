@@ -1,5 +1,5 @@
 {
-  "_note": "効果音の台本 (2026-11 に作り直し、同日に音量を ラウドネス基準に変更)。prompt は ElevenLabs Sound Effects への指示 (英語)。duration は秒 (0.5 から 30)。target は、鳴っている部分の RMS の目標 (dBFS)。mix.mjs が各音をこの値にそろえ (ピークは -3 dB まで)、cue_map の gain (dB) をそのきっかけだけの上げ下げとして足す。cue 名は render.mjs が書く cues.json のもの。映像の言語に依らず 1 セットを ja・en の両方に使う。",
+  "_note": "効果音の台本 (2026-11 に作り直し、同日に音量を ラウドネス基準に変更)。prompt は ElevenLabs Sound Effects への指示 (英語)。duration は秒 (0.5 から 30)。target は、鳴っている部分の RMS の目標 (dBFS)。mix.mjs が各音をこの値にそろえ (ピークは -3 dB まで)、cue_map の gain (dB) をそのきっかけだけの上げ下げとして足す。cue 名は render.mjs が書く cues.json のもの。映像の言語に依らず 1 セットを ja・en の両方に使う。 効果音は、ここぞという所 (cue_map に残したきっかけ) だけにつける。only は、同じ名前のきっかけの何番目 (1 から) にだけ音をつけるか。",
   "model_id": "eleven_text_to_sound_v2",
   "output_format": "mp3_44100_128",
   "sounds": {
@@ -107,54 +107,32 @@
     }
   },
   "cue_map": {
-    "intro-enter": {
-      "sound": "whoosh",
-      "gain": 0
-    },
     "intro-burst": {
       "sound": "burst",
       "gain": 0
-    },
-    "intro-grid": {
-      "sound": "tick",
-      "gain": 0
-    },
-    "intro-final": {
-      "sound": "tick",
-      "gain": 0
-    },
-    "intro-hop": {
-      "sound": "tap",
-      "gain": -2
     },
     "intro-logo": {
       "sound": "logo",
       "gain": 0,
       "offset": 0.3
     },
-    "feel": {
-      "sound": "tick",
-      "gain": 0
-    },
     "release": {
       "sound": "throw",
-      "gain": 0
+      "gain": 0,
+      "only": [
+        1
+      ]
     },
     "land": {
       "sound": "land",
-      "gain": 0
-    },
-    "key": {
-      "sound": "key",
-      "gain": 0
+      "gain": 0,
+      "only": [
+        1
+      ]
     },
     "launcher-open": {
       "sound": "overlay",
       "gain": 0
-    },
-    "cell": {
-      "sound": "cell",
-      "gain": -3
     },
     "launcher-pick": {
       "sound": "confirm",
@@ -162,7 +140,10 @@
     },
     "arrange": {
       "sound": "arrange",
-      "gain": 0
+      "gain": 0,
+      "only": [
+        1
+      ]
     },
     "nudge": {
       "sound": "nudge",
@@ -174,18 +155,13 @@
     },
     "toggle": {
       "sound": "toggle",
-      "gain": 0
+      "gain": 0,
+      "only": [
+        3
+      ]
     },
     "restore": {
       "sound": "restore",
-      "gain": 0
-    },
-    "export": {
-      "sound": "save",
-      "gain": 0
-    },
-    "sync": {
-      "sound": "save",
       "gain": 0
     },
     "end-in": {

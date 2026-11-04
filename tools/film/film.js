@@ -1,4 +1,4 @@
-/* Snapwell film · 台本 (36 秒)。言語は ?lang=ja|en (文字は film-text.js)。時刻・動き・効果音のきっかけは言語に依存しない。
+/* Snapwell film · 台本 (37.9 秒。下の時刻は導入を 1.9 秒伸ばす前のもので、導入のあとの時刻には D を足して動かす)。言語は ?lang=ja|en (文字は film-text.js)。時刻・動き・効果音のきっかけは言語に依存しない。
  *  0.0– 4.5 導入 (サイトのヒーローと同じ SnapIntro の短い版)
  *  4.5– 9.0 投げる (1 回) と操作感の切り替え
  *  9.0–13.5 ランチャー
@@ -120,7 +120,7 @@
 
   /** 窓を zone へ投げる。離す速さは、予測 (p + v·m/c) がちょうど届く値から決める */
   function throwWin(idx, zone, start, k = 0.9) {
-    g = { w: stage.wins[idx], zone, t0: start, phase: 0, k };
+    g = { w: stage.wins[idx], zone, t0: shift(start), phase: 0, k };
     fx.cursor.in();
     cue('grab');
   }
@@ -249,7 +249,10 @@
   // ---- 台本 ----
   const events = [];
   const later = [];
-  const at = (t, fn) => events.push({ t, fn, done: false });
+  // 導入 (ロゴが出て止まるまで) を D 秒だけ長くしてある。導入の終わり (4.15 秒) より後の時刻は、台本に書いた秒に D を足して動かす
+  const D = 1.9;
+  const shift = (t) => (t >= 4.15 ? t + D : t);
+  const at = (t, fn) => events.push({ t: shift(t), fn, done: false });
   const after = (t, fn) => later.push({ t, fn });
   const logoDelay = (fn, s) => after(clock + s, fn);
   const keysOf = (sel) => $$(`${sel} .key`);
@@ -278,7 +281,7 @@
   const cv = $('#introCanvas');
   const INTRO_BEATS = { enter: 0.15, burst: 0.75, grid: 1.45, layoutB: null, layoutC: null, final: 2.1, hop: 2.9, veil: 3.4, logo: 3.55 }; // site/js/home.js の短い版と同じ
   const intro = new Intro(cv, {
-    width: 1920, height: 1080, dpr: 1, scale: 2.2, seed: 11, veilMax: 0.97, beats: INTRO_BEATS, tail: 0.85,
+    width: 1920, height: 1080, dpr: 1, scale: 2.2, seed: 11, veilMax: 0.97, beats: INTRO_BEATS, tail: 2.4,
     colors: (() => {
       const cs = getComputedStyle(document.documentElement);
       const rgb = (c) => { const k = document.createElement('canvas').getContext('2d'); k.fillStyle = c; const v = k.fillStyle; return [1, 3, 5].map((i) => parseInt(v.slice(i, i + 2), 16)); };
@@ -310,7 +313,7 @@
   press(k2, 9.4);
   at(9.9, () => { stage.raise(stage.wins[1]); fx.launcher.in(); cue('launcher-open'); });
   at(10.2, () => { setCursor(center(2, 1).x - 40, center(2, 1).y + 30); fx.cursor.in(); });
-  at(10.4, () => { sweep.on = true; sweep.t0 = 10.4; selectSpan(sweep.from, sweep.from); cue('sweep-start'); });
+  at(10.4, () => { sweep.on = true; sweep.t0 = shift(10.4); selectSpan(sweep.from, sweep.from); cue('sweep-start'); });
   at(11.45, () => { sweep.on = false; });
   at(11.9, () => { k2enter.classList.add('down'); cue('key'); });
   at(12.0, () => {
@@ -405,7 +408,7 @@
     for (let i = later.length - 1; i >= 0; i--) if (later[i].t <= t) { later.splice(i, 1)[0].fn(); }
     tickHand(t);
     tickSweep(t);
-    if (t < 4.6) { intro.step(dt); intro.draw(); }
+    if (t < 4.6 + D) { intro.step(dt); intro.draw(); }
   });
-  window.__duration = 36;
+  window.__duration = 36 + D;
 })();

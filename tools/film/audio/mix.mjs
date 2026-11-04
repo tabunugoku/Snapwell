@@ -20,9 +20,13 @@ const useBgm = !process.argv.includes('--no-bgm') && existsSync(bgmFile);
 const { duration, cues } = JSON.parse(readFileSync(cuesFile, 'utf8'));
 
 const hits = [];
+const seen = {};
 cues.forEach((c, i) => {
   const m = cfg.cue_map[c.name];
   if (!m) return;
+  // 同じきっかけが何度も出るとき、only に書いた番号 (1 から数える) のものだけに音をつける。ここぞという所だけに付けるため
+  seen[c.name] = (seen[c.name] || 0) + 1;
+  if (m.only && !m.only.includes(seen[c.name])) return;
   // 同じ音が続くときの単調さを抑えるため、きっかけごとに決まった ±1 dB の揺らぎを足す
   const wob = (((i * 7) % 5) - 2) * 0.5;
   hits.push({ file: resolve(here, 'sfx', `${m.sound}.mp3`), t: c.t + (m.offset || 0), gain: m.gain + wob });
