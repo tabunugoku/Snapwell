@@ -17,6 +17,12 @@ internal static class DialogButtons
     public static void Compact(ContentDialog dialog)
     {
         dialog.CornerRadius = new CornerRadius(8);
+        var textResources = new ResourceDictionary
+        {
+            Source = new Uri("ms-appx:///Dialogs/DialogTextResources.xaml"),
+        };
+        dialog.Resources.MergedDictionaries.Add(textResources);
+        dialog.TitleTemplate = (DataTemplate)textResources["DialogTitleTemplate"];
         // 既定ボタンになった決定以外のボタンは、強調色の Style に戻されて文字が見えなくなる（実機で確認）。
         // 決定以外を既定にしないことで避ける（Enter で押されるのは決定ボタンだけになる）
         if (dialog.DefaultButton != ContentDialogButton.Primary) { dialog.DefaultButton = ContentDialogButton.None; }
@@ -33,7 +39,7 @@ internal static class DialogButtons
                 button.MinWidth = ButtonMinWidth;
                 button.Height = ButtonHeight;
                 button.FontSize = 13;
-                button.CornerRadius = new CornerRadius(6);
+                button.CornerRadius = new CornerRadius(8);
                 button.VerticalContentAlignment = VerticalAlignment.Center;
                 button.Padding = new Thickness(14, 0, 14, 2); // 日本語のフォントは文字が下に寄るため、下に 2px 足して中央に見せる
                 if (name == "PrimaryButton") { continue; }
@@ -54,6 +60,7 @@ internal static class DialogButtons
             Source = new Uri("ms-appx:///Dialogs/DialogResources.xaml"),
         });
         Compact(dialog);
+        dialog.ContentTemplate = (DataTemplate)dialog.Resources["DialogConfirmationTemplate"];
     }
 
     private static Brush? ThemeBrush(FrameworkElement element, string key)

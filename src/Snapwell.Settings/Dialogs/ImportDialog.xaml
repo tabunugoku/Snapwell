@@ -8,23 +8,29 @@
     l:Loc.Uid="Transfer_Dialog"
     DefaultButton="Close"
     IsSecondaryButtonEnabled="False">
+    <ContentDialog.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="ms-appx:///Dialogs/DialogResources.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </ContentDialog.Resources>
     <StackPanel Spacing="16">
         <TextBlock l:Loc.Uid="Transfer_Lead"
-                   TextWrapping="Wrap" />
+                   Style="{StaticResource SnapwellHintTextStyle}" />
         <ListView x:Name="DifferenceList" SelectionMode="Multiple" IsMultiSelectCheckBoxEnabled="True"
                   SelectionChanged="Difference_SelectionChanged" MaxHeight="360" MinHeight="100"
-                  HorizontalContentAlignment="Stretch">
+                  HorizontalContentAlignment="Stretch" CornerRadius="8">
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="local:ImportDifferenceRow">
                     <StackPanel Spacing="4" Padding="4,8">
-                        <TextBlock Text="{x:Bind Name}" TextWrapping="Wrap" FontWeight="SemiBold" />
-                        <TextBlock Text="{x:Bind Change}" TextWrapping="Wrap"
-                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        <TextBlock Text="{x:Bind Name}" Style="{StaticResource SnapwellRowTitleStyle}" />
+                        <TextBlock Text="{x:Bind Change}" Style="{StaticResource SnapwellHintTextStyle}" />
                     </StackPanel>
                 </DataTemplate>
             </ListView.ItemTemplate>
         </ListView>
         <TextBlock l:Loc.Uid="Transfer_SaveHint"
-                   TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                   Style="{StaticResource SnapwellHintTextStyle}" />
     </StackPanel>
 </ContentDialog>

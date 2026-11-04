@@ -30,6 +30,27 @@
             <SolidColorBrush x:Key="RadioButtonCheckGlyphFill" Color="#FFFFFFFF" />
             <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#FF111111" />
             <SolidColorBrush x:Key="ComboBoxBorderBrushFocused" Color="#FF111111" />
+            <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillChecked" Color="#FF111111" />
+            <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver" Color="#FF333333" />
+            <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPressed" Color="#FF333333" />
+            <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedDisabled" Color="#FF787774" />
+            <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeChecked" Color="#FF111111" />
+            <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedPointerOver" Color="#FF333333" />
+            <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedPressed" Color="#FF333333" />
+            <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedDisabled" Color="#FF787774" />
+            <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundChecked" Color="#FFFFFFFF" />
+            <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedPointerOver" Color="#FFFFFFFF" />
+            <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedPressed" Color="#FFFFFFFF" />
+            <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedDisabled" Color="#FFFFFFFF" />
+            <SolidColorBrush x:Key="ListViewItemSelectionIndicatorBrush" Color="#FF111111" />
+            <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPointerOverBrush" Color="#FF333333" />
+            <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPressedBrush" Color="#FF333333" />
+            <SolidColorBrush x:Key="ListViewItemCheckBoxSelectedBrush" Color="#FF111111" />
+            <SolidColorBrush x:Key="ListViewItemCheckBoxSelectedPointerOverBrush" Color="#FF333333" />
+            <SolidColorBrush x:Key="ListViewItemCheckBoxSelectedPressedBrush" Color="#FF333333" />
+            <SolidColorBrush x:Key="ListViewItemCheckBrush" Color="#FFFFFFFF" />
+            <SolidColorBrush x:Key="ListViewItemCheckPointerOverBrush" Color="#FFFFFFFF" />
+            <SolidColorBrush x:Key="ListViewItemCheckPressedBrush" Color="#FFFFFFFF" />
         </ResourceDictionary>
         <ResourceDictionary x:Key="Dark">
             <SolidColorBrush x:Key="ContentDialogBackground" Color="#FF202020" />
@@ -56,6 +77,27 @@
             <SolidColorBrush x:Key="RadioButtonCheckGlyphFill" Color="#FF111111" />
             <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#FFF2F2F0" />
             <SolidColorBrush x:Key="ComboBoxBorderBrushFocused" Color="#FFF2F2F0" />
+            <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillChecked" Color="#FFF2F2F0" />
+            <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver" Color="#FFD9D9D6" />
+            <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPressed" Color="#FFD9D9D6" />
+            <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedDisabled" Color="#FF9B9A97" />
+            <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeChecked" Color="#FFF2F2F0" />
+            <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedPointerOver" Color="#FFD9D9D6" />
+            <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedPressed" Color="#FFD9D9D6" />
+            <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedDisabled" Color="#FF9B9A97" />
+            <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundChecked" Color="#FF111111" />
+            <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedPointerOver" Color="#FF111111" />
+            <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedPressed" Color="#FF111111" />
+            <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedDisabled" Color="#FF111111" />
+            <SolidColorBrush x:Key="ListViewItemSelectionIndicatorBrush" Color="#FFF2F2F0" />
+            <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPointerOverBrush" Color="#FFD9D9D6" />
+            <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPressedBrush" Color="#FFD9D9D6" />
+            <SolidColorBrush x:Key="ListViewItemCheckBoxSelectedBrush" Color="#FFF2F2F0" />
+            <SolidColorBrush x:Key="ListViewItemCheckBoxSelectedPointerOverBrush" Color="#FFD9D9D6" />
+            <SolidColorBrush x:Key="ListViewItemCheckBoxSelectedPressedBrush" Color="#FFD9D9D6" />
+            <SolidColorBrush x:Key="ListViewItemCheckBrush" Color="#FF111111" />
+            <SolidColorBrush x:Key="ListViewItemCheckPointerOverBrush" Color="#FF111111" />
+            <SolidColorBrush x:Key="ListViewItemCheckPressedBrush" Color="#FF111111" />
         </ResourceDictionary>
         <ResourceDictionary x:Key="Default">
             <SolidColorBrush x:Key="ContentDialogBackground" Color="#FF202020" />
@@ -82,6 +124,27 @@
             <SolidColorBrush x:Key="RadioButtonCheckGlyphFill" Color="#FF111111" />
             <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#FFF2F2F0" />
             <SolidColorBrush x:Key="ComboBoxBorderBrushFocused" Color="#FFF2F2F0" />
+            <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillChecked" Color="#FFF2F2F0" />
+            <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver" Color="#FFD9D9D6" />
+            <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPressed" Color="#FFD9D9D6" />
+            <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedDisabled" Color="#FF9B9A97" />
+            <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeChecked" Color="#FFF2F2F0" />
+            <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedPointerOver" Color="#FFD9D9D6" />
+            <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedPressed" Color="#FFD9D9D6" />
+            <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedDisabled" Color="#FF9B9A97" />
+            <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundChecked" Color="#FF111111" />
+            <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedPointerOver" Color="#FF111111" />
+            <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedPressed" Color="#FF111111" />
+            <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedDisabled" Color="#FF111111" />
+            <SolidColorBrush x:Key="ListViewItemSelectionIndicatorBrush" Color="#FFF2F2F0" />
+            <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPointerOverBrush" Color="#FFD9D9D6" />
+            <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPressedBrush" Color="#FFD9D9D6" />
+            <SolidColorBrush x:Key="ListViewItemCheckBoxSelectedBrush" Color="#FFF2F2F0" />
+            <SolidColorBrush x:Key="ListViewItemCheckBoxSelectedPointerOverBrush" Color="#FFD9D9D6" />
+            <SolidColorBrush x:Key="ListViewItemCheckBoxSelectedPressedBrush" Color="#FFD9D9D6" />
+            <SolidColorBrush x:Key="ListViewItemCheckBrush" Color="#FF111111" />
+            <SolidColorBrush x:Key="ListViewItemCheckPointerOverBrush" Color="#FF111111" />
+            <SolidColorBrush x:Key="ListViewItemCheckPressedBrush" Color="#FF111111" />
         </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
 </ResourceDictionary>

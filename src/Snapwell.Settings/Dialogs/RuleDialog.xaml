@@ -11,14 +11,35 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="ms-appx:///Dialogs/DialogResources.xaml" />
             </ResourceDictionary.MergedDictionaries>
+            <!-- Header は入力欄と一組なので、標準テンプレートのラベル下の余白だけをそろえる。 -->
+            <Thickness x:Key="TextBoxTopHeaderMargin">0,0,0,4</Thickness>
+            <Thickness x:Key="ComboBoxTopHeaderMargin">0,0,0,4</Thickness>
+            <DataTemplate x:Key="RuleHeaderTemplate">
+                <TextBlock Text="{Binding}" FontSize="13" LineHeight="20"
+                           FontFamily="{ThemeResource SnapwellUiFontFamily}"
+                           Foreground="{ThemeResource SnapwellInkBrush}" TextWrapping="Wrap" />
+            </DataTemplate>
+            <Style TargetType="TextBox" BasedOn="{StaticResource DefaultTextBoxStyle}">
+                <Setter Property="CornerRadius" Value="8" />
+                <Setter Property="FontSize" Value="13" />
+                <Setter Property="MinHeight" Value="32" />
+                <Setter Property="HeaderTemplate" Value="{StaticResource RuleHeaderTemplate}" />
+            </Style>
+            <Style TargetType="ComboBox" BasedOn="{StaticResource DefaultComboBoxStyle}">
+                <Setter Property="CornerRadius" Value="8" />
+                <Setter Property="FontSize" Value="13" />
+                <Setter Property="MinHeight" Value="32" />
+                <Setter Property="HeaderTemplate" Value="{StaticResource RuleHeaderTemplate}" />
+            </Style>
         </ResourceDictionary>
     </ContentDialog.Resources>
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Spacing="8" Width="440">
+        <StackPanel Spacing="16" Width="440">
             <TextBlock l:Loc.Uid="Rule_Lead"
                        Style="{StaticResource SnapwellHintTextStyle}" />
             <TextBlock x:Name="UwpNotice" Visibility="Collapsed" TextWrapping="Wrap"
                        l:Loc.Uid="Rule_UwpNotice"
+                       Style="{StaticResource SnapwellHintTextStyle}"
                        Foreground="{ThemeResource SnapwellYellowTextBrush}" />
             <TextBox x:Name="ProcessBox" l:Loc.Uid="Rule_ProcessBox" PlaceholderText="chrome.exe"
                      FontFamily="{StaticResource SnapwellMonoFontFamily}"
@@ -30,6 +51,7 @@
                      FontFamily="{StaticResource SnapwellMonoFontFamily}"
                      TextChanged="Input_Changed" />
             <TextBlock x:Name="ErrorText" Foreground="{ThemeResource SnapwellRedTextBrush}" TextWrapping="Wrap" MinHeight="40"
+                       Style="{StaticResource SnapwellHintTextStyle}"
                        AutomationProperties.LiveSetting="Polite" />
             <StackPanel Spacing="4">
                 <ComboBox x:Name="PlacementBox" l:Loc.Uid="Rule_PlacementBox" HorizontalAlignment="Stretch"
