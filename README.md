@@ -6,9 +6,9 @@
 
 Snapwell is a window manager for Windows 11. Throw a window, and a spring and a magnet pull it into the nearest zone of your grid.
 
-[![A scene from the Snapwell film: a thrown window settles into a zone](docs/images/film-throw.jpg)](https://tabunugoku.github.io/Snapwell/)
+[![A scene from the Snapwell film: a thrown window settles into a zone](docs/images/film-throw-en.jpg)](https://tabunugoku.github.io/Snapwell/)
 
-The film is not a screen recording of the app. It shows a mockup of the interface, driven by the same physics model as Snapwell. On the [home page](https://tabunugoku.github.io/Snapwell/) you can throw a window yourself.
+The film has sound effects and music. It is not a screen recording of the app. It shows a mockup of the interface, driven by the same physics model as Snapwell. On the [home page](https://tabunugoku.github.io/Snapwell/) you can throw a window yourself.
 
 The Japanese original of this page is folded at the bottom. 日本語の原文は、末尾の折りたたみにあります。
 
@@ -29,7 +29,7 @@ Grab a title bar and let go. Snapwell reads the speed at release, predicts where
 
 Motion is computed from mass, stiffness and damping. No durations or easing curves are fixed. On the Feel page of the settings window, pick one of four presets or set the values yourself.
 
-![The Feel page of the settings window, with four presets (mockup, Japanese UI)](docs/images/settings-feel.png)
+![The Feel page of the settings window, with four presets](docs/images/settings-feel-en.png)
 
 ### Grid and gaps
 
@@ -37,13 +37,15 @@ You choose a grid for each monitor, such as 8 × 8, 12 × 6 or 6 × 4. The gap b
 
 Hotkeys grow or shrink the front window one zone at a time. An option also snaps a window to the nearest zone boundary when you release it after resizing by hand.
 
+The Center preset and Ctrl+Alt+C use the zones nearest the middle of the screen, symmetrically. This also works on grids that cannot hit the middle exactly, such as 12 × 12.
+
 ### Launcher
 
 Ctrl+Alt+Space opens the launcher. A grid appears over the monitor that holds the target window, and the window fits the range of zones you drag across. Presets are also available: halves, quarters, thirds, two-thirds, center and maximize, among others.
 
 From the launcher you can also select up to nine windows and arrange them together.
 
-![The launcher: a grid, presets and the window list for arranging (mockup, Japanese UI)](docs/images/launcher.png)
+[![The launcher over a 4 × 3 grid, with presets (a scene from the film, which is a mockup)](docs/images/film-launcher-en.jpg)](https://tabunugoku.github.io/Snapwell/)
 
 ### Arrange
 
@@ -56,7 +58,7 @@ Snapwell arranges windows in one of four layouts.
 
 The target can be the current monitor, all monitors, or the windows you picked in the launcher. Ctrl+Alt+A arranges the windows on the current monitor in a grid.
 
-[![Ctrl+Alt+A arranges the windows in a grid](docs/images/film-arrange.jpg)](https://tabunugoku.github.io/Snapwell/)
+[![Four windows arranged in a grid (a scene from the film)](docs/images/film-arrange-en.jpg)](https://tabunugoku.github.io/Snapwell/)
 
 ### Snap to a neighbor, move between monitors
 
@@ -81,7 +83,7 @@ Every hotkey can be changed on the Hotkeys page of the settings window. The main
 | Throw to the next monitor | Ctrl+Alt+PageUp, PageDown |
 | Pause and resume | Ctrl+Alt+Pause |
 
-![The Hotkeys page of the settings window (mockup, Japanese UI)](docs/images/settings-keys.png)
+![The Hotkeys page of the settings window](docs/images/settings-keys-en.png)
 
 ### Per-app rules
 
@@ -99,7 +101,7 @@ Starting at sign-in is also not registered until you turn it on. Turning it off 
 
 - Settings are a JSON file, and you can share them across PCs through a sync folder of your choice, such as a OneDrive or Dropbox folder. Snapwell does not do the syncing. It reads and writes the file in that folder.
 - You can import and export settings.
-- The interface is available in Japanese and English, and follows the Windows display language by default.
+- The interface is available in Japanese and English, and follows the Windows display language by default. The settings window, tray menu and launcher follow the Windows light or dark theme.
 - On first launch, a setup in the settings window opens with a short intro animation and a welcome screen where you can throw a window. Then you decide the standard features, hotkeys and grid in turn. Click or press Esc to skip the intro. It is skipped on its own when Windows animation effects or Snapwell's reduce motion option are off.
 - The Feel page has an option to reduce motion. When it is on, or when Windows animation effects are off, windows move straight to their destination without animation.
 - By default, Snapwell does not check for updates. When you turn on automatic checks or click Check now, it checks GitHub Releases for new versions. Clicking Update and restart in the notice downloads the signed release package, verifies it, replaces the files and starts the new version. Nothing is downloaded until you click, and if the new version cannot be confirmed to start, Snapwell rolls back to the previous one.
@@ -204,9 +206,9 @@ Snapwell is released under the [MIT License](LICENSE). The physics model of the 
 
 Snapwell は Windows 11 用のウィンドウマネージャーです。ウィンドウを投げると、ばねと磁石の物理モデルで、いちばん近い区画に収まります。
 
-[![Snapwell の紹介動画の一場面。投げたウィンドウが区画に収まる](docs/images/film-throw.jpg)](https://tabunugoku.github.io/Snapwell/)
+[![Snapwell の紹介動画の一場面。投げたウィンドウが区画に収まる](docs/images/film-throw-ja.jpg)](https://tabunugoku.github.io/Snapwell/)
 
-紹介動画は実アプリの録画ではなく、モックアップ相当の画面を、Snapwell と同じ物理モデルで動かしたものです。[ホームページ](https://tabunugoku.github.io/Snapwell/)では投げる動きを実際に試せます。
+紹介動画は効果音と音楽つきです。実アプリの録画ではなく、モックアップ相当の画面を、Snapwell と同じ物理モデルで動かしたものです。[ホームページ](https://tabunugoku.github.io/Snapwell/)では投げる動きを実際に試せます。
 
 ## 特長
 
@@ -225,7 +227,7 @@ Snapwell は Windows 11 用のウィンドウマネージャーです。ウィ�
 
 動きは質量、剛性、減衰から計算します。継続時間やイージング曲線は決めていません。設定画面の「操作感」で、4 つのプリセットから選ぶか、値を自分で決められます。
 
-![設定画面の「操作感」ページ。4 つのプリセット（モックアップ、日本語の画面）](docs/images/settings-feel.png)
+![設定画面の「操作感」ページ。4 つのプリセット](docs/images/settings-feel-ja.png)
 
 ### 分割と間隔
 
@@ -233,13 +235,15 @@ Snapwell は Windows 11 用のウィンドウマネージャーです。ウィ�
 
 ホットキーでは前面のウィンドウを 1 区画ずつ広げたり縮めたりできます。マウスで手動のリサイズをして離したときに、いちばん近い区画の境界へ揃える設定もあります。
 
+「中央」のプリセットと Ctrl+Alt+C は、画面の中央にいちばん近い区画を、左右・上下対称に使います。12 × 12 のように、ちょうど中央に合わせられないグリッドでも使えます。
+
 ### ランチャー
 
 Ctrl+Alt+Space でランチャーを開くと、対象のウィンドウがあるモニターにグリッドが重なり、区画をドラッグして選んだ範囲にウィンドウが収まります。半分、1/4、1/3、2/3、中央、最大化などのプリセットも使えます。
 
 ランチャーからはウィンドウを最大 9 件選んで、まとめて整列することもできます。
 
-![ランチャー。グリッド、プリセット、整列するウィンドウの一覧（モックアップ、日本語の画面）](docs/images/launcher.png)
+[![4 × 3 のグリッドとプリセットを表示したランチャー（紹介動画の一場面。動画はモックアップ）](docs/images/film-launcher-ja.jpg)](https://tabunugoku.github.io/Snapwell/)
 
 ### 整列
 
@@ -252,7 +256,7 @@ Ctrl+Alt+Space でランチャーを開くと、対象のウィンドウがあ�
 
 対象は現在のモニター、全モニター、ランチャーで選んだウィンドウから選べます。Ctrl+Alt+A で、現在のモニターのウィンドウをグリッドに整列します。
 
-[![Ctrl+Alt+A でウィンドウをグリッドに整列する場面](docs/images/film-arrange.jpg)](https://tabunugoku.github.io/Snapwell/)
+[![4 枚のウィンドウをグリッドに整列した場面（紹介動画の一場面）](docs/images/film-arrange-ja.jpg)](https://tabunugoku.github.io/Snapwell/)
 
 ### 隣へ寄せる、モニター間の移動
 
@@ -277,7 +281,7 @@ Ctrl+Alt+Shift+J、L、I、K を押すと、前面のウィンドウが左、右
 | 隣のモニターへ投げる | Ctrl+Alt+PageUp、PageDown |
 | 一時停止と再開 | Ctrl+Alt+Pause |
 
-![設定画面のホットキーのページ（モックアップ、日本語の画面）](docs/images/settings-keys.png)
+![設定画面のホットキーのページ](docs/images/settings-keys-ja.png)
 
 ### アプリごとのルール
 
@@ -295,7 +299,7 @@ Snapwell が OS の設定を変えるのは、利用者が同意して設定画�
 
 - 設定は JSON のファイルで、利用者が選んだ同期フォルダー（OneDrive や Dropbox のフォルダーなど）を通して、複数の PC で共有できます。Snapwell が同期するのではなく、そのフォルダー内のファイルを読み書きします。
 - 設定のインポートとエクスポートができます。
-- 画面の言語は日本語と英語です。既定では Windows の表示言語に合わせます。
+- 画面の言語は日本語と英語です。既定では Windows の表示言語に合わせます。設定画面、トレイのメニュー、ランチャーは、Windows のライトテーマとダークテーマに従います。
 - 初回の起動では、設定画面のセットアップが開きます。短い導入のアニメーションと、ウィンドウを投げて試せるようこそ画面のあとで、標準機能、ホットキー、分割案を順に決められます。導入はクリックか Esc で飛ばせます。Windows のアニメーション効果か、Snapwell の「動きを減らす」がオフのときは、自動で飛ばします。
 - 操作感のページの「動きを減らす」をオンにすると、アニメーションせずに吸着先へ直接移動します。Windows の「アニメーション効果」がオフのときも同じです。
 - 更新の確認は既定で無効です。自動確認を有効にしたときや「今すぐ確認」を押したときだけ GitHub Releases に問い合わせ、新しい版の案内を表示します。案内の「更新して再起動」を押すと、署名を検証した配布ファイルをダウンロードして置き換え、新しい版を起動します（押すまでダウンロードしません）。起動の確認ができない場合は、元の版へ戻します。
