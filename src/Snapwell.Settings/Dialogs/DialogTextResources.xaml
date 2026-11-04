@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- タイトルの既定の文字サイズを継承せず、文言と読み上げ名は元の文字列を使う。 -->
+    <DataTemplate x:Key="DialogTitleTemplate">
+        <TextBlock Text="{Binding}" FontSize="16" FontWeight="SemiBold" LineHeight="24"
+                   FontFamily="{ThemeResource SnapwellUiFontFamily}"
+                   Foreground="{ThemeResource SnapwellInkBrush}" TextWrapping="Wrap" />
+    </DataTemplate>
+    <DataTemplate x:Key="DialogConfirmationTemplate">
+        <TextBlock Text="{Binding}" FontSize="14" LineHeight="20"
+                   FontFamily="{ThemeResource SnapwellUiFontFamily}"
+                   Foreground="{ThemeResource SnapwellInkBrush}" TextWrapping="Wrap" />
+    </DataTemplate>
+</ResourceDictionary>

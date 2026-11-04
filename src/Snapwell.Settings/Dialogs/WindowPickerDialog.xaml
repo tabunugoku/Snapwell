@@ -28,7 +28,7 @@
     <StackPanel Spacing="12" Width="440">
         <TextBlock l:Loc.Uid="WindowPicker_Lead"
                    Style="{StaticResource SnapwellHintTextStyle}" />
-        <Border Style="{StaticResource SnapwellRowsBorderStyle}">
+        <Border Style="{StaticResource SnapwellRowsBorderStyle}" CornerRadius="8">
             <ScrollViewer MaxHeight="360" HorizontalScrollBarVisibility="Disabled">
                 <StackPanel x:Name="WindowRows" />
             </ScrollViewer>
