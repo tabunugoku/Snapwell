@@ -2,7 +2,7 @@
 // render.mjs が書いた cues.json の時刻に、sfx/ の効果音を置き、audio/bgm/bgm.mp3 があれば効果音の鳴る間だけ下げて (サイドチェーン) 重ね、無音の映像へ足す (映像は再エンコードしない)。
 // 音は言語に依らないので、同じ sfx と bgm を ja・en の両方に使う。足りない効果音があれば何もせず、generate-sfx.mjs を先に走らせるよう案内して終わる。
 import { readFileSync, existsSync, mkdirSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
+import { resolve, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
@@ -27,17 +27,22 @@ cues.forEach((c, i) => {
   const wob = (((i * 7) % 5) - 2) * 0.5;
   hits.push({ file: resolve(here, 'sfx', `${m.sound}.mp3`), t: c.t + (m.offset || 0), gain: m.gain + wob });
 });
-// 生成された音は大きさがまちまちなので、各効果音をまず最大値 0 dB にそろえ、そのうえで cue_map の gain を掛ける
-const peakOf = (file) => {
-  const r = spawnSync('ffmpeg', ['-i', file, '-af', 'volumedetect', '-f', 'null', '-'], { encoding: 'utf8' });
-  const m = /max_volume: (-?[\d.]+) dB/.exec(r.stderr || '');
-  return m ? Number(m[1]) : 0;
+// 生成された音は大きさがまちまち (鳴っている部分の RMS が -9 dB から -40 dB) で、ピークでそろえると聞こえの大きさが大きくずれる。
+// そこで、各音の鳴っている部分 (前後の無音を除く) の RMS を sounds.json の target にそろえ、ピークは -3 dB までに抑える。cue_map の gain はそのきっかけだけの上げ下げ。
+const measure = (file) => {
+  const r = spawnSync('ffmpeg', ['-nostats', '-i', file, '-af', 'silenceremove=start_periods=1:start_threshold=-50dB:stop_periods=-1:stop_threshold=-50dB:stop_duration=0.1,astats=metadata=0', '-f', 'null', '-'], { encoding: 'utf8' });
+  const last = (re) => { const m = [...(r.stderr || '').matchAll(re)].pop(); return m ? Number(m[1]) : 0; };
+  return { rms: last(/RMS level dB: (-?[\d.]+)/g), peak: last(/Peak level dB: (-?[\d.]+)/g) };
 };
-const peaks = new Map();
+const base = new Map();
 for (const h of hits) {
   if (!existsSync(h.file)) continue;
-  if (!peaks.has(h.file)) peaks.set(h.file, peakOf(h.file));
-  h.gain += Math.min(24, -peaks.get(h.file));
+  if (!base.has(h.file)) {
+    const name = basename(h.file, '.mp3');
+    const { rms, peak } = measure(h.file);
+    base.set(h.file, Math.min(cfg.sounds[name].target - rms, -3 - peak));
+  }
+  h.gain += base.get(h.file);
 }
 const missing = [...new Set(hits.map((h) => h.file))].filter((f) => !existsSync(f));
 if (missing.length) {

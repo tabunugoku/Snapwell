@@ -56,6 +56,7 @@ node audio/mix.mjs --lang ja
 音つきの 4 本と poster 2 枚を `site/video/` に置く。`<video>` に `muted` はない。`mix.mjs` は `out/<lang>/` の無音の映像を入力にするので、映像を作り直したらそのあとで重ねる。
 
 - 効果音の指示と長さ、きっかけとの対応は `audio/sounds.json`。きっかけの時刻は台本 (`film.js`) と物理の事象 (離した時刻、止まった時刻) から `cues.json` に書かれる。
+- 音量: 効果音は生成した音の大きさがまちまち (鳴っている部分の RMS が -9 から -40 dB) なので、`mix.mjs` が各音の RMS を `sounds.json` の `target` にそろえる (ピークは -3 dB まで)。cue_map の `gain` はそのきっかけだけの上げ下げ。BGM は `bgm.json` の `mix.lufs` (-32) にそろえ、効果音が鳴る間はさらに下がる。
 - BGM の指示は `audio/bgm.json` (候補 3 本の prompt、ミックスの設定)。BGM は効果音より約 12〜15 dB 小さく、効果音が鳴る間は `sidechaincompress` でさらに下がる。頭に 1.5 秒のフェードイン、末尾に 2.5 秒のフェードアウト。
 - 使うエンドポイント: `POST https://api.elevenlabs.io/v1/sound-generation` (効果音)、`POST https://api.elevenlabs.io/v1/music` (BGM。`prompt`、`music_length_ms`、`model_id`、`force_instrumental`)。
 - 料金: 効果音は 1 秒あたり 40 クレジット (17 件、約 13 秒、約 520 クレジット)。Music API は米ドル課金で 1 分 0.15 ドル (<https://elevenlabs.io/pricing/api>、2026-11-04 確認)。36 秒の候補 3 本で約 0.27 ドル。
@@ -68,7 +69,7 @@ node audio/mix.mjs --lang ja
 - 生成の記録: 2026-10-26、有料プランの鍵 (ユーザーが確認)、モデル `eleven_text_to_sound_v2`、12 件・指定の長さの合計 10.4 秒 (約 416 クレジット)、`tick` は無音に近かったので指示を変えて 1 件だけ作り直し (約 20 クレジット)。
 - 作った音は公開前に聞いて確かめる (第 4 条(k) は出力を確認する責任が利用者にあるとする)。生成日、プラン、使ったモデル (`eleven_text_to_sound_v2`) を PR か `audio/` に書き残す。
 - 生成の記録 (2026-11-04 の作り直し): 鍵は有料プラン (ユーザーが確認)、モデル `eleven_text_to_sound_v2`、17 件・指定の長さの合計 13.0 秒 (約 520 クレジット)。`cell` は無音に近かったので指示を変えて 1 件だけ作り直した (約 20 クレジット)。
-- BGM の利用条件 (<https://elevenlabs.io/music-terms>、2026-11-04 確認): 有料プランは表記不要 (無料プランは「Created in collaboration with ElevenLabs」の表記が要る)。Free から Pro は個人の利用に限り、Scale 以上は小さな組織まで。映画・テレビ・ラジオを除く商用 (オンラインとオフライン) に使える。出力の権利は利用者が持ち、公開前に出力を確かめる責任も利用者にある。プロンプトに実在のアーティスト名・曲名・歌詞を書かない。有料プランの鍵で生成すること。BGM の生成の記録: 2026-11-04、有料プランの鍵 (ユーザーが確認)、モデル `music_v2_5`、`force_instrumental`、36 秒の候補 3 本 (約 0.27 ドル)。採用した 1 本の名前は採用時にここへ追記する。
+- BGM の利用条件 (<https://elevenlabs.io/music-terms>、2026-11-04 確認): 有料プランは表記不要 (無料プランは「Created in collaboration with ElevenLabs」の表記が要る)。Free から Pro は個人の利用に限り、Scale 以上は小さな組織まで。映画・テレビ・ラジオを除く商用 (オンラインとオフライン) に使える。出力の権利は利用者が持ち、公開前に出力を確かめる責任も利用者にある。プロンプトに実在のアーティスト名・曲名・歌詞を書かない。有料プランの鍵で生成すること。BGM の生成の記録: 2026-11-04、有料プランの鍵 (ユーザーが確認)、モデル `music_v2_5`、`force_instrumental`、36 秒の候補 3 本 (約 0.27 ドル)。採用: 候補 b (ピアノの 4 音の反復にパッド、`audio/bgm/bgm.mp3`)。
 - プロジェクトのライセンスとの関係: 効果音の mp3 自体はリポジトリに入れず、動画に混ぜた音だけが `site/video/` に入る。
 
 ## README の画面写真とソーシャルプレビュー

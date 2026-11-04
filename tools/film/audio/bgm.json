@@ -10,7 +10,7 @@
   },
   "mix": {
     "_note": "mix.mjs の設定。lufs は BGM の目標の大きさ (効果音より十分小さく)、duck* は効果音が鳴る間の下げ方",
-    "lufs": -30,
+    "lufs": -32,
     "fadeIn": 1.5,
     "fadeOut": 2.5,
     "duckThreshold": 0.03,
