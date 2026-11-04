@@ -1,46 +1,89 @@
-/* 動画のフレーム (1920×1080)。見た目は lib/site.css (旧ホームページの CSS) と同じ配色と書体。動きは film.js の物理だけで、CSS の遷移は使わない */
+/* 動画のフレーム (1920×1080)。値は film-tokens.css (ホームページと同じ)。動きは film.js の物理だけで、CSS の遷移は使わない。
+ * アプリの画面の断片 (モニター・設定の面) は、アプリの px (4 の格子、角 12/8/4) で組み、800×500 の箱を 1.35 倍にして映す。 */
 @font-face { font-family: 'Newsreader'; src: url('../../site/fonts/newsreader-500.woff2') format('woff2'); font-weight: 500; }
-html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); }
+* { box-sizing: border-box; }
+html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); color: var(--fg); font-family: var(--font-ui); -webkit-font-smoothing: antialiased; }
+p, dl, dd { margin: 0; }
 .frame { position: relative; width: 1920px; height: 1080px; background: var(--bg); overflow: hidden; }
 
 .left { position: absolute; left: 120px; top: 0; width: 600px; height: 1080px; }
 .cap { position: absolute; left: 0; top: 330px; width: 600px; opacity: 0; }
-.cap-h { font-size: 76px; font-weight: 600; line-height: 1.06; letter-spacing: -0.03em; color: var(--ink); margin: 0; }
-.cap-p { font-size: 28px; line-height: 1.45; color: var(--soft); margin: 24px 0 0; }
+.cap-h { font-size: 76px; font-weight: 600; line-height: 1.06; letter-spacing: -0.03em; color: var(--fg); margin: 0; }
+.cap-p { font-size: 28px; line-height: 1.45; color: var(--fg-3); margin: 24px 0 0; }
+html[lang="ja"] .cap-h { font-size: 64px; line-height: 1.18; letter-spacing: -0.01em; }
+html[lang="ja"] .cap-p { font-size: 28px; line-height: 1.6; }
 .keys { display: flex; gap: 12px; margin: 34px 0 0; }
-.key { display: grid; place-items: center; min-width: 76px; height: 64px; padding: 0 20px; border-radius: 10px; background: var(--tile); color: var(--ink); font-size: 26px; font-weight: 600; }
+.key { display: grid; place-items: center; min-width: 76px; height: 64px; padding: 0 20px; border-radius: 8px; background: var(--surface); border: 1px solid var(--border-strong); color: var(--fg); font-size: 26px; font-weight: 600; }
 .key-gap { margin-left: 28px; }
-.key.down { background: var(--ink); color: var(--ink-text); }
-.film-readout { position: absolute; left: 0; top: 790px; width: 460px; font-size: 22px; opacity: 0; grid-template-columns: auto 1fr; gap: 10px 24px; }
-.film-readout dd { font-size: 22px; }
+.key.down { background: var(--primary); color: var(--primary-text); border-color: var(--primary); }
+.key.off { display: none; }
+.film-readout { position: absolute; left: 0; top: 790px; width: 460px; font-size: 22px; opacity: 0; grid-template-columns: auto 1fr; gap: 10px 24px; display: grid; }
+.film-readout dt { color: var(--muted); }
+.film-readout dd { font-size: 22px; text-align: right; font-variant-numeric: tabular-nums; }
 
-.stagebox { position: absolute; left: 760px; top: 202px; width: 1080px; height: 675px; opacity: 0; }
-.stagebox .monitor { position: absolute; left: 0; top: 0; width: 800px; aspect-ratio: auto; height: 500px; transform: scale(1.35); transform-origin: 0 0; border-radius: 10px; }
-.stagebox .workarea { inset: 0 0 32px 0; }
+.stagebox { position: absolute; left: 760px; top: 202px; width: 1080px; height: 675px; }
+.sc { position: absolute; left: 0; top: 0; width: 1080px; height: 675px; opacity: 0; }
+.sc .monitor { position: absolute; left: 0; top: 0; width: 800px; aspect-ratio: auto; height: 500px; transform: scale(1.35); transform-origin: 0 0; border-radius: 12px; }
+.sc .monitor .workarea { inset: 0 0 34px 0; }
+.sc .monitor.dual { top: 108px; height: 340px; background: transparent; box-shadow: none; }
+.sc .monitor.dual::before { display: none; }
+.sc .monitor.dual .workarea { inset: 0; }
+.screen { position: absolute; border-radius: 12px; background: var(--wall); box-shadow: inset 0 0 0 1px var(--border-strong); }
+.screen-n { position: absolute; left: 50%; bottom: -18px; transform: translateX(-50%); font-size: 12px; color: var(--muted); font-weight: 600; }
 .cursor { position: absolute; left: 0; top: 0; z-index: 1100; pointer-events: none; opacity: 0; will-change: transform; }
+.contact { position: absolute; width: 2px; background: var(--blue-tx); z-index: 4; opacity: 0; }
 
 /* ランチャー: 作業領域いっぱいに区画の格子、上にプリセットの帯 */
 .launcher { position: absolute; inset: 0; z-index: 1000; opacity: 0; background: rgba(17, 17, 17, 0.16); }
 .cell { position: absolute; background: rgba(255, 255, 255, 0.55); border: 1px solid var(--border-strong); border-radius: 4px; }
 .cell.sel { background: var(--blue-bg); border-color: var(--blue-line); }
-.lpanel { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); width: 470px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; display: grid; gap: 8px; }
-.lpanel-top { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--muted); }
-.lpanel-top b { color: var(--ink); font-weight: 600; flex: 1; }
-.presets { display: flex; flex-wrap: wrap; gap: 5px; }
-.preset { border: 1px solid var(--border); background: var(--surface-2); border-radius: 6px; padding: 3px 7px; display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--ink); }
+.lpanel { position: absolute; left: 50%; top: 16px; transform: translateX(-50%); width: 560px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; display: grid; gap: 8px; }
+.lpanel-top { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); height: 24px; }
+.lpanel-top b { color: var(--fg); font-weight: 600; flex: 1; font-size: 13px; }
+.presets { display: flex; flex-wrap: wrap; gap: 8px; }
+.preset { border: 1px solid var(--border); background: var(--surface-2); border-radius: 8px; height: 32px; padding: 0 12px 0 10px; display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: var(--fg); }
 .preset svg { width: 18px; height: 12px; }
 .preset svg rect.bg { fill: none; stroke: var(--muted); stroke-width: 1; }
 .preset svg rect.on { fill: var(--muted); }
 
+/* 設定の面 (ホットキーとルール / 標準スナップの置き換え / 持ち運べる設定) */
+.pane { position: absolute; left: 60px; top: 7px; width: 640px; height: 440px; transform: scale(1.5); transform-origin: 0 0; background: var(--surface); border: 1px solid var(--border-strong); border-radius: 12px; padding: 16px; font-size: 13px; color: var(--fg); display: flex; flex-direction: column; gap: 8px; }
+.p-head { display: flex; align-items: center; height: 32px; gap: 8px; }
+.p-head b { font-size: 14px; font-weight: 600; }
+.p-sub { font-size: 12px; color: var(--muted); }
+.p-sep { height: 1px; background: var(--border); margin: 8px 0; }
+.row { display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border-radius: 8px; border: 1px solid transparent; }
+.row.hl { background: var(--surface-2); border-color: var(--border-strong); }
+.row .lab { flex: 1; min-width: 0; font-size: 13px; }
+.row .sub { font-size: 12px; color: var(--muted); }
+.kb { display: flex; gap: 4px; align-items: center; }
+.kb kbd { font: inherit; font-size: 12px; font-weight: 600; min-width: 24px; height: 24px; padding: 0 8px; display: grid; place-items: center; border-radius: 4px; background: var(--surface-2); border: 1px solid var(--border-strong); color: var(--fg); }
+.kb.rec kbd { border-style: dashed; border-color: var(--blue-tx); background: var(--blue-bg); color: var(--blue-tx); }
+.kb .msg { font-size: 12px; color: var(--blue-tx); font-weight: 600; }
+.btn { display: inline-grid; place-items: center; height: 32px; padding: 0 16px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--surface); font-size: 13px; font-weight: 600; color: var(--fg); }
+.btn.down { background: var(--primary); color: var(--primary-text); border-color: var(--primary); }
+.sw { position: relative; width: 40px; height: 20px; flex: none; border-radius: 10px; border: 1px solid var(--muted); background: transparent; }
+.sw i { position: absolute; left: 3px; top: 3px; width: 12px; height: 12px; border-radius: 50%; background: var(--muted); }
+.chip { display: inline-grid; place-items: center; height: 24px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--surface); font-size: 12px; color: var(--fg); }
+.chip.ok { background: #EDF3EC; border-color: transparent; color: #346538; font-weight: 600; }
+.chip.on { border-color: var(--primary); box-shadow: inset 0 0 0 1px var(--primary); font-weight: 600; }
+.seg { display: inline-flex; gap: 4px; }
+.ico-s { width: 16px; height: 16px; border-radius: 4px; flex: none; }
+.note { border-radius: 8px; background: var(--surface-2); border: 1px solid var(--border); padding: 12px; font-size: 13px; line-height: 1.5; color: var(--fg-3); }
+.cmp { display: grid; grid-template-columns: 1fr 24px 1fr; align-items: center; gap: 8px; height: 40px; padding: 0 12px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--border); font-size: 13px; }
+.cmp .arr { text-align: center; color: var(--muted); }
+.cmp .to { font-weight: 600; }
+.path { font-family: var(--font-mono); font-size: 12px; color: var(--fg-3); height: 32px; display: flex; align-items: center; padding: 0 12px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--surface-2); flex: 1; }
+
 /* 導入とロゴ (サイトのヒーローと同じ部品) */
 .opening { position: absolute; inset: 0; z-index: 50; background: var(--bg); }
 .opening canvas { position: absolute; inset: 0; width: 1920px; height: 1080px; }
-.logo { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 28px; color: var(--ink); }
+.logo { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 28px; color: var(--fg); }
 .logo-mark svg { display: block; width: 150px; height: 150px; }
 .logo-name { font-family: var(--font-display); font-weight: 500; font-size: 150px; line-height: 1; letter-spacing: -0.03em; }
 
-.end { position: absolute; inset: 0; z-index: 60; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: var(--ink); opacity: 0; }
+.end { position: absolute; inset: 0; z-index: 60; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: var(--fg); opacity: 0; }
 .end .logo { position: static; }
 .end-h { font-size: 56px; font-weight: 600; letter-spacing: -0.03em; margin: 56px 0 0; }
-.end-p { font-size: 30px; color: var(--soft); margin: 22px 0 0; }
+.end-p { font-size: 30px; color: var(--fg-3); margin: 22px 0 0; }
 .end-url { font-size: 32px; font-weight: 600; margin: 46px 0 0; }
