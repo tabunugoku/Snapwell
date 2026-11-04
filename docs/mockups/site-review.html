@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ホームページ (site/) のレビュー</title>
+<style>
+@font-face{font-family:"NR-as";src:url("../../site/fonts/newsreader-500.woff2") format("woff2");font-weight:500}
+@font-face{font-family:"NR-to";src:url("../../site/fonts/newsreader-500.woff2") format("woff2");font-weight:500 600}
+:root{--bg:#f4f4f2;--card:#fff;--ink:#1a1a19;--sub:#5e5d5a;--line:#e1e1de;--acc:#1f6c9f;--bad:#a23a38;--good:#2f6b3a}
+@media (prefers-color-scheme:dark){:root{--bg:#161615;--card:#1f1f1e;--ink:#ecece9;--sub:#a3a29e;--line:#34342f;--acc:#8ccbf2;--bad:#f2a7a5;--good:#a6d1a9}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 "Segoe UI Variable Text","Yu Gothic UI","Segoe UI",sans-serif}
+main{max-width:1440px;margin:0 auto;padding:32px 24px 80px}
+h1{font-size:24px;margin:0 0 4px;font-weight:600}h2{font-size:18px;margin:48px 0 12px;font-weight:600}h3{font-size:14px;margin:0 0 8px;font-weight:600}
+p{margin:0 0 12px;color:var(--sub)}.lead{max-width:860px}
+code{font:12px Consolas,monospace;background:var(--line);padding:1px 5px;border-radius:4px}
+.bar{display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin:16px 0;padding:12px 16px;background:var(--card);border:1px solid var(--line);border-radius:12px;position:sticky;top:0;z-index:5}
+.bar label{font-size:12px;color:var(--sub);margin-right:4px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{all:unset;cursor:pointer;padding:4px 12px;font-size:12px;color:var(--sub)}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.seg button:focus-visible{outline:2px solid var(--acc);outline-offset:-2px}
+.matrix{display:grid;grid-template-columns:auto 1fr 1fr;gap:12px;align-items:start}
+.matrix .head{font-size:12px;color:var(--sub);font-weight:600;padding:0 4px}
+.matrix .side{writing-mode:vertical-rl;font-size:12px;color:var(--sub);font-weight:600;padding-top:8px}
+.cell{border-radius:12px;padding:16px;overflow:auto;border:1px solid var(--line);display:flex;justify-content:center}
+.h{font:12px Consolas,monospace;color:var(--sub);text-align:center;margin-top:8px}
+table{border-collapse:collapse;width:100%;font-size:13px;background:var(--card);border:1px solid var(--line)}
+th,td{padding:8px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-size:12px;color:var(--sub);font-weight:600;background:var(--bg)}
+td.n{font-family:Consolas,monospace;white-space:nowrap}
+td.bad{color:var(--bad)}
+.tag{display:inline-block;font-size:11px;padding:0 6px;border-radius:999px;border:1px solid var(--line);color:var(--sub)}
+.tag.p0{color:var(--bad);border-color:var(--bad)}.tag.p1{color:var(--acc);border-color:var(--acc)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 20px;margin-bottom:12px}
+ul{margin:0;padding-left:20px;color:var(--sub)}li{margin:2px 0}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+
+/* ---- ホームページの断片。as is / to be の差は変数だけで決める (値は site/css/home.css と同じ) ---- */
+.sp{width:520px;padding:20px;border-radius:12px;background:var(--p-bg);color:var(--p-fg);font:14px/1.6 "Segoe UI Variable Text","Yu Gothic UI","Segoe UI",sans-serif}
+.sp.t-light{--p-bg:#F5F3EE;--p-fg:#141413;--p-fg2:rgba(20,20,19,.76);--p-fg3:#63625D;--p-line3:rgba(20,20,19,.54);--p-tint:rgba(20,20,19,.045);--p-line:rgba(20,20,19,.1);--p-surf:#fff;--p-surf2:#F9F9F8;--p-prim:#141413;--p-primtx:#F5F3EE;--p-soft:rgba(31,108,159,.1)}
+.sp.t-dark{--p-bg:#0C0C0B;--p-fg:#F2F2F0;--p-fg2:rgba(242,242,240,.74);--p-fg3:#9B9A97;--p-line3:rgba(242,242,240,.4);--p-tint:rgba(242,242,240,.05);--p-line:rgba(242,242,240,.09);--p-surf:#202020;--p-surf2:#252524;--p-prim:#F2F2F0;--p-primtx:#0C0C0B;--p-soft:rgba(140,203,242,.13)}
+.sp.t-light.as{--p-muted:#787774;--p-acc:#1F6C9F}
+.sp.t-light.to{--p-muted:#6B6A67;--p-acc:#1B6292}
+.sp.t-dark{--p-muted:#9B9A97;--p-acc:#8CCBF2}
+.sp.as{--btn-r:6px;--seg-r:6px;--seg-in:4px;--fs-ctl:12.5px;--fs-p1:15.5px;--fs-p2:15px;--fs-h3:19px;--hit:22px;--nr:"NR-as";--mo-r:4px}
+.sp.to{--btn-r:8px;--seg-r:8px;--seg-in:6px;--fs-ctl:13px;--fs-p1:16px;--fs-p2:16px;--fs-h3:18px;--hit:32px;--nr:"NR-to";--mo-r:8px}
+.sp .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.sp .sg{display:inline-flex;padding:2px;border-radius:var(--seg-r);background:var(--p-tint);box-shadow:inset 0 0 0 1px var(--p-line)}
+.sp .sg b{font-weight:400;font-size:var(--fs-ctl);line-height:1.4;padding:5px 8px;border-radius:var(--seg-in);color:var(--p-fg3)}
+.sp .sg b.on{background:var(--p-surf);color:var(--p-fg);box-shadow:0 0 0 1px var(--p-line3)}
+.sp .mo{font-size:13px;min-height:38px;display:inline-flex;align-items:center;padding:0 10px;border-radius:var(--mo-r);color:var(--p-acc);background:var(--p-soft)}
+.sp .btn{height:28px;min-width:72px;padding:0 14px;border:1px solid var(--p-line3);border-radius:var(--btn-r);font-size:13px;display:inline-flex;align-items:center;justify-content:center;color:var(--p-fg)}
+.sp .btn.pri{background:var(--p-prim);border-color:var(--p-prim);color:var(--p-primtx)}
+.sp h2{font:600 28px/1.25 var(--nr),"Yu Mincho","Hiragino Mincho ProN",serif;margin:0 0 16px;color:var(--p-fg)}
+.sp .r{display:grid;grid-template-columns:32px 1fr;gap:8px 16px;padding:12px 0;border-top:1px solid var(--p-line)}
+.sp .r i{font:12px/20px Consolas,monospace;color:var(--p-fg3);font-style:normal}
+.sp .r h3{font:600 var(--fs-h3)/1.4 "Yu Mincho","Hiragino Mincho ProN",serif;margin:0 0 4px}
+.sp .r p{margin:0;font-size:var(--fs-p1);line-height:1.6;color:var(--p-fg2)}
+.sp .fact{padding:12px 16px;border-left:1px solid var(--p-line)}
+.sp .fact h3{font:600 var(--fs-h3)/1.4 "Segoe UI Variable Text","Yu Gothic UI",sans-serif;margin:0 0 4px}
+.sp .fact p{margin:0;font-size:var(--fs-p2);line-height:1.6;color:var(--p-fg2)}
+.sp .win{background:var(--p-surf);border:1px solid var(--p-line);border-radius:8px;overflow:hidden;margin-bottom:12px}
+.sp .win .tb{background:var(--p-surf2);height:28px;display:flex;align-items:center;gap:8px;padding:0 12px;font-size:12px;color:var(--p-muted)}
+.sp .win .tb u{width:11px;height:11px;border-radius:3px;background:#1F6C9F;display:block}
+.sp .win .bd{height:28px}
+.sp .foot{display:flex;flex-wrap:wrap;gap:var(--fgap,8px) 24px;justify-content:flex-end;font-size:14px}
+.sp .foot a{color:var(--p-fg2);display:inline-flex;align-items:center;min-height:var(--hit)}
+.sp.as .foot{--fgap:8px}.sp.to .foot{--fgap:0px}
+.red .sp .foot a,.red .sp .btn,.red .sp .mo,.red .sp .sg{outline:1px dashed #d4522a;outline-offset:1px}
+.red .sp .foot a:after{content:attr(data-h);font:10px Consolas,monospace;color:#d4522a;margin-left:4px}
+.zoomer{zoom:.75}
+</style>
+</head>
+<body>
+<main>
+<h1>ホームページ (site/) のレビュー</h1>
+<p class="lead">トレイ・ランチャー・オーバーレイ・プレビュー・導入・設定画面・ダイアログを統一した main (<code>cfae744</code>) の次に、ホームページ (<code>site/</code>、GitHub Pages) を見た。結論: <b>スロップ (AI 臭さ) はほぼない</b>。紙と墨の配色、ばねで動く製品の断片、見出しの書体まで、方向はすでに決まっていて、変えない。直すのは、アプリ本体で決めた値 (操作部品の角 8、補助文字 #6B6A67、字の段) とのずれと、読みやすさ・押しやすさの小さな点だけ。</p>
+
+<div class="bar">
+  <span><label>断片</label><span class="seg" data-k="scene"></span></span>
+  <span><label>倍率</label><span class="seg" data-k="zoom"></span></span>
+  <span><label>寸法の印</label><span class="seg" data-k="redline"></span></span>
+</div>
+
+<h2>1. 断片: as is / to be (明・暗 × 日・英)</h2>
+<div class="matrix" id="matrix"></div>
+<p style="margin-top:12px">断片は <code>site/css/home.css</code> の値を写した再現で、全体の配置・文言・動きは写していない (変えないため)。「as is」の字は 2 種類の Newsreader (太字の指定あり・なし) で、偽の太字 (S4) の違いも見られる。</p>
+
+<h2>2. 計測 (as is、4 通りと 375 px 幅で実測)</h2>
+<table id="measure"></table>
+
+<h2>3. 監査</h2>
+<table id="findings"></table>
+
+<h2>4. 方向</h2>
+<div class="cols" id="direction"></div>
+
+<h2>5. 判断してほしい点</h2>
+<div id="decisions"></div>
+
+<h2>6. Codex に渡す数値仕様</h2>
+<p>単位は CSS px。値の置き場所は <code>site/css/home.css</code> だけ (<code>js/</code>・<code>index.html</code> は変えない)。表にない値は変えない。</p>
+<table id="rows"></table>
+
+<h2>7. 受け入れ条件</h2>
+<div class="card"><ul id="accept"></ul></div>
+
+<script type="application/json" id="data">
+{
+"direction":[
+ {"h":"Product","b":"Windows のウィンドウを区画に整列し、投げると物理モデルで吸い込む Snapwell を、導入する前の人に見せて、zip を渡すページ。"},
+ {"h":"Character","b":"静か、正確、少し手触りがある。(いまのサイトの方向のまま)"},
+ {"h":"World","b":"紙と墨。面は無彩色、墨が主役、水色は選択と強調の一点だけ。見出しは Newsreader の明朝。(変えない)"},
+ {"h":"Moments","b":"ばねで動くヒーローの製品の断片と、操作感の曲線 4 枚。すでに十分に見せ場なので増やさない。"},
+ {"h":"Signature","b":"製品と同じ寸法のボタンと、等幅の識別子 (キー・番号)。今回は『製品と同じ』を、アプリ本体で更新された値にそろえ直す。"}
+],
+"measure":[
+ ["見出し・本文の文字サイズ (px の種類)","18 種 (10 / 11 / 12 / 12.5 / 13 / 14 / 15 / 15.5 / 16 / 18 / 19 / 19.44 ほか流動)","製品の段 11 / 12 / 13 / 14 に対し、12.5・15・15.5・19 が段にない"],
+ ["Newsreader の太さ","宣言は 500 だけ。計算結果は 600 が 29 か所 (JA の h2・カード名・行見出しの英字)","600 を要求しているので、偽の太字 (ブラウザーの合成) になる"],
+ ["ボタン・切り替え・チップの角","ボタン 6、切り替えの枠 6・中の項目 4、『動きを減らす』4","アプリ本体は操作部品 8 (PR 154・155 で更新済み)"],
+ ["補助文字の対比 (明)","『動きを減らす』4.47:1、製品の断片のウィンドウ名 4.25:1","本文サイズの文字は 4.5:1 が下限"],
+ ["補助文字の対比 (暗)","4.5:1 を下回る本文サイズの文字なし","暗は問題なし"],
+ ["押せる高さ (デスクトップ)","主ボタン 28、切り替え 28、フッターのリンク 22、『Replay intro』25","24 を下回るのはフッターのリンク 4 つ (WCAG 2.5.8)"],
+ ["押せる範囲 (タッチ)","ボタン・text-btn は <code>pointer: coarse</code> で 44 に広がる。フッターのリンクは広がらない","フッターのリンクだけ抜けている"],
+ ["375 px 幅","横にはみ出す要素 0、ヒーローは縦に積まれる","問題なし"]
+],
+"findings":[
+ {"id":"S1","p":"P1","t":"操作部品の角が 6 で、アプリ本体の 8 とずれている","d":"サイトのボタン・言語と配色の切り替え・プリセットのチップは、『製品と同じ値』として角 6 (切り替えの中の項目は 4) で作られている。製品はその後、操作部品を角 8 にそろえた (設定画面 PR 154、ダイアログ PR 155)。サイトの断片は古い値のまま。 (home.css の <code>--btn-r</code>、<code>.lang/.theme/.seg</code>、<code>.motion-btn</code>)"},
+ {"id":"S2","p":"P1","t":"明るい面の補助文字が 4.5:1 に届かない","d":"『動きを減らす』(押した状態、13 px) は水色の文字が水色の薄い面に載って 4.47:1。製品の断片のウィンドウ名 (12 px) は #787774 で 4.25:1。製品の補助文字は #6B6A67 にそろえてあり、サイトの断片だけ古い灰色。 (<code>--accent</code> 明、<code>--muted</code> 明)"},
+ {"id":"S3","p":"P2","t":"文字の大きさが段から外れたものがある","d":"12.5 (切り替え)、15.5 (行の説明)、15 (『隠しません』の説明)、19 (FAQ の質問)、17 (スマホの質問) は、製品の段 (11 / 12 / 13 / 14 / 16 / 18) にない。同じ『説明の段落』が 15.5 と 15 に分かれている。"},
+ {"id":"S4","p":"P2","t":"日本語の見出しの英字が偽の太字","d":"日本語の見出しは太さ 600 を指定するが、Newsreader は 500 の 1 ファイルだけ。『Snapwell 1.0.4 を』のような英字の部分が、ブラウザーの合成の太字になり、線がつぶれて見える。 (<code>@font-face</code>)"},
+ {"id":"S5","p":"P2","t":"フッターのリンクの押せる高さが 22","d":"GitHub・Issues・MIT ライセンス・サードパーティーの 4 つは、押せる高さが 22 で、24 (WCAG 2.5.8) を下回る。タッチでも広がらない。 (<code>.foot-links a</code>)"},
+ {"id":"S6","p":"P3","t":"紹介の映像が英語だけ","d":"『投げる様子を、見る。』の映像の中の文字 (Throw a window. ほか) は英語のみで、日本語のページでも英語のまま。映像は録画ではなく画面のモックアップである旨が、すぐ下に書いてある。作り直しが要るので、今回は直さない (判断 D6)。"}
+],
+"decisions":[
+ {"id":"D1","q":"操作部品の角をアプリ本体にそろえるか (S1)","rec":"そろえる (推奨)。ボタン・チップ・『動きを減らす』を 8、切り替えの枠を 8、中の項目を 6 (枠 8 − 余白 2)。キー表示 4 は変えない。高さ 28・文字 13 は製品と同じなので変えない。","alt":"6 のまま。サイトだけが古い製品の見た目になる。"},
+ {"id":"D2","q":"明るい面の補助文字を 4.5:1 にするか (S2)","rec":"する (推奨)。<code>--muted</code> 明を #787774 → #6B6A67 (アプリ本体と同じ。白の上で 5.41:1)、<code>--accent</code> 明を #1F6C9F → #1B6292 (水色の薄い面の上で 5.16:1)。暗は変えない。","alt":"変えない。水色が少し明るいまま。"},
+ {"id":"D3","q":"文字の段に外れた値をそろえるか (S3)","rec":"そろえる (推奨)。12.5 → 13、15.5 → 16、15 → 16、19 → 18、17 → 16。『隠しません』の説明 (15 → 16) は、列の幅が狭いので 1 行増えることがある。","alt":"15 → 14 にして行数を保つ (説明の字が小さくなる)。"},
+ {"id":"D4","q":"偽の太字を止めるか (S4)","rec":"止める (推奨)。<code>@font-face</code> に <code>font-weight: 500 600</code> を宣言し、合成させない (500 の線で描かれる)。","alt":"そのまま。英字だけ太くなる。"},
+ {"id":"D5","q":"フッターのリンクを押しやすくするか (S5)","rec":"する (推奨)。押せる高さを 32 にし、行の間の 8 を 0 にして見た目の間隔は保つ。『Replay intro』も 32。","alt":"変えない。"},
+ {"id":"D6","q":"英語だけの紹介の映像を今回直すか (S6)","rec":"直さない (推奨)。日本語の映像は作り直しなので別の作業にする。ページには『画面のモックアップ』と書いてある。","alt":"日本語ページでは映像の前に注記を足す。"}
+],
+"rows":[
+ {"id":"W1","what":"ボタンの角 (<code>--btn-r</code>、<code>.btn</code>・<code>.presets button</code>)","as":"6","to":"8。高さ 28・最小幅 72・文字 13・余白 14 は変えない","f":"S1"},
+ {"id":"W2","what":"切り替え (<code>.lang</code> <code>.theme</code> <code>.seg</code>) と <code>.motion-btn</code>","as":"枠 6、中の項目 4、<code>.motion-btn</code> 4、中の文字 12.5・行高 1.4 (高さ 27.5)","to":"枠 8、中の項目 6、<code>.motion-btn</code> 8。中の文字 13・行高 18px・余白 5px 8px (高さ 28)。<code>.theme button</code> の高さ <code>calc(12.5px * 1.4 + 10px)</code> は 28px","f":"S1・S3"},
+ {"id":"W3","what":"明るい面の色 (<code>:root</code> と <code>@media (prefers-color-scheme: dark)</code> の外の明)","as":"<code>--muted</code> #787774、<code>--accent</code> #1F6C9F","to":"<code>--muted</code> #6B6A67、<code>--accent</code> #1B6292。<code>--accent-soft</code>・<code>--accent-line</code>・<code>--blue-tx</code> と、暗の値は変えない","f":"S2"},
+ {"id":"W4","what":"文字の段 (説明の段落・見出し)","as":"<code>.row p</code> 15.5、<code>.facts p</code> 15、FAQ の質問 19 (<code>summary</code>)、スマホの <code>summary</code> 17","to":"<code>.row p</code> 16、<code>.facts p</code> 16、<code>summary</code> 18、スマホの <code>summary</code> 16。<code>.facts h3</code> 18 は変えない。流動の <code>clamp()</code> と <code>em</code> 指定は変えない","f":"S3"},
+ {"id":"W5","what":"<code>@font-face</code> (Newsreader)","as":"<code>font-weight: 500</code>","to":"<code>font-weight: 500 600</code> (ファイルは同じ 1 つ)","f":"S4"},
+ {"id":"W6","what":"フッターのリンク (<code>.foot-links a</code>)、<code>.text-btn</code>","as":"押せる高さ 22、行の間 8、<code>.text-btn</code> 25","to":"<code>min-height: 32px</code>、<code>.foot-links</code> の行の間 0 (列の間 24 は変えない)、<code>.text-btn</code> も <code>min-height: 32px</code>。<code>pointer: coarse</code> の広げは、そのまま","f":"S5"},
+ {"id":"W7","what":"変えないもの","as":"—","to":"配色 (暗を含む)・Newsreader と Segoe UI Variable の組・導入 (intro)・ヒーローの動き (feel)・全体の配置・文言・<code>{{VERSION}}</code>・<code>js/</code> と <code>index.html</code>・映像 (D6)・キー表示の角 4・ボタンの高さ 28 と文字 13・<code>pointer: coarse</code> の広げ","f":"—"}
+],
+"accept":[
+ "<code>site/css/home.css</code> だけが変わる (<code>js/</code>・<code>index.html</code>・<code>assets/</code>・<code>video/</code> は変えない)。",
+ "<code>getComputedStyle</code> で、<code>.btn</code> の角が 8、<code>.lang</code> の角が 8 と中の項目が 6、<code>.motion-btn</code> が 8、高さは 28 のまま。",
+ "明の本文サイズの文字 (ヒーローの大見出しの薄い行と、製品の断片の飾りを除く) が、すべて 4.5:1 以上。『動きを減らす』と製品のウィンドウ名を確かめる。",
+ "ページ中のテキストの <code>font-size</code> の種類から、12.5・15・15.5・19・17 が消える。",
+ "<code>@font-face</code> が <code>500 600</code> で、日本語の見出しの英字が合成の太字にならない (目で見て、線がつぶれていない)。",
+ "フッターのリンクの高さが 32 以上、375 px 幅で横にはみ出さない。",
+ "ライト・ダーク × 日本語・英語の 4 通りで、ヒーロー・操作感・できること・ダウンロード・フッターを目で確かめ、文字が欠けない・重ならない。確かめたら、スクリーンショットは Git に入れない。",
+ "<code>site/**</code> を main に入れると GitHub Pages が自動で公開される。マージの前に、利用者が見た目を確かめる。"
+]
+}
+</script>
+
+<script>
+const D=JSON.parse(document.getElementById('data').textContent);
+const S={scene:0,zoom:'1',redline:'0'};
+const opts={scene:[['操作部品','0'],['見出しと本文','1'],['製品の断片とフッター','2']],zoom:[['100%','1'],['75%','.75']],redline:[['なし','0'],['あり','1']]};
+const T={ja:{en:'EN',lang:'日本語',mo:'動きを減らす',dl:'ダウンロード',watch:'映像を見る',h2:'Snapwell 1.0.4 を<br>ダウンロード',r:['どのウィンドウも、あるべき場所へ。','モニターごとに、グリッドと間隔（0〜200 px）を別々に設定できます。'],f:['x64 と ARM64 のネイティブ版','2 つのネイティブ版だけを出しています。x86 版はなく、エミュレーションでは動かしません。'],w:['メモ','メール'],l:['GitHub','Issues（不具合と要望）','MIT ライセンス','サードパーティーのライセンス表示']},
+ en:{en:'EN',lang:'日本語',mo:'Reduce motion',dl:'Download',watch:'Watch the film',h2:'Get Snapwell 1.0.4',r:['Every window, in its place.','Set the grid and the gap (0–200 px) for each monitor separately.'],f:['Native x64 and ARM64','Two native builds. No x86 build, and nothing runs through emulation.'],w:['Notes','Mail'],l:['GitHub','Issues','MIT License','Third-party notices']}};
+function seg(el,k){el.innerHTML='';for(const [t,v] of opts[k]){const b=document.createElement('button');b.textContent=t;b.setAttribute('aria-pressed',String(String(S[k])===v));b.onclick=()=>{S[k]=k==='scene'?+v:v;render()};el.appendChild(b)}}
+function frag(scene,l,st){const t=T[l];const pre=`<div class="sp t-light as"></div>`;
+ if(scene===0)return `<div class="row"><span class="sg"><b>${t.en}</b><b class="on">${t.lang}</b></span><span class="sg"><b>◐</b><b class="on">☀</b><b>☾</b></span><span class="mo">${t.mo}</span></div><div class="row"><span class="btn pri">${t.dl} v1.0.4</span><span class="btn">${t.watch}</span></div>`;
+ if(scene===1)return `<h2>${t.h2}</h2><div class="r"><i>03</i><div><h3>${t.r[0]}</h3><p>${t.r[1]}</p></div></div><div class="fact"><h3>${t.f[0]}</h3><p>${t.f[1]}</p></div>`;
+ return `<div class="win"><div class="tb"><u></u>${t.w[0]}</div><div class="bd"></div></div><div class="win"><div class="tb"><u></u>${t.w[1]}</div><div class="bd"></div></div><div class="foot">${t.l.map((x,i)=>`<a data-h="${st==='as'?22:32}">${x}</a>`).join('')}</div>`}
+function render(){
+ seg(document.querySelector('[data-k=scene]'),'scene');seg(document.querySelector('[data-k=zoom]'),'zoom');seg(document.querySelector('[data-k=redline]'),'redline');
+ const m=document.getElementById('matrix');m.className='matrix'+(S.redline==='1'?' red':'');m.innerHTML='<div></div><div class="head">as is</div><div class="head">to be</div>';
+ for(const th of ['light','dark'])for(const l of ['ja','en']){
+  m.insertAdjacentHTML('beforeend',`<div class="side">${th==='light'?'明':'暗'} · ${l==='ja'?'日本語':'English'}</div>`);
+  for(const st of ['as','to'])m.insertAdjacentHTML('beforeend',`<div><div class="cell" style="background:${th==='light'?'#e9e8e4':'#050505'}"><div style="zoom:${S.zoom}"><div class="sp t-${th} ${st}" lang="${l}">${frag(S.scene,l,st)}</div></div></div><div class="h">${st==='as'?'as is':'to be'} · ${th} · ${l}</div></div>`)}
+ const table=(id,head,rows)=>document.getElementById(id).innerHTML='<tr>'+head.map(h=>`<th>${h}</th>`).join('')+'</tr>'+rows.map(r=>'<tr>'+r.map((c,i)=>`<td${i===0?' class="n"':''}>${c}</td>`).join('')+'</tr>').join('');
+ table('measure',['項目','実測 (as is)','判断の材料'],D.measure);
+ table('findings',['#','重さ','問題'],D.findings.map(f=>[f.id,`<span class="tag ${f.p.toLowerCase()}">${f.p}</span>`,`<b>${f.t}</b><br>${f.d}`]));
+ table('rows',['#','対象','as is','to be','根拠'],D.rows.map(r=>[r.id,r.what,r.as,r.to,r.f]));
+ document.getElementById('direction').innerHTML=D.direction.map(d=>`<div class="card"><h3>${d.h}</h3><p style="margin:0">${d.b}</p></div>`).join('');
+ document.getElementById('decisions').innerHTML=D.decisions.map(d=>`<div class="card"><h3>${d.id}. ${d.q}</h3><p style="margin:0 0 4px"><b>推奨:</b> ${d.rec}</p><p style="margin:0">代わり: ${d.alt}</p></div>`).join('');
+ document.getElementById('accept').innerHTML=D.accept.map(a=>`<li>${a}</li>`).join('');}
+render();
+</script>
+</main>
+</body>
+</html>
