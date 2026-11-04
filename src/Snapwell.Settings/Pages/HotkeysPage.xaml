@@ -7,7 +7,7 @@
     <Page.Resources>
         <Style x:Key="HotkeyRowStyle" TargetType="Grid" BasedOn="{StaticResource SnapwellRowGridStyle}">
             <Setter Property="Background" Value="Transparent" />
-            <Setter Property="Padding" Value="12,10" />
+            <Setter Property="Padding" Value="12,12" />
             <Setter Property="BorderBrush" Value="{ThemeResource SnapwellBorderBrush}" />
             <Setter Property="BorderThickness" Value="0,0,0,1" />
         </Style>
@@ -50,13 +50,13 @@
             <Setter Property="IsHitTestVisible" Value="False" />
         </Style>
         <Style x:Key="HotkeyMessageStyle" TargetType="StackPanel">
-            <Setter Property="Padding" Value="24,8,12,10" />
+            <Setter Property="Padding" Value="24,8,12,12" />
             <Setter Property="Spacing" Value="8" />
             <Setter Property="Background" Value="{ThemeResource SnapwellSurface2Brush}" />
         </Style>
     </Page.Resources>
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Padding="32,28,32,40" HorizontalAlignment="Stretch">
+        <StackPanel Padding="32,32,32,40" HorizontalAlignment="Stretch">
             <TextBlock l:Loc.Uid="Hotkeys_Title" Style="{StaticResource SnapwellPageTitleStyle}" />
             <TextBlock l:Loc.Uid="Hotkeys_Lead" Style="{StaticResource SnapwellLeadTextStyle}" />
             <Grid ColumnSpacing="12" Margin="0,0,0,12">
@@ -68,7 +68,7 @@
                 <Button l:Loc.Uid="Hotkeys_ResetButton" x:Name="ResetButton" Grid.Column="1"
                         Style="{StaticResource SnapwellActionButtonStyle}" Click="Reset_Click" />
             </Grid>
-            <StackPanel x:Name="Summary" Orientation="Horizontal" Spacing="6" Margin="0,0,0,8"
+            <StackPanel x:Name="Summary" Orientation="Horizontal" Spacing="8" Margin="0,0,0,8"
                         AutomationProperties.LiveSetting="Polite" />
             <Border Style="{StaticResource SnapwellRowsBorderStyle}">
                 <StackPanel>
@@ -88,11 +88,11 @@
                     <StackPanel x:Name="HotkeyRows" />
                 </StackPanel>
             </Border>
-            <TextBlock l:Loc.Uid="Hotkeys_CaptureHint" Margin="0,10,0,0"
+            <TextBlock l:Loc.Uid="Hotkeys_CaptureHint" Margin="0,12,0,0"
                        Style="{StaticResource SnapwellHintTextStyle}" />
             <TextBlock l:Loc.Uid="Hotkeys_ConflictHint" Margin="0,8,0,0"
                        Style="{StaticResource SnapwellHintTextStyle}" />
-            <Grid x:Name="WinNotice" ColumnSpacing="6" Margin="0,8,0,0" Visibility="Collapsed">
+            <Grid x:Name="WinNotice" ColumnSpacing="8" Margin="0,8,0,0" Visibility="Collapsed">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />

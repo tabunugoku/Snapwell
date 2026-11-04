@@ -227,6 +227,7 @@ public sealed partial class HotkeysPage : Page
             IsEnabled = enabled,
             Width = 28,
             Height = 28,
+            CornerRadius = new(8),
             MinWidth = 28,
             MinHeight = 28,
             // 記号のフォントは字面が em ボックスの下寄りなので、実測した分だけ下の余白で持ち上げる。

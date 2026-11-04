@@ -12,7 +12,7 @@
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
-        <Border x:Name="TitleBar" Grid.Row="0" Height="36" Padding="14,0,0,0"
+        <Border x:Name="TitleBar" Grid.Row="0" Height="36" Padding="16,0,0,0"
                 Background="{ThemeResource SnapwellSurfaceBrush}"
                 BorderBrush="{ThemeResource SnapwellBorderBrush}" BorderThickness="0,0,0,1">
             <TextBlock l:Loc.Uid="MainWindow_Title" FontFamily="{StaticResource SnapwellUiFontFamily}"
@@ -61,7 +61,7 @@
                         <Setter Property="Template">
                             <Setter.Value>
                                 <ControlTemplate TargetType="primitives:NavigationViewItemPresenter">
-                                    <Grid x:Name="LayoutRoot" Margin="10,0" MinHeight="36" CornerRadius="6"
+                                    <Grid x:Name="LayoutRoot" Margin="10,2" MinHeight="36" CornerRadius="8"
                                           Background="Transparent">
                                         <VisualStateManager.VisualStateGroups>
                                             <VisualStateGroup x:Name="PointerStates">
@@ -108,7 +108,7 @@
                                             </VisualStateGroup>
                                         </VisualStateManager.VisualStateGroups>
                                         <!-- box-shadow はレイアウト寸法を増やさず、面の外側に広がる。 -->
-                                        <Border x:Name="SelectedOutline" Margin="-1" CornerRadius="7"
+                                        <Border x:Name="SelectedOutline" Margin="-1" CornerRadius="9"
                                                 BorderThickness="1" BorderBrush="Transparent" IsHitTestVisible="False" />
                                         <Grid x:Name="PresenterContentRootGrid">
                                             <!-- 項目 B より前の標準テンプレートの列幅と余白を保つ。 -->
@@ -142,7 +142,7 @@
                 </ResourceDictionary>
             </NavigationView.Resources>
             <NavigationView.PaneHeader>
-                <Border Height="10" />
+                <Border Height="12" />
             </NavigationView.PaneHeader>
             <NavigationView.PaneFooter>
                 <!-- 要素自身の ThemeResource は自分の Resources を探さない。背景と枠線の上書きを効かせるため、辞書は外側の Grid に置く。 -->
@@ -172,8 +172,8 @@
                     </Grid.Resources>
                     <Border Background="{ThemeResource SnapwellFooterBackgroundBrush}"
                             BorderBrush="{ThemeResource SnapwellBorderBrush}" BorderThickness="0,1,0,0"
-                            Padding="10,14,10,4">
-                    <StackPanel Spacing="6">
+                            Padding="10,16,10,8">
+                    <StackPanel Spacing="8">
                         <TextBlock x:Name="VersionLabel" Style="{StaticResource SnapwellHintTextStyle}"
                                    FontSize="12" Typography.NumeralAlignment="Tabular" />
                         <Grid HorizontalAlignment="Left">
@@ -337,7 +337,7 @@
                                 VerticalContentAlignment="Stretch" IsTabStop="True" />
             </Grid>
         </NavigationView>
-        <Grid Grid.Row="2" Padding="32,17.67" ColumnSpacing="16"
+        <Grid Grid.Row="2" Padding="32,16" ColumnSpacing="16"
               Background="{ThemeResource SnapwellSurfaceBrush}"
               BorderBrush="{ThemeResource SnapwellBorderBrush}" BorderThickness="0,1,0,0">
             <Grid.ColumnDefinitions>

@@ -6,7 +6,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:Snapwell.Settings.Controls">
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Padding="32,28,32,40" HorizontalAlignment="Stretch">
+        <StackPanel Padding="32,32,32,40" HorizontalAlignment="Stretch">
             <TextBlock l:Loc.Uid="Backup_Title" Style="{StaticResource SnapwellPageTitleStyle}" TextWrapping="Wrap" />
             <TextBlock l:Loc.Uid="Backup_Lead" Style="{StaticResource SnapwellLeadTextStyle}" />
             <TextBlock l:Loc.Uid="Backup_CloudHint" Style="{StaticResource SnapwellHintTextStyle}"

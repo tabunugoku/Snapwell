@@ -11,10 +11,10 @@
         <Style x:Key="DemoSelectStyle" TargetType="ComboBox"
                BasedOn="{StaticResource SnapwellDemoSelectStyle}">
             <Setter Property="FontFamily" Value="{StaticResource SnapwellUiFontFamily}" />
-            <Setter Property="FontSize" Value="14" />
-            <Setter Property="MinHeight" Value="0" />
-            <Setter Property="Padding" Value="8,6" />
-            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="MinHeight" Value="32" />
+            <Setter Property="Padding" Value="8,4" />
+            <Setter Property="CornerRadius" Value="8" />
             <Setter Property="Background" Value="{ThemeResource SnapwellSurfaceBrush}" />
             <Setter Property="Foreground" Value="{ThemeResource SnapwellTextBrush}" />
             <Setter Property="BorderBrush" Value="{ThemeResource SnapwellBorderBrush}" />
@@ -22,11 +22,11 @@
             <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
         <Style x:Key="ChipButtonStyle" TargetType="Button" BasedOn="{StaticResource SnapwellButtonStyle}">
-            <Setter Property="Padding" Value="12,5" />
+            <Setter Property="Padding" Value="14,0" />
             <Setter Property="FontSize" Value="13" />
         </Style>
         <Style x:Key="SelectedChipButtonStyle" TargetType="Button" BasedOn="{StaticResource SnapwellButtonStyle}">
-            <Setter Property="Padding" Value="11,4" />
+            <Setter Property="Padding" Value="13,0" />
             <Setter Property="FontSize" Value="13" />
             <Setter Property="Foreground" Value="{ThemeResource SnapwellInkBrush}" />
             <Setter Property="BorderBrush" Value="{ThemeResource SnapwellInkBrush}" />
@@ -52,7 +52,7 @@
         </Style>
     </Page.Resources>
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-        <StackPanel x:Name="Editor" Padding="32,28,32,40" HorizontalAlignment="Stretch">
+        <StackPanel x:Name="Editor" Padding="32,32,32,40" HorizontalAlignment="Stretch">
             <TextBlock l:Loc.Uid="Grid_Title" Style="{StaticResource SnapwellPageTitleStyle}" />
             <TextBlock l:Loc.Uid="Grid_Lead"
                        Style="{StaticResource SnapwellLeadTextStyle}" />
@@ -64,7 +64,7 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
-                            <Grid ColumnSpacing="6" HorizontalAlignment="Left">
+                            <Grid ColumnSpacing="8" HorizontalAlignment="Left">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
@@ -91,7 +91,7 @@
             </ComboBox>
 
             <TextBlock l:Loc.Uid="Grid_PlanTitle" Style="{StaticResource SnapwellGroupTitleStyle}" />
-            <StackPanel Orientation="Horizontal" Spacing="6">
+            <StackPanel Orientation="Horizontal" Spacing="8">
                 <Button x:Name="Chip8x8" Content="8 × 8" Tag="8,8" Click="Chip_Click"
                         Style="{StaticResource ChipButtonStyle}" />
                 <Button x:Name="Chip12x6" Content="12 × 6" Tag="12,6" Click="Chip_Click"
@@ -116,10 +116,10 @@
                         CornerRadius="8" VerticalAlignment="Top" SizeChanged="PreviewHost_SizeChanged">
                     <Canvas x:Name="PreviewCanvas" Height="260" />
                 </Border>
-                <StackPanel Grid.Column="1" Spacing="14">
-                    <StackPanel Spacing="6">
+                <StackPanel Grid.Column="1" Spacing="16">
+                    <StackPanel Spacing="8">
                         <TextBlock l:Loc.Uid="Grid_GapTitle" Style="{StaticResource SnapwellRowDescriptionStyle}" />
-                        <Grid ColumnSpacing="10">
+                        <Grid ColumnSpacing="12">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="52" />
@@ -132,9 +132,9 @@
                                        HorizontalTextAlignment="End" VerticalAlignment="Center" />
                         </Grid>
                     </StackPanel>
-                    <StackPanel Spacing="6">
+                    <StackPanel Spacing="8">
                         <TextBlock l:Loc.Uid="Grid_EdgeTitle" Style="{StaticResource SnapwellRowDescriptionStyle}" />
-                        <Grid ColumnSpacing="10">
+                        <Grid ColumnSpacing="12">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="52" />
@@ -164,7 +164,7 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
-                            <Grid ColumnSpacing="6" HorizontalAlignment="Left">
+                            <Grid ColumnSpacing="8" HorizontalAlignment="Left">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
@@ -191,7 +191,7 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
-                            <Grid ColumnSpacing="6" HorizontalAlignment="Left">
+                            <Grid ColumnSpacing="8" HorizontalAlignment="Left">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
@@ -222,7 +222,7 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center">
-                            <Grid ColumnSpacing="6" HorizontalAlignment="Left">
+                            <Grid ColumnSpacing="8" HorizontalAlignment="Left">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
