@@ -75,4 +75,9 @@ node audio/mix.mjs --lang ja
 - プロジェクトのライセンスとの関係: 効果音の mp3 自体はリポジトリに入れず、動画に混ぜた音だけが `site/video/` に入る。
 
 ## README の画面写真とソーシャルプレビュー
-`node shots.mjs` で、モックアップから `docs/images/` の設定画面 (操作感・ホットキー) とランチャーの写真を撮り直し、GitHub のソーシャルプレビュー (1280 × 640、`social.html`) を `tools/film/social-preview.png` に書き出す (ホームページでは使わないので `site/` には置かない)。ソーシャルプレビューは API で設定できないため、リポジトリの Settings → General → Social preview に手でアップロードする。サイトの共有画像 (`og.png`、1200 × 630) は `og.html` から作る。
+README の画像は `docs/images/` にあり、言語ごとに `-ja` / `-en` の 2 枚がある。作り方は 2 通り。
+
+- 紹介動画の場面 (`film-throw`、`film-launcher`、`film-arrange`): `node render.mjs --lang ja --still 8.2,13.4,17.5` (`--lang en` も) で静止画を書き出し、JPEG に変えて置く。動画の場面なので、モックアップ相当の画面になる。
+- 設定画面 (`settings-feel`、`settings-keys`): 実物を撮る。`capture-settings.ps1` が `Snapwell.Settings.exe` を起動し、サイドバーの項目を選んでウィンドウを PNG にする。サイドバー下のバージョン表示を合わせるため、`dotnet build src/Snapwell.Settings/Snapwell.Settings.csproj -c Release -r <RID> -p:Version=<版>` で作った exe を使う。英語版は `%LOCALAPPDATA%\Snapwell\device.json` の `"Language"` を一時的に `"en"` にして撮り、元のファイルに戻す。撮ったあとは幅 1200 px に縮める。個人のアカウント名やファイル名が写っていないことを確かめる。
+
+`node shots.mjs` は、GitHub のソーシャルプレビュー (1280 × 640、`social.html`) を `tools/film/social-preview.png` に書き出す (ホームページでは使わないので `site/` には置かない)。ソーシャルプレビューは API で設定できないため、リポジトリの Settings → General → Social preview に手でアップロードする。サイトの共有画像 (`og.png`、1200 × 630) は `og.html` から作る。
