@@ -21,11 +21,11 @@
   "Dialogs.Rule.EditTitle": "ルールを編集",
   "Dialogs.Rule.Add": "追加",
   "Dialogs.Rule.Save": "保存",
-  "Dialogs.Rule.Hint.Inherit": "配置については、このルールでは何も決めません",
+  "Dialogs.Rule.Hint.Inherit": "このルールでは配置を何も決めません",
   "Dialogs.Rule.Hint.Exclude": "動かす・大きさを変える・吸着させる操作の対象にしません",
   "Dialogs.Rule.Hint.PositionOnly": "動かしますが、大きさは変えません",
-  "Dialogs.Rule.Hint.ForceTarget": "ポップアップなどでも、通常のウィンドウとして扱います",
+  "Dialogs.Rule.Hint.ForceTarget": "ポップアップなどでも通常のウィンドウとして扱います",
   "Dialogs.Rule.CornerUnchanged": "{name}（Snapwell は変更しない）",
-  "Dialogs.Picker.Uwp": "UWP アプリは、プロセス名が共通です。クラスかタイトルで指定してください。",
+  "Dialogs.Picker.Uwp": "UWP アプリはプロセス名が共通です。クラスかタイトルで指定してください。",
   "Dialogs.Picker.WindowName": "{title}、{process}、{class}"
 }

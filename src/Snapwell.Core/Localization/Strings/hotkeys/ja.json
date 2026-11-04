@@ -99,6 +99,6 @@
   "Hotkeys.Capture.Cancel": "やめる",
   "Hotkeys.Capture.NameSeparator": "」「",
   "Hotkeys.Capture.DuplicateMessage": "「{names}」と同じキー {chord} です。",
-  "Hotkeys.Capture.InUseMessage": "{chord} は、ほかのアプリか Windows が使っているキーです。割り当てると、そのアプリでは使えなくなります（Windows が予約しているキーは、割り当てても Snapwell に届かないことがあります）。",
+  "Hotkeys.Capture.InUseMessage": "{chord} はほかのアプリか Windows が使っているキーです。割り当てると、そのアプリでは使えなくなります（Windows が予約しているキーは、割り当てても Snapwell に届かないことがあります）。",
   "Hotkeys.Capture.Announcement": "{name}: {text}"
 }

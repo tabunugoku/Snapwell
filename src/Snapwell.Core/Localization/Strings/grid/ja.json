@@ -14,7 +14,7 @@
   "Grid_EdgeSlider.AutomationName": "画面端の余白",
   "Grid_LinkEdgeCheck.Content": "間隔と同じにする",
   "Grid_ResizeTitle.Text": "ホットキーでの拡大・縮小",
-  "Grid_ResizeHint.Text": "Ctrl+Alt+Shift+矢印キーで、前面のウィンドウを区画単位で広げたり縮めたりします（キーはホットキーのページで変えられます）。",
+  "Grid_ResizeHint.Text": "前面のウィンドウを区画単位で広げたり縮めたりするには、Ctrl+Alt+Shift+矢印キーを押します（キーはホットキーのページで変えられます）。",
   "Grid_ResizeStepTitle.Text": "1 回の拡大・縮小の幅",
   "Grid_ResizeStepBox.AutomationName": "1 回の拡大・縮小の幅",
   "Grid_Step1.Content": "1 区画",
