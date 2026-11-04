@@ -67,7 +67,7 @@
                             </Canvas>
                         </Viewbox>
                         <TextBlock x:Name="StandardMetrics" Grid.Row="2" Margin="0,8,0,0"
-                                   FontSize="12" LineHeight="16" TextWrapping="NoWrap"
+                                   FontSize="12" LineHeight="16" TextWrapping="Wrap"
                                    Foreground="{ThemeResource SnapwellMutedBrush}" />
                     </Grid>
                 </Button>
@@ -92,7 +92,7 @@
                             </Canvas>
                         </Viewbox>
                         <TextBlock x:Name="CrispMetrics" Grid.Row="2" Margin="0,8,0,0"
-                                   FontSize="12" LineHeight="16" TextWrapping="NoWrap"
+                                   FontSize="12" LineHeight="16" TextWrapping="Wrap"
                                    Foreground="{ThemeResource SnapwellMutedBrush}" />
                     </Grid>
                 </Button>
@@ -117,7 +117,7 @@
                             </Canvas>
                         </Viewbox>
                         <TextBlock x:Name="SmoothMetrics" Grid.Row="2" Margin="0,8,0,0"
-                                   FontSize="12" LineHeight="16" TextWrapping="NoWrap"
+                                   FontSize="12" LineHeight="16" TextWrapping="Wrap"
                                    Foreground="{ThemeResource SnapwellMutedBrush}" />
                     </Grid>
                 </Button>
@@ -142,7 +142,7 @@
                             </Canvas>
                         </Viewbox>
                         <TextBlock x:Name="BouncyMetrics" Grid.Row="2" Margin="0,8,0,0"
-                                   FontSize="12" LineHeight="16" TextWrapping="NoWrap"
+                                   FontSize="12" LineHeight="16" TextWrapping="Wrap"
                                    Foreground="{ThemeResource SnapwellMutedBrush}" />
                     </Grid>
                 </Button>
