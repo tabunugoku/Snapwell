@@ -1,15 +1,16 @@
 # 紹介動画 (tools/film)
 
-ホームページの紹介動画 (30 秒、1920×1080、60 fps) を作る道具。feel の物理モデルを偽の時計で 1 コマずつ進め、画面を撮って ffmpeg でまとめる。
-同じ入力なら毎回同じ映像になる (時計は `clock.js`、乱数はシード固定)。
+ホームページの紹介動画 (36 秒、1920×1080、60 fps、日本語版と英語版) を作る道具。feel の物理モデルを偽の時計で 1 コマずつ進め、画面を撮って ffmpeg でまとめる。
+同じ入力なら毎回同じ映像になる (時計は `clock.js`、乱数はシード固定)。台本・時刻・物理は両言語で同じで、違うのは文字 (`film-text.js`) だけ。
 
 | ファイル | 役割 |
 |---|---|
-| `film.html` `film.css` `film.js` | 台本。導入 (`site/js/intro.js`)、投げる、操作感のプリセット、ランチャー、Ctrl+Alt+A の整列、終わりのロゴ |
-| `lib/site.css` | 動画の配色と書体。旧ホームページの CSS をここに移した (いまのホームページは `site/css/home.css` を使う) |
-| `render.mjs` | 映像 (`snapwell.mp4` `snapwell.webm` `poster.jpg`) と、効果音のきっかけ `cues.json` を `out/` に書く |
+| `film.html` `film.css` `film.js` | 台本。導入 (`site/js/intro.js` の短い版)、投げる、ランチャー、整列、隣へ寄せる、隣のモニター、ホットキーとルール、標準スナップの置き換え、持ち運べる設定、終わりのロゴ。時刻の配分は `film.js` の先頭に書いてある |
+| `film-text.js` | 画面に出す文字 (en / ja)。ja は yomiyasu で推敲した文言。窓の名前は架空の汎用名だけにする |
+| `film-tokens.css` | 動画の配色と部品。`site/css/home.css` のライトの値 (4px 格子、角 12/8/4、墨 #111、補助文字 #6B6A67 ほか) とモニター・窓の部品をそのまま写したもの。home.css を直したらここも見直す。ダークは作らない |
+| `render.mjs` | `--lang en|ja` で映像 (`snapwell-<lang>.mp4` `.webm`、`poster-<lang>.jpg`) と、効果音のきっかけ `cues.json` を `out/<lang>/` に書く。`--still 6.9,12` で指定の秒の静止画だけを `out/<lang>/stills/` に書く (場面の確認用) |
 | `brand.mjs` | ロゴとアイコンの素材を 1 つの元から作る (下記) |
-| `audio/` | 効果音の台本、生成、重ね合わせ、タイミング表 |
+| `audio/` | 効果音と BGM の台本、生成、重ね合わせ、タイミング表 |
 
 ## 映像を作る
 
@@ -18,10 +19,12 @@
 ```bash
 cd tools/film
 npm ci
-node render.mjs            # out/ に snapwell.mp4, snapwell.webm, poster.jpg, cues.json。1800 コマで数分かかる
+node render.mjs --lang en    # out/en/ に snapwell-en.mp4, snapwell-en.webm, poster-en.jpg, cues.json。2160 コマで十数分かかる
+node render.mjs --lang ja
+node render.mjs --lang en --still 6.9,12.6,24.3   # 場面の確認だけ (数十秒)
 ```
 
-できた 3 つを `site/video/` に置く。置き場所は従来どおりで、Git LFS は使わない (`.gitattributes` に LFS の指定はなく、各ファイルは 1 MB 前後)。
+音をつけてから `site/video/` に置く (次の節)。置き場所は従来どおりで、Git LFS は使わない。ja と en の `cues.json` は同じになる (時刻は言語に依らない)。ずれたら文字の幅で物理の事象が動いている。
 
 ## ロゴとアイコン (ずれないための決まり)
 
@@ -34,25 +37,28 @@ node render.mjs            # out/ に snapwell.mp4, snapwell.webm, poster.jpg, c
 ホームページのヘッダとヒーロー、動画の導入と終わり、favicon、OGP はこれらだけを使う。アイコンを直したら `node brand.mjs` を走らせて同じコミットに入れる。
 `node brand.mjs --check` は PNG 以外が元とずれていないかを見る (ずれていれば終了コード 1)。
 
-## 音を足す (鍵が来たら)
+## 音を足す (効果音と BGM)
 
-映像は無音で出す。効果音は ElevenLabs の Sound Effects API で作って重ねる。鍵 (API key) はリポジトリに書かず、環境変数 `ELEVENLABS_API_KEY` から読む。
+映像は無音で出す。効果音は ElevenLabs の Sound Effects API、BGM は Music API で作って重ねる。鍵 (API key) はリポジトリに書かず、環境変数 `ELEVENLABS_API_KEY` から読む (Windows ではユーザー環境変数も見る)。音は言語に依らないので、同じ 1 セットを ja と en の両方に使う。
 
 ```powershell
 cd tools/film
-# 映像を作り直したときだけ: node render.mjs のあと out/cues.json を audio/cues.json へ写す (台本の時刻。再描画なしで音を足せる)
-node audio/table.mjs                         # audio/TIMING.md を作り直す (鍵は要らない)
+node audio/table.mjs out/en/cues.json        # audio/TIMING.md を作り直す (鍵は要らない)
 node audio/generate-sfx.mjs --dry-run        # 何を何秒で頼むか、クレジットの目安を見る (送らない)
 $env:ELEVENLABS_API_KEY = "<鍵>"
 node audio/generate-sfx.mjs                  # audio/sfx/*.mp3 を作る (Git には入れない)
-node audio/mix.mjs                           # 既定は site/video の無音版と audio/cues.json。out/with-sound/ に音つきの mp4 と webm
+node audio/generate-bgm.mjs                  # BGM の候補 3 本を audio/bgm/candidates/ に作る (Git には入れない)。鍵に music_generation の権限が要る
+# 聞いて 1 本選び、audio/bgm/bgm.mp3 に置く (これは Git に入れる。生成は再現できないため)
+node audio/mix.mjs --lang en                 # out/with-sound/en/ に音つきの mp4 と webm (BGM は bgm.mp3 があるときだけ)
+node audio/mix.mjs --lang ja
 ```
 
-音つきの 2 本を `site/video/` に置く。いま載せているのは音つき版 (`<video>` に `muted` はなく、注記は `30 seconds, with sound.`)。無音に戻すときは、`render.mjs` で作り直した映像を置き、`muted` を付け、注記を `no sound` にする。mix.mjs は `site/video` の映像を入力にするので、音つきに差し替えたあとは、先に無音の映像を `render.mjs` で作り直してから重ねること。
+音つきの 4 本と poster 2 枚を `site/video/` に置く。`<video>` に `muted` はない。`mix.mjs` は `out/<lang>/` の無音の映像を入力にするので、映像を作り直したらそのあとで重ねる。
 
-- 効果音の指示と長さ、きっかけとの対応は `audio/sounds.json`。きっかけの時刻は台本 (`film.js`) と物理の事象 (離した時刻、止まった時刻) から `cues.json` に書かれるので、映像を変えたら `render.mjs` と `audio/table.mjs` を走らせ直せば音のずれは出ない。
-- 使うエンドポイント: `POST https://api.elevenlabs.io/v1/sound-generation` (ヘッダ `xi-api-key`、本文 `text` `duration_seconds` (0.5 から 30) `prompt_influence` `model_id`)。2026-10-26 に <https://elevenlabs.io/docs/api-reference/text-to-sound-effects/convert> で確認。
-- 料金: 長さを指定すると 1 秒あたり 40 クレジット (<https://elevenlabs.io/docs/overview/capabilities/sound-effects>、2026-10-26 確認)。全部で約 10 秒、400 クレジット前後。
+- 効果音の指示と長さ、きっかけとの対応は `audio/sounds.json`。きっかけの時刻は台本 (`film.js`) と物理の事象 (離した時刻、止まった時刻) から `cues.json` に書かれる。
+- BGM の指示は `audio/bgm.json` (候補 3 本の prompt、ミックスの設定)。BGM は効果音より約 12〜15 dB 小さく、効果音が鳴る間は `sidechaincompress` でさらに下がる。頭に 1.5 秒のフェードイン、末尾に 2.5 秒のフェードアウト。
+- 使うエンドポイント: `POST https://api.elevenlabs.io/v1/sound-generation` (効果音)、`POST https://api.elevenlabs.io/v1/music` (BGM。`prompt`、`music_length_ms`、`model_id`、`force_instrumental`)。
+- 料金: 効果音は 1 秒あたり 40 クレジット (17 件、約 13 秒、約 520 クレジット)。Music API は米ドル課金で 1 分 0.15 ドル (<https://elevenlabs.io/pricing/api>、2026-11-04 確認)。36 秒の候補 3 本で約 0.27 ドル。
 
 ### 生成した効果音の利用条件 (2026-10-26 に確認。契約の前にもう一度見ること)
 
@@ -61,6 +67,8 @@ node audio/mix.mjs                           # 既定は site/video の無音版
 - 第 4 条(d): 出力は同社がサービスの改善に使える権利を持つ。第 10 条: 出力は他の利用者のものと似ることがある (独占はできない)。
 - 生成の記録: 2026-10-26、有料プランの鍵 (ユーザーが確認)、モデル `eleven_text_to_sound_v2`、12 件・指定の長さの合計 10.4 秒 (約 416 クレジット)、`tick` は無音に近かったので指示を変えて 1 件だけ作り直し (約 20 クレジット)。
 - 作った音は公開前に聞いて確かめる (第 4 条(k) は出力を確認する責任が利用者にあるとする)。生成日、プラン、使ったモデル (`eleven_text_to_sound_v2`) を PR か `audio/` に書き残す。
+- 生成の記録 (2026-11-04 の作り直し): 鍵は有料プラン (ユーザーが確認)、モデル `eleven_text_to_sound_v2`、17 件・指定の長さの合計 13.0 秒 (約 520 クレジット)。`cell` は無音に近かったので指示を変えて 1 件だけ作り直した (約 20 クレジット)。
+- BGM の利用条件 (<https://elevenlabs.io/music-terms>、2026-11-04 確認): 有料プランは表記不要 (無料プランは「Created in collaboration with ElevenLabs」の表記が要る)。Free から Pro は個人の利用に限り、Scale 以上は小さな組織まで。映画・テレビ・ラジオを除く商用 (オンラインとオフライン) に使える。出力の権利は利用者が持ち、公開前に出力を確かめる責任も利用者にある。プロンプトに実在のアーティスト名・曲名・歌詞を書かない。有料プランの鍵で生成すること。BGM の生成日・プラン・モデルは採用時にここへ追記する。
 - プロジェクトのライセンスとの関係: 効果音の mp3 自体はリポジトリに入れず、動画に混ぜた音だけが `site/video/` に入る。
 
 ## README の画面写真とソーシャルプレビュー

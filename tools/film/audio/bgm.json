@@ -1,0 +1,19 @@
+{
+  "_note": "BGM の指示 (ElevenLabs Music)。候補を 3 本作って聞き、選んだ 1 本を audio/bgm/bgm.mp3 に置いて Git に入れる (生成は再現できないため)。候補 (audio/bgm/candidates/) は Git に入れない。歌なし (force_instrumental)。アーティスト名・曲名は書かない (規約で禁止)。",
+  "model_id": "music_v2_5",
+  "length_ms": 36000,
+  "output_format": "mp3_44100_128",
+  "candidates": {
+    "a": "Calm minimal ambient instrumental at 120 BPM. Soft warm synth pads, sparse felt piano notes and a light marimba motif, a very quiet steady pulse, airy and bright, unhurried, modern product film mood. Resolves to a clean soft ending at the end. No vocals, no drums.",
+    "b": "Gentle piano-led instrumental at 120 BPM, simple repeating four-note piano figure with soft pad underneath and a faint low pulse, quiet, clean, optimistic and focused, like a calm software demo. Ends on a soft sustained chord. No vocals, no drums.",
+    "c": "Light textural ambient instrumental at 120 BPM, soft mallets and glassy bells over a warm sustained pad, subtle bass pulse, spacious and minimal, relaxed and precise. Slowly builds a little, then lands on a calm final note. No vocals, no drums."
+  },
+  "mix": {
+    "_note": "mix.mjs の設定。lufs は BGM の目標の大きさ (効果音より十分小さく)、duck* は効果音が鳴る間の下げ方",
+    "lufs": -30,
+    "fadeIn": 1.5,
+    "fadeOut": 2.5,
+    "duckThreshold": 0.03,
+    "duckRatio": 4
+  }
+}

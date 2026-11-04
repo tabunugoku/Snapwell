@@ -156,13 +156,14 @@
 <section class="film" id="film" aria-labelledby="h-film">
   <div class="sec-head">
     <p class="index" data-rise>01 <span class="rule" aria-hidden="true"></span> <span data-l="en">Film</span><span data-l="ja">映像</span></p>
-    <h2 id="h-film" data-rise><span data-l="en">Watch a throw.</span><span data-l="ja">投げる様子を、見る。</span></h2>
+    <h2 id="h-film" data-rise><span data-l="en">Watch it work.</span><span data-l="ja">操作の様子</span></h2>
   </div>
   <div class="film-frame" id="filmFrame">
-    <video controls playsinline preload="metadata" poster="video/poster.jpg" width="1920" height="1080">
-      <source src="video/snapwell.webm" type="video/webm">
-      <source src="video/snapwell.mp4" type="video/mp4">
+    <video id="filmVideo" controls playsinline preload="metadata" poster="video/poster-en.jpg" width="1920" height="1080" data-lang="en" data-aria-en="Snapwell film, 36 seconds, with sound" data-aria-ja="Snapwell の紹介映像、36 秒、音つき" aria-label="Snapwell film, 36 seconds, with sound" aria-describedby="filmDesc">
+      <source src="video/snapwell-en.webm" type="video/webm">
+      <source src="video/snapwell-en.mp4" type="video/mp4">
     </video>
+    <p class="vh" id="filmDesc"><span data-l="en">A mockup of the interface shows throwing a window into a zone, placing it with the launcher, arranging windows, snapping to a neighbour, sending a window to another monitor, changing hotkeys and per-app rules, replacing Windows' snapping, and moving settings between machines.</span><span data-l="ja">インターフェースのモックアップで、ウィンドウを区画へ投げる操作、ランチャーでの配置、整列、隣への寄せ、別のモニターへの送り、ホットキーとアプリごとのルールの変更、標準スナップの置き換え、設定の持ち運びを紹介します。</span></p>
   </div>
   <p class="note" data-rise><span data-l="en">Every frame is drawn from the same spring-and-magnet model as the demos on this page. It shows a mockup of the interface, not a screen recording.</span><span data-l="ja">どのコマもこのページのデモと同じばねと磁石のモデルで描いています。映っているのは画面のモックアップで、実際の録画ではありません。</span></p>
 </section>

@@ -1,28 +1,30 @@
 {
-  "_note": "効果音の台本。prompt は ElevenLabs Sound Effects への指示 (英語)。duration は秒 (0.5 から 30)。使うきっかけは cue_map で対応づける。",
+  "_note": "効果音の台本 (2026-11 に作り直し)。prompt は ElevenLabs Sound Effects への指示 (英語)。duration は秒 (0.5 から 30)。cue 名は render.mjs が書く cues.json のもの。映像の言語に依らず 1 セットを ja・en の両方に使う。",
   "model_id": "eleven_text_to_sound_v2",
   "output_format": "mp3_44100_128",
   "sounds": {
-    "whoosh": { "prompt": "A quick soft air whoosh of a light object sliding fast across a room, clean, no music, no voice", "duration": 0.8, "influence": 0.5 },
-    "burst": { "prompt": "Six small soft pops bursting outward at once, gentle bubble and plastic taps, bright and clean, no music", "duration": 1.0, "influence": 0.5 },
+    "whoosh": { "prompt": "A quick soft air whoosh of a light card sliding fast across a room, clean, dry, no music, no voice", "duration": 0.8, "influence": 0.5 },
+    "burst": { "prompt": "Six small soft pops bursting outward at once, gentle bubble and plastic taps, bright and clean, no music", "duration": 0.8, "influence": 0.5 },
     "tick": { "prompt": "A clear short wooden click, like tapping a wooden block once with a fingernail, dry, audible, no reverb", "duration": 0.5, "influence": 0.6 },
     "tap": { "prompt": "A tiny bright glassy tap with a short soft tail, like touching a small bell, dry and clean", "duration": 0.5, "influence": 0.6 },
-    "logo": { "prompt": "A warm soft chime logo sting, two gentle notes with an airy shimmer tail, calm and modern, no voice", "duration": 2.5, "influence": 0.5 },
+    "logo": { "prompt": "A warm soft chime logo sting, two gentle notes with an airy shimmer tail, calm and modern, no voice", "duration": 2.0, "influence": 0.5 },
     "throw": { "prompt": "A short light whoosh of a card being flicked through the air, fast and soft", "duration": 0.6, "influence": 0.5 },
     "land": { "prompt": "A soft magnetic click as a flat object settles into place, small muted thud with a tiny snap, dry", "duration": 0.6, "influence": 0.6 },
     "key": { "prompt": "A single laptop keyboard key press, soft and quiet, short", "duration": 0.5, "influence": 0.7 },
-    "overlay": { "prompt": "A soft airy swell as a translucent overlay fades in, subtle, clean, short", "duration": 0.8, "influence": 0.5 },
-    "cell": { "prompt": "A very small quiet tick, like a light switch detent, extremely short and dry", "duration": 0.5, "influence": 0.6 },
+    "overlay": { "prompt": "A soft airy swell as a translucent overlay fades in, subtle, clean, short", "duration": 0.7, "influence": 0.5 },
+    "cell": { "prompt": "A tiny crisp mechanical click, like a single detent step of a rotary dial, short, dry and clearly audible, no reverb", "duration": 0.5, "influence": 0.6 },
     "confirm": { "prompt": "A soft positive confirmation tap with a tiny rising tone, short and clean", "duration": 0.7, "influence": 0.5 },
-    "arrange": { "prompt": "Four quick soft whooshes in a row, like cards sliding into a neat grid, followed by soft clicks, clean", "duration": 1.4, "influence": 0.5 }
+    "arrange": { "prompt": "Four quick soft whooshes in a row, like cards sliding into a neat grid, followed by soft clicks, clean", "duration": 1.4, "influence": 0.5 },
+    "nudge": { "prompt": "A flat card sliding a short way and stopping softly against another card, a gentle dry tap at the end", "duration": 0.5, "influence": 0.6 },
+    "monitor": { "prompt": "A smooth soft whoosh sweeping from left to right as a card glides to another screen, with a gentle landing tap", "duration": 0.9, "influence": 0.5 },
+    "toggle": { "prompt": "A small crisp switch toggle click, like a light plastic slider flipping, dry and clean", "duration": 0.5, "influence": 0.6 },
+    "restore": { "prompt": "A soft reassuring two-note chime going down then settling, like something being put back in place, calm and short", "duration": 0.8, "influence": 0.5 },
+    "save": { "prompt": "A soft tidy save ding, a short bright tap with a small clean tail, like a file being stored, no voice", "duration": 0.7, "influence": 0.5 }
   },
-  "_cue_map_note": "cue 名は render.mjs が書く cues.json のもの。gain は dB、offset は秒のずらし。",
   "cue_map": {
     "intro-enter": { "sound": "whoosh", "gain": -6 },
     "intro-burst": { "sound": "burst", "gain": -4 },
     "intro-grid": { "sound": "tick", "gain": -6 },
-    "intro-layoutB": { "sound": "tick", "gain": -9 },
-    "intro-layoutC": { "sound": "tick", "gain": -9 },
     "intro-final": { "sound": "tick", "gain": -6 },
     "intro-hop": { "sound": "tap", "gain": -10 },
     "intro-logo": { "sound": "logo", "gain": -5, "offset": 0.3 },
@@ -34,6 +36,12 @@
     "cell": { "sound": "cell", "gain": -16 },
     "launcher-pick": { "sound": "confirm", "gain": -6 },
     "arrange": { "sound": "arrange", "gain": -7 },
+    "nudge": { "sound": "nudge", "gain": -6 },
+    "monitor": { "sound": "monitor", "gain": -7 },
+    "toggle": { "sound": "toggle", "gain": -8 },
+    "restore": { "sound": "restore", "gain": -8 },
+    "export": { "sound": "save", "gain": -7 },
+    "sync": { "sound": "save", "gain": -9 },
     "end-in": { "sound": "logo", "gain": -7, "offset": 0.3 }
   }
 }
