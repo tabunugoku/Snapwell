@@ -12,11 +12,14 @@
 | 9.78 | release | throw | 0 |
 | 10.37 | land | land | 0 |
 | 11.82 | launcher-open | overlay | 0 |
-| 13.92 | launcher-pick | confirm | 0 |
+| 13.92 | launcher-pick | land | 0 |
 | 16.32 | arrange | arrange | 0 |
 | 17.92 | arrange | arrange | 0 |
 | 19.02 | arrange | arrange | 0 |
 | 21.40 | nudge | nudge | 0 |
 | 23.10 | monitor | monitor | 0 |
+| 25.70 | key | key | 0 |
+| 26.50 | key | key | 0 |
 | 31.10 | restore | restore | 0 |
+| 33.40 | sync | save | 0 |
 | 35.20 | end-in | logo | 0 |

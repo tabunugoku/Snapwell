@@ -134,7 +134,7 @@
       "gain": 0
     },
     "launcher-pick": {
-      "sound": "confirm",
+      "sound": "land",
       "gain": 0
     },
     "arrange": {
@@ -157,6 +157,18 @@
       "sound": "logo",
       "gain": 0,
       "offset": 0.3
+    },
+    "key": {
+      "sound": "key",
+      "gain": 0,
+      "only": [
+        23,
+        24
+      ]
+    },
+    "sync": {
+      "sound": "save",
+      "gain": 0
     }
   }
 }
