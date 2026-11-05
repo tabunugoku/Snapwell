@@ -187,7 +187,8 @@ html, body { background: var(--bg); }
   --font-ui: 'Segoe UI Variable Text', 'Segoe UI Variable', 'Segoe UI', 'Yu Gothic UI', 'Hiragino Sans', 'Helvetica Neue', Arial, sans-serif;
   --font-mono: 'Cascadia Mono', 'SF Mono', Consolas, monospace;
 
-  --fs-hero: clamp(52px, 7.7vw, 124px);
+  /* 英文の 2 行目（It lands in place.）は幅が約 8.83em。見出しの 8 列に収まる大きさを、.hero-in の幅から取る */
+  --fs-hero: min(7.2cqi, 124px);
   --fs-h2: clamp(38px, 5.2vw, 80px);
   --fs-h3: clamp(22px, 2.2vw, 32px);
   --fs-lead: clamp(17px, 1.35vw, 20px);
@@ -341,6 +342,8 @@ html[data-lang="ja"] h1, html[data-lang="ja"] h2 { letter-spacing: 0; }
 .hero-in {
   position: relative; max-width: var(--max); margin-inline: auto;
   display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: 24px; align-items: end;
+  /* 見出しの大きさを、画面ではなくこの幅から決める（h1 の font-size） */
+  container-type: inline-size;
 }
 .eyebrow {
   grid-column: 1 / -1; display: inline-flex; align-items: center; gap: 10px; margin-bottom: 28px;
@@ -363,7 +366,8 @@ html[data-lang="ja"] body { line-break: strict; }
 .nb { white-space: nowrap; }
 h1, h2, h3, summary, .card-name, .preset-label { text-wrap: balance; }
 p, dd, li { text-wrap: pretty; }
-h1 .line { display: block; overflow: hidden; padding-bottom: 0.08em; margin-bottom: -0.08em; }
+/* 上にも余白を取る。i の点が overflow: hidden に切られるため */
+h1 .line { display: block; overflow: hidden; padding-block: 0.12em 0.08em; margin-block: -0.12em -0.08em; }
 h1 .line-in { display: block; white-space: nowrap; }
 h1 .dim { color: var(--h1-dim); }
 .hero-side { grid-column: 9 / -1; display: grid; gap: 24px; padding-bottom: 14px; }
@@ -638,7 +642,7 @@ html.intro .intro-layer { display: block; position: fixed; inset: 0; z-index: 40
 }
 @media (max-width: 1080px) {
   .nav-links { display: none; }
-  h1 { grid-column: 1 / -1; }
+  h1 { grid-column: 1 / -1; --fs-hero: min(9.6cqi, 124px); }
   .hero-side { grid-column: 1 / span 9; margin-top: 32px; }
   .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
