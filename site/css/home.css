@@ -366,8 +366,8 @@ html[data-lang="ja"] body { line-break: strict; }
 .nb { white-space: nowrap; }
 h1, h2, h3, summary, .card-name, .preset-label { text-wrap: balance; }
 p, dd, li { text-wrap: pretty; }
-/* 上にも余白を取る。i の点が overflow: hidden に切られるため */
-h1 .line { display: block; overflow: hidden; padding-block: 0.12em 0.08em; margin-block: -0.12em -0.08em; }
+/* 上にも余白を取る。行の高さ（0.94）より字の上端（d・l・i の点）が高く、overflow: hidden に切られるため */
+h1 .line { display: block; overflow: hidden; padding-block: 0.3em 0.08em; margin-block: -0.3em -0.08em; }
 h1 .line-in { display: block; white-space: nowrap; }
 h1 .dim { color: var(--h1-dim); }
 .hero-side { grid-column: 9 / -1; display: grid; gap: 24px; padding-bottom: 14px; }
