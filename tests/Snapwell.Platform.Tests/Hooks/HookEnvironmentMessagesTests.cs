@@ -1,3 +1,4 @@
+using Snapwell.Core.Hooks;
 using Snapwell.Platform.Hooks;
 
 namespace Snapwell.Platform.Tests.Hooks;

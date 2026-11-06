@@ -1,5 +1,6 @@
 using System.Security.Principal;
 using System.Threading.Channels;
+using Snapwell.Core.Hooks;
 using Snapwell.Core.Localization;
 using Snapwell.Core.Settings;
 using Snapwell.Platform.Hooks;

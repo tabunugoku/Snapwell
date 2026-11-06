@@ -1,3 +1,5 @@
+using Snapwell.Core.Hooks;
+
 namespace Snapwell.Platform.Hooks;
 
 /// <summary>WM_WTSSESSION_CHANGE と WM_POWERBROADCAST の wParam を、フックの張り直しの契機に直す。</summary>

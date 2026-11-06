@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using Snapwell.Core.Hooks;
 using Snapwell.Platform.Hooks;
 
 namespace Snapwell.Platform.Tests.Hooks;
@@ -434,6 +435,33 @@ public sealed class HookThreadTests
         Assert.True(hooks.Stop());
     }
 
+    /// <summary>起動前の通知は予約を残さない。起動直後に不要な張り直しが走らないようにする。</summary>
+    [Fact]
+    public void NotifyBeforeStartDoesNotScheduleARehook()
+    {
+        using var api = new FakeHookApi();
+        using var hooks = new HookThread(new HotkeyMatcher(), 8, api);
+        hooks.Notify(HookEnvironmentChange.Unlocked);
+        Assert.True(hooks.Start());
+        hooks.CheckHealth();
+        Assert.Equal(0, api.PostRehookCount);
+        Assert.True(hooks.Stop());
+    }
+
+    /// <summary>張り直しの途中で例外が出ても、メッセージループを止めず、後始末で全フックを外せる。</summary>
+    [Fact]
+    public void ExceptionDuringRehookKeepsTheMessageLoopAlive()
+    {
+        using var api = new FakeHookApi { ThrowOnRegisterAfter = 7 };
+        using var hooks = new HookThread(new HotkeyMatcher(), 8, api);
+        Assert.True(hooks.Start());
+        hooks.Notify(HookEnvironmentChange.Unlocked);
+        Assert.True(SpinWait.SpinUntil(() => api.RegisterCount > 7, TimeSpan.FromSeconds(5)));
+        Assert.Null(hooks.Failure);
+        Assert.True(hooks.Stop());
+        Assert.Null(hooks.Failure);
+    }
+
     /// <summary>OS には入力があるのにコールバックが来ないときだけ、時計を進めて張り直す。</summary>
     [Fact]
     public void CheckHealthRehooksOnlyWhenOsInputOutrunsCallbacks()
@@ -464,7 +492,7 @@ public sealed class HookThreadTests
         Assert.True(hooks.Start());
         var now = api.TickCount;
         api.TickCount = now + 5_000;
-        api.LastInputTick = now;
+        api.LastInputTick = now + 5_000;
         // マウスのコールバックは来ている（時刻の比較だけでは見えない）が、キーボードは来ない。
         hooks.TouchMouse();
         api.KeyHeld = true;
@@ -504,7 +532,7 @@ public sealed class HookThreadTests
         // 次の観測までにカーソルが動いたが、マウスのコールバックはない。キーボードは来ている。
         api.TickCount = now + 4_000;
         api.CursorX = 50;
-        api.LastInputTick = now;
+        api.LastInputTick = now + 4_000;
         hooks.TouchKeyboard();
         hooks.CheckHealth();
         Assert.Equal(1, api.PostRehookCount);
@@ -518,11 +546,10 @@ public sealed class HookThreadTests
         using var api = new FakeHookApi();
         using var hooks = new HookThread(new HotkeyMatcher(), 8, api);
         Assert.True(hooks.Start());
-        var now = unchecked((uint)Environment.TickCount);
-        api.TickCount = now;
+        var now = api.TickCount;
         api.LastInputTick = now;
         hooks.CheckHealth();
-        // 実際の TickCount より先へ進めたつもりの時計。コールバックは前回の観測のあとに来たことにする。
+        // コールバックは前回の観測のあとに来たことにする。
         api.TickCount = now + 1_000;
         api.CursorX = 50;
         hooks.TouchMouse();
@@ -568,6 +595,7 @@ public sealed class HookThreadTests
 
         public uint GetTickCount() => TickCount;
         internal bool KeyHeld { get; set; }
+        internal int ThrowOnRegisterAfter { get; init; } = int.MaxValue;
         internal int CursorX { get; set; }
         public bool IsNonModifierKeyDown() => KeyHeld;
 
@@ -606,6 +634,12 @@ public sealed class HookThreadTests
 
         private nint RegisterLowLevel()
         {
+            if (RegisterCount >= ThrowOnRegisterAfter)
+            {
+                RegisterCount++;
+                throw new InvalidOperationException();
+            }
+
             LowLevelOrder.Enqueue("register");
             return Register();
         }

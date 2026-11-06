@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading.Channels;
+using Snapwell.Core.Hooks;
 using Windows.Win32;
 using Windows.Win32.Foundation;
 using Windows.Win32.UI.Accessibility;
@@ -88,7 +89,13 @@ public sealed class HookThread : IDisposable
     /// <summary>ロック・復帰などを伝える。復帰は張り直しの予約になり、間隔を空けて実行される。</summary>
     public void Notify(HookEnvironmentChange change)
     {
-        _policy.Notify(change);
+        // 起動前の通知で予約を残さない。起動直後に不要な張り直しが走り、起動直後の挙動の調査を濁すため。
+        if (!_started)
+        {
+            return;
+        }
+
+        _policy.Notify(change, _api.GetTickCount());
         CheckHealth();
     }
 
@@ -223,7 +230,14 @@ public sealed class HookThread : IDisposable
             {
                 if (messageId == HookMessages.Rehook)
                 {
-                    Rehook();
+                    try
+                    {
+                        Rehook();
+                    }
+                    catch (Exception)
+                    {
+                        // 稀な経路の失敗でメッセージループを止めない。止めると全フックが外れて気づかれない。
+                    }
                 }
             }
 
@@ -293,7 +307,10 @@ public sealed class HookThread : IDisposable
 
             // 片方のフックだけが外されても、もう片方が時刻を更新し続けて見えなくなる。種類ごとの証拠で補う。
             // キーボード: 繰り返しのあるキーが猶予より長く押されているのに、コールバックが来ない。
-            var keyboardSilent = unchecked(now - keyboard) > HookRehookPolicy.InputGraceMs && _api.IsNonModifierKeyDown();
+            // OS の入力がキーボードのコールバックより新しいときだけ、全キーを調べる（静かな間の無駄なシステムコールを避ける）。
+            var keyboardSilent = unchecked((int)(now - keyboard)) > HookRehookPolicy.InputGraceMs &&
+                unchecked((int)(lastInput - keyboard)) > HookRehookPolicy.InputGraceMs &&
+                _api.IsNonModifierKeyDown();
             // マウス: 前回の観測からカーソルが動いたのに、その間にコールバックが一度も来ない。
             var cursorMoved = false;
             if (_api.TryGetCursorPosition(out var x, out var y))
@@ -408,9 +425,9 @@ public sealed class HookThread : IDisposable
     }
 
     /// <summary>コールバックが呼ばれた時刻を残す。生きているかの判断に使う。書き込みは一度だけで軽い。</summary>
-    internal void TouchKeyboard() => Volatile.Write(ref _lastKeyboardTick, Environment.TickCount);
+    internal void TouchKeyboard() => Volatile.Write(ref _lastKeyboardTick, unchecked((int)_api.GetTickCount()));
 
-    internal void TouchMouse() => Volatile.Write(ref _lastMouseTick, Environment.TickCount);
+    internal void TouchMouse() => Volatile.Write(ref _lastMouseTick, unchecked((int)_api.GetTickCount()));
 
     internal void Enqueue(RawHookEvent value)
     {

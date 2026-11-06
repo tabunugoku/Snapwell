@@ -1,4 +1,4 @@
-namespace Snapwell.Platform.Hooks;
+namespace Snapwell.Core.Hooks;
 
 /// <summary>セッションや電源の状態の変化。フックが外されうる前後を表す。</summary>
 public enum HookEnvironmentChange
@@ -39,33 +39,46 @@ public enum HookRehookReason
 /// 食い違いで疑う。昇格したウィンドウへの入力のように、フックに届かない正常な場合にも食い違うため、
 /// 疑いによる張り直しには指数バックオフをかける。コールバックが再び来たらバックオフを戻す。
 /// </remarks>
-internal sealed class HookRehookPolicy
+public sealed class HookRehookPolicy
 {
     /// <summary>OS の最後の入力が、フックの最後のコールバックよりこれ以上新しければ疑う。</summary>
-    internal const uint InputGraceMs = 1500;
+    public const uint InputGraceMs = 1500;
 
     /// <summary>どの理由でも、張り直しの間隔の下限。連打を避ける。</summary>
-    internal const uint MinIntervalMs = 3000;
+    public const uint MinIntervalMs = 3000;
 
     /// <summary>疑いによる張り直しの、最初のバックオフ。</summary>
-    internal const uint InitialBackoffMs = 10_000;
+    public const uint InitialBackoffMs = 10_000;
 
     /// <summary>疑いによる張り直しのバックオフの上限。</summary>
-    internal const uint MaxBackoffMs = 600_000;
+    public const uint MaxBackoffMs = 600_000;
+
+    /// <summary>ロックやサスペンドで検知を止めておく上限。対の通知が届かなくても、この時間で検知に戻る。</summary>
+    public const uint PauseLimitMs = 600_000;
+
+    /// <summary>復帰の通知は重なって届く（自動復帰・ユーザー操作での復帰・ロック解除）。この間は 1 回にまとめる。</summary>
+    public const uint EnvironmentCoalesceMs = 10_000;
 
     private readonly object _gate = new();
     private bool _locked;
     private bool _suspended;
     private bool _pending;
     private bool _hasRehooked;
+    private bool _lastWasEnvironment;
+    private uint _pausedSince;
     private uint _lastRehookTick;
     private uint _backoffMs;
 
     /// <summary>環境の変化を受ける。復帰は張り直しの予約になり、間隔が空くまで次の判断が持ち越す。</summary>
-    internal void Notify(HookEnvironmentChange change)
+    public void Notify(HookEnvironmentChange change, uint now)
     {
         lock (_gate)
         {
+            if (!_locked && !_suspended && change is HookEnvironmentChange.Locked or HookEnvironmentChange.Suspended)
+            {
+                _pausedSince = now;
+            }
+
             // ロックとサスペンドは別々に持つ。復帰がロック画面の途中で届いても、解除まで検知を止める。
             switch (change)
             {
@@ -75,7 +88,9 @@ internal sealed class HookRehookPolicy
                 case HookEnvironmentChange.Resumed: _suspended = false; break;
             }
 
-            _pending = change is HookEnvironmentChange.Unlocked or HookEnvironmentChange.Resumed;
+            var restored = change is HookEnvironmentChange.Unlocked or HookEnvironmentChange.Resumed;
+            var coalesced = _hasRehooked && _lastWasEnvironment && unchecked(now - _lastRehookTick) < EnvironmentCoalesceMs;
+            _pending = restored && !coalesced;
         }
     }
 
@@ -86,13 +101,20 @@ internal sealed class HookRehookPolicy
     /// <param name="oneHookSilent">
     /// 片方のフックだけ黙っている証拠がある。もう片方が生きていると、時刻の比較では見えないため。
     /// </param>
-    internal HookRehookReason Evaluate(uint now, uint lastHookTick, uint lastOsInputTick, bool oneHookSilent = false)
+    public HookRehookReason Evaluate(uint now, uint lastHookTick, uint lastOsInputTick, bool oneHookSilent = false)
     {
         lock (_gate)
         {
             if (_locked || _suspended)
             {
-                return HookRehookReason.None;
+                if (unchecked(now - _pausedSince) < PauseLimitMs)
+                {
+                    return HookRehookReason.None;
+                }
+
+                // 対の通知が届かなかったと見て、検知に戻る。
+                _locked = false;
+                _suspended = false;
             }
 
             // 張り直しのあとにコールバックが来たら、フックは生きている。疑いのバックオフを戻す。
@@ -129,6 +151,7 @@ internal sealed class HookRehookPolicy
     private HookRehookReason Approve(uint now, HookRehookReason reason)
     {
         _hasRehooked = true;
+        _lastWasEnvironment = reason == HookRehookReason.Environment;
         _lastRehookTick = now;
         return reason;
     }

@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using Snapwell.App.Lifecycle;
 using Snapwell.App.Overlay;
 using Snapwell.App.Tray.Menu;
+using Snapwell.Core.Hooks;
 using Snapwell.Core.Settings;
 using Snapwell.Core.Tray;
 using Snapwell.Platform.Hooks;
