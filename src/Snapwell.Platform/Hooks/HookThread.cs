@@ -8,6 +8,9 @@ using Windows.Win32.UI.WindowsAndMessaging;
 
 namespace Snapwell.Platform.Hooks;
 
+/// <summary>低レベルフックを張り直したときの記録。</summary>
+public readonly record struct HookRehookReport(HookRehookReason Reason, bool Succeeded, int Count);
+
 /// <summary>専用メッセージスレッドでフックを所有する、一回の起動と停止の単位。</summary>
 public sealed class HookThread : IDisposable
 {
@@ -26,6 +29,14 @@ public sealed class HookThread : IDisposable
     private Thread? _thread;
     private Thread? _pump;
     private uint _threadId;
+    private readonly HookRehookPolicy _policy = new();
+    private readonly int _healthPollMs;
+    private Timer? _healthTimer;
+    private nint _mouseHook;
+    private nint _keyboardHook;
+    private int _lastHookTick = Environment.TickCount;
+    private int _rehookReason;
+    private int _rehookCount;
     private int _mouseTracking;
     private int _completed;
     private bool _started;
@@ -35,12 +46,16 @@ public sealed class HookThread : IDisposable
 
     /// <summary>API は Start まで呼ばず、表示・破棄通知に上限を付けて入力を配送する。</summary>
     public HookThread(HotkeyMatcher matcher, int capacity = 1024)
-        : this(matcher, capacity, new Win32HookApi())
+        : this(matcher, capacity, new Win32HookApi(), null, DefaultHealthPollMs)
     {
     }
 
-    internal HookThread(HotkeyMatcher matcher, int capacity, IHookApi api, IDummyKeySender? dummyKeySender = null)
+    internal const int DefaultHealthPollMs = 2000;
+
+    internal HookThread(HotkeyMatcher matcher, int capacity, IHookApi api, IDummyKeySender? dummyKeySender = null,
+        int healthPollMs = Timeout.Infinite)
     {
+        _healthPollMs = healthPollMs;
         ArgumentOutOfRangeException.ThrowIfLessThan(capacity, 1);
         _matcher = matcher;
         _dummyKeySender = dummyKeySender ?? new Win32DummyKeySender();
@@ -57,6 +72,18 @@ public sealed class HookThread : IDisposable
     {
         get => Volatile.Read(ref _mouseTracking) != 0;
         set => Volatile.Write(ref _mouseTracking, value ? 1 : 0);
+    }
+
+    /// <summary>
+    /// 低レベルフックを張り直したあとに、フックのスレッドとは別のスレッドで呼ぶ。記録用で、重い処理をしてよい。
+    /// </summary>
+    public event Action<HookRehookReport>? Rehooked;
+
+    /// <summary>ロック・復帰などを伝える。復帰は張り直しの予約になり、間隔を空けて実行される。</summary>
+    public void Notify(HookEnvironmentChange change)
+    {
+        _policy.Notify(change);
+        CheckHealth();
     }
 
     /// <summary>起動やメッセージループが例外で失敗した場合の診断。コールバックからは更新しない。</summary>
@@ -87,6 +114,10 @@ public sealed class HookThread : IDisposable
             {
                 _thread.Join();
                 _pump.Join();
+            }
+            else if (_healthPollMs > 0)
+            {
+                _healthTimer = new Timer(_ => CheckHealth(), null, _healthPollMs, _healthPollMs);
             }
 
             return _started;
@@ -125,6 +156,8 @@ public sealed class HookThread : IDisposable
 
     private bool StopCore()
     {
+        _healthTimer?.Dispose();
+        _healthTimer = null;
         if (_thread is null)
         {
             _stopped = true;
@@ -148,8 +181,6 @@ public sealed class HookThread : IDisposable
     private unsafe void Run()
     {
         var winEvents = new nint[5];
-        nint mouse = 0;
-        nint keyboard = 0;
         try
         {
             // OUTOFCONTEXT と低レベルフックの配送先は登録したこのスレッド。実機未確認。
@@ -168,10 +199,9 @@ public sealed class HookThread : IDisposable
                 (nint)(delegate* unmanaged[Stdcall]<HWINEVENTHOOK, uint, HWND, int, int, uint, uint, void>)&OnWinEvent);
             winEvents[4] = _api.RegisterEvent(PInvoke.EVENT_OBJECT_DESTROY,
                 (nint)(delegate* unmanaged[Stdcall]<HWINEVENTHOOK, uint, HWND, int, int, uint, uint, void>)&OnWinEvent);
-            mouse = _api.RegisterMouse((nint)(delegate* unmanaged[Stdcall]<int, WPARAM, LPARAM, LRESULT>)&OnMouse);
-            keyboard = _api.RegisterKeyboard(
-                (nint)(delegate* unmanaged[Stdcall]<int, WPARAM, LPARAM, LRESULT>)&OnKeyboard);
-            if (winEvents.Any(hook => hook == 0) || mouse == 0 || keyboard == 0)
+            _mouseHook = RegisterMouse(_api);
+            _keyboardHook = RegisterKeyboard(_api);
+            if (winEvents.Any(hook => hook == 0) || _mouseHook == 0 || _keyboardHook == 0)
             {
                 Failure = new InvalidOperationException("フックの登録に失敗した。");
                 return;
@@ -180,8 +210,12 @@ public sealed class HookThread : IDisposable
             _started = true;
             _ready.Set();
             int result;
-            while ((result = _api.ReadAndDispatchMessage()) > 0)
+            while ((result = _api.ReadAndDispatchMessage(out var messageId)) > 0)
             {
+                if (messageId == HookMessages.Rehook)
+                {
+                    Rehook();
+                }
             }
 
             if (result < 0)
@@ -203,14 +237,14 @@ public sealed class HookThread : IDisposable
                 }
             }
 
-            if (mouse != 0)
+            if (_mouseHook != 0)
             {
-                _cleanupSucceeded &= _api.UnregisterLowLevel(mouse);
+                _cleanupSucceeded &= _api.UnregisterLowLevel(_mouseHook);
             }
 
-            if (keyboard != 0)
+            if (_keyboardHook != 0)
             {
-                _cleanupSucceeded &= _api.UnregisterLowLevel(keyboard);
+                _cleanupSucceeded &= _api.UnregisterLowLevel(_keyboardHook);
             }
 
             // static 関数ポインターは回収されない。解除後のコールバックも null を見て終了する。
@@ -219,6 +253,81 @@ public sealed class HookThread : IDisposable
             Volatile.Write(ref _completed, 1);
             _wake.Set();
             _ready.Set();
+        }
+    }
+
+    private static unsafe nint RegisterMouse(IHookApi api) =>
+        api.RegisterMouse((nint)(delegate* unmanaged[Stdcall]<int, WPARAM, LPARAM, LRESULT>)&OnMouse);
+
+    private static unsafe nint RegisterKeyboard(IHookApi api) =>
+        api.RegisterKeyboard((nint)(delegate* unmanaged[Stdcall]<int, WPARAM, LPARAM, LRESULT>)&OnKeyboard);
+
+    /// <summary>
+    /// 張り直すかを判断し、必要なら自分のスレッドへ依頼する。タイマーと通知の呼び出し元（フックのスレッド以外）で動く。
+    /// </summary>
+    internal void CheckHealth()
+    {
+        if (!_started || Volatile.Read(ref _completed) != 0)
+        {
+            return;
+        }
+
+        var now = _api.GetTickCount();
+        var lastHook = unchecked((uint)Volatile.Read(ref _lastHookTick));
+        // 最後の入力が分からないときは、疑わない。
+        var lastInput = _api.TryGetLastInputTick(out var tick) ? tick : lastHook;
+        var reason = _policy.Evaluate(now, lastHook, lastInput);
+        if (reason == HookRehookReason.None)
+        {
+            return;
+        }
+
+        // 張り直し後の基準。ここから先にコールバックが来れば、フックは生きている。
+        Volatile.Write(ref _lastHookTick, unchecked((int)now));
+        Volatile.Write(ref _rehookReason, (int)reason);
+        _api.PostRehook(_threadId);
+    }
+
+    /// <summary>
+    /// 新しいフックを先に登録してから古いものを外す。登録に失敗したら古いものを残す。
+    /// 間にメッセージを処理しないので、二つのフックから同じキーが二重に届くことはない（実機未確認）。
+    /// </summary>
+    private void Rehook()
+    {
+        var reason = (HookRehookReason)Volatile.Read(ref _rehookReason);
+        var mouse = RegisterMouse(_api);
+        var keyboard = RegisterKeyboard(_api);
+        var succeeded = mouse != 0 && keyboard != 0;
+        if (succeeded)
+        {
+            // OS に外されていた古いハンドルの解除は失敗しうる。結果は見ない（Stop の成否に混ぜない）。
+            _api.UnregisterLowLevel(_mouseHook);
+            _api.UnregisterLowLevel(_keyboardHook);
+            _mouseHook = mouse;
+            _keyboardHook = keyboard;
+            // 外されていた間の解放を取り逃している。握りつぶしの記録や押下状態を捨てる。
+            _matcher.Reset();
+        }
+        else
+        {
+            // 片方だけ成功したときは、そのまま残すと二重に届く。成功した分を戻す。
+            if (mouse != 0) { _api.UnregisterLowLevel(mouse); }
+            if (keyboard != 0) { _api.UnregisterLowLevel(keyboard); }
+        }
+
+        var report = new HookRehookReport(reason, succeeded, Interlocked.Increment(ref _rehookCount));
+        var handler = Rehooked;
+        if (handler is not null)
+        {
+            // 記録でフックのスレッドを止めない。コールバックはこのスレッドで動く。
+            ThreadPool.QueueUserWorkItem(_ =>
+            {
+                try { handler(report); }
+                catch (Exception)
+                {
+                    // 記録の失敗でアプリを止めない。
+                }
+            });
         }
     }
 
@@ -261,6 +370,9 @@ public sealed class HookThread : IDisposable
         };
         _events.Write(value);
     }
+
+    /// <summary>コールバックが呼ばれた時刻を残す。生きているかの判断に使う。書き込みは一度だけで軽い。</summary>
+    private void TouchHook() => Volatile.Write(ref _lastHookTick, Environment.TickCount);
 
     internal void Enqueue(RawHookEvent value)
     {
@@ -321,6 +433,7 @@ public sealed class HookThread : IDisposable
     private static unsafe LRESULT OnMouse(int code, WPARAM message, LPARAM data)
     {
         var owner = _current;
+        owner?.TouchHook();
         if (code >= 0 && owner is not null && data.Value != 0)
         {
             try
@@ -373,6 +486,7 @@ public sealed class HookThread : IDisposable
     private static unsafe LRESULT OnKeyboard(int code, WPARAM message, LPARAM data)
     {
         var owner = _current;
+        owner?.TouchHook();
         if (code >= 0 && owner is not null && data.Value != 0)
         {
             var key = (KBDLLHOOKSTRUCT*)data.Value;

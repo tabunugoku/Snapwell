@@ -90,3 +90,5 @@ GetProcessTimes
 GetUserDefaultUILanguage
 LCIDToLocaleName
 GetAsyncKeyState
+GetLastInputInfo
+LASTINPUTINFO

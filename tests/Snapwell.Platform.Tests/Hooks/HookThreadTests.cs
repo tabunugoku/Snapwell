@@ -357,13 +357,100 @@ public sealed class HookThreadTests
         public bool Send() => send();
     }
 
+    /// <summary>張り直しの依頼で、二つの低レベルフックを同じスレッドで登録し直し、古い登録を外す。</summary>
+    [Fact]
+    public void RehookRegistersNewLowLevelHooksBeforeRemovingOldOnesOnOwningThread()
+    {
+        using var api = new FakeHookApi();
+        using var hooks = new HookThread(new HotkeyMatcher(), 8, api);
+        var reports = new BlockingCollection<HookRehookReport>();
+        hooks.Rehooked += reports.Add;
+        Assert.True(hooks.Start());
+        hooks.CheckHealth();
+        Assert.Equal(0, api.PostRehookCount);
+
+        hooks.Notify(HookEnvironmentChange.Restored);
+        Assert.True(reports.TryTake(out var report, TimeSpan.FromSeconds(5)));
+        Assert.Equal(new HookRehookReport(HookRehookReason.Environment, true, 1), report);
+        Assert.Equal(9, api.RegisterCount);
+        Assert.Equal(2, api.UnregisterCount);
+        Assert.Equal(["register", "register", "unregister", "unregister"], api.LowLevelOrder.Skip(2).Take(4));
+        Assert.Single(api.RegistrationThreads.Distinct());
+        Assert.Equal(api.RegistrationThreads.First(), Assert.Single(api.RemovalThreads.Distinct()));
+
+        // 張り直したあとの停止は、新しい二つを含めて外し、成功を返す。古いハンドルの解除失敗は混ぜない。
+        Assert.True(hooks.Stop());
+        Assert.Equal(2 + 7, api.UnregisterCount);
+        Assert.True(hooks.Events.Completion.IsCompletedSuccessfully);
+    }
+
+    /// <summary>OS に外されて古いハンドルの解除が失敗しても、停止の成否には影響しない。</summary>
+    [Fact]
+    public void FailedUnhookOfOldHandleDuringRehookDoesNotFailStop()
+    {
+        using var api = new FakeHookApi();
+        using var hooks = new HookThread(new HotkeyMatcher(), 8, api);
+        var reports = new BlockingCollection<HookRehookReport>();
+        hooks.Rehooked += reports.Add;
+        Assert.True(hooks.Start());
+        api.FailUnregisterOf.Add(6);
+        api.FailUnregisterOf.Add(7);
+        hooks.Notify(HookEnvironmentChange.Restored);
+        Assert.True(reports.TryTake(out _, TimeSpan.FromSeconds(5)));
+        Assert.True(hooks.Stop());
+    }
+
+    /// <summary>片方しか登録できなかったときは古いフックを残し、成功した分を外す。</summary>
+    [Fact]
+    public void PartialRehookFailureKeepsOldHooksAndRemovesNewOnes()
+    {
+        using var api = new FakeHookApi();
+        using var hooks = new HookThread(new HotkeyMatcher(), 8, api);
+        var reports = new BlockingCollection<HookRehookReport>();
+        hooks.Rehooked += reports.Add;
+        Assert.True(hooks.Start());
+        api.FailedRegistration = 9;
+        hooks.Notify(HookEnvironmentChange.Restored);
+        Assert.True(reports.TryTake(out var report, TimeSpan.FromSeconds(5)));
+        Assert.False(report.Succeeded);
+        Assert.Equal(1, api.UnregisterCount);
+        Assert.True(hooks.Stop());
+        Assert.Equal(1 + 7, api.UnregisterCount);
+    }
+
+    /// <summary>OS には入力があるのにコールバックが来ないときだけ、時計を進めて張り直す。</summary>
+    [Fact]
+    public void CheckHealthRehooksOnlyWhenOsInputOutrunsCallbacks()
+    {
+        using var api = new FakeHookApi();
+        using var hooks = new HookThread(new HotkeyMatcher(), 8, api);
+        Assert.True(hooks.Start());
+        var start = unchecked((uint)Environment.TickCount);
+        api.TickCount = start + 60_000;
+        api.LastInputTick = start - 5_000;
+        hooks.CheckHealth();
+        Assert.Equal(0, api.PostRehookCount);
+
+        api.LastInputTick = start + 59_000;
+        hooks.CheckHealth();
+        Assert.Equal(1, api.PostRehookCount);
+        hooks.CheckHealth();
+        Assert.Equal(1, api.PostRehookCount);
+        Assert.True(hooks.Stop());
+    }
+
     private sealed class FakeHookApi : IHookApi, IDisposable
     {
-        private readonly ManualResetEventSlim _quit = new(false);
+        private readonly BlockingCollection<uint> _messages = [];
+        internal uint TickCount { get; set; } = unchecked((uint)Environment.TickCount);
+        internal uint LastInputTick { get; set; } = unchecked((uint)Environment.TickCount);
+        internal int PostRehookCount { get; private set; }
+        internal ConcurrentBag<nint> FailUnregisterOf { get; } = [];
+        internal ConcurrentQueue<string> LowLevelOrder { get; } = [];
         internal int RegisterCount { get; private set; }
         internal int UnregisterCount { get; private set; }
         internal int PostCount { get; private set; }
-        internal int FailedRegistration { get; init; }
+        internal int FailedRegistration { get; set; }
         internal bool PostSucceeds { get; set; } = true;
         internal ConcurrentBag<int> RegistrationThreads { get; } = [];
         internal ConcurrentBag<int> RemovalThreads { get; } = [];
@@ -371,15 +458,35 @@ public sealed class HookThreadTests
         public uint GetThreadId() => 123;
         public void CreateMessageQueue() { }
         public nint RegisterEvent(uint eventId, nint callback) => Register();
-        public nint RegisterMouse(nint callback) => Register();
-        public nint RegisterKeyboard(nint callback) => Register();
-        public bool UnregisterEvent(nint hook) => Unregister();
-        public bool UnregisterLowLevel(nint hook) => Unregister();
+        public nint RegisterMouse(nint callback) => RegisterLowLevel();
+        public nint RegisterKeyboard(nint callback) => RegisterLowLevel();
+        public bool UnregisterEvent(nint hook) => Unregister(hook);
 
-        public int ReadAndDispatchMessage()
+        public bool UnregisterLowLevel(nint hook)
         {
-            _quit.Wait();
-            return 0;
+            LowLevelOrder.Enqueue("unregister");
+            return Unregister(hook);
+        }
+
+        public int ReadAndDispatchMessage(out uint messageId)
+        {
+            messageId = _messages.Take();
+            return messageId == 0 ? 0 : 1;
+        }
+
+        public uint GetTickCount() => TickCount;
+
+        public bool TryGetLastInputTick(out uint tick)
+        {
+            tick = LastInputTick;
+            return true;
+        }
+
+        public bool PostRehook(uint threadId)
+        {
+            PostRehookCount++;
+            _messages.Add(HookMessages.Rehook);
+            return true;
         }
 
         public bool PostQuit(uint threadId)
@@ -387,13 +494,19 @@ public sealed class HookThreadTests
             PostCount++;
             if (PostSucceeds)
             {
-                _quit.Set();
+                _messages.Add(0);
             }
 
             return PostSucceeds;
         }
 
-        public void Dispose() => _quit.Dispose();
+        public void Dispose() => _messages.Dispose();
+
+        private nint RegisterLowLevel()
+        {
+            LowLevelOrder.Enqueue("register");
+            return Register();
+        }
 
         private nint Register()
         {
@@ -402,11 +515,11 @@ public sealed class HookThreadTests
             return RegisterCount == FailedRegistration ? 0 : RegisterCount;
         }
 
-        private bool Unregister()
+        private bool Unregister(nint hook)
         {
             RemovalThreads.Add(Environment.CurrentManagedThreadId);
             UnregisterCount++;
-            return true;
+            return !FailUnregisterOf.Contains(hook);
         }
     }
 }
