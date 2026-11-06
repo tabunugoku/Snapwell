@@ -4,8 +4,10 @@ using System.Runtime.InteropServices;
 using Snapwell.App.Lifecycle;
 using Snapwell.App.Overlay;
 using Snapwell.App.Tray.Menu;
+using Snapwell.Core.Hooks;
 using Snapwell.Core.Settings;
 using Snapwell.Core.Tray;
+using Snapwell.Platform.Hooks;
 using Snapwell.Platform.Monitors;
 using Windows.Win32;
 using Windows.Win32.Foundation;
@@ -43,6 +45,7 @@ internal sealed unsafe class TrayIcon(IAppLog log, ISettingsStore<DeviceState> d
     private uint _taskbarCreated;
     private TrayState _state = new(true, false);
     private bool _removed;
+    private bool _sessionNotificationRegistered;
     private HICON _shownIcon;
     private string _shownTip = "";
     private TrayMenuController? _menu;
@@ -112,6 +115,9 @@ internal sealed unsafe class TrayIcon(IAppLog log, ISettingsStore<DeviceState> d
     public event Action? ExitRequested;
     public event Action? SessionEnding;
 
+    /// <summary>ロック・切断・サスペンドと、その復帰。トレイのスレッドで呼ぶので、すぐ返すこと。</summary>
+    public event Action<HookEnvironmentChange>? EnvironmentChanged;
+
     public void Show(TrayState state)
     {
         _state = state;
@@ -144,6 +150,9 @@ internal sealed unsafe class TrayIcon(IAppLog log, ISettingsStore<DeviceState> d
             throw new InvalidOperationException("トレイのウィンドウを作れない。");
         }
 
+        // 失敗してもフックの張り直しの契機が減るだけ。トレイは続ける。実機未確認。
+        _sessionNotificationRegistered = PInvoke.WTSRegisterSessionNotification(_window,
+            PInvoke.NOTIFY_FOR_THIS_SESSION);
         lock (_gate)
         {
             AddIcon();
@@ -405,6 +414,21 @@ internal sealed unsafe class TrayIcon(IAppLog log, ISettingsStore<DeviceState> d
         }
     }
 
+    private void RaiseEnvironmentChanged(HookEnvironmentChange? change)
+    {
+        if (change is { } value)
+        {
+            try
+            {
+                EnvironmentChanged?.Invoke(value);
+            }
+            catch (Exception)
+            {
+                // ウィンドウプロシージャから例外を出さない。張り直しの契機を一つ失うだけ。
+            }
+        }
+    }
+
     private LRESULT HandleMessage(HWND window, uint message, WPARAM wParam, LPARAM lParam)
     {
         if (_taskbarCreated != 0 && message == _taskbarCreated)
@@ -446,6 +470,14 @@ internal sealed unsafe class TrayIcon(IAppLog log, ISettingsStore<DeviceState> d
                 }
 
                 return message == SessionEndPolicy.WmQueryEndSession ? new(1) : default;
+            case HookEnvironmentMessages.WmWtsSessionChange:
+                // 実機未確認: ロック解除・RDP の接続と切断で届くか。
+                RaiseEnvironmentChanged(HookEnvironmentMessages.FromSessionChange(wParam.Value));
+                return default;
+            case HookEnvironmentMessages.WmPowerBroadcast:
+                // 実機未確認: スリープ復帰で届くか。応答は TRUE を返す。
+                RaiseEnvironmentChanged(HookEnvironmentMessages.FromPowerBroadcast(wParam.Value));
+                return new(1);
             case WmClose:
                 _menu?.Close();
                 ExitRequested?.Invoke();
@@ -453,6 +485,12 @@ internal sealed unsafe class TrayIcon(IAppLog log, ISettingsStore<DeviceState> d
                 _window = default;
                 return default;
             case WmDestroy:
+                if (_sessionNotificationRegistered)
+                {
+                    _sessionNotificationRegistered = false;
+                    PInvoke.WTSUnRegisterSessionNotification(window);
+                }
+
                 PInvoke.PostQuitMessage(0);
                 return default;
             default:

@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using Snapwell.Core.Hooks;
 using Snapwell.Platform.Hooks;
 
 namespace Snapwell.Platform.Tests.Hooks;
@@ -357,13 +358,237 @@ public sealed class HookThreadTests
         public bool Send() => send();
     }
 
+    /// <summary>張り直しの依頼で、二つの低レベルフックを同じスレッドで登録し直し、古い登録を外す。</summary>
+    [Fact]
+    public void RehookRegistersNewLowLevelHooksBeforeRemovingOldOnesOnOwningThread()
+    {
+        using var api = new FakeHookApi();
+        using var hooks = new HookThread(new HotkeyMatcher(), 8, api);
+        var reports = new BlockingCollection<HookRehookReport>();
+        hooks.Rehooked += reports.Add;
+        Assert.True(hooks.Start());
+        hooks.CheckHealth();
+        Assert.Equal(0, api.PostRehookCount);
+
+        hooks.Notify(HookEnvironmentChange.Unlocked);
+        Assert.True(reports.TryTake(out var report, TimeSpan.FromSeconds(5)));
+        Assert.Equal(new HookRehookReport(HookRehookReason.Environment, true, 1), report);
+        Assert.Equal(9, api.RegisterCount);
+        Assert.Equal(2, api.UnregisterCount);
+        Assert.Equal(["register", "register", "unregister", "unregister"], api.LowLevelOrder.Skip(2).Take(4));
+        Assert.Single(api.RegistrationThreads.Distinct());
+        Assert.Equal(api.RegistrationThreads.First(), Assert.Single(api.RemovalThreads.Distinct()));
+
+        // 張り直したあとの停止は、新しい二つを含めて外し、成功を返す。古いハンドルの解除失敗は混ぜない。
+        Assert.True(hooks.Stop());
+        Assert.Equal(2 + 7, api.UnregisterCount);
+        Assert.True(hooks.Events.Completion.IsCompletedSuccessfully);
+    }
+
+    /// <summary>OS に外されて古いハンドルの解除が失敗しても、停止の成否には影響しない。</summary>
+    [Fact]
+    public void FailedUnhookOfOldHandleDuringRehookDoesNotFailStop()
+    {
+        using var api = new FakeHookApi();
+        using var hooks = new HookThread(new HotkeyMatcher(), 8, api);
+        var reports = new BlockingCollection<HookRehookReport>();
+        hooks.Rehooked += reports.Add;
+        Assert.True(hooks.Start());
+        api.FailUnregisterOf.Add(6);
+        api.FailUnregisterOf.Add(7);
+        hooks.Notify(HookEnvironmentChange.Unlocked);
+        Assert.True(reports.TryTake(out _, TimeSpan.FromSeconds(5)));
+        Assert.True(hooks.Stop());
+    }
+
+    /// <summary>片方しか登録できなかったときは古いフックを残し、成功した分を外す。</summary>
+    [Fact]
+    public void PartialRehookFailureKeepsOldHooksAndRemovesNewOnes()
+    {
+        using var api = new FakeHookApi();
+        using var hooks = new HookThread(new HotkeyMatcher(), 8, api);
+        var reports = new BlockingCollection<HookRehookReport>();
+        hooks.Rehooked += reports.Add;
+        Assert.True(hooks.Start());
+        api.FailedRegistration = 9;
+        hooks.Notify(HookEnvironmentChange.Unlocked);
+        Assert.True(reports.TryTake(out var report, TimeSpan.FromSeconds(5)));
+        Assert.False(report.Succeeded);
+        Assert.Equal(1, api.UnregisterCount);
+        Assert.True(hooks.Stop());
+        Assert.Equal(1 + 7, api.UnregisterCount);
+    }
+
+    /// <summary>構築から登録までに入力があっても、登録の完了を基準にするので疑わない。</summary>
+    [Fact]
+    public void InputBeforeRegistrationDoesNotLookLikeADeadHook()
+    {
+        using var api = new FakeHookApi();
+        using var hooks = new HookThread(new HotkeyMatcher(), 8, api);
+        var now = unchecked((uint)Environment.TickCount);
+        api.TickCount = now + 10_000;
+        api.LastInputTick = now + 5_000;
+        Assert.True(hooks.Start());
+        // 登録完了の時刻は偽の時計の now + 10_000。その前の入力は疑いの対象にならない。
+        hooks.CheckHealth();
+        Assert.Equal(0, api.PostRehookCount);
+        Assert.True(hooks.Stop());
+    }
+
+    /// <summary>起動前の通知は予約を残さない。起動直後に不要な張り直しが走らないようにする。</summary>
+    [Fact]
+    public void NotifyBeforeStartDoesNotScheduleARehook()
+    {
+        using var api = new FakeHookApi();
+        using var hooks = new HookThread(new HotkeyMatcher(), 8, api);
+        hooks.Notify(HookEnvironmentChange.Unlocked);
+        Assert.True(hooks.Start());
+        hooks.CheckHealth();
+        Assert.Equal(0, api.PostRehookCount);
+        Assert.True(hooks.Stop());
+    }
+
+    /// <summary>張り直しの途中で例外が出ても、メッセージループを止めず、後始末で全フックを外せる。</summary>
+    [Fact]
+    public void ExceptionDuringRehookKeepsTheMessageLoopAlive()
+    {
+        using var api = new FakeHookApi { ThrowOnRegisterAfter = 7 };
+        using var hooks = new HookThread(new HotkeyMatcher(), 8, api);
+        Assert.True(hooks.Start());
+        hooks.Notify(HookEnvironmentChange.Unlocked);
+        Assert.True(SpinWait.SpinUntil(() => api.RegisterCount > 7, TimeSpan.FromSeconds(5)));
+        Assert.Null(hooks.Failure);
+        Assert.True(hooks.Stop());
+        Assert.Null(hooks.Failure);
+    }
+
+    /// <summary>OS には入力があるのにコールバックが来ないときだけ、時計を進めて張り直す。</summary>
+    [Fact]
+    public void CheckHealthRehooksOnlyWhenOsInputOutrunsCallbacks()
+    {
+        using var api = new FakeHookApi();
+        using var hooks = new HookThread(new HotkeyMatcher(), 8, api);
+        Assert.True(hooks.Start());
+        var start = unchecked((uint)Environment.TickCount);
+        api.TickCount = start + 60_000;
+        api.LastInputTick = start - 5_000;
+        hooks.CheckHealth();
+        Assert.Equal(0, api.PostRehookCount);
+
+        api.LastInputTick = start + 59_000;
+        hooks.CheckHealth();
+        Assert.Equal(1, api.PostRehookCount);
+        hooks.CheckHealth();
+        Assert.Equal(1, api.PostRehookCount);
+        Assert.True(hooks.Stop());
+    }
+
+    /// <summary>マウスが生きていても、キーが押されているのにキーボードのコールバックが来なければ張り直す。</summary>
+    [Fact]
+    public void KeyHeldWithSilentKeyboardHookRehooksEvenWhileMouseIsAlive()
+    {
+        using var api = new FakeHookApi();
+        using var hooks = new HookThread(new HotkeyMatcher(), 8, api);
+        Assert.True(hooks.Start());
+        var now = api.TickCount;
+        api.TickCount = now + 5_000;
+        api.LastInputTick = now + 5_000;
+        // マウスのコールバックは来ている（時刻の比較だけでは見えない）が、キーボードは来ない。
+        hooks.TouchMouse();
+        api.KeyHeld = true;
+        hooks.CheckHealth();
+        Assert.Equal(1, api.PostRehookCount);
+        Assert.True(hooks.Stop());
+    }
+
+    /// <summary>キーが押されていなければ、キーボードが静かでも疑わない。</summary>
+    [Fact]
+    public void SilentKeyboardWithoutHeldKeyIsNotSuspicious()
+    {
+        using var api = new FakeHookApi();
+        using var hooks = new HookThread(new HotkeyMatcher(), 8, api);
+        Assert.True(hooks.Start());
+        var now = api.TickCount;
+        api.TickCount = now + 5_000;
+        api.LastInputTick = now;
+        hooks.TouchMouse();
+        hooks.CheckHealth();
+        Assert.Equal(0, api.PostRehookCount);
+        Assert.True(hooks.Stop());
+    }
+
+    /// <summary>キーボードが生きていても、カーソルが動いたのにマウスのコールバックが来なければ張り直す。</summary>
+    [Fact]
+    public void CursorMovedWithSilentMouseHookRehooksEvenWhileKeyboardIsAlive()
+    {
+        using var api = new FakeHookApi();
+        using var hooks = new HookThread(new HotkeyMatcher(), 8, api);
+        Assert.True(hooks.Start());
+        var now = api.TickCount;
+        // 最初の観測。カーソルの位置を覚えるだけ。
+        api.TickCount = now + 2_000;
+        api.LastInputTick = now;
+        hooks.CheckHealth();
+        // 次の観測までにカーソルが動いたが、マウスのコールバックはない。キーボードは来ている。
+        api.TickCount = now + 4_000;
+        api.CursorX = 50;
+        api.LastInputTick = now + 4_000;
+        hooks.TouchKeyboard();
+        hooks.CheckHealth();
+        Assert.Equal(1, api.PostRehookCount);
+        Assert.True(hooks.Stop());
+    }
+
+    /// <summary>SetCursorPos のようにカーソルだけが動き、OS の入力がなければ疑わない。</summary>
+    [Fact]
+    public void CursorMovedWithoutOsInputIsNotSuspicious()
+    {
+        using var api = new FakeHookApi();
+        using var hooks = new HookThread(new HotkeyMatcher(), 8, api);
+        Assert.True(hooks.Start());
+        var now = api.TickCount;
+        api.TickCount = now + 2_000;
+        api.LastInputTick = now;
+        hooks.CheckHealth();
+        api.TickCount = now + 4_000;
+        api.CursorX = 50;
+        hooks.TouchKeyboard();
+        hooks.CheckHealth();
+        Assert.Equal(0, api.PostRehookCount);
+        Assert.True(hooks.Stop());
+    }
+
+    /// <summary>カーソルが動き、その間にマウスのコールバックも来ていれば疑わない。</summary>
+    [Fact]
+    public void CursorMovedWithMouseCallbacksIsNotSuspicious()
+    {
+        using var api = new FakeHookApi();
+        using var hooks = new HookThread(new HotkeyMatcher(), 8, api);
+        Assert.True(hooks.Start());
+        var now = api.TickCount;
+        api.LastInputTick = now;
+        hooks.CheckHealth();
+        // コールバックは前回の観測のあとに来たことにする。
+        api.TickCount = now + 1_000;
+        api.CursorX = 50;
+        hooks.TouchMouse();
+        hooks.CheckHealth();
+        Assert.Equal(0, api.PostRehookCount);
+        Assert.True(hooks.Stop());
+    }
+
     private sealed class FakeHookApi : IHookApi, IDisposable
     {
-        private readonly ManualResetEventSlim _quit = new(false);
+        private readonly BlockingCollection<uint> _messages = [];
+        internal uint TickCount { get; set; } = unchecked((uint)Environment.TickCount);
+        internal uint LastInputTick { get; set; } = unchecked((uint)Environment.TickCount);
+        internal int PostRehookCount { get; private set; }
+        internal ConcurrentBag<nint> FailUnregisterOf { get; } = [];
+        internal ConcurrentQueue<string> LowLevelOrder { get; } = [];
         internal int RegisterCount { get; private set; }
         internal int UnregisterCount { get; private set; }
         internal int PostCount { get; private set; }
-        internal int FailedRegistration { get; init; }
+        internal int FailedRegistration { get; set; }
         internal bool PostSucceeds { get; set; } = true;
         internal ConcurrentBag<int> RegistrationThreads { get; } = [];
         internal ConcurrentBag<int> RemovalThreads { get; } = [];
@@ -371,15 +596,46 @@ public sealed class HookThreadTests
         public uint GetThreadId() => 123;
         public void CreateMessageQueue() { }
         public nint RegisterEvent(uint eventId, nint callback) => Register();
-        public nint RegisterMouse(nint callback) => Register();
-        public nint RegisterKeyboard(nint callback) => Register();
-        public bool UnregisterEvent(nint hook) => Unregister();
-        public bool UnregisterLowLevel(nint hook) => Unregister();
+        public nint RegisterMouse(nint callback) => RegisterLowLevel();
+        public nint RegisterKeyboard(nint callback) => RegisterLowLevel();
+        public bool UnregisterEvent(nint hook) => Unregister(hook);
 
-        public int ReadAndDispatchMessage()
+        public bool UnregisterLowLevel(nint hook)
         {
-            _quit.Wait();
-            return 0;
+            LowLevelOrder.Enqueue("unregister");
+            return Unregister(hook);
+        }
+
+        public int ReadAndDispatchMessage(out uint messageId)
+        {
+            messageId = _messages.Take();
+            return messageId == 0 ? 0 : 1;
+        }
+
+        public uint GetTickCount() => TickCount;
+        internal bool KeyHeld { get; set; }
+        internal int ThrowOnRegisterAfter { get; init; } = int.MaxValue;
+        internal int CursorX { get; set; }
+        public bool IsNonModifierKeyDown() => KeyHeld;
+
+        public bool TryGetCursorPosition(out int x, out int y)
+        {
+            x = CursorX;
+            y = 0;
+            return true;
+        }
+
+        public bool TryGetLastInputTick(out uint tick)
+        {
+            tick = LastInputTick;
+            return true;
+        }
+
+        public bool PostRehook(uint threadId)
+        {
+            PostRehookCount++;
+            _messages.Add(HookMessages.Rehook);
+            return true;
         }
 
         public bool PostQuit(uint threadId)
@@ -387,13 +643,25 @@ public sealed class HookThreadTests
             PostCount++;
             if (PostSucceeds)
             {
-                _quit.Set();
+                _messages.Add(0);
             }
 
             return PostSucceeds;
         }
 
-        public void Dispose() => _quit.Dispose();
+        public void Dispose() => _messages.Dispose();
+
+        private nint RegisterLowLevel()
+        {
+            if (RegisterCount >= ThrowOnRegisterAfter)
+            {
+                RegisterCount++;
+                throw new InvalidOperationException();
+            }
+
+            LowLevelOrder.Enqueue("register");
+            return Register();
+        }
 
         private nint Register()
         {
@@ -402,11 +670,11 @@ public sealed class HookThreadTests
             return RegisterCount == FailedRegistration ? 0 : RegisterCount;
         }
 
-        private bool Unregister()
+        private bool Unregister(nint hook)
         {
             RemovalThreads.Add(Environment.CurrentManagedThreadId);
             UnregisterCount++;
-            return true;
+            return !FailUnregisterOf.Contains(hook);
         }
     }
 }

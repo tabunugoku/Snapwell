@@ -1,0 +1,214 @@
+using Snapwell.Core.Hooks;
+
+namespace Snapwell.Core.Tests.Hooks;
+
+/// <summary>張り直しの判断。時計とフック・OS の入力時刻はテストが渡す。</summary>
+public sealed class HookRehookPolicyTests
+{
+    private const uint Start = 1_000_000;
+
+    [Fact]
+    public void NoInputMeansNoRehook()
+    {
+        var policy = new HookRehookPolicy();
+        Assert.Equal(HookRehookReason.None, policy.Evaluate(Start + 600_000, Start, Start - 1));
+    }
+
+    [Fact]
+    public void InputThatReachedTheHookMeansNoRehook()
+    {
+        var policy = new HookRehookPolicy();
+        Assert.Equal(HookRehookReason.None, policy.Evaluate(Start + 10_000, Start + 9_990, Start + 10_000));
+        Assert.Equal(HookRehookReason.None,
+            policy.Evaluate(Start + 10_000, Start + 9_000, Start + 9_000 + HookRehookPolicy.InputGraceMs));
+    }
+
+    [Fact]
+    public void OsInputWithoutCallbackBeyondGraceRehooks()
+    {
+        var policy = new HookRehookPolicy();
+        var reason = policy.Evaluate(Start + 10_000, Start, Start + HookRehookPolicy.InputGraceMs + 1);
+        Assert.Equal(HookRehookReason.InputMismatch, reason);
+    }
+
+    [Fact]
+    public void NoRefireRightAfterRehook()
+    {
+        var policy = new HookRehookPolicy();
+        var now = Start + 10_000;
+        Assert.Equal(HookRehookReason.InputMismatch, policy.Evaluate(now, Start, now - 100));
+        // 基準を now に戻したあとも OS の入力が続いても、間隔が空くまで張り直さない。
+        Assert.Equal(HookRehookReason.None, policy.Evaluate(now + 1_000, now, now + 1_000));
+        Assert.Equal(HookRehookReason.None,
+            policy.Evaluate(now + HookRehookPolicy.InitialBackoffMs - 1, now, now + 9_000));
+    }
+
+    [Fact]
+    public void RepeatedSuspicionBacksOffExponentiallyUpToTheCap()
+    {
+        var policy = new HookRehookPolicy();
+        var now = Start;
+        var expected = HookRehookPolicy.InitialBackoffMs;
+        Assert.Equal(HookRehookReason.InputMismatch, policy.Evaluate(now, now - 5_000, now));
+        for (var round = 0; round < 12; round++)
+        {
+            // フックは沈黙したまま、OS の入力だけが続く。
+            var lastHook = now;
+            now += expected - 1;
+            Assert.Equal(HookRehookReason.None, policy.Evaluate(now, lastHook, now));
+            now += 1;
+            Assert.Equal(HookRehookReason.InputMismatch, policy.Evaluate(now, lastHook, now));
+            expected = Math.Min(expected * 2, HookRehookPolicy.MaxBackoffMs);
+        }
+
+        Assert.Equal(HookRehookPolicy.MaxBackoffMs, expected);
+    }
+
+    [Fact]
+    public void CallbackAfterRehookResetsBackoff()
+    {
+        var policy = new HookRehookPolicy();
+        var first = Start;
+        policy.Evaluate(first, first - 5_000, first);
+        // フックは沈黙したまま。二度目の疑いでバックオフが倍（20 秒）になる。
+        var second = first + HookRehookPolicy.InitialBackoffMs;
+        Assert.Equal(HookRehookReason.InputMismatch, policy.Evaluate(second, first, second));
+        // 倍のバックオフの途中で、コールバックが来た。生きているので、バックオフは最初に戻る。
+        var alive = second + 2_000;
+        Assert.Equal(HookRehookReason.None, policy.Evaluate(alive, alive, alive));
+        // 最初の間隔（10 秒）より短い 5 秒後でも、次の疑いは張り直せる。戻っていなければ 20 秒待たされる。
+        var third = alive + 3_000;
+        Assert.Equal(HookRehookReason.InputMismatch, policy.Evaluate(third, second, third));
+    }
+
+    [Fact]
+    public void TickCounterWrapAroundIsHandled()
+    {
+        var policy = new HookRehookPolicy();
+        // 一周する直前にフックが最後に呼ばれ、一周した直後に OS の入力があった。
+        var lastHook = uint.MaxValue - 100;
+        var lastInput = 5_000u;
+        Assert.Equal(HookRehookReason.InputMismatch, policy.Evaluate(6_000, lastHook, lastInput));
+
+        var other = new HookRehookPolicy();
+        // 一周をまたいでも、フックが新しければ疑わない。
+        Assert.Equal(HookRehookReason.None, other.Evaluate(6_000, 5_000, uint.MaxValue - 100));
+    }
+
+    [Fact]
+    public void RestoredIsApprovedImmediatelyAndOverlappingRestoresAreCoalesced()
+    {
+        var policy = new HookRehookPolicy();
+        policy.Notify(HookEnvironmentChange.Resumed, Start);
+        Assert.Equal(HookRehookReason.Environment, policy.Evaluate(Start, Start, Start));
+
+        // 自動復帰・ユーザー操作での復帰・ロック解除が続けて届いても、張り直しは 1 回にまとめる。
+        policy.Notify(HookEnvironmentChange.Resumed, Start + 100);
+        policy.Notify(HookEnvironmentChange.Unlocked, Start + 2_000);
+        Assert.Equal(HookRehookReason.None, policy.Evaluate(Start + HookRehookPolicy.MinIntervalMs, Start, Start));
+
+        // まとめる時間を過ぎたあとの復帰は、改めて張り直す。
+        var later = Start + HookRehookPolicy.EnvironmentCoalesceMs;
+        policy.Notify(HookEnvironmentChange.Unlocked, later);
+        Assert.Equal(HookRehookReason.Environment, policy.Evaluate(later, Start, Start));
+    }
+
+    [Fact]
+    public void PauseExpiresWhenTheMatchingNotificationNeverArrives()
+    {
+        var policy = new HookRehookPolicy();
+        policy.Notify(HookEnvironmentChange.Suspended, Start);
+        var input = Start + HookRehookPolicy.PauseLimitMs - 1;
+        Assert.Equal(HookRehookReason.None, policy.Evaluate(input, Start, input));
+        // 復帰の通知が届かないまま上限を過ぎたら、検知に戻る。
+        var expired = Start + HookRehookPolicy.PauseLimitMs;
+        Assert.Equal(HookRehookReason.InputMismatch, policy.Evaluate(expired, Start, expired));
+    }
+
+    [Fact]
+    public void DetectionIsPausedWhileInterruptedAndResumesWithARehook()
+    {
+        var policy = new HookRehookPolicy();
+        policy.Notify(HookEnvironmentChange.Locked, Start);
+        // ロック中は OS の入力があっても疑わない。
+        Assert.Equal(HookRehookReason.None, policy.Evaluate(Start + 60_000, Start, Start + 60_000));
+        policy.Notify(HookEnvironmentChange.Unlocked, Start);
+        Assert.Equal(HookRehookReason.Environment, policy.Evaluate(Start + 61_000, Start, Start));
+    }
+
+    [Fact]
+    public void InterruptionCancelsAPendingRehook()
+    {
+        var policy = new HookRehookPolicy();
+        policy.Notify(HookEnvironmentChange.Unlocked, Start);
+        policy.Evaluate(Start, Start, Start);
+        policy.Notify(HookEnvironmentChange.Unlocked, Start);
+        policy.Notify(HookEnvironmentChange.Locked, Start);
+        Assert.Equal(HookRehookReason.None, policy.Evaluate(Start + 10_000, Start, Start));
+    }
+
+    [Fact]
+    public void ResumeWhileStillLockedKeepsDetectionPausedUntilUnlock()
+    {
+        var policy = new HookRehookPolicy();
+        policy.Notify(HookEnvironmentChange.Suspended, Start);
+        policy.Notify(HookEnvironmentChange.Locked, Start);
+        // 復帰がロック画面の途中で届いても、解除までは入力があっても疑わない。
+        policy.Notify(HookEnvironmentChange.Resumed, Start);
+        Assert.Equal(HookRehookReason.None, policy.Evaluate(Start + 60_000, Start, Start + 60_000));
+        policy.Notify(HookEnvironmentChange.Unlocked, Start);
+        Assert.Equal(HookRehookReason.Environment, policy.Evaluate(Start + 61_000, Start, Start));
+    }
+
+    [Fact]
+    public void UnlockWhileStillSuspendedKeepsDetectionPausedUntilResume()
+    {
+        var policy = new HookRehookPolicy();
+        policy.Notify(HookEnvironmentChange.Suspended, Start);
+        policy.Notify(HookEnvironmentChange.Locked, Start);
+        policy.Notify(HookEnvironmentChange.Unlocked, Start);
+        Assert.Equal(HookRehookReason.None, policy.Evaluate(Start + 60_000, Start, Start + 60_000));
+        policy.Notify(HookEnvironmentChange.Resumed, Start);
+        Assert.Equal(HookRehookReason.Environment, policy.Evaluate(Start + 61_000, Start, Start));
+    }
+
+    /// <summary>復帰の張り直しのあと、間を置いて 1 回だけ張り直す。</summary>
+    [Fact]
+    public void EnvironmentRehookIsFollowedByExactlyOneDelayedRetry()
+    {
+        var policy = new HookRehookPolicy();
+        policy.Notify(HookEnvironmentChange.Resumed, Start);
+        Assert.Equal(HookRehookReason.Environment, policy.Evaluate(Start, Start, Start));
+        Assert.Equal(HookRehookReason.None, policy.Evaluate(Start + 4_000, Start, Start));
+        var retry = Start + HookRehookPolicy.EnvironmentFollowUpMs;
+        Assert.Equal(HookRehookReason.Environment, policy.Evaluate(retry, Start, Start));
+        Assert.Equal(HookRehookReason.None, policy.Evaluate(retry + 60_000, Start, Start));
+    }
+
+    /// <summary>ロックとサスペンドの停止の上限は別々に数える。</summary>
+    [Fact]
+    public void PauseLimitIsCountedPerSource()
+    {
+        var policy = new HookRehookPolicy();
+        policy.Notify(HookEnvironmentChange.Locked, Start);
+        var suspendedAt = Start + HookRehookPolicy.PauseLimitMs - 10_000;
+        policy.Notify(HookEnvironmentChange.Suspended, suspendedAt);
+        var now = Start + HookRehookPolicy.PauseLimitMs;
+        // ロックは上限に達したが、サスペンドは入ったばかりなので、まだ止めておく。
+        Assert.Equal(HookRehookReason.None, policy.Evaluate(now, Start, now));
+    }
+
+    [Fact]
+    public void OneSilentHookRehooksWithoutMismatchAndKeepsBackoffWhileOtherHookIsAlive()
+    {
+        var policy = new HookRehookPolicy();
+        var first = Start;
+        // 時刻は食い違わない（もう片方のフックが更新している）が、片方が黙っている。
+        Assert.Equal(HookRehookReason.InputMismatch, policy.Evaluate(first, first, first, oneHookSilent: true));
+        // 張り直しで直らず、もう片方のコールバックだけが続く。バックオフは戻らず、10 秒は待つ。
+        var soon = first + HookRehookPolicy.MinIntervalMs;
+        Assert.Equal(HookRehookReason.None, policy.Evaluate(soon, soon, soon, oneHookSilent: true));
+        var later = first + HookRehookPolicy.InitialBackoffMs;
+        Assert.Equal(HookRehookReason.InputMismatch, policy.Evaluate(later, later, later, oneHookSilent: true));
+    }
+}
