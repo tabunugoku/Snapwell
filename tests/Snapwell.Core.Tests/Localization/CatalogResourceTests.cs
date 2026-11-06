@@ -97,13 +97,13 @@ public sealed class CatalogResourceTests
         var english = TextCatalog.Load(UiLanguage.English);
         var chinese = TextCatalog.Load(language);
         Assert.Equal(english.Keys.Order(StringComparer.Ordinal), chinese.Keys.Order(StringComparer.Ordinal));
-        var placeholder = new System.Text.RegularExpressions.Regex(@"\{\w+\}");
+        var placeholder = new System.Text.RegularExpressions.Regex(@"\{[^}]*\}");
         foreach (var key in english.Keys)
         {
             Assert.Equal(
                 placeholder.Matches(english.Get(key)).Select(match => match.Value).Order(StringComparer.Ordinal),
                 placeholder.Matches(chinese.Get(key)).Select(match => match.Value).Order(StringComparer.Ordinal));
-            Assert.DoesNotContain(chinese.Get(key), character => character is >= '぀' and <= 'ヿ');
+            Assert.DoesNotContain(chinese.Get(key), character => character is >= '\u3040' and <= '\u30FF');
         }
     }
 
@@ -122,7 +122,8 @@ public sealed class CatalogResourceTests
     {
         var resources = names.ToHashSet(StringComparer.Ordinal);
         return resources.Select(name => name[..(name.LastIndexOf('/') + 1)]).Distinct()
-            .SelectMany(domain => new[] { "ja", "en", "zh-Hans", "zh-Hant" }.Select(language => domain + language + ".json"))
+            .SelectMany(domain => Enum.GetValues<UiLanguage>()
+                .Select(language => domain + language.ToPreference() + ".json"))
             .Where(name => !resources.Contains(name)).Order().ToArray();
     }
 }
