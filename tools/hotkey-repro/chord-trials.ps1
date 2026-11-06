@@ -1,6 +1,8 @@
 ﻿# 起動済みの Snapwell（または -Exe で新しく起動した Snapwell）に、試験用に開いたメモ帳だけへ
 # Ctrl+Alt+←/→ を交互に注入し、メモ帳が動いたかを記録する（SendInput。注入入力でホットキーが効くかの対照と再現）。
 # 実行前に Snapwell の常駐を止める必要がある場合は、利用者の承認を得る。docs/MANUAL_TEST.md の「起動直後のホットキー」を見る。
+# 前提: Snapwell が有効（一時停止でない）で、Ctrl+Alt+←/→ が既定どおり LeftHalf/RightHalf に割り当てられている。
+# 割り当てを変えていると、全部の試行が MISS と出て、フックの不具合と取り違える。ARM64 でのみ確認している。
 param(
     [int]$Trials = 10,
     [int]$EventGapMs = 0,

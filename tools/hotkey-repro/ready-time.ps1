@@ -1,5 +1,7 @@
 ﻿# Snapwell を起動した瞬間から 100ms ごとに Ctrl+Alt+← をメモ帳へ注入し、最初にメモ帳が動くまでの時間を測る。
 # 起動からフックが効くまでの時間の目安になる。docs/MANUAL_TEST.md の「起動直後のホットキー」を見る。
+# 前提: Snapwell が有効（一時停止でない）で、Ctrl+Alt+←/→ が既定どおり LeftHalf/RightHalf に割り当てられている。
+# 割り当てを変えていると、全部の試行が MISS と出て、フックの不具合と取り違える。ARM64 でのみ確認している。
 param([Parameter(Mandatory)][string]$Exe, [int]$Runs = 10)
 
 Add-Type -TypeDefinition @'
