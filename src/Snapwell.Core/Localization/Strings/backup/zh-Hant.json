@@ -18,7 +18,7 @@
   "Backup.Sync.Rejected": "失敗：{message}",
   "Backup_Title.Text": "同步與備份",
   "Backup_Lead.Text": "可與其他電腦共用快速鍵、網格方案、間距、手感和規則。啟動、Windows 功能和同步資料夾選項僅適用於這台電腦。",
-  "Backup_CloudHint.Text": "Snapwell 不會將設定傳送到雲端。OneDrive 或 Dropbox 等檔案同步服務會將同步資料夾中的檔案複製到其他電腦。該服務完成同步後，變更才會生效。",
+  "Backup_CloudHint.Text": "Snapwell 不會將設定傳送到雲端。OneDrive 或 Dropbox 等檔案同步服務會將同步資料夾中的檔案複製到其他電腦。該服務完成同步後，變更才會同步到其他電腦。",
   "Backup_FolderTitle.Text": "同步資料夾",
   "Backup_SyncFolderText.Text": "未設定",
   "Backup_SyncFolderButton.Content": "變更",
