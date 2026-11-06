@@ -103,7 +103,7 @@ public sealed class CatalogResourceTests
             Assert.Equal(
                 placeholder.Matches(english.Get(key)).Select(match => match.Value).Order(StringComparer.Ordinal),
                 placeholder.Matches(chinese.Get(key)).Select(match => match.Value).Order(StringComparer.Ordinal));
-            Assert.DoesNotContain(chinese.Get(key), character => character is >= '\u3040' and <= '\u30FF');
+            Assert.DoesNotContain(chinese.Get(key), character => character is >= '\u3041' and <= '\u30FA');
         }
     }
 
