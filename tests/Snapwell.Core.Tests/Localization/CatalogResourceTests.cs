@@ -47,9 +47,9 @@ public sealed class CatalogResourceTests
         Assert.Contains("i18n/grid/ja.json", exception.Message);
     }
 
-    /// <summary>全領域で日本語と英語を必須にし、任意の中国語も同じ論理名で埋め込む。</summary>
+    /// <summary>全領域で 4 言語を必須にし、同じ論理名で埋め込む。</summary>
     [Fact]
-    public void EveryDomainHasJapaneseAndEnglishAndPortableResourceNames()
+    public void EveryDomainHasAllLanguagesAndPortableResourceNames()
     {
         var folder = Path.Combine(SourceScan.RepositoryRoot(), "src/Snapwell.Core/Localization/Strings");
         var expected = Directory.EnumerateFiles(folder, "*.json", SearchOption.AllDirectories)
@@ -76,30 +76,53 @@ public sealed class CatalogResourceTests
         }
     }
 
-    /// <summary>領域に一つでも言語があれば、日本語と英語の欠落を検出する。</summary>
+    /// <summary>領域に一つでも言語があれば、ほかの言語の欠落を検出する。</summary>
     [Fact]
     public void DetectsIncompleteDomainEvenWithoutJapaneseResource()
     {
-        Assert.Equal(["i18n/grid/en.json"], MissingLanguages(["i18n/grid/ja.json"]));
-        Assert.Equal(["i18n/look/ja.json"], MissingLanguages(["i18n/look/en.json"]));
-        Assert.Equal(["i18n/grid/en.json", "i18n/grid/ja.json"],
+        Assert.Equal(["i18n/grid/en.json", "i18n/grid/zh-Hans.json", "i18n/grid/zh-Hant.json"],
+            MissingLanguages(["i18n/grid/ja.json"]));
+        Assert.Equal(["i18n/look/ja.json", "i18n/look/zh-Hans.json", "i18n/look/zh-Hant.json"],
+            MissingLanguages(["i18n/look/en.json"]));
+        Assert.Equal(["i18n/grid/en.json", "i18n/grid/ja.json", "i18n/grid/zh-Hant.json"],
             MissingLanguages(["i18n/grid/zh-Hans.json"]));
     }
 
-    /// <summary>中国語が一つもない領域と、片方だけある領域を許す。</summary>
-    [Fact]
-    public void JapaneseAndEnglishAreSufficientWithOptionalChineseResources()
+    /// <summary>中国語の辞書は、英語と同じキーを持ち、プレースホルダーも一致する。</summary>
+    [Theory]
+    [InlineData(UiLanguage.ChineseSimplified)]
+    [InlineData(UiLanguage.ChineseTraditional)]
+    public void ChineseCatalogMatchesEnglishKeysAndPlaceholders(UiLanguage language)
     {
-        Assert.Empty(MissingLanguages(["i18n/launcher/ja.json", "i18n/launcher/en.json"]));
-        Assert.Empty(MissingLanguages(
-            ["i18n/launcher/ja.json", "i18n/launcher/en.json", "i18n/launcher/zh-Hant.json"]));
+        var english = TextCatalog.Load(UiLanguage.English);
+        var chinese = TextCatalog.Load(language);
+        Assert.Equal(english.Keys.Order(StringComparer.Ordinal), chinese.Keys.Order(StringComparer.Ordinal));
+        var placeholder = new System.Text.RegularExpressions.Regex(@"\{\w+\}");
+        foreach (var key in english.Keys)
+        {
+            Assert.Equal(
+                placeholder.Matches(english.Get(key)).Select(match => match.Value).Order(StringComparer.Ordinal),
+                placeholder.Matches(chinese.Get(key)).Select(match => match.Value).Order(StringComparer.Ordinal));
+            Assert.DoesNotContain(chinese.Get(key), character => character is >= '぀' and <= 'ヿ');
+        }
+    }
+
+    /// <summary>4 言語のうち一つでも欠ける領域を検出する。</summary>
+    [Fact]
+    public void DetectsDomainWithoutChineseResources()
+    {
+        Assert.Equal(["i18n/launcher/zh-Hans.json", "i18n/launcher/zh-Hant.json"],
+            MissingLanguages(["i18n/launcher/ja.json", "i18n/launcher/en.json"]));
+        Assert.Equal(["i18n/launcher/zh-Hans.json"],
+            MissingLanguages(
+                ["i18n/launcher/ja.json", "i18n/launcher/en.json", "i18n/launcher/zh-Hant.json"]));
     }
 
     private static string[] MissingLanguages(IEnumerable<string> names)
     {
         var resources = names.ToHashSet(StringComparer.Ordinal);
         return resources.Select(name => name[..(name.LastIndexOf('/') + 1)]).Distinct()
-            .SelectMany(domain => new[] { "ja", "en" }.Select(language => domain + language + ".json"))
+            .SelectMany(domain => new[] { "ja", "en", "zh-Hans", "zh-Hant" }.Select(language => domain + language + ".json"))
             .Where(name => !resources.Contains(name)).Order().ToArray();
     }
 }

@@ -88,10 +88,15 @@ public sealed class LauncherPresetLocalizationTests : IDisposable
             Assert.Equal(ranges, LauncherPreset.All.Select(preset => preset.RangeFor(GridPlan.EightByEight)));
             Assert.Equal(["left", "right", "tl", "l3", "r23", "c3", "center", "max"],
                 LauncherPreset.NormalizeIds(null));
-            if (language is UiLanguage.ChineseSimplified or UiLanguage.ChineseTraditional)
+            if (language is UiLanguage.ChineseSimplified)
             {
-                Assert.Equal("Top half", LauncherPreset.All[0].Name);
-                Assert.Equal("Halves", LauncherPreset.All[0].Group);
+                Assert.Equal("上半部分", LauncherPreset.All[0].Name);
+                Assert.Equal("二分之一", LauncherPreset.All[0].Group);
+            }
+            else if (language is UiLanguage.ChineseTraditional)
+            {
+                Assert.Equal("上半部", LauncherPreset.All[0].Name);
+                Assert.Equal("二分之一", LauncherPreset.All[0].Group);
             }
         }
     }
