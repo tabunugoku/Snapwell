@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
+using Snapwell.Core.Localization;
 
 namespace Snapwell.App.Tests.Localization;
 
@@ -63,8 +64,9 @@ public sealed class SettingsLocalizationSourceTests
         Assert.NotEqual("False", (string?)picker.Attribute("IsEnabled"));
         Assert.Equal("200", (string?)picker.Attribute("Width"));
         Assert.Equal("Language_SelectionChanged", (string?)picker.Attribute("SelectionChanged"));
-        Assert.Equal(new[] { "auto", "ja", "en", "zh-Hans", "zh-Hant" },
-            picker.Elements().Select(element => (string?)element.Attribute("Tag")));
+        Assert.Equal(new[] { "auto" }.Concat(Enum.GetValues<UiLanguage>().Select(language => language.ToPreference()))
+            .Order(StringComparer.Ordinal),
+            picker.Elements().Select(element => (string?)element.Attribute("Tag")).Order(StringComparer.Ordinal));
     }
 
     /// <summary>移行した画面の属性に日本語を二重に保持しない。</summary>

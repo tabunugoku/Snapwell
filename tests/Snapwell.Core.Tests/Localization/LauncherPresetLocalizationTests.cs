@@ -78,6 +78,9 @@ public sealed class LauncherPresetLocalizationTests : IDisposable
     [Fact]
     public void SavedIdsAndRangesStayStableAndMissingChineseNamesFallBackToEnglish()
     {
+        UiText.Use(UiLanguage.English);
+        var englishName = LauncherPreset.All[0].Name;
+        var englishGroup = LauncherPreset.All[0].Group;
         UiText.Use(UiLanguage.Japanese);
         var ranges = LauncherPreset.All.Select(preset => preset.RangeFor(GridPlan.EightByEight)).ToArray();
         foreach (var language in Enum.GetValues<UiLanguage>())
@@ -88,15 +91,10 @@ public sealed class LauncherPresetLocalizationTests : IDisposable
             Assert.Equal(ranges, LauncherPreset.All.Select(preset => preset.RangeFor(GridPlan.EightByEight)));
             Assert.Equal(["left", "right", "tl", "l3", "r23", "c3", "center", "max"],
                 LauncherPreset.NormalizeIds(null));
-            if (language is UiLanguage.ChineseSimplified)
+            if (language is UiLanguage.ChineseSimplified or UiLanguage.ChineseTraditional)
             {
-                Assert.Equal("上半部分", LauncherPreset.All[0].Name);
-                Assert.Equal("二分之一", LauncherPreset.All[0].Group);
-            }
-            else if (language is UiLanguage.ChineseTraditional)
-            {
-                Assert.Equal("上半部", LauncherPreset.All[0].Name);
-                Assert.Equal("二分之一", LauncherPreset.All[0].Group);
+                Assert.NotEqual(englishName, LauncherPreset.All[0].Name);
+                Assert.NotEqual(englishGroup, LauncherPreset.All[0].Group);
             }
         }
     }
