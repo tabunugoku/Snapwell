@@ -68,6 +68,7 @@ internal static class Program
         var hooks = new HookService(new HookThread(matcher), log);
         var deviceStore = SettingsStores.Device();
         var tray = new TrayIcon(log, deviceStore);
+        tray.EnvironmentChanged += hooks.Notify;
         var inspector = new Win32WindowInspector();
         var monitors = new Win32MonitorSource();
         var position = new Win32WindowPositionApi();

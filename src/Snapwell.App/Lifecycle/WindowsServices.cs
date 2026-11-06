@@ -41,12 +41,28 @@ internal sealed class SnapGuardService(SnapSettingsGuard guard) : ISnapGuard
 }
 
 /// <summary>Platform の停止待ちに上限を付け、セッション終了時の復元へ進める。</summary>
-internal sealed class HookService(HookThread hooks, IAppLog log) : IHookService
+internal sealed class HookService : IHookService
 {
-    public ChannelReader<HookEvent> Events => hooks.Events;
-    public bool MouseTrackingEnabled { set => hooks.MouseTrackingEnabled = value; }
-    public Exception? Failure => hooks.Failure;
-    public bool Start() => hooks.Start();
+    private readonly HookThread _hooks;
+    private readonly IAppLog _log;
+
+    public HookService(HookThread hooks, IAppLog log)
+    {
+        _hooks = hooks;
+        _log = log;
+        // 張り直しは稀で、原因の調査に要る。端末内の app.log にだけ残す。呼び出しはフックのスレッドの外。
+        hooks.Rehooked += report => _log.Error(new InvalidOperationException(
+            // i18n-keep: 画面に出さない開発者向けの例外・ログ。
+            $"低レベルフックを張り直した (理由={report.Reason}、成功={report.Succeeded}、{report.Count} 回目)。"));
+    }
+
+    /// <summary>ロック・復帰などを伝える。ウィンドウプロシージャから呼ぶので、すぐ返る。</summary>
+    public void Notify(HookEnvironmentChange change) => _hooks.Notify(change);
+
+    public ChannelReader<HookEvent> Events => _hooks.Events;
+    public bool MouseTrackingEnabled { set => _hooks.MouseTrackingEnabled = value; }
+    public Exception? Failure => _hooks.Failure;
+    public bool Start() => _hooks.Start();
     public void Stop()
     {
         // Platform の Stop は Join に上限がない。OS 側の応答を待ち続けないよう別タスクで行う。
@@ -54,17 +70,17 @@ internal sealed class HookService(HookThread hooks, IAppLog log) : IHookService
         {
             try
             {
-                if (!hooks.Stop())
+                if (!_hooks.Stop())
                 {
                     // i18n-keep: 画面に出さない開発者向けの例外・ログ。
-                    log.Error(new InvalidOperationException("フックを解除できない。"));
+                    _log.Error(new InvalidOperationException("フックを解除できない。"));
                 }
             }
             catch (Exception exception)
             {
                 try
                 {
-                    log.Error(exception);
+                    _log.Error(exception);
                 }
                 catch (Exception)
                 {
@@ -74,7 +90,7 @@ internal sealed class HookService(HookThread hooks, IAppLog log) : IHookService
         if (!stop.Wait(TimeSpan.FromMilliseconds(250)))
         {
             // i18n-keep: 画面に出さない開発者向けの例外・ログ。
-            log.Error(new TimeoutException("フックの停止完了を待たず、OS 設定の復元を続ける。"));
+            _log.Error(new TimeoutException("フックの停止完了を待たず、OS 設定の復元を続ける。"));
         }
     }
 }

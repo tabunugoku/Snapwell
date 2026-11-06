@@ -62,3 +62,6 @@ SetFocus
 SetWindowText
 NotifyWinEvent
 VIRTUAL_KEY
+WTSRegisterSessionNotification
+WTSUnRegisterSessionNotification
+NOTIFY_FOR_THIS_SESSION
