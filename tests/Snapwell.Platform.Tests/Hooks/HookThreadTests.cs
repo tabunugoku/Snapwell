@@ -369,7 +369,7 @@ public sealed class HookThreadTests
         hooks.CheckHealth();
         Assert.Equal(0, api.PostRehookCount);
 
-        hooks.Notify(HookEnvironmentChange.Restored);
+        hooks.Notify(HookEnvironmentChange.Unlocked);
         Assert.True(reports.TryTake(out var report, TimeSpan.FromSeconds(5)));
         Assert.Equal(new HookRehookReport(HookRehookReason.Environment, true, 1), report);
         Assert.Equal(9, api.RegisterCount);
@@ -395,7 +395,7 @@ public sealed class HookThreadTests
         Assert.True(hooks.Start());
         api.FailUnregisterOf.Add(6);
         api.FailUnregisterOf.Add(7);
-        hooks.Notify(HookEnvironmentChange.Restored);
+        hooks.Notify(HookEnvironmentChange.Unlocked);
         Assert.True(reports.TryTake(out _, TimeSpan.FromSeconds(5)));
         Assert.True(hooks.Stop());
     }
@@ -410,12 +410,28 @@ public sealed class HookThreadTests
         hooks.Rehooked += reports.Add;
         Assert.True(hooks.Start());
         api.FailedRegistration = 9;
-        hooks.Notify(HookEnvironmentChange.Restored);
+        hooks.Notify(HookEnvironmentChange.Unlocked);
         Assert.True(reports.TryTake(out var report, TimeSpan.FromSeconds(5)));
         Assert.False(report.Succeeded);
         Assert.Equal(1, api.UnregisterCount);
         Assert.True(hooks.Stop());
         Assert.Equal(1 + 7, api.UnregisterCount);
+    }
+
+    /// <summary>構築から登録までに入力があっても、登録の完了を基準にするので疑わない。</summary>
+    [Fact]
+    public void InputBeforeRegistrationDoesNotLookLikeADeadHook()
+    {
+        using var api = new FakeHookApi();
+        using var hooks = new HookThread(new HotkeyMatcher(), 8, api);
+        var now = unchecked((uint)Environment.TickCount);
+        api.TickCount = now + 10_000;
+        api.LastInputTick = now + 5_000;
+        Assert.True(hooks.Start());
+        // 登録完了の時刻は偽の時計の now + 10_000。その前の入力は疑いの対象にならない。
+        hooks.CheckHealth();
+        Assert.Equal(0, api.PostRehookCount);
+        Assert.True(hooks.Stop());
     }
 
     /// <summary>OS には入力があるのにコールバックが来ないときだけ、時計を進めて張り直す。</summary>

@@ -207,6 +207,8 @@ public sealed class HookThread : IDisposable
                 return;
             }
 
+            // 起動が遅れた場合に、構築からの入力を「届かなかった入力」と誤認しない。基準は登録の完了時に取る。
+            Volatile.Write(ref _lastHookTick, unchecked((int)_api.GetTickCount()));
             _started = true;
             _ready.Set();
             int result;

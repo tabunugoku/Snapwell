@@ -3,11 +3,17 @@ namespace Snapwell.Platform.Hooks;
 /// <summary>セッションや電源の状態の変化。フックが外されうる前後を表す。</summary>
 public enum HookEnvironmentChange
 {
-    /// <summary>ロック・切断・サスペンド。入力がフックへ届かない期間の始まり。</summary>
-    Interrupted,
+    /// <summary>ロックまたは切断。入力がフックへ届かない期間の始まり。</summary>
+    Locked,
 
-    /// <summary>ロック解除・接続・復帰。フックを張り直す契機。</summary>
-    Restored,
+    /// <summary>ロック解除または接続。フックを張り直す契機。</summary>
+    Unlocked,
+
+    /// <summary>サスペンド。</summary>
+    Suspended,
+
+    /// <summary>スリープからの復帰。ロック画面へ戻ることが多いので、ロックの状態は別に持つ。</summary>
+    Resumed,
 }
 
 /// <summary>張り直しを求めた理由。</summary>
@@ -48,7 +54,8 @@ internal sealed class HookRehookPolicy
     internal const uint MaxBackoffMs = 600_000;
 
     private readonly object _gate = new();
-    private bool _paused;
+    private bool _locked;
+    private bool _suspended;
     private bool _pending;
     private bool _hasRehooked;
     private uint _lastRehookTick;
@@ -59,16 +66,16 @@ internal sealed class HookRehookPolicy
     {
         lock (_gate)
         {
-            if (change == HookEnvironmentChange.Interrupted)
+            // ロックとサスペンドは別々に持つ。復帰がロック画面の途中で届いても、解除まで検知を止める。
+            switch (change)
             {
-                _paused = true;
-                _pending = false;
+                case HookEnvironmentChange.Locked: _locked = true; break;
+                case HookEnvironmentChange.Suspended: _suspended = true; break;
+                case HookEnvironmentChange.Unlocked: _locked = false; break;
+                case HookEnvironmentChange.Resumed: _suspended = false; break;
             }
-            else
-            {
-                _paused = false;
-                _pending = true;
-            }
+
+            _pending = change is HookEnvironmentChange.Unlocked or HookEnvironmentChange.Resumed;
         }
     }
 
@@ -77,7 +84,7 @@ internal sealed class HookRehookPolicy
     {
         lock (_gate)
         {
-            if (_paused)
+            if (_locked || _suspended)
             {
                 return HookRehookReason.None;
             }

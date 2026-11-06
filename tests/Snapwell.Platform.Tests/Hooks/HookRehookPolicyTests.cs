@@ -99,11 +99,11 @@ public sealed class HookRehookPolicyTests
     public void RestoredIsApprovedImmediatelyAtFirstAndDebouncedAfterwards()
     {
         var policy = new HookRehookPolicy();
-        policy.Notify(HookEnvironmentChange.Restored);
+        policy.Notify(HookEnvironmentChange.Unlocked);
         Assert.Equal(HookRehookReason.Environment, policy.Evaluate(Start, Start, Start));
 
         // 復帰とロック解除が続けて来ても、連打せず、間隔が空いてから一度だけ張り直す。
-        policy.Notify(HookEnvironmentChange.Restored);
+        policy.Notify(HookEnvironmentChange.Unlocked);
         Assert.Equal(HookRehookReason.None, policy.Evaluate(Start + 1_000, Start, Start));
         Assert.Equal(HookRehookReason.Environment,
             policy.Evaluate(Start + HookRehookPolicy.MinIntervalMs, Start, Start));
@@ -115,10 +115,10 @@ public sealed class HookRehookPolicyTests
     public void DetectionIsPausedWhileInterruptedAndResumesWithARehook()
     {
         var policy = new HookRehookPolicy();
-        policy.Notify(HookEnvironmentChange.Interrupted);
+        policy.Notify(HookEnvironmentChange.Locked);
         // ロック中は OS の入力があっても疑わない。
         Assert.Equal(HookRehookReason.None, policy.Evaluate(Start + 60_000, Start, Start + 60_000));
-        policy.Notify(HookEnvironmentChange.Restored);
+        policy.Notify(HookEnvironmentChange.Unlocked);
         Assert.Equal(HookRehookReason.Environment, policy.Evaluate(Start + 61_000, Start, Start));
     }
 
@@ -126,10 +126,35 @@ public sealed class HookRehookPolicyTests
     public void InterruptionCancelsAPendingRehook()
     {
         var policy = new HookRehookPolicy();
-        policy.Notify(HookEnvironmentChange.Restored);
+        policy.Notify(HookEnvironmentChange.Unlocked);
         policy.Evaluate(Start, Start, Start);
-        policy.Notify(HookEnvironmentChange.Restored);
-        policy.Notify(HookEnvironmentChange.Interrupted);
+        policy.Notify(HookEnvironmentChange.Unlocked);
+        policy.Notify(HookEnvironmentChange.Locked);
         Assert.Equal(HookRehookReason.None, policy.Evaluate(Start + 10_000, Start, Start));
+    }
+
+    [Fact]
+    public void ResumeWhileStillLockedKeepsDetectionPausedUntilUnlock()
+    {
+        var policy = new HookRehookPolicy();
+        policy.Notify(HookEnvironmentChange.Suspended);
+        policy.Notify(HookEnvironmentChange.Locked);
+        // 復帰がロック画面の途中で届いても、解除までは入力があっても疑わない。
+        policy.Notify(HookEnvironmentChange.Resumed);
+        Assert.Equal(HookRehookReason.None, policy.Evaluate(Start + 60_000, Start, Start + 60_000));
+        policy.Notify(HookEnvironmentChange.Unlocked);
+        Assert.Equal(HookRehookReason.Environment, policy.Evaluate(Start + 61_000, Start, Start));
+    }
+
+    [Fact]
+    public void UnlockWhileStillSuspendedKeepsDetectionPausedUntilResume()
+    {
+        var policy = new HookRehookPolicy();
+        policy.Notify(HookEnvironmentChange.Suspended);
+        policy.Notify(HookEnvironmentChange.Locked);
+        policy.Notify(HookEnvironmentChange.Unlocked);
+        Assert.Equal(HookRehookReason.None, policy.Evaluate(Start + 60_000, Start, Start + 60_000));
+        policy.Notify(HookEnvironmentChange.Resumed);
+        Assert.Equal(HookRehookReason.Environment, policy.Evaluate(Start + 61_000, Start, Start));
     }
 }

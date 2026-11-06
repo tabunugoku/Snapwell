@@ -13,9 +13,9 @@ public static class HookEnvironmentMessages
     public static HookEnvironmentChange? FromSessionChange(nuint wParam) => wParam switch
     {
         // CONSOLE_DISCONNECT, REMOTE_DISCONNECT, SESSION_LOCK
-        2 or 4 or 7 => HookEnvironmentChange.Interrupted,
+        2 or 4 or 7 => HookEnvironmentChange.Locked,
         // CONSOLE_CONNECT, REMOTE_CONNECT, SESSION_LOGON, SESSION_UNLOCK
-        1 or 3 or 5 or 8 => HookEnvironmentChange.Restored,
+        1 or 3 or 5 or 8 => HookEnvironmentChange.Unlocked,
         _ => null,
     };
 
@@ -23,9 +23,9 @@ public static class HookEnvironmentMessages
     public static HookEnvironmentChange? FromPowerBroadcast(nuint wParam) => wParam switch
     {
         // PBT_APMSUSPEND
-        0x4 => HookEnvironmentChange.Interrupted,
+        0x4 => HookEnvironmentChange.Suspended,
         // PBT_APMRESUMESUSPEND, PBT_APMRESUMEAUTOMATIC
-        0x7 or 0x12 => HookEnvironmentChange.Restored,
+        0x7 or 0x12 => HookEnvironmentChange.Resumed,
         _ => null,
     };
 }

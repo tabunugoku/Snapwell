@@ -6,13 +6,13 @@ namespace Snapwell.Platform.Tests.Hooks;
 public sealed class HookEnvironmentMessagesTests
 {
     [Theory]
-    [InlineData(2u, HookEnvironmentChange.Interrupted)]
-    [InlineData(4u, HookEnvironmentChange.Interrupted)]
-    [InlineData(7u, HookEnvironmentChange.Interrupted)]
-    [InlineData(1u, HookEnvironmentChange.Restored)]
-    [InlineData(3u, HookEnvironmentChange.Restored)]
-    [InlineData(5u, HookEnvironmentChange.Restored)]
-    [InlineData(8u, HookEnvironmentChange.Restored)]
+    [InlineData(2u, HookEnvironmentChange.Locked)]
+    [InlineData(4u, HookEnvironmentChange.Locked)]
+    [InlineData(7u, HookEnvironmentChange.Locked)]
+    [InlineData(1u, HookEnvironmentChange.Unlocked)]
+    [InlineData(3u, HookEnvironmentChange.Unlocked)]
+    [InlineData(5u, HookEnvironmentChange.Unlocked)]
+    [InlineData(8u, HookEnvironmentChange.Unlocked)]
     public void SessionChangeMapsToEnvironmentChange(uint code, HookEnvironmentChange expected) =>
         Assert.Equal(expected, HookEnvironmentMessages.FromSessionChange(code));
 
@@ -23,9 +23,9 @@ public sealed class HookEnvironmentMessagesTests
         Assert.Null(HookEnvironmentMessages.FromSessionChange(code));
 
     [Theory]
-    [InlineData(0x4u, HookEnvironmentChange.Interrupted)]
-    [InlineData(0x7u, HookEnvironmentChange.Restored)]
-    [InlineData(0x12u, HookEnvironmentChange.Restored)]
+    [InlineData(0x4u, HookEnvironmentChange.Suspended)]
+    [InlineData(0x7u, HookEnvironmentChange.Resumed)]
+    [InlineData(0x12u, HookEnvironmentChange.Resumed)]
     public void PowerBroadcastMapsToEnvironmentChange(uint code, HookEnvironmentChange expected) =>
         Assert.Equal(expected, HookEnvironmentMessages.FromPowerBroadcast(code));
 
