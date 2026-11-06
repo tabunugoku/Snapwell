@@ -18,7 +18,7 @@
   "Backup.Sync.Rejected": "失败：{message}",
   "Backup_Title.Text": "同步与备份",
   "Backup_Lead.Text": "可与其他电脑共享快捷键、网格方案、间距、手感和规则。启动、Windows 功能和同步文件夹选项仅适用于此电脑。",
-  "Backup_CloudHint.Text": "Snapwell 不会将设置发送到云端。OneDrive 或 Dropbox 等文件同步服务会将同步文件夹中的文件复制到其他电脑。该服务完成同步后，更改才会生效。",
+  "Backup_CloudHint.Text": "Snapwell 不会将设置发送到云端。OneDrive 或 Dropbox 等文件同步服务会将同步文件夹中的文件复制到其他电脑。该服务完成同步后，更改才会同步到其他电脑。",
   "Backup_FolderTitle.Text": "同步文件夹",
   "Backup_SyncFolderText.Text": "未设置",
   "Backup_SyncFolderButton.Content": "更改",
@@ -33,7 +33,7 @@
   "Backup_ImportTitle.Text": "导入",
   "Backup_ImportDescription.Text": "导入前查看与当前设置的差异。可全部替换或仅导入所选项目。",
   "Backup_ImportButton.Content": "导入",
-  "Backup_SaveHint.Text": "导入后，使用底部的“保存”确认。",
+  "Backup_SaveHint.Text": "导入后，请使用底部的“保存”来应用。",
   "Backup.Error.FutureDevice": "此设备状态来自更新的版本，无法更改同步选项。",
   "Backup.Error.LoadDevice": "无法读取设备同步设置。请检查访问权限。",
   "Backup.NotSet": "未设置",
@@ -47,5 +47,5 @@
   "Backup.Transfer.JsonFile": "JSON 文件",
   "Backup.Transfer.Exported": "已导出设置。",
   "Backup.Transfer.NoDifferences": "与当前设置没有差异。",
-  "Backup.Transfer.Imported": "已导入到此页面。请使用底部的“保存”确认。"
+  "Backup.Transfer.Imported": "已导入到此页面。请使用底部的“保存”来应用。"
 }

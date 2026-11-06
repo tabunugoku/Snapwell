@@ -1,0 +1,22 @@
+{
+  "Status.SyncAccessFailure": "无法访问同步文件夹或本机设置。",
+  "Status.SnapRestoreFailure": "无法还原 Windows 贴靠，将在重新启动时重试。",
+  "Status.SettingsReset": "已备份损坏的设置，正在使用默认值。",
+  "Status.FutureSettings": "正在保护来自较新版本的设置",
+  "Status.HookFailure": "无法启动输入挂钩，改用 Windows 贴靠。",
+  "Status.DeviceReloadRetry": "无法重新载入本机设置，正在重试。",
+  "Status.DeviceReloadFailure": "重新载入本机设置失败，将在下次更改时重试。",
+  "Status.ReloadFailure": "无法应用设置，正在使用之前的设置。",
+  "Status.SnapDisableUnconfirmed": "无法确认 Windows 贴靠已关闭。",
+  "Status.SnapDisableFailure": "无法关闭 Windows 贴靠。",
+  "Status.DeviceSaveFailure": "本机设置未保存，更改仅在退出前有效。",
+  "Status.SettingsMissing": "找不到 Snapwell.Settings.exe，请放在 Snapwell 旁边。",
+  "Status.SettingsLaunchFailure": "无法打开设置。",
+  "Status.Accessibility.ToggleOn": "Snapwell，启用开关，已开启",
+  "Status.Accessibility.ToggleOff": "Snapwell，启用开关，已关闭",
+  "Status.Accessibility.Item": "Snapwell，{name}",
+  "Status.Accessibility.MenuEnabled.One": "Snapwell 菜单，已启用，{count} 台显示器",
+  "Status.Accessibility.MenuEnabled.Other": "Snapwell 菜单，已启用，{count} 台显示器",
+  "Status.Accessibility.MenuDisabled.One": "Snapwell 菜单，未启用，{count} 台显示器",
+  "Status.Accessibility.MenuDisabled.Other": "Snapwell 菜单，未启用，{count} 台显示器"
+}

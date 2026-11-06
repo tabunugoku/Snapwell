@@ -1,0 +1,22 @@
+{
+  "Status.SyncAccessFailure": "無法存取同步資料夾或本機設定。",
+  "Status.SnapRestoreFailure": "無法還原 Windows 貼齊，將於重新啟動時重試。",
+  "Status.SettingsReset": "已備份損毀的設定，正在使用預設值。",
+  "Status.FutureSettings": "正在保護來自較新版本的設定",
+  "Status.HookFailure": "無法啟動輸入攔截，改用 Windows 貼齊。",
+  "Status.DeviceReloadRetry": "無法重新載入本機設定，正在重試。",
+  "Status.DeviceReloadFailure": "重新載入本機設定失敗，將於下次變更時重試。",
+  "Status.ReloadFailure": "無法套用設定，正在使用先前的設定。",
+  "Status.SnapDisableUnconfirmed": "無法確認 Windows 貼齊已關閉。",
+  "Status.SnapDisableFailure": "無法關閉 Windows 貼齊。",
+  "Status.DeviceSaveFailure": "本機設定未儲存，變更僅在結束前有效。",
+  "Status.SettingsMissing": "找不到 Snapwell.Settings.exe，請放在 Snapwell 旁邊。",
+  "Status.SettingsLaunchFailure": "無法開啟設定。",
+  "Status.Accessibility.ToggleOn": "Snapwell，啟用開關，已開啟",
+  "Status.Accessibility.ToggleOff": "Snapwell，啟用開關，已關閉",
+  "Status.Accessibility.Item": "Snapwell，{name}",
+  "Status.Accessibility.MenuEnabled.One": "Snapwell 功能表，已啟用，{count} 台顯示器",
+  "Status.Accessibility.MenuEnabled.Other": "Snapwell 功能表，已啟用，{count} 台顯示器",
+  "Status.Accessibility.MenuDisabled.One": "Snapwell 功能表，未啟用，{count} 台顯示器",
+  "Status.Accessibility.MenuDisabled.Other": "Snapwell 功能表，未啟用，{count} 台顯示器"
+}

@@ -1,0 +1,4 @@
+{
+  "Consent.StandardSnap.Body": "Snapwell 啟用期間，要關閉 Windows 設定中的「貼齊視窗」嗎？\nSnapwell 會在您停用它、結束或當機後重新啟動時，還原您先前的設定。\n\n選擇「是」會關閉 Windows 貼齊，選擇「否」則保持開啟。",
+  "Consent.StandardSnap.Title": "Snapwell — 變更 Windows 設定"
+}
