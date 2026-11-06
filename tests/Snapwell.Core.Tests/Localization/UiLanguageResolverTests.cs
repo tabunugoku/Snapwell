@@ -31,6 +31,7 @@ public sealed class UiLanguageResolverTests
     [InlineData("zh-Latn", UiLanguage.English)]
     [InlineData("zh-yue-HK", UiLanguage.English)]
     [InlineData("zh-419", UiLanguage.ChineseSimplified)]
+    [InlineData("zh-12345", UiLanguage.English)]
     [InlineData("", UiLanguage.English)]
     [InlineData(null, UiLanguage.English)]
     [InlineData("zh--TW", UiLanguage.English)]
