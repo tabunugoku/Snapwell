@@ -100,12 +100,9 @@ public sealed partial class GeneralPage : Page
         _syncingLanguage = true;
         try
         {
-            // 選択肢に無い保存値は、英語として見せる (保存値は書き換えない)。
-            var items = LanguageSelect.Items.OfType<ComboBoxItem>().ToList();
             _languagePreference = UiLanguageTags.NormalizePreference(preference);
-            var shown = items.FirstOrDefault(item => (string)item.Tag == _languagePreference)
-                ?? items.Single(item => (string)item.Tag == "en");
-            LanguageSelect.SelectedItem = shown;
+            LanguageSelect.SelectedItem = LanguageSelect.Items.OfType<ComboBoxItem>()
+                .First(item => (string)item.Tag == _languagePreference);
         }
         finally { _syncingLanguage = previous; }
     }
