@@ -62,7 +62,7 @@ OS の設定を変える項目 (「設定を変える」と書いたもの) は�
 - [ ] 左右の修飾キーの判定と、ホットキーの握りつぶし (押下と解放が対になる) (実機未確認)
 - [ ] Win キーを含むホットキーで、スタートメニューが開く副作用をダミーキー（`VK_NONAME`、`Win32DummyKeySender`）で抑える (実機未確認)
 - [ ] 外された低レベルフックの検知と張り直し (`HookRehookPolicy`、`HookThread.Rehook`)。判断は単体テストで確認済みだが、次は Win32 の挙動で、すべて実機未確認
-  - [ ] スリープから復帰したあと、ホットキーとドラッグのスナップが効く。`%LOCALAPPDATA%\Snapwellpp.log` に「低レベルフックを張り直した (理由=Environment…)」が残る。復帰のメッセージ (`WM_POWERBROADCAST` の `PBT_APMRESUMEAUTOMATIC`) がトレイのウィンドウに届くか (実機未確認)
+  - [ ] スリープから復帰したあと、ホットキーとドラッグのスナップが効く。`%LOCALAPPDATA%\Snapwell\app.log` に「低レベルフックを張り直した (理由=Environment…)」が残る。復帰のメッセージ (`WM_POWERBROADCAST` の `PBT_APMRESUMEAUTOMATIC`) がトレイのウィンドウに届くか (実機未確認)
   - [ ] Win+L でロックして解除したあと、同じく効く。`WM_WTSSESSION_CHANGE` の `WTS_SESSION_LOCK` / `WTS_SESSION_UNLOCK` が届くか (`WTSRegisterSessionNotification`。実機未確認)
   - [ ] リモート接続・切断、ユーザーの切り替え (`WTS_REMOTE_CONNECT` など) のあとも効く (実機未確認)
   - [ ] 通常の操作中は張り直しが起きない (`app.log` に「張り直した」が増えない)。`GetLastInputInfo` の時刻 (`GetTickCount` 基準) と `Environment.TickCount` が同じ基準で、食い違いの判定が誤作動しないか (実機未確認)
