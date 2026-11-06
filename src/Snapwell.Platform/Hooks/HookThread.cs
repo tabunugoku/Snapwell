@@ -9,8 +9,45 @@ using Windows.Win32.UI.WindowsAndMessaging;
 
 namespace Snapwell.Platform.Hooks;
 
-/// <summary>低レベルフックを張り直したときの記録。</summary>
-public readonly record struct HookRehookReport(HookRehookReason Reason, bool Succeeded, int Count);
+/// <summary>張り直しを疑った証拠の種類。入力の中身（キー・座標）は含めない。</summary>
+[Flags]
+public enum HookRehookEvidence
+{
+    /// <summary>環境の変化（ロック解除・復帰など）による。疑いの証拠はない。</summary>
+    None = 0,
+
+    /// <summary>OS の最後の入力が、フックの最後のコールバックより猶予以上に新しい。</summary>
+    TimeGap = 1,
+
+    /// <summary>キーが押されているのに、キーボードのコールバックが来ない。</summary>
+    KeyboardSilent = 2,
+
+    /// <summary>カーソルが動き、OS も入力を見たのに、マウスのコールバックが来ない。</summary>
+    MouseSilent = 4,
+}
+
+/// <summary>
+/// 低レベルフックを張り直したときの記録。原因の調査用に、証拠の種類と各時刻からの経過（ミリ秒）を持つ。
+/// </summary>
+/// <param name="Reason">張り直した理由。</param>
+/// <param name="Succeeded">登録し直しが成功したか。</param>
+/// <param name="Count">何回目か。</param>
+/// <param name="Evidence">疑いの証拠の種類。</param>
+/// <param name="GapMs">OS の最後の入力から、フックの最後のコールバックまでの差（正なら OS のほうが新しい）。</param>
+/// <param name="SinceKeyboardMs">キーボードのコールバックが最後に来てからの経過。</param>
+/// <param name="SinceMouseMs">マウスのコールバックが最後に来てからの経過。</param>
+/// <param name="SinceInputMs">OS の最後の入力からの経過。</param>
+/// <param name="BackoffMs">判断のあとの、疑いによる張り直しのバックオフ。</param>
+public readonly record struct HookRehookReport(
+    HookRehookReason Reason,
+    bool Succeeded,
+    int Count,
+    HookRehookEvidence Evidence = HookRehookEvidence.None,
+    int GapMs = 0,
+    int SinceKeyboardMs = 0,
+    int SinceMouseMs = 0,
+    int SinceInputMs = 0,
+    uint BackoffMs = 0);
 
 /// <summary>専用メッセージスレッドでフックを所有する、一回の起動と停止の単位。</summary>
 public sealed class HookThread : IDisposable
@@ -42,7 +79,7 @@ public sealed class HookThread : IDisposable
     private int _cursorX;
     private int _cursorY;
     private uint _previousPollTick;
-    private int _rehookReason;
+    private HookRehookReport _rehookDetail;
     private int _rehookCount;
     private int _mouseTracking;
     private int _completed;
@@ -325,15 +362,25 @@ public sealed class HookThread : IDisposable
                 HookTicks.Diff(lastInput, _previousPollTick) > 0;
             _previousPollTick = now;
 
+            var gap = HookTicks.Diff(lastInput, lastHook);
             var reason = _policy.Evaluate(now, lastHook, lastInput, keyboardSilent || mouseSilent);
             if (reason == HookRehookReason.None)
             {
                 return;
             }
 
+            // 調査用。種類ごとの証拠と、各時刻からの経過だけを残す（入力の中身は取らない）。
+            var evidence = reason == HookRehookReason.InputMismatch
+                ? (gap > HookRehookPolicy.InputGraceMs ? HookRehookEvidence.TimeGap : HookRehookEvidence.None) |
+                    (keyboardSilent ? HookRehookEvidence.KeyboardSilent : HookRehookEvidence.None) |
+                    (mouseSilent ? HookRehookEvidence.MouseSilent : HookRehookEvidence.None)
+                : HookRehookEvidence.None;
+            _rehookDetail = new HookRehookReport(
+                reason, false, 0, evidence, gap, HookTicks.Diff(now, keyboard), HookTicks.Diff(now, mouse),
+                HookTicks.Diff(now, lastInput), _policy.BackoffMs);
+
             // 張り直し後の基準。ここから先にコールバックが来れば、フックは生きている。
             ResetBaseline(now);
-            Volatile.Write(ref _rehookReason, (int)reason);
             _api.PostRehook(_threadId);
         }
     }
@@ -350,7 +397,14 @@ public sealed class HookThread : IDisposable
     /// </summary>
     private void Rehook()
     {
-        var reason = (HookRehookReason)Volatile.Read(ref _rehookReason);
+        // 依頼した側（_healthGate の中）が書いた判断の詳細。構造体なので同じ錠で読む。
+        HookRehookReport detail;
+        lock (_healthGate)
+        {
+            detail = _rehookDetail;
+        }
+
+        var reason = detail.Reason;
         var mouse = RegisterMouse(_api);
         var keyboard = RegisterKeyboard(_api);
         var succeeded = mouse != 0 && keyboard != 0;
@@ -371,7 +425,7 @@ public sealed class HookThread : IDisposable
             if (keyboard != 0) { _api.UnregisterLowLevel(keyboard); }
         }
 
-        var report = new HookRehookReport(reason, succeeded, Interlocked.Increment(ref _rehookCount));
+        var report = detail with { Succeeded = succeeded, Count = Interlocked.Increment(ref _rehookCount) };
         var handler = Rehooked;
         if (handler is not null)
         {

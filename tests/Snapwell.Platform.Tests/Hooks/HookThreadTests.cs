@@ -372,7 +372,10 @@ public sealed class HookThreadTests
 
         hooks.Notify(HookEnvironmentChange.Unlocked);
         Assert.True(reports.TryTake(out var report, TimeSpan.FromSeconds(5)));
-        Assert.Equal(new HookRehookReport(HookRehookReason.Environment, true, 1), report);
+        Assert.Equal(HookRehookReason.Environment, report.Reason);
+        Assert.True(report.Succeeded);
+        Assert.Equal(1, report.Count);
+        Assert.Equal(HookRehookEvidence.None, report.Evidence);
         Assert.Equal(9, api.RegisterCount);
         Assert.Equal(2, api.UnregisterCount);
         Assert.Equal(["register", "register", "unregister", "unregister"], api.LowLevelOrder.Skip(2).Take(4));
@@ -480,6 +483,29 @@ public sealed class HookThreadTests
         Assert.Equal(1, api.PostRehookCount);
         hooks.CheckHealth();
         Assert.Equal(1, api.PostRehookCount);
+        Assert.True(hooks.Stop());
+    }
+
+    /// <summary>張り直しの記録に、疑いの証拠の種類と各経過が残る（入力の中身は残さない）。</summary>
+    [Fact]
+    public void RehookReportCarriesEvidenceAndElapsedTimes()
+    {
+        using var api = new FakeHookApi();
+        using var hooks = new HookThread(new HotkeyMatcher(), 8, api);
+        var reports = new BlockingCollection<HookRehookReport>();
+        hooks.Rehooked += reports.Add;
+        Assert.True(hooks.Start());
+        var start = api.TickCount;
+        api.TickCount = start + 60_000;
+        api.LastInputTick = start + 59_000;
+        hooks.CheckHealth();
+        Assert.True(reports.TryTake(out var report, TimeSpan.FromSeconds(5)));
+        Assert.Equal(HookRehookReason.InputMismatch, report.Reason);
+        Assert.Equal(HookRehookEvidence.TimeGap, report.Evidence);
+        Assert.Equal(59_000, report.GapMs);
+        Assert.Equal(60_000, report.SinceKeyboardMs);
+        Assert.Equal(1_000, report.SinceInputMs);
+        Assert.Equal(HookRehookPolicy.InitialBackoffMs, report.BackoffMs);
         Assert.True(hooks.Stop());
     }
 

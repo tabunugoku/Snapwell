@@ -74,6 +74,18 @@ public sealed class HookRehookPolicy
     private uint _lastRehookTick;
     private uint _backoffMs;
 
+    /// <summary>疑いによる張り直しの、今のバックオフ（ミリ秒）。0 は未設定。調査の記録用。</summary>
+    public uint BackoffMs
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _backoffMs;
+            }
+        }
+    }
+
     /// <summary>環境の変化を受ける。復帰は張り直しの予約になり、間隔が空くまで次の判断が持ち越す。</summary>
     public void Notify(HookEnvironmentChange change, uint now)
     {
