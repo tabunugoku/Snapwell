@@ -1,0 +1,4 @@
+{
+  "Consent.StandardSnap.Body": "在 Snapwell 启用期间，要关闭 Windows 设置中的“贴靠窗口”吗？\nSnapwell 会在您关闭它、退出或崩溃后重新启动时，还原您之前的设置。\n\n选择“是”将关闭 Windows 贴靠，选择“否”则保持开启。",
+  "Consent.StandardSnap.Title": "Snapwell — 更改 Windows 设置"
+}
