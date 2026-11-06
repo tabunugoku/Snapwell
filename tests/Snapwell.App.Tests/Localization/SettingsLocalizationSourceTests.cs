@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
+using Snapwell.Core.Localization;
 
 namespace Snapwell.App.Tests.Localization;
 
@@ -63,7 +64,7 @@ public sealed class SettingsLocalizationSourceTests
         Assert.NotEqual("False", (string?)picker.Attribute("IsEnabled"));
         Assert.Equal("200", (string?)picker.Attribute("Width"));
         Assert.Equal("Language_SelectionChanged", (string?)picker.Attribute("SelectionChanged"));
-        Assert.Equal(new[] { "auto", "ja", "en", "zh-Hans", "zh-Hant" },
+        Assert.Equal(new[] { "auto" }.Concat(Enum.GetValues<UiLanguage>().Select(language => language.ToPreference())),
             picker.Elements().Select(element => (string?)element.Attribute("Tag")));
     }
 
