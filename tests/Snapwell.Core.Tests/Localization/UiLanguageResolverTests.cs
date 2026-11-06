@@ -42,17 +42,30 @@ public sealed class UiLanguageResolverTests
         Assert.Equal(expected, UiLanguageResolver.Resolve(null, tag, chineseAvailable: true));
     }
 
-    /// <summary>中国語の対応を中断している間は、中国語の OS でも保存された選択でも英語になる。</summary>
+    /// <summary>中国語は有効で、中国語の OS でも保存された選択でも中国語になる。</summary>
+    [Theory]
+    [InlineData("zh-CN", UiLanguage.ChineseSimplified)]
+    [InlineData("zh-Hant-TW", UiLanguage.ChineseTraditional)]
+    public void ChineseFollowsOsTagAndStoredPreference(string osTag, UiLanguage expected)
+    {
+        Assert.True(UiLanguageResolver.ChineseAvailable);
+        Assert.Equal(expected, UiLanguageResolver.Resolve("auto", osTag));
+        Assert.Equal(UiLanguage.ChineseSimplified, UiLanguageResolver.Resolve("zh-Hans", osTag));
+        Assert.Equal(UiLanguage.ChineseTraditional, UiLanguageResolver.Resolve("zh-Hant", null));
+        Assert.Equal(UiLanguage.Japanese, UiLanguageResolver.Resolve("ja", osTag));
+        Assert.Equal(UiLanguage.English, UiLanguageResolver.Resolve("auto", "fr-FR"));
+    }
+
+    /// <summary>中国語を使えない指定では、保存された選択も OS のタグも英語に落ちる。</summary>
     [Theory]
     [InlineData("zh-CN")]
     [InlineData("zh-Hant-TW")]
-    public void SuspendedChineseFallsBackToEnglish(string osTag)
+    public void UnavailableChineseFallsBackToEnglish(string osTag)
     {
-        Assert.False(UiLanguageResolver.ChineseAvailable);
-        Assert.Equal(UiLanguage.English, UiLanguageResolver.Resolve("auto", osTag));
-        Assert.Equal(UiLanguage.English, UiLanguageResolver.Resolve("zh-Hans", osTag));
-        Assert.Equal(UiLanguage.English, UiLanguageResolver.Resolve("zh-Hant", null));
-        Assert.Equal(UiLanguage.Japanese, UiLanguageResolver.Resolve("ja", osTag));
+        Assert.Equal(UiLanguage.English, UiLanguageResolver.Resolve("auto", osTag, chineseAvailable: false));
+        Assert.Equal(UiLanguage.English, UiLanguageResolver.Resolve("zh-Hans", osTag, chineseAvailable: false));
+        Assert.Equal(UiLanguage.English, UiLanguageResolver.Resolve("zh-Hant", null, chineseAvailable: false));
+        Assert.Equal(UiLanguage.Japanese, UiLanguageResolver.Resolve("ja", osTag, chineseAvailable: false));
     }
 
     /// <summary>明示の選択は OS のタグを見ず、保存値とタグを往復できる。</summary>

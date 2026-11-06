@@ -100,7 +100,7 @@ public sealed partial class GeneralPage : Page
         _syncingLanguage = true;
         try
         {
-            // 中国語の対応を中断中は選択肢に無い。保存済みの中国語は、実際の表示 (英語) に合わせて英語として見せる (保存値は書き換えない)。
+            // 選択肢に無い保存値は、英語として見せる (保存値は書き換えない)。
             var items = LanguageSelect.Items.OfType<ComboBoxItem>().ToList();
             _languagePreference = UiLanguageTags.NormalizePreference(preference);
             var shown = items.FirstOrDefault(item => (string)item.Tag == _languagePreference)

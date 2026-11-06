@@ -3,8 +3,8 @@ namespace Snapwell.Core.Localization;
 /// <summary>保存された選択と OS のタグから、表示言語を決める。</summary>
 public static class UiLanguageResolver
 {
-    /// <summary>中国語の対応を中断している間は false。辞書 (Strings/ の zh-*.json) は将来のために残す。</summary>
-    public const bool ChineseAvailable = false;
+    /// <summary>中国語 (簡体字・繁体字) を使えるか。false にすると、中国語の選択も OS のタグも英語に落とす。</summary>
+    public const bool ChineseAvailable = true;
 
     /// <summary>文字体系を地域より優先し、未対応の言語は英語にする。</summary>
     public static UiLanguage Resolve(string? preference, string? osTag) =>
