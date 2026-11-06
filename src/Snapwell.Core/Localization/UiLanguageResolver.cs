@@ -43,7 +43,8 @@ public static class UiLanguageResolver
         {
             "hans" => UiLanguage.ChineseSimplified,
             "hant" or "tw" or "hk" or "mo" => UiLanguage.ChineseTraditional,
-            _ => second.Length == 4 ? UiLanguage.English : UiLanguage.ChineseSimplified,
+            _ => second.Length == 2 || second.All(char.IsAsciiDigit)
+                ? UiLanguage.ChineseSimplified : UiLanguage.English,
         };
     }
 }
