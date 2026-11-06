@@ -49,9 +49,10 @@ public static class Win
 function Get-Rect($h) { $r = New-Object Win+RECT; [void][Win]::GetWindowRect($h, [ref]$r); "$($r.L),$($r.T),$($r.R),$($r.B)" }
 
 $app = $null
+# 既存のメモ帳を閉じないよう、確認は後片付け (finally) の外で行う。起動していたら何もせずに戻る。
+if (Get-Process notepad -ErrorAction SilentlyContinue) { Write-Output "notepad already running; abort"; return }
+$startedAt = Get-Date
 try {
-    for ($w = 0; $w -lt 20 -and (Get-Process notepad -ErrorAction SilentlyContinue); $w++) { Start-Sleep -Milliseconds 250 }
-    if (Get-Process notepad -ErrorAction SilentlyContinue) { Write-Output "notepad already running; abort"; return }
     Start-Process notepad.exe | Out-Null
     $h = [IntPtr]::Zero
     for ($n = 0; $n -lt 60 -and $h -eq [IntPtr]::Zero; $n++) {
@@ -82,5 +83,6 @@ try {
 finally {
     if ($app) { Stop-Process -Id $app.Id -Force -ErrorAction SilentlyContinue }
     Start-Sleep -Milliseconds 800
-    Get-Process notepad -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+    # この実行で起動したメモ帳だけを閉じる。
+    Get-Process notepad -ErrorAction SilentlyContinue | Where-Object { $_.StartTime -ge $startedAt } | Stop-Process -Force -ErrorAction SilentlyContinue
 }
