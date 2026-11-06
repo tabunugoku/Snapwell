@@ -172,6 +172,32 @@ public sealed class HookRehookPolicyTests
         Assert.Equal(HookRehookReason.Environment, policy.Evaluate(Start + 61_000, Start, Start));
     }
 
+    /// <summary>復帰の張り直しのあと、間を置いて 1 回だけ張り直す。</summary>
+    [Fact]
+    public void EnvironmentRehookIsFollowedByExactlyOneDelayedRetry()
+    {
+        var policy = new HookRehookPolicy();
+        policy.Notify(HookEnvironmentChange.Resumed, Start);
+        Assert.Equal(HookRehookReason.Environment, policy.Evaluate(Start, Start, Start));
+        Assert.Equal(HookRehookReason.None, policy.Evaluate(Start + 4_000, Start, Start));
+        var retry = Start + HookRehookPolicy.EnvironmentFollowUpMs;
+        Assert.Equal(HookRehookReason.Environment, policy.Evaluate(retry, Start, Start));
+        Assert.Equal(HookRehookReason.None, policy.Evaluate(retry + 60_000, Start, Start));
+    }
+
+    /// <summary>ロックとサスペンドの停止の上限は別々に数える。</summary>
+    [Fact]
+    public void PauseLimitIsCountedPerSource()
+    {
+        var policy = new HookRehookPolicy();
+        policy.Notify(HookEnvironmentChange.Locked, Start);
+        var suspendedAt = Start + HookRehookPolicy.PauseLimitMs - 10_000;
+        policy.Notify(HookEnvironmentChange.Suspended, suspendedAt);
+        var now = Start + HookRehookPolicy.PauseLimitMs;
+        // ロックは上限に達したが、サスペンドは入ったばかりなので、まだ止めておく。
+        Assert.Equal(HookRehookReason.None, policy.Evaluate(now, Start, now));
+    }
+
     [Fact]
     public void OneSilentHookRehooksWithoutMismatchAndKeepsBackoffWhileOtherHookIsAlive()
     {

@@ -96,7 +96,8 @@ public sealed class HookThread : IDisposable
         }
 
         _policy.Notify(change, _api.GetTickCount());
-        CheckHealth();
+        // 通知はトレイのウィンドウのスレッドから来る。全キーの走査やロック待ちで止めないよう、判断は別のスレッドで行う。
+        ThreadPool.UnsafeQueueUserWorkItem(static self => self.CheckHealth(), this, preferLocal: false);
     }
 
     /// <summary>起動やメッセージループが例外で失敗した場合の診断。コールバックからは更新しない。</summary>
@@ -301,17 +302,18 @@ public sealed class HookThread : IDisposable
             var now = _api.GetTickCount();
             var keyboard = unchecked((uint)Volatile.Read(ref _lastKeyboardTick));
             var mouse = unchecked((uint)Volatile.Read(ref _lastMouseTick));
-            var lastHook = unchecked((int)(keyboard - mouse)) > 0 ? keyboard : mouse;
+            var lastHook = HookTicks.Diff(keyboard, mouse) > 0 ? keyboard : mouse;
             // 最後の入力が分からないときは、疑わない。
             var lastInput = _api.TryGetLastInputTick(out var tick) ? tick : lastHook;
 
             // 片方のフックだけが外されても、もう片方が時刻を更新し続けて見えなくなる。種類ごとの証拠で補う。
             // キーボード: 繰り返しのあるキーが猶予より長く押されているのに、コールバックが来ない。
             // OS の入力がキーボードのコールバックより新しいときだけ、全キーを調べる（静かな間の無駄なシステムコールを避ける）。
-            var keyboardSilent = unchecked((int)(now - keyboard)) > HookRehookPolicy.InputGraceMs &&
-                unchecked((int)(lastInput - keyboard)) > HookRehookPolicy.InputGraceMs &&
+            var keyboardSilent = HookTicks.Diff(now, keyboard) > HookRehookPolicy.InputGraceMs &&
+                HookTicks.Diff(lastInput, keyboard) > HookRehookPolicy.InputGraceMs &&
                 _api.IsNonModifierKeyDown();
-            // マウス: 前回の観測からカーソルが動いたのに、その間にコールバックが一度も来ない。
+            // マウス: 前回の観測からカーソルが動き、OS も入力を見たのに、その間にコールバックが一度も来ない。
+            // SetCursorPos やタッチ・ペンはカーソルを動かしても OS の最後の入力にならないので、それだけでは疑わない。
             var cursorMoved = false;
             if (_api.TryGetCursorPosition(out var x, out var y))
             {
@@ -319,7 +321,8 @@ public sealed class HookThread : IDisposable
                 (_hasCursor, _cursorX, _cursorY) = (true, x, y);
             }
 
-            var mouseSilent = cursorMoved && unchecked((int)(mouse - _previousPollTick)) < 0;
+            var mouseSilent = cursorMoved && HookTicks.Diff(mouse, _previousPollTick) < 0 &&
+                HookTicks.Diff(lastInput, _previousPollTick) > 0;
             _previousPollTick = now;
 
             var reason = _policy.Evaluate(now, lastHook, lastInput, keyboardSilent || mouseSilent);

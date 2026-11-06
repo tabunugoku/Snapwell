@@ -539,6 +539,25 @@ public sealed class HookThreadTests
         Assert.True(hooks.Stop());
     }
 
+    /// <summary>SetCursorPos のようにカーソルだけが動き、OS の入力がなければ疑わない。</summary>
+    [Fact]
+    public void CursorMovedWithoutOsInputIsNotSuspicious()
+    {
+        using var api = new FakeHookApi();
+        using var hooks = new HookThread(new HotkeyMatcher(), 8, api);
+        Assert.True(hooks.Start());
+        var now = api.TickCount;
+        api.TickCount = now + 2_000;
+        api.LastInputTick = now;
+        hooks.CheckHealth();
+        api.TickCount = now + 4_000;
+        api.CursorX = 50;
+        hooks.TouchKeyboard();
+        hooks.CheckHealth();
+        Assert.Equal(0, api.PostRehookCount);
+        Assert.True(hooks.Stop());
+    }
+
     /// <summary>カーソルが動き、その間にマウスのコールバックも来ていれば疑わない。</summary>
     [Fact]
     public void CursorMovedWithMouseCallbacksIsNotSuspicious()

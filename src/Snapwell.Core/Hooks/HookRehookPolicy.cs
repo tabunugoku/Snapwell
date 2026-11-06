@@ -59,13 +59,18 @@ public sealed class HookRehookPolicy
     /// <summary>復帰の通知は重なって届く（自動復帰・ユーザー操作での復帰・ロック解除）。この間は 1 回にまとめる。</summary>
     public const uint EnvironmentCoalesceMs = 10_000;
 
+    /// <summary>復帰の張り直しの直後は、入力の仕組みがまだ整っていないかもしれない。この時間のあとに 1 回だけ張り直す（実機未確認）。</summary>
+    public const uint EnvironmentFollowUpMs = 5_000;
+
     private readonly object _gate = new();
     private bool _locked;
     private bool _suspended;
     private bool _pending;
     private bool _hasRehooked;
     private bool _lastWasEnvironment;
-    private uint _pausedSince;
+    private bool _followUp;
+    private uint _lockedSince;
+    private uint _suspendedSince;
     private uint _lastRehookTick;
     private uint _backoffMs;
 
@@ -74,16 +79,18 @@ public sealed class HookRehookPolicy
     {
         lock (_gate)
         {
-            if (!_locked && !_suspended && change is HookEnvironmentChange.Locked or HookEnvironmentChange.Suspended)
-            {
-                _pausedSince = now;
-            }
-
             // ロックとサスペンドは別々に持つ。復帰がロック画面の途中で届いても、解除まで検知を止める。
             switch (change)
             {
-                case HookEnvironmentChange.Locked: _locked = true; break;
-                case HookEnvironmentChange.Suspended: _suspended = true; break;
+                case HookEnvironmentChange.Locked:
+                    // 停止の上限は、ロックとサスペンドで別々に数える。
+                    _lockedSince = _locked ? _lockedSince : now;
+                    _locked = true;
+                    break;
+                case HookEnvironmentChange.Suspended:
+                    _suspendedSince = _suspended ? _suspendedSince : now;
+                    _suspended = true;
+                    break;
                 case HookEnvironmentChange.Unlocked: _locked = false; break;
                 case HookEnvironmentChange.Resumed: _suspended = false; break;
             }
@@ -105,16 +112,12 @@ public sealed class HookRehookPolicy
     {
         lock (_gate)
         {
+            // 対の通知が届かなかったと見て、上限を過ぎたものは検知に戻す。
+            _locked &= unchecked(now - _lockedSince) < PauseLimitMs;
+            _suspended &= unchecked(now - _suspendedSince) < PauseLimitMs;
             if (_locked || _suspended)
             {
-                if (unchecked(now - _pausedSince) < PauseLimitMs)
-                {
-                    return HookRehookReason.None;
-                }
-
-                // 対の通知が届かなかったと見て、検知に戻る。
-                _locked = false;
-                _suspended = false;
+                return HookRehookReason.None;
             }
 
             // 張り直しのあとにコールバックが来たら、フックは生きている。疑いのバックオフを戻す。
@@ -133,10 +136,17 @@ public sealed class HookRehookPolicy
                 }
 
                 _pending = false;
+                var approved = Approve(now, HookRehookReason.Environment);
+                _followUp = true;
+                return approved;
+            }
+
+            if (_followUp && sinceRehook >= EnvironmentFollowUpMs)
+            {
                 return Approve(now, HookRehookReason.Environment);
             }
 
-            var suspected = unchecked((int)(lastOsInputTick - lastHookTick)) > InputGraceMs || oneHookSilent;
+            var suspected = HookTicks.Diff(lastOsInputTick, lastHookTick) > InputGraceMs || oneHookSilent;
             if (suspected &&
                 sinceRehook >= Math.Max(MinIntervalMs, _backoffMs))
             {
@@ -151,10 +161,11 @@ public sealed class HookRehookPolicy
     private HookRehookReason Approve(uint now, HookRehookReason reason)
     {
         _hasRehooked = true;
+        _followUp = false;
         _lastWasEnvironment = reason == HookRehookReason.Environment;
         _lastRehookTick = now;
         return reason;
     }
 
-    private static bool Newer(uint value, uint baseline) => unchecked((int)(value - baseline)) > 0;
+    private static bool Newer(uint value, uint baseline) => HookTicks.Diff(value, baseline) > 0;
 }
