@@ -455,6 +455,82 @@ public sealed class HookThreadTests
         Assert.True(hooks.Stop());
     }
 
+    /// <summary>マウスが生きていても、キーが押されているのにキーボードのコールバックが来なければ張り直す。</summary>
+    [Fact]
+    public void KeyHeldWithSilentKeyboardHookRehooksEvenWhileMouseIsAlive()
+    {
+        using var api = new FakeHookApi();
+        using var hooks = new HookThread(new HotkeyMatcher(), 8, api);
+        Assert.True(hooks.Start());
+        var now = api.TickCount;
+        api.TickCount = now + 5_000;
+        api.LastInputTick = now;
+        // マウスのコールバックは来ている（時刻の比較だけでは見えない）が、キーボードは来ない。
+        hooks.TouchMouse();
+        api.KeyHeld = true;
+        hooks.CheckHealth();
+        Assert.Equal(1, api.PostRehookCount);
+        Assert.True(hooks.Stop());
+    }
+
+    /// <summary>キーが押されていなければ、キーボードが静かでも疑わない。</summary>
+    [Fact]
+    public void SilentKeyboardWithoutHeldKeyIsNotSuspicious()
+    {
+        using var api = new FakeHookApi();
+        using var hooks = new HookThread(new HotkeyMatcher(), 8, api);
+        Assert.True(hooks.Start());
+        var now = api.TickCount;
+        api.TickCount = now + 5_000;
+        api.LastInputTick = now;
+        hooks.TouchMouse();
+        hooks.CheckHealth();
+        Assert.Equal(0, api.PostRehookCount);
+        Assert.True(hooks.Stop());
+    }
+
+    /// <summary>キーボードが生きていても、カーソルが動いたのにマウスのコールバックが来なければ張り直す。</summary>
+    [Fact]
+    public void CursorMovedWithSilentMouseHookRehooksEvenWhileKeyboardIsAlive()
+    {
+        using var api = new FakeHookApi();
+        using var hooks = new HookThread(new HotkeyMatcher(), 8, api);
+        Assert.True(hooks.Start());
+        var now = api.TickCount;
+        // 最初の観測。カーソルの位置を覚えるだけ。
+        api.TickCount = now + 2_000;
+        api.LastInputTick = now;
+        hooks.CheckHealth();
+        // 次の観測までにカーソルが動いたが、マウスのコールバックはない。キーボードは来ている。
+        api.TickCount = now + 4_000;
+        api.CursorX = 50;
+        api.LastInputTick = now;
+        hooks.TouchKeyboard();
+        hooks.CheckHealth();
+        Assert.Equal(1, api.PostRehookCount);
+        Assert.True(hooks.Stop());
+    }
+
+    /// <summary>カーソルが動き、その間にマウスのコールバックも来ていれば疑わない。</summary>
+    [Fact]
+    public void CursorMovedWithMouseCallbacksIsNotSuspicious()
+    {
+        using var api = new FakeHookApi();
+        using var hooks = new HookThread(new HotkeyMatcher(), 8, api);
+        Assert.True(hooks.Start());
+        var now = unchecked((uint)Environment.TickCount);
+        api.TickCount = now;
+        api.LastInputTick = now;
+        hooks.CheckHealth();
+        // 実際の TickCount より先へ進めたつもりの時計。コールバックは前回の観測のあとに来たことにする。
+        api.TickCount = now + 1_000;
+        api.CursorX = 50;
+        hooks.TouchMouse();
+        hooks.CheckHealth();
+        Assert.Equal(0, api.PostRehookCount);
+        Assert.True(hooks.Stop());
+    }
+
     private sealed class FakeHookApi : IHookApi, IDisposable
     {
         private readonly BlockingCollection<uint> _messages = [];
@@ -491,6 +567,16 @@ public sealed class HookThreadTests
         }
 
         public uint GetTickCount() => TickCount;
+        internal bool KeyHeld { get; set; }
+        internal int CursorX { get; set; }
+        public bool IsNonModifierKeyDown() => KeyHeld;
+
+        public bool TryGetCursorPosition(out int x, out int y)
+        {
+            x = CursorX;
+            y = 0;
+            return true;
+        }
 
         public bool TryGetLastInputTick(out uint tick)
         {

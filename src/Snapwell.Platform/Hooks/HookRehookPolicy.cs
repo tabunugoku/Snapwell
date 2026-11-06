@@ -80,7 +80,13 @@ internal sealed class HookRehookPolicy
     }
 
     /// <summary>今張り直すべきかを判断し、張り直すならその時刻を記録する。</summary>
-    internal HookRehookReason Evaluate(uint now, uint lastHookTick, uint lastOsInputTick)
+    /// <param name="now">現在の時刻。</param>
+    /// <param name="lastHookTick">キーボードとマウスのどちらかのコールバックが最後に呼ばれた時刻。</param>
+    /// <param name="lastOsInputTick">OS が見た最後の入力の時刻。</param>
+    /// <param name="oneHookSilent">
+    /// 片方のフックだけ黙っている証拠がある。もう片方が生きていると、時刻の比較では見えないため。
+    /// </param>
+    internal HookRehookReason Evaluate(uint now, uint lastHookTick, uint lastOsInputTick, bool oneHookSilent = false)
     {
         lock (_gate)
         {
@@ -90,7 +96,8 @@ internal sealed class HookRehookPolicy
             }
 
             // 張り直しのあとにコールバックが来たら、フックは生きている。疑いのバックオフを戻す。
-            if (_hasRehooked && Newer(lastHookTick, _lastRehookTick))
+            // 片方が黙ったままなら、もう片方のコールバックが来ても戻さない（張り直しで直らない場合に間引くため）。
+            if (_hasRehooked && !oneHookSilent && Newer(lastHookTick, _lastRehookTick))
             {
                 _backoffMs = 0;
             }
@@ -107,7 +114,8 @@ internal sealed class HookRehookPolicy
                 return Approve(now, HookRehookReason.Environment);
             }
 
-            if (unchecked((int)(lastOsInputTick - lastHookTick)) > InputGraceMs &&
+            var suspected = unchecked((int)(lastOsInputTick - lastHookTick)) > InputGraceMs || oneHookSilent;
+            if (suspected &&
                 sinceRehook >= Math.Max(MinIntervalMs, _backoffMs))
             {
                 _backoffMs = _backoffMs == 0 ? InitialBackoffMs : Math.Min(_backoffMs * 2, MaxBackoffMs);

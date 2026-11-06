@@ -157,4 +157,18 @@ public sealed class HookRehookPolicyTests
         policy.Notify(HookEnvironmentChange.Resumed);
         Assert.Equal(HookRehookReason.Environment, policy.Evaluate(Start + 61_000, Start, Start));
     }
+
+    [Fact]
+    public void OneSilentHookRehooksWithoutMismatchAndKeepsBackoffWhileOtherHookIsAlive()
+    {
+        var policy = new HookRehookPolicy();
+        var first = Start;
+        // 時刻は食い違わない（もう片方のフックが更新している）が、片方が黙っている。
+        Assert.Equal(HookRehookReason.InputMismatch, policy.Evaluate(first, first, first, oneHookSilent: true));
+        // 張り直しで直らず、もう片方のコールバックだけが続く。バックオフは戻らず、10 秒は待つ。
+        var soon = first + HookRehookPolicy.MinIntervalMs;
+        Assert.Equal(HookRehookReason.None, policy.Evaluate(soon, soon, soon, oneHookSilent: true));
+        var later = first + HookRehookPolicy.InitialBackoffMs;
+        Assert.Equal(HookRehookReason.InputMismatch, policy.Evaluate(later, later, later, oneHookSilent: true));
+    }
 }

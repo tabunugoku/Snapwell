@@ -34,7 +34,13 @@ public sealed class HookThread : IDisposable
     private Timer? _healthTimer;
     private nint _mouseHook;
     private nint _keyboardHook;
-    private int _lastHookTick = Environment.TickCount;
+    private readonly object _healthGate = new();
+    private int _lastKeyboardTick = Environment.TickCount;
+    private int _lastMouseTick = Environment.TickCount;
+    private bool _hasCursor;
+    private int _cursorX;
+    private int _cursorY;
+    private uint _previousPollTick;
     private int _rehookReason;
     private int _rehookCount;
     private int _mouseTracking;
@@ -208,7 +214,8 @@ public sealed class HookThread : IDisposable
             }
 
             // 起動が遅れた場合に、構築からの入力を「届かなかった入力」と誤認しない。基準は登録の完了時に取る。
-            Volatile.Write(ref _lastHookTick, unchecked((int)_api.GetTickCount()));
+            ResetBaseline(_api.GetTickCount());
+            _previousPollTick = _api.GetTickCount();
             _started = true;
             _ready.Set();
             int result;
@@ -274,20 +281,47 @@ public sealed class HookThread : IDisposable
             return;
         }
 
-        var now = _api.GetTickCount();
-        var lastHook = unchecked((uint)Volatile.Read(ref _lastHookTick));
-        // 最後の入力が分からないときは、疑わない。
-        var lastInput = _api.TryGetLastInputTick(out var tick) ? tick : lastHook;
-        var reason = _policy.Evaluate(now, lastHook, lastInput);
-        if (reason == HookRehookReason.None)
+        // タイマーと通知（別のスレッド）の両方から来る。前回の観測を持つので直列にする。
+        lock (_healthGate)
         {
-            return;
-        }
+            var now = _api.GetTickCount();
+            var keyboard = unchecked((uint)Volatile.Read(ref _lastKeyboardTick));
+            var mouse = unchecked((uint)Volatile.Read(ref _lastMouseTick));
+            var lastHook = unchecked((int)(keyboard - mouse)) > 0 ? keyboard : mouse;
+            // 最後の入力が分からないときは、疑わない。
+            var lastInput = _api.TryGetLastInputTick(out var tick) ? tick : lastHook;
 
-        // 張り直し後の基準。ここから先にコールバックが来れば、フックは生きている。
-        Volatile.Write(ref _lastHookTick, unchecked((int)now));
-        Volatile.Write(ref _rehookReason, (int)reason);
-        _api.PostRehook(_threadId);
+            // 片方のフックだけが外されても、もう片方が時刻を更新し続けて見えなくなる。種類ごとの証拠で補う。
+            // キーボード: 繰り返しのあるキーが猶予より長く押されているのに、コールバックが来ない。
+            var keyboardSilent = unchecked(now - keyboard) > HookRehookPolicy.InputGraceMs && _api.IsNonModifierKeyDown();
+            // マウス: 前回の観測からカーソルが動いたのに、その間にコールバックが一度も来ない。
+            var cursorMoved = false;
+            if (_api.TryGetCursorPosition(out var x, out var y))
+            {
+                cursorMoved = _hasCursor && (x != _cursorX || y != _cursorY);
+                (_hasCursor, _cursorX, _cursorY) = (true, x, y);
+            }
+
+            var mouseSilent = cursorMoved && unchecked((int)(mouse - _previousPollTick)) < 0;
+            _previousPollTick = now;
+
+            var reason = _policy.Evaluate(now, lastHook, lastInput, keyboardSilent || mouseSilent);
+            if (reason == HookRehookReason.None)
+            {
+                return;
+            }
+
+            // 張り直し後の基準。ここから先にコールバックが来れば、フックは生きている。
+            ResetBaseline(now);
+            Volatile.Write(ref _rehookReason, (int)reason);
+            _api.PostRehook(_threadId);
+        }
+    }
+
+    private void ResetBaseline(uint now)
+    {
+        Volatile.Write(ref _lastKeyboardTick, unchecked((int)now));
+        Volatile.Write(ref _lastMouseTick, unchecked((int)now));
     }
 
     /// <summary>
@@ -374,7 +408,9 @@ public sealed class HookThread : IDisposable
     }
 
     /// <summary>コールバックが呼ばれた時刻を残す。生きているかの判断に使う。書き込みは一度だけで軽い。</summary>
-    private void TouchHook() => Volatile.Write(ref _lastHookTick, Environment.TickCount);
+    internal void TouchKeyboard() => Volatile.Write(ref _lastKeyboardTick, Environment.TickCount);
+
+    internal void TouchMouse() => Volatile.Write(ref _lastMouseTick, Environment.TickCount);
 
     internal void Enqueue(RawHookEvent value)
     {
@@ -435,7 +471,7 @@ public sealed class HookThread : IDisposable
     private static unsafe LRESULT OnMouse(int code, WPARAM message, LPARAM data)
     {
         var owner = _current;
-        owner?.TouchHook();
+        owner?.TouchMouse();
         if (code >= 0 && owner is not null && data.Value != 0)
         {
             try
@@ -488,7 +524,7 @@ public sealed class HookThread : IDisposable
     private static unsafe LRESULT OnKeyboard(int code, WPARAM message, LPARAM data)
     {
         var owner = _current;
-        owner?.TouchHook();
+        owner?.TouchKeyboard();
         if (code >= 0 && owner is not null && data.Value != 0)
         {
             var key = (KBDLLHOOKSTRUCT*)data.Value;

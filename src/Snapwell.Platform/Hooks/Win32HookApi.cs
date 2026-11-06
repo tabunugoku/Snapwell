@@ -32,6 +32,12 @@ internal interface IHookApi
 
     /// <summary>OS が見た最後の入力の時刻（GetTickCount 基準）。</summary>
     bool TryGetLastInputTick(out uint tick);
+
+    /// <summary>修飾キー・ロックキー・マウスボタン以外のキーが、今押されている。</summary>
+    bool IsNonModifierKeyDown();
+
+    /// <summary>カーソルの位置。フックを通らない SetCursorPos でも変わる。</summary>
+    bool TryGetCursorPosition(out int x, out int y);
 }
 
 internal sealed unsafe class Win32HookApi : IHookApi
@@ -75,6 +81,39 @@ internal sealed unsafe class Win32HookApi : IHookApi
     public bool PostQuit(uint threadId) => PInvoke.PostThreadMessage(threadId, PInvoke.WM_QUIT, default, default);
 
     public bool PostRehook(uint threadId) => PInvoke.PostThreadMessage(threadId, HookMessages.Rehook, default, default);
+
+    public bool IsNonModifierKeyDown()
+    {
+        for (var key = 8; key < 0xFF; key++)
+        {
+            // マウスボタン (1-6) は含まない。修飾キー・ロックキーは押しっぱなしでも繰り返しが来ない。
+            if (key is 0x10 or 0x11 or 0x12 or 0x14 or 0x5B or 0x5C or 0x90 or 0x91 or (>= 0xA0 and <= 0xA5))
+            {
+                continue;
+            }
+
+            if ((PInvoke.GetAsyncKeyState(key) & 0x8000) != 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public bool TryGetCursorPosition(out int x, out int y)
+    {
+        if (PInvoke.GetCursorPos(out var point))
+        {
+            x = point.X;
+            y = point.Y;
+            return true;
+        }
+
+        x = 0;
+        y = 0;
+        return false;
+    }
 
     public uint GetTickCount() => unchecked((uint)Environment.TickCount);
 
