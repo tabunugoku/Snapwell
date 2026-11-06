@@ -33,7 +33,7 @@
   "Backup_ImportTitle.Text": "匯入",
   "Backup_ImportDescription.Text": "匯入前查看與目前設定的差異。可全部取代或僅匯入選取的項目。",
   "Backup_ImportButton.Content": "匯入",
-  "Backup_SaveHint.Text": "匯入後，使用底部的「儲存」確認。",
+  "Backup_SaveHint.Text": "匯入後，請使用底部的「儲存」來套用。",
   "Backup.Error.FutureDevice": "此裝置狀態來自較新的版本，無法變更同步選項。",
   "Backup.Error.LoadDevice": "無法讀取裝置同步設定。請檢查存取權限。",
   "Backup.NotSet": "未設定",
@@ -47,5 +47,5 @@
   "Backup.Transfer.JsonFile": "JSON 檔案",
   "Backup.Transfer.Exported": "已匯出設定。",
   "Backup.Transfer.NoDifferences": "與目前設定沒有差異。",
-  "Backup.Transfer.Imported": "已匯入到此頁面。請使用底部的「儲存」確認。"
+  "Backup.Transfer.Imported": "已匯入到此頁面。請使用底部的「儲存」來套用。"
 }
