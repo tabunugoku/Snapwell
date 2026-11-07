@@ -20,7 +20,7 @@
   "Feel_ModeZones.Content": "格 — 半邊、1/4、最大化",
   "Feel_ModeCorners.Content": "四角 — 保持大小",
   "Feel_MassTitle.Text": "質量 m",
-  "Feel_MassDescription.Text": "用於計算剛度 k 和阻尼 c 的基準值。固有頻率和阻尼比相同時，增大質量會增大 k 和 c 的顯示值。",
+  "Feel_MassDescription.Text": "用於計算剛性 k 和阻尼 c 的基準值。固有頻率和阻尼比相同時，增大質量會增大 k 和 c 的顯示值。",
   "Feel_MassSlider.AutomationName": "質量 m（滑桿）",
   "Feel_MassBox.AutomationName": "質量 m",
   "Feel_FrequencyTitle.Text": "固有頻率 f",

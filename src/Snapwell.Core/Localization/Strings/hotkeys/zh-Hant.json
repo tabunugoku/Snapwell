@@ -56,7 +56,7 @@
   "Hotkey.Group.Move": "依格移動",
   "Hotkey.Group.Monitor": "顯示器",
   "Hotkey.Group.Arrange": "排列",
-  "Hotkey.Group.Adjacent": "貼齊相鄰視窗",
+  "Hotkey.Group.Adjacent": "靠向相鄰視窗",
   "Hotkey.Group.Misc": "其他",
   "Hotkeys_Title.Text": "快速鍵",
   "Hotkeys_Lead.Text": "按一下按鍵欄並按新按鍵即可變更指派。共用按鍵的動作會標為「重複」。",
