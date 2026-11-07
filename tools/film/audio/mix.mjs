@@ -1,6 +1,6 @@
-// 効果音と BGM を重ねる: node mix.mjs --lang en|ja [--video <無音の mp4 と webm のあるフォルダ。既定 out/<lang>>] [--cues <既定 out/<lang>/cues.json>] [--out <既定 out/with-sound/<lang>>] [--no-bgm] [--bgm <BGM の mp3。既定 audio/bgm/bgm.mp3>]
+// 効果音と BGM を重ねる: node mix.mjs --lang en|ja|zh-hans|zh-hant [--video <無音の mp4 と webm のあるフォルダ。既定 out/<lang>>] [--cues <既定 out/<lang>/cues.json>] [--out <既定 out/with-sound/<lang>>] [--no-bgm] [--bgm <BGM の mp3。既定 audio/bgm/bgm.mp3>]
 // render.mjs が書いた cues.json の時刻に、sfx/ の効果音を置き、audio/bgm/bgm.mp3 があれば効果音の鳴る間だけ下げて (サイドチェーン) 重ね、無音の映像へ足す (映像は再エンコードしない)。
-// 音は言語に依らないので、同じ sfx と bgm を ja・en の両方に使う。足りない効果音があれば何もせず、generate-sfx.mjs を先に走らせるよう案内して終わる。
+// 音は言語に依らないので、同じ sfx と bgm を 全言語に使う。足りない効果音があれば何もせず、generate-sfx.mjs を先に走らせるよう案内して終わる。
 import { readFileSync, existsSync, mkdirSync } from 'node:fs';
 import { resolve, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';

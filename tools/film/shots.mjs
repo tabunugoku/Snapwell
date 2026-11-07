@@ -1,5 +1,5 @@
 // GitHub のソーシャルプレビュー (1280 × 640) を、social.html から書き出す: node shots.mjs
-// README の画面写真はここでは作らない。紹介動画の場面は `node render.mjs --lang <ja|en> --still 8.2,13.4,17.5`、
+// README の画面写真はここでは作らない。紹介動画の場面は `node render.mjs --lang <ja|en|zh-hans|zh-hant> --still 8.2,13.4,17.5`、
 // 設定画面は実物を `capture-settings.ps1` で撮る (手順は README.md「README の画面写真」)。
 import { chromium } from 'playwright-core';
 import { existsSync } from 'node:fs';

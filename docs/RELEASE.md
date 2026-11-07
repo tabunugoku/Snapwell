@@ -61,4 +61,4 @@ Actions では秘密鍵を署名の手順だけに渡す。未登録なら処理
 - リポジトリは公開済みなので、プランの制約はない
 - `site/index.html` の版は `{{VERSION}}` と書き、公開の直前に、最新の正式版（下書きと pre-release を除く）の版へ置き換える。ダウンロードのボタンは `releases/download/v<版>/Snapwell-<版>-win-<rid>.zip` を直接指す。リリースを下書きから公開に切り替えると、ページも自動で追従する
 - 動きは feel のランタイムで動かしている（`site/js/feel.js`、`THIRD_PARTY_NOTICES.md` に記載）。`transition` や `cubic-bezier` を足さない
-- 紹介動画（`site/video/`、日本語版と英語版）は `tools/film/` で作る。feel のモデルを偽の時計で 1 コマずつ進めて撮る（実時間に依存しないので、毎回同じ映像になる）。作り直すときは `cd tools/film && npm install && node render.mjs --lang en`（と `--lang ja`。ffmpeg と Chrome か Edge が要る）。効果音と BGM を `audio/mix.mjs` で重ね、できた `snapwell-en.mp4`・`snapwell-en.webm`・`poster-en.jpg` と `-ja` の 3 本を `site/video/` に置く。手順は `tools/film/README.md`。実アプリの録画ではなく、モックアップ相当の画面なので、ページにもそう書いてある
+- 紹介動画（`site/video/`、日本語・英語・簡体字・繁体字の 4 版）は `tools/film/` で作る。feel のモデルを偽の時計で 1 コマずつ進めて撮る（実時間に依存しないので、毎回同じ映像になる）。作り直すときは `cd tools/film && npm install && node render.mjs --lang en`（と `--lang ja`。ffmpeg と Chrome か Edge が要る）。効果音と BGM を `audio/mix.mjs` で重ね、できた `snapwell-en.mp4`・`snapwell-en.webm`・`poster-en.jpg` と `-ja` の 3 本を `site/video/` に置く。手順は `tools/film/README.md`。実アプリの録画ではなく、モックアップ相当の画面なので、ページにもそう書いてある
