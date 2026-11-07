@@ -379,7 +379,7 @@ html[data-lang="ja"] h1, html[data-lang="ja"] h2, html[data-lang^="zh"] h1, html
 }
 .hero-in {
   position: relative; max-width: var(--max); margin-inline: auto;
-  display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: 24px; align-items: end;
+  display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: 24px; align-items: start;
   /* 見出しの大きさを、画面ではなくこの幅から決める（h1 の font-size） */
   container-type: inline-size;
 }
