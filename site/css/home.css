@@ -279,19 +279,42 @@ html[data-lang="ja"] h1, html[data-lang="ja"] h2 { letter-spacing: 0; }
 .nav-links a:hover { color: var(--fg); background: var(--tint); }
 .nav-tools { margin-left: auto; display: flex; align-items: center; gap: 8px; }
 /* 小さな切り替え（言語・配色・プリセット）は製品の .seg と同じ: 角 8px の枠に角 6px の項目 */
-.lang, .theme, .seg {
+.theme, .seg {
   display: inline-flex; padding: 2px; border-radius: 8px; background: var(--tint); box-shadow: inset 0 0 0 1px var(--line);
 }
-.lang button, .theme button, .seg button {
+.theme button, .seg button {
   border: 0; background: transparent; color: var(--fg-3); font: inherit; font-size: 13px; line-height: 18px;
   padding: 5px 8px; border-radius: 6px; cursor: pointer;
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
 }
-.lang button:hover, .theme button:hover, .seg button:hover { color: var(--fg); }
-.lang button[aria-pressed="true"], .theme button[aria-pressed="true"], .seg button[aria-pressed="true"] {
+.theme button:hover, .seg button:hover { color: var(--fg); }
+.theme button[aria-pressed="true"], .seg button[aria-pressed="true"] {
   background: var(--surface); color: var(--fg); box-shadow: 0 0 0 1px var(--line-2), 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 .theme button { padding: 0 8px; height: 28px; }
+/* 言語のメニュー (APG の menu button)。開閉は即時で、transition も animation も使わない */
+.langmenu { position: relative; }
+.langmenu-btn {
+  display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 8px 0 9px; border: 0; border-radius: 8px;
+  background: var(--tint); box-shadow: inset 0 0 0 1px var(--line); color: var(--fg-2); font: inherit; font-size: 13px; line-height: 18px; cursor: pointer;
+}
+.langmenu-btn .chev { flex: none; color: var(--fg-3); }
+.langmenu-btn[aria-expanded="true"] .chev { transform: rotate(180deg); }
+@media (hover: hover) { .langmenu-btn:hover { color: var(--fg); } }
+.langmenu-list {
+  position: absolute; right: 0; top: calc(100% + 8px); z-index: 20; min-width: 100%; width: max-content; max-width: calc(100vw - 2 * var(--gutter));
+  margin: 0; padding: 4px; list-style: none; border-radius: 10px;
+  background: var(--surface); box-shadow: 0 0 0 1px var(--line-2), var(--shadow-1);
+}
+.langmenu-list[hidden] { display: none; }
+.langmenu-list button {
+  display: flex; align-items: center; gap: 8px; width: 100%; min-height: 36px; padding: 0 12px; border: 0; border-radius: 6px; background: transparent;
+  color: var(--fg-2); font: inherit; font-size: 14px; text-align: left; cursor: pointer; white-space: nowrap;
+}
+.langmenu-list button[aria-checked="true"] { color: var(--fg); background: var(--tint-2); }
+.langmenu-list button[aria-checked="true"]::after { content: ""; width: 6px; height: 6px; margin-left: auto; border-radius: 50%; background: var(--accent); }
+@media (hover: hover) { .langmenu-list button:hover { color: var(--fg); background: var(--tint); } }
+.langmenu-list button:focus-visible { color: var(--fg); background: var(--tint-2); }
 .motion-btn {
   display: inline-flex; align-items: center; gap: 7px; border: 0; background: transparent;
   color: var(--fg-3); font: inherit; font-size: 13px; min-height: 38px; padding: 0 10px; border-radius: 8px; cursor: pointer;
@@ -659,7 +682,8 @@ html.intro .intro-layer { display: block; position: fixed; inset: 0; z-index: 40
   .nav-dl { display: none; }
   /* 390 px では 44 px の操作が並びきらないので、リポジトリへのリンクはフッターに任せる */
   .nav-gh { display: none; }
-  .lang button { padding: 0 8px; min-height: 44px; min-width: 44px; }
+  .langmenu-btn { min-height: 44px; padding: 0 8px; }
+  .langmenu-list button { min-height: 44px; }
   .theme button { width: 44px; min-height: 44px; }
   .motion-btn { min-height: 44px; width: 44px; padding: 0; justify-content: center; }
   .hero { padding-top: 112px; }

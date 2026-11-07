@@ -76,9 +76,19 @@
       <a href="#faq"><span data-l="en">FAQ</span><span data-l="ja">質問</span><span data-l="zh-hans">常见问题</span><span data-l="zh-hant">常見問題</span></a>
     </nav>
     <div class="nav-tools">
-      <div class="lang" role="group" data-aria-en="Language" data-aria-ja="言語" data-aria-zh-hans="语言" data-aria-zh-hant="語言" aria-label="Language">
-        <button type="button" data-set-lang="en" aria-pressed="true">EN</button>
-        <button type="button" data-set-lang="ja" aria-pressed="false" lang="ja">日本語</button>
+      <div class="langmenu" id="langMenu">
+        <button class="langmenu-btn" type="button" id="langBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="langList">
+          <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M1.8 8h12.4M8 1.8c1.9 1.8 2.9 3.9 2.9 6.2S9.9 12.4 8 14.2C6.1 12.4 5.1 10.3 5.1 8S6.1 3.6 8 1.8Z" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
+          <span class="vh"><span data-l="en">Language: </span><span data-l="ja">言語: </span><span data-l="zh-hans">语言：</span><span data-l="zh-hant">語言：</span></span>
+          <span class="langmenu-cur" id="langCur">English</span>
+          <svg class="chev" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false"><path d="M4 6.2 8 10l4-3.8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <ul class="langmenu-list" id="langList" role="menu" hidden data-aria-en="Language" data-aria-ja="言語" data-aria-zh-hans="语言" data-aria-zh-hant="語言" aria-label="Language">
+            <li role="none"><button type="button" role="menuitemradio" aria-checked="false" tabindex="-1" data-set-lang="en" lang="en">English</button></li>
+            <li role="none"><button type="button" role="menuitemradio" aria-checked="false" tabindex="-1" data-set-lang="ja" lang="ja">日本語</button></li>
+            <li role="none"><button type="button" role="menuitemradio" aria-checked="false" tabindex="-1" data-set-lang="zh-hans" lang="zh-Hans">简体中文</button></li>
+            <li role="none"><button type="button" role="menuitemradio" aria-checked="false" tabindex="-1" data-set-lang="zh-hant" lang="zh-Hant">繁體中文</button></li>
+        </ul>
       </div>
       <div class="theme" role="group" id="themeCtl" data-aria-en="Color theme" data-aria-ja="配色" data-aria-zh-hans="颜色主题" data-aria-zh-hant="色彩主題" aria-label="Color theme">
         <button type="button" data-set-theme="system" aria-pressed="true" data-title-en="System" data-title-ja="OS に合わせる" data-title-zh-hans="跟随系统" data-title-zh-hant="跟隨系統" title="System">

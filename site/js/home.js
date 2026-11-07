@@ -78,10 +78,46 @@
     document.title = TITLES[l];
     if (persist) { try { localStorage.setItem('snapwell.lang', l); } catch (e) { /* 保存できない環境 */ } }
     $$('[data-aria-en]').forEach((el) => el.setAttribute('aria-label', el.dataset['aria' + ATTR_KEY[l]]));
-    $$('[data-set-lang]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.setLang === l)));
+    $$('[data-set-lang]').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.setLang === l)));
+    $('#langCur').textContent = $(`[data-set-lang="${l}"]`).textContent; // 現在の言語は、その言語自身の表記
     langHooks.forEach((f) => f());
   }
-  $$('[data-set-lang]').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.setLang, true)));
+
+  // 言語のメニュー (WAI-ARIA APG の menu button): 矢印・Home・End で移動、Enter か Space で選ぶ、Esc で閉じてボタンへ戻る
+  const langBtn = $('#langBtn');
+  const langList = $('#langList');
+  const langItems = $$('[role="menuitemradio"]', langList);
+  const langOpen = () => !langList.hidden;
+  function closeLangMenu(refocus) {
+    if (!langOpen()) return;
+    langList.hidden = true;
+    langBtn.setAttribute('aria-expanded', 'false');
+    if (refocus) langBtn.focus();
+  }
+  function openLangMenu(which) {
+    langList.hidden = false;
+    langBtn.setAttribute('aria-expanded', 'true');
+    const cur = langItems.findIndex((b) => b.getAttribute('aria-checked') === 'true');
+    const i = which === 'last' ? langItems.length - 1 : which === 'first' ? 0 : Math.max(cur, 0);
+    langItems[i].focus();
+  }
+  langBtn.addEventListener('click', () => (langOpen() ? closeLangMenu(true) : openLangMenu()));
+  langBtn.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowDown') { e.preventDefault(); openLangMenu('first'); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); openLangMenu('last'); }
+  });
+  langList.addEventListener('keydown', (e) => {
+    const i = langItems.indexOf(document.activeElement);
+    const go = (n) => { e.preventDefault(); langItems[(n + langItems.length) % langItems.length].focus(); };
+    if (e.key === 'ArrowDown') go(i + 1);
+    else if (e.key === 'ArrowUp') go(i - 1);
+    else if (e.key === 'Home') go(0);
+    else if (e.key === 'End') go(langItems.length - 1);
+    else if (e.key === 'Escape') { e.preventDefault(); closeLangMenu(true); }
+    else if (e.key === 'Tab') closeLangMenu(false);
+  });
+  document.addEventListener('pointerdown', (e) => { if (!e.target.closest('#langMenu')) closeLangMenu(false); });
+  langItems.forEach((b) => b.addEventListener('click', () => { setLang(b.dataset.setLang, true); closeLangMenu(true); }));
 
   // 紹介映像は言語に合わせて差し替える。再生位置と一時停止の状態は引き継ぐ
   const film = $('#filmVideo');
