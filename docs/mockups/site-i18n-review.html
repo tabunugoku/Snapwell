@@ -28,7 +28,7 @@ code{font:12px Consolas,monospace;background:var(--rline);padding:1px 5px;border
 /* ---- 試作のサイト (site/css/home.css の値をそのまま使う) ---- */
 .s{--bg:#F5F3EE;--bg-2:#EEEBE4;--fg:#141413;--fg-2:rgba(20,20,19,.76);--fg-3:#63625D;--h1-dim:rgba(20,20,19,.5);--line:rgba(20,20,19,.1);--line-2:rgba(20,20,19,.2);--tint:rgba(20,20,19,.045);--tint-2:rgba(20,20,19,.085);--accent:#1B6292;--primary:#141413;--primary-text:#F5F3EE;--nav-bg:rgba(245,243,238,.86);--surface:#fff;--shadow-1:0 10px 30px rgba(70,58,36,.08);--notice-bg:rgba(149,100,0,.08);--notice-line:rgba(149,100,0,.32);--get-a:#FCFBF8;--get-b:#F0EDE6}
 .s.dark{--bg:#0C0C0B;--bg-2:#121211;--fg:#F2F2F0;--fg-2:rgba(242,242,240,.74);--fg-3:#9B9A97;--h1-dim:rgba(242,242,240,.42);--line:rgba(242,242,240,.09);--line-2:rgba(242,242,240,.16);--tint:rgba(242,242,240,.05);--tint-2:rgba(242,242,240,.1);--accent:#8CCBF2;--primary:#F2F2F0;--primary-text:#0C0C0B;--nav-bg:rgba(18,18,17,.84);--surface:#202020;--shadow-1:0 10px 40px rgba(0,0,0,.35);--notice-bg:rgba(232,196,106,.08);--notice-line:rgba(232,196,106,.28);--get-a:#161615;--get-b:#0F0F0E}
-.s{position:relative;background:var(--bg);color:var(--fg);overflow:hidden;border-radius:12px;border:1px solid var(--rline);font:16px/1.6 "Segoe UI Variable Text","Segoe UI",sans-serif;--gutter:clamp(16px,4vw,64px);--fs-hero:clamp(34px,5.2cqi,80px)}
+.s{position:relative;background:var(--bg);color:var(--fg);overflow:hidden;border-radius:12px;border:1px solid var(--rline);font:16px/1.6 "Segoe UI Variable Text","Segoe UI",sans-serif;--gutter:clamp(16px,4vw,64px);--fs-hero:min(7.2cqi,124px)}
 .s[lang=zh-Hans]{--fd:"NR-i18n","Source Han Serif SC","Noto Serif SC","Songti SC","STSong",SimSun,Georgia,serif;--fu:"Segoe UI","Microsoft YaHei UI","Microsoft YaHei","PingFang SC","Noto Sans SC",sans-serif}
 .s[lang=zh-Hant]{--fd:"NR-i18n","Source Han Serif TC","Noto Serif TC","Songti TC","PMingLiU","MingLiU",Georgia,serif;--fu:"Segoe UI","Microsoft JhengHei UI","Microsoft JhengHei","PingFang TC","Noto Sans TC",sans-serif}
 .s[lang=zh-Hans],.s[lang=zh-Hant]{font-family:var(--fu)}
@@ -58,7 +58,7 @@ code{font:12px Consolas,monospace;background:var(--rline);padding:1px 5px;border
 .eye{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--fg-3);margin-bottom:24px}.eye i{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px rgba(31,108,159,.12)}
 h1{margin:0;font:500 var(--fs-hero)/1.18 var(--fd);letter-spacing:.02em;max-width:66%}
 h1 .d{color:var(--h1-dim);display:block}h1 span{display:block}
-.m h1{font-size:34px;max-width:none}
+.m h1{font-size:clamp(38px,11.4vw,52px);max-width:none}
 .side{margin-top:32px;max-width:560px}.side p{font-size:clamp(17px,1.35vw,20px);color:var(--fg-2);margin:0 0 24px}
 .btns{display:flex;gap:12px;flex-wrap:wrap}.btn{height:44px;padding:0 20px;border-radius:8px;display:inline-flex;align-items:center;font-size:15px;font-weight:500;box-shadow:inset 0 0 0 1px var(--line-2)}.btn.p{background:var(--primary);color:var(--primary-text);box-shadow:none}
 .meta{font-size:14px;color:var(--fg-3);margin-top:20px}
@@ -88,9 +88,9 @@ h2{margin:0 0 20px;font:500 clamp(32px,4.2vw,64px)/1.22 var(--fd);letter-spacing
 
 <h2>判断してほしい 3 点</h2>
 <div class="dec">
-<div><b>1. 中国語の見出しの書体</b><p>A (実装): 英語・和文と同じ明朝系 (宋体・明體)。太字がないので太さは標準。B: YaHei/JhengHei のゴシック 600。モックアップ (明朝の見出し) との違いはこの 1 点。下の「書体の比べ」を見る。</p><span class="rec">決定: A (明朝系)。実機での見た目は未確認</span></div>
-<div><b>2. 旧トグルが保存した言語</b><p>以前の訪問で <code>snapwell.lang</code> に en・ja が残っている人は、中国語の環境でも英語のままになる。保存のキーを新しくすれば直るが、旧トグルで本当に選んだ人の選択も消える。</p><span class="rec">決定: そのまま</span></div>
-<div><b>3. 見出しの大きさ</b><p>中国語の見出しの大きさは和文と同じ (幅 1540 で 80 px、390 で 34 px)。利用者が決めた。</p><span class="rec">決定: 和文と同じ大きさ</span></div>
+<div><b>1. 中国語の見出しの書体</b><p>A (実装): 英語・和文と同じ明朝系 (宋体・明體)。太字がないので太さは標準。B: YaHei/JhengHei のゴシック 600。モックアップ (明朝の見出し) との違いはこの 1 点。下の「書体の比べ」を見る。</p><span class="rec">推奨: A (英語・和文との統一)。実機での見た目は未確認</span></div>
+<div><b>2. 旧トグルが保存した言語</b><p>以前の訪問で <code>snapwell.lang</code> に en・ja が残っている人は、中国語の環境でも英語のままになる。保存のキーを新しくすれば直るが、旧トグルで本当に選んだ人の選択も消える。</p><span class="rec">推奨: 直さない (そのまま)</span></div>
+<div><b>3. 見出しの大きさ</b><p>中国語の見出しは 4 字 × 2 行と短いので、英語と同じ大きさ (幅 1540 で 95 px) にした。和文は 9 字前後で 80 px。中国語だけ和文並みの 80 px に落とす案もあるが、短い見出しが小さく見える。</p><span class="rec">推奨: 英語と同じ大きさ</span></div>
 </div>
 <div class="chg"><b>既存の英語・日本語から意図して変える点 (強調)</b>
 <ul>
@@ -117,7 +117,7 @@ h2{margin:0 0 20px;font:500 clamp(32px,4.2vw,64px)/1.22 var(--fd);letter-spacing
 <div class="row" id="w390"></div>
 
 <h2>広い画面 (3440 px、縮小して表示)</h2>
-<p class="lead">見出しは和文と同じ clamp(34px, 5.2vw, 80px) なので、広い画面でも 80 px のまま。本文の列は <code>max 1320px</code> の中に収まる。</p>
+<p class="lead">見出しは英語と同じ <code>--fs-hero</code> (枠の幅 cqi、上限 124 px) なので、広い画面でも 95 px のまま。本文の列は <code>max 1320px</code> の中に収まる。</p>
 <div id="w3440"></div>
 </main>
 
@@ -200,7 +200,7 @@ ${wrap(`<div class="s m" lang="zh-Hant" style="width:390px">${nav('zh-Hant', { m
 ${wrap(`<div class="s m dark" lang="en" style="width:390px">${nav('en', { mobile: true, open: true, focusIdx: 0 })}<div style="height:220px"></div></div>`, '390 px ダーク (英語を選択中)')}
 </div>`;
 
-$('w1540').innerHTML = ['zh-Hans', 'zh-Hant'].map(l => wrap(page(l, { width: 1540, zoom: 0.48 }).replace('.s ', ''), `${l} / 幅 1540 を 0.48 倍に縮小して並べたもの (実際の見出しは 80 px)`)).join('');
+$('w1540').innerHTML = ['zh-Hans', 'zh-Hant'].map(l => wrap(page(l, { width: 1540, zoom: 0.48 }).replace('.s ', ''), `${l} / 幅 1540 を 0.48 倍に縮小して並べたもの (実際の見出しは 95 px)`)).join('');
 $('w1540d').innerHTML = ['zh-Hans', 'zh-Hant'].map(l => wrap(page(l, { width: 1540, zoom: 0.48, dark: true, parts: 'heroFeat' }), `${l} ダーク`)).join('');
 $('fontcmp').innerHTML = ['zh-Hans', 'zh-Hant'].flatMap(l => [false, true].map(s => wrap(page(l, { width: 480, sans: s, parts: 'hero', menu: {} }).replace(/<div class="nav">[\s\S]*?<\/div><\/div><\/div>/, ''), `${l} / ${s ? 'B: ゴシック 600' : 'A: 明朝系 (実装)'}`))).join('');
 $('w390').innerHTML = ['zh-Hans', 'zh-Hant'].map(l => wrap(page(l, { width: 390, mobile: true }), `${l} 幅 390 px`)).join('') + wrap(page('zh-Hant', { width: 390, mobile: true, dark: true, parts: 'heroFeat' }), 'zh-Hant ダーク');
