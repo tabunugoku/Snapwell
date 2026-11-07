@@ -15,7 +15,7 @@
   "Rules.Condition.Class": "視窗類別 {name}",
   "Rules.Condition.Title": "標題 {pattern}",
   "Rules_Title.Text": "應用程式規則",
-  "Rules_Lead.Text": "為特定應用程式設定例外：排除、僅移動位置或變更圓角。由上到下檢查規則，「配置」和「圓角」各自採用第一個指定的規則。",
+  "Rules_Lead.Text": "為特定應用程式設定例外：排除、僅移動位置或變更圓角。由上到下檢查規則，「配置」與「圓角」各自採用第一個指定的規則。",
   "Rules_EnabledColumn.Text": "啟用",
   "Rules_ConditionColumn.Text": "條件",
   "Rules_PlacementColumn.Text": "配置",
