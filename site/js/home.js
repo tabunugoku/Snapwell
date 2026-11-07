@@ -49,23 +49,39 @@
   const ZONES = {
     en: { 6: ['top left', 'top middle', 'top right', 'bottom left', 'bottom middle', 'bottom right'], 4: ['top left', 'top right', 'bottom left', 'bottom right'] },
     ja: { 6: ['左上', '上中央', '右上', '左下', '下中央', '右下'], 4: ['左上', '右上', '左下', '右下'] },
+    'zh-hans': { 6: ['左上', '上中', '右上', '左下', '下中', '右下'], 4: ['左上', '右上', '左下', '右下'] },
+    'zh-hant': { 6: ['左上', '上中', '右上', '左下', '下中', '右下'], 4: ['左上', '右上', '左下', '右下'] },
   };
-  const WIN_NAMES = { en: ['Notes', 'Photos', 'Mail', 'Browser'], ja: ['メモ', 'フォト', 'メール', 'ブラウザー'] };
-  const TITLES = { en: 'Snapwell · Window manager for Windows 11', ja: 'Snapwell · Windows 11 のウィンドウマネージャー' };
-  let lang = root.dataset.lang === 'ja' ? 'ja' : 'en';
+  const WIN_NAMES = {
+    en: ['Notes', 'Photos', 'Mail', 'Browser'],
+    ja: ['メモ', 'フォト', 'メール', 'ブラウザー'],
+    'zh-hans': ['便笺', '照片', '邮件', '浏览器'],
+    'zh-hant': ['便利貼', '相片', '郵件', '瀏覽器'],
+  };
+  const TITLES = {
+    en: 'Snapwell · Window manager for Windows 11',
+    ja: 'Snapwell · Windows 11 のウィンドウマネージャー',
+    'zh-hans': 'Snapwell · Windows 11 窗口管理器',
+    'zh-hant': 'Snapwell · Windows 11 視窗管理員',
+  };
+  // data-lang の値 → <html lang> の値。data-aria-* / data-title-* の属性名の語尾 (dataset のキー)
+  const HTML_LANG = { en: 'en', ja: 'ja', 'zh-hans': 'zh-Hans', 'zh-hant': 'zh-Hant' };
+  const ATTR_KEY = { en: 'En', ja: 'Ja', 'zh-hans': 'ZhHans', 'zh-hant': 'ZhHant' };
+  let lang = HTML_LANG[root.dataset.lang] ? root.dataset.lang : 'en';
   const langHooks = [];
 
-  function setLang(l) {
+  /** 言語を切り替える。persist は利用者が選んだとき (メニュー) だけ true。自動で決めた言語は保存しない。 */
+  function setLang(l, persist) {
     lang = l;
-    root.lang = l;
+    root.lang = HTML_LANG[l];
     root.dataset.lang = l;
     document.title = TITLES[l];
-    try { localStorage.setItem('snapwell.lang', l); } catch (e) { /* 保存できない環境 */ }
-    $$('[data-aria-en]').forEach((el) => el.setAttribute('aria-label', el.dataset[l === 'ja' ? 'ariaJa' : 'ariaEn']));
+    if (persist) { try { localStorage.setItem('snapwell.lang', l); } catch (e) { /* 保存できない環境 */ } }
+    $$('[data-aria-en]').forEach((el) => el.setAttribute('aria-label', el.dataset['aria' + ATTR_KEY[l]]));
     $$('[data-set-lang]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.setLang === l)));
     langHooks.forEach((f) => f());
   }
-  $$('[data-set-lang]').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.setLang)));
+  $$('[data-set-lang]').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.setLang, true)));
 
   // 紹介映像は言語に合わせて差し替える。再生位置と一時停止の状態は引き継ぐ
   const film = $('#filmVideo');
@@ -317,6 +333,8 @@
   const CARD_LABELS = {
     en: ['Mass', 'Frequency', 'Damping ratio', 'Overshoot'],
     ja: ['質量', '固有振動数', '減衰比', '行き過ぎ'],
+    'zh-hans': ['质量', '固有频率', '阻尼比', '过冲'],
+    'zh-hant': ['質量', '固有頻率', '阻尼比', '過衝'],
   };
   function cardNums(card) {
     const p = P.PRESETS[card.dataset.v];
@@ -382,6 +400,8 @@
   const LAUNCH_NAMES = {
     en: { 'left-half': 'Left half', 'right-half': 'Right half', 'q-tl': 'Top-left quarter', 'q-tr': 'Top-right quarter', 'q-bl': 'Bottom-left quarter', 'q-br': 'Bottom-right quarter', 't-l': 'Left third', 't-m': 'Middle third', 't-r': 'Right third', center: 'Center', max: 'Maximize', start: 'Start', cells: (w, h) => `${w} × ${h} cells` },
     ja: { 'left-half': '左半分', 'right-half': '右半分', 'q-tl': '左上の 4 分の 1', 'q-tr': '右上の 4 分の 1', 'q-bl': '左下の 4 分の 1', 'q-br': '右下の 4 分の 1', 't-l': '左の 3 分の 1', 't-m': '中央の 3 分の 1', 't-r': '右の 3 分の 1', center: '中央', max: '最大化', start: '最初の位置', cells: (w, h) => `${w} × ${h} 区画` },
+    'zh-hans': { 'left-half': '左半边', 'right-half': '右半边', 'q-tl': '左上 1/4', 'q-tr': '右上 1/4', 'q-bl': '左下 1/4', 'q-br': '右下 1/4', 't-l': '左 1/3', 't-m': '中间 1/3', 't-r': '右 1/3', center: '居中', max: '最大化', start: '初始位置', cells: (w, h) => `${w} × ${h} 格` },
+    'zh-hant': { 'left-half': '左半邊', 'right-half': '右半邊', 'q-tl': '左上 1/4', 'q-tr': '右上 1/4', 'q-bl': '左下 1/4', 'q-br': '右下 1/4', 't-l': '左 1/3', 't-m': '中間 1/3', 't-r': '右 1/3', center: '置中', max: '最大化', start: '初始位置', cells: (w, h) => `${w} × ${h} 格` },
   };
   const PRESET_RECTS = {
     'left-half': (W, H, g) => ({ x: g, y: g, w: (W - 3 * g) / 2, h: H - 2 * g }),
@@ -687,7 +707,7 @@
   }
   $$('[data-set-theme]').forEach((b) => b.addEventListener('click', () => setTheme(b.dataset.setTheme)));
   osDark.addEventListener('change', () => { field.recolor(); introCtl.recolor(); });
-  langHooks.push(() => $$('[data-set-theme]').forEach((b) => { b.title = b.dataset[lang === 'ja' ? 'titleJa' : 'titleEn']; }));
+  langHooks.push(() => $$('[data-set-theme]').forEach((b) => { b.title = b.dataset['title' + ATTR_KEY[lang]]; }));
 
   // ---------------------------------------------------------------- 動きを減らすボタン
   const motionBtn = $('#motionBtn');
@@ -705,7 +725,7 @@
   osRM.addEventListener('change', showMotion);
 
   // ---------------------------------------------------------------- 起動
-  setLang(lang);
+  setLang(lang); // 起動時の反映。自動で決めた言語なので保存しない (保存は利用者が選んだときだけ)
   setTheme(theme);
   setFeel(heroFeel);
   showMotion();

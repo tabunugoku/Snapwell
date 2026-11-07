@@ -27,8 +27,8 @@
   (function () {
     var l = null;
     try { l = localStorage.getItem('snapwell.lang'); } catch (e) { /* 使えない環境 */ }
-    if (l !== 'en' && l !== 'ja') l = /^ja\b/i.test(navigator.language || '') ? 'ja' : 'en';
-    document.documentElement.lang = l;
+    if (l !== 'en' && l !== 'ja' && l !== 'zh-hans' && l !== 'zh-hant') l = /^ja\b/i.test(navigator.language || '') ? 'ja' : 'en';
+    document.documentElement.lang = { en: 'en', ja: 'ja', 'zh-hans': 'zh-Hans', 'zh-hant': 'zh-Hant' }[l];
     document.documentElement.dataset.lang = l;
     // 配色: system（OS に従う）・light・dark。system のときは data-theme を付けない
     var t = null;
