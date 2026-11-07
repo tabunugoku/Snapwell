@@ -369,7 +369,7 @@ public sealed class HookThread : IDisposable
             _previousPollTick = now;
 
             var gap = HookTicks.Diff(lastInput, lastHook);
-            var reason = _policy.Evaluate(now, lastHook, keyboardSilent || mouseSilent);
+            var reason = _policy.Evaluate(now, keyboardSilent || mouseSilent);
             if (reason == HookRehookReason.None)
             {
                 return;
