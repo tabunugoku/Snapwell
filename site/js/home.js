@@ -64,6 +64,25 @@
     'zh-hans': 'Snapwell · Windows 11 窗口管理器',
     'zh-hant': 'Snapwell · Windows 11 視窗管理員',
   };
+  // <head> の説明・OGP。英語と日本語は HTML に書いてある文をそのまま使う (中国語から戻したときに復元する)。
+  // JS を実行しないクローラーや共有のプレビューには英語が出る (言語ごとの URL は持たない)
+  const META_SEL = { desc: 'meta[name="description"]', ogTitle: 'meta[property="og:title"]', ogDesc: 'meta[property="og:description"]', ogAlt: 'meta[property="og:image:alt"]' };
+  const META_BASE = {};
+  for (const k of Object.keys(META_SEL)) { const el = $(META_SEL[k]); if (el) META_BASE[k] = el.content; }
+  const META = {
+    'zh-hans': {
+      desc: '甩出窗口，弹簧、磁铁和屏幕边界会把它送入最近的格。Snapwell 在 Windows 11 上吸附、排列并调整窗口大小，提供 x64 和 ARM64 原生版本。',
+      ogTitle: TITLES['zh-hans'],
+      ogDesc: '甩出窗口，弹簧与磁铁会把它拉进最近的格。x64 和 ARM64 原生版本。',
+      ogAlt: 'Snapwell 的应用图标和名称 Snapwell，旁边是英文标语 “Throw a window. It lands in place.”',
+    },
+    'zh-hant': {
+      desc: '甩出視窗，彈簧、磁鐵與螢幕邊界會把它送進最近的格。Snapwell 在 Windows 11 上吸附、排列並調整視窗大小，提供 x64 與 ARM64 原生版本。',
+      ogTitle: TITLES['zh-hant'],
+      ogDesc: '甩出視窗，彈簧與磁鐵會把它拉進最近的格。x64 與 ARM64 原生版本。',
+      ogAlt: 'Snapwell 的應用程式圖示和名稱 Snapwell，旁邊是英文標語 “Throw a window. It lands in place.”',
+    },
+  };
   // data-lang の値 → <html lang> の値。data-aria-* / data-title-* の属性名の語尾 (dataset のキー)
   const HTML_LANG = { en: 'en', ja: 'ja', 'zh-hans': 'zh-Hans', 'zh-hant': 'zh-Hant' };
   const ATTR_KEY = { en: 'En', ja: 'Ja', 'zh-hans': 'ZhHans', 'zh-hant': 'ZhHant' };
@@ -76,6 +95,7 @@
     root.lang = HTML_LANG[l];
     root.dataset.lang = l;
     document.title = TITLES[l];
+    for (const k of Object.keys(META_SEL)) { const el = $(META_SEL[k]); if (el) el.content = (META[l] && META[l][k]) || META_BASE[k]; }
     if (persist) { try { localStorage.setItem('snapwell.lang', l); } catch (e) { /* 保存できない環境 */ } }
     $$('[data-aria-en]').forEach((el) => el.setAttribute('aria-label', el.dataset['aria' + ATTR_KEY[l]]));
     $$('[data-set-lang]').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.setLang === l)));
