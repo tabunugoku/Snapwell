@@ -1,7 +1,7 @@
 {
   "summary": {
-    "ja": "トレイのメニュー、ランチャー、ドラッグ中のプレビュー、設定画面、ようこその見た目を整えました。割り切れないグリッドでも「中央」が左右・上下対称に効きます。",
-    "en": "Polished the tray menu, launcher, drag preview, Settings window and welcome screen. Center now works symmetrically even on grids that do not divide evenly."
+    "ja": "画面の言語に中国語（簡体字・繁体字）を足しました。Windows にフックを外されたときと、スリープ復帰やロック解除のあとに、フックを張り直します。",
+    "en": "Added Chinese (Simplified and Traditional) to the interface languages. Snapwell now reinstalls its input hooks when Windows drops them, and after sleep, unlock or reconnect."
   },
   "minimumSupported": null
 }
