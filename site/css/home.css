@@ -396,7 +396,7 @@ h1 {
 }
 /* 和文は游明朝に落ちる（Newsreader は ASCII だけ）。palt で仮名を詰め、欧文の偽の太字を出さない */
 html[data-lang="ja"] h1, html[data-lang="ja"] h2, html[data-lang="ja"] h3, html[data-lang="ja"] .card-name { font-feature-settings: "palt"; font-synthesis: none; }
-html[data-lang="ja"] h1 { font-size: clamp(34px, 5.2vw, 80px); line-height: 1.18; font-weight: 600; letter-spacing: 0.01em; }
+html[data-lang="ja"] h1 { line-height: 1.18; font-weight: 600; letter-spacing: 0.01em; }
 /* 中国語の見出しは短い (4 字 × 2 行) ので、英語と同じ --fs-hero (枠の幅 cqi) をそのまま使う。行の高さは和文並みに取り、字の上端を .line の overflow に切らせない */
 html[data-lang^="zh"] h1 { line-height: 1.18; font-weight: 500; letter-spacing: 0.02em; font-synthesis: none; }
 html[data-lang^="zh"] h2, html[data-lang^="zh"] h3, html[data-lang^="zh"] .card-name { font-synthesis: none; }
