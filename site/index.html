@@ -22,12 +22,15 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preload" href="fonts/newsreader-500.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="css/home.css">
+<script src="js/lang.js"></script>
 <script>
-  // 言語を描画前に決める（保存した選択 → ブラウザーの言語）。保存は使えないこともある
+  // 言語を描画前に決める（保存した選択 → ブラウザーの言語の優先順）。保存は使えないこともある。判定は js/lang.js
   (function () {
     var l = null;
     try { l = localStorage.getItem('snapwell.lang'); } catch (e) { /* 使えない環境 */ }
-    if (l !== 'en' && l !== 'ja' && l !== 'zh-hans' && l !== 'zh-hant') l = /^ja\b/i.test(navigator.language || '') ? 'ja' : 'en';
+    // lang.js が読めなかったときは、保存した選択だけを見て、なければ英語
+    if (window.SnapLang) l = SnapLang.choose(l, navigator.languages, navigator.language);
+    else if (l !== 'en' && l !== 'ja' && l !== 'zh-hans' && l !== 'zh-hant') l = 'en';
     document.documentElement.lang = { en: 'en', ja: 'ja', 'zh-hans': 'zh-Hans', 'zh-hant': 'zh-Hant' }[l];
     document.documentElement.dataset.lang = l;
     // 配色: system（OS に従う）・light・dark。system のときは data-theme を付けない
