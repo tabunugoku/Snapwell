@@ -103,7 +103,7 @@ Starting at sign-in is also not registered until you turn it on. Turning it off 
 
 - Settings are a JSON file, and you can share them across PCs through a sync folder of your choice, such as a OneDrive or Dropbox folder. Snapwell does not do the syncing. It reads and writes the file in that folder.
 - You can import and export settings.
-- The interface is available in Japanese and English, and follows the Windows display language by default. The settings window, tray menu and launcher follow the Windows light or dark theme.
+- The interface is available in Japanese, English and Chinese (Simplified and Traditional; Chinese from version 1.0.6), and follows the Windows display language by default. The settings window, tray menu and launcher follow the Windows light or dark theme.
 - On first launch, a setup in the settings window opens with a short intro animation and a welcome screen where you can throw a window. Then you decide the standard features, hotkeys and grid in turn. Click or press Esc to skip the intro. It is skipped on its own when Windows animation effects or Snapwell's reduce motion option are off.
 - The Feel page has an option to reduce motion. When it is on, or when Windows animation effects are off, windows move straight to their destination without animation.
 - By default, Snapwell does not check for updates. When you turn on automatic checks or click Check now, it checks GitHub Releases for new versions. Clicking Update and restart in the notice downloads the signed release package, verifies it, replaces the files and starts the new version. Nothing is downloaded until you click, and if the new version cannot be confirmed to start, Snapwell rolls back to the previous one.
