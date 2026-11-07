@@ -14,6 +14,7 @@ public sealed class HookKeyClassesTests
     [InlineData(0x08)] // Backspace
     [InlineData(0x70)] // F1
     [InlineData(0xBC)] // ,
+    [InlineData(0xE2)] // JIS/ISO の \ キー
     public void OrdinaryKeysRepeat(int virtualKey) => Assert.True(HookKeyClasses.IsAutoRepeating(virtualKey));
 
     [Theory]

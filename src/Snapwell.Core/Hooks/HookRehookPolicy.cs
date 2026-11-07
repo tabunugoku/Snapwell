@@ -39,13 +39,11 @@ public enum HookRehookReason
 /// 「OS の最後の入力」と「最後のコールバック」の時刻の食い違いは使わない: 通常の操作中に、OS の入力だけが進んで
 /// フックが呼ばれない場面があった（実機の app.log。入力の機器は特定していない。タッチ・ペン・タッチパッドを疑う）。
 /// 昇格したウィンドウへの入力のようにフックに届かない正常な場合にも疑うため、疑いによる張り直しには
-/// 指数バックオフをかける。コールバックが再び来たらバックオフを戻す。
+/// 指数バックオフをかける。疑いが一定時間なくなったらバックオフを戻す。
+/// 同じフックが QuietResetMs 以内に外され直すと、再検知はバックオフ（最大 MaxBackoffMs）まで遅れる。
 /// </remarks>
 public sealed class HookRehookPolicy
 {
-    /// <summary>コールバックがこれ以上来ていないことを、片方のフックが黙っている証拠の前提にする。</summary>
-    public const uint InputGraceMs = 1500;
-
     /// <summary>どの理由でも、張り直しの間隔の下限。連打を避ける。</summary>
     public const uint MinIntervalMs = 3000;
 
@@ -54,6 +52,9 @@ public sealed class HookRehookPolicy
 
     /// <summary>疑いによる張り直しのバックオフの上限。</summary>
     public const uint MaxBackoffMs = 600_000;
+
+    /// <summary>疑いがこの間なくなったら、直ったと見て、疑いによる張り直しのバックオフを戻す。</summary>
+    public const uint QuietResetMs = 30_000;
 
     /// <summary>ロックやサスペンドで検知を止めておく上限。対の通知が届かなくても、この時間で検知に戻る。</summary>
     public const uint PauseLimitMs = 600_000;
@@ -74,6 +75,7 @@ public sealed class HookRehookPolicy
     private uint _lockedSince;
     private uint _suspendedSince;
     private uint _lastRehookTick;
+    private uint _lastSilentTick;
     private uint _backoffMs;
 
     /// <summary>疑いによる張り直しの、今のバックオフ（ミリ秒）。0 は未設定。調査の記録用。</summary>
@@ -117,11 +119,10 @@ public sealed class HookRehookPolicy
 
     /// <summary>今張り直すべきかを判断し、張り直すならその時刻を記録する。</summary>
     /// <param name="now">現在の時刻。</param>
-    /// <param name="lastHookTick">キーボードとマウスのどちらかのコールバックが最後に呼ばれた時刻。</param>
     /// <param name="hookSilent">
     /// フックが黙っている証拠がある（キーが押されているのにキーボードが来ない、カーソルが動いたのにマウスが来ない）。
     /// </param>
-    public HookRehookReason Evaluate(uint now, uint lastHookTick, bool hookSilent)
+    public HookRehookReason Evaluate(uint now, bool hookSilent)
     {
         lock (_gate)
         {
@@ -133,9 +134,14 @@ public sealed class HookRehookPolicy
                 return HookRehookReason.None;
             }
 
-            // 張り直しのあとにコールバックが来たら、フックは生きている。疑いのバックオフを戻す。
-            // 片方が黙ったままなら、もう片方のコールバックが来ても戻さない（張り直しで直らない場合に間引くため）。
-            if (_hasRehooked && !hookSilent && Newer(lastHookTick, _lastRehookTick))
+            // 疑いが QuietResetMs の間なくなったら、直ったと見てバックオフを戻す。
+            // 張り直しのあとに片方のコールバックが来ただけでは戻さない: 管理者権限のウィンドウのように、片方が
+            // 黙り続ける場面で、もう片方のコールバックのたびに戻ると、間隔が最短まで縮む（実機の app.log で確認）。
+            if (hookSilent)
+            {
+                _lastSilentTick = now;
+            }
+            else if (_backoffMs != 0 && unchecked(now - _lastSilentTick) >= QuietResetMs)
             {
                 _backoffMs = 0;
             }
@@ -178,6 +184,4 @@ public sealed class HookRehookPolicy
         _lastRehookTick = now;
         return reason;
     }
-
-    private static bool Newer(uint value, uint baseline) => HookTicks.Diff(value, baseline) > 0;
 }
