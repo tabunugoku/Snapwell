@@ -21,7 +21,7 @@ The film has sound effects and music. It is not a screen recording of the app. I
 - From the speed you let go with, Snapwell predicts where a window would stop, then carries it to a zone or a corner with a spring, a magnet and walls.
 - Work with hotkeys, a launcher and a tray menu.
 - Native on x64 and ARM64. There is no x86 build.
-- Network access is limited to the optional update check and, only when you click "Update and restart", the download of the signed release package. No DLL is injected into other apps.
+- Network access is limited to the optional update check and, only when you click "Update and restart", the download of the release package, which it verifies against the update signature. No DLL is injected into other apps.
 
 ## Features in detail
 
@@ -106,7 +106,7 @@ Starting at sign-in is also not registered until you turn it on. Turning it off 
 - The interface is available in Japanese, English and Chinese (Simplified and Traditional; Chinese from version 1.0.6), and follows the Windows display language by default. The settings window, tray menu and launcher follow the Windows light or dark theme.
 - On first launch, a setup in the settings window opens with a short intro animation and a welcome screen where you can throw a window. Then you decide the standard features, hotkeys and grid in turn. Click or press Esc to skip the intro. It is skipped on its own when Windows animation effects are off or Snapwell's reduce motion option is on.
 - The Feel page has an option to reduce motion. When it is on, or when Windows animation effects are off, windows move straight to their destination without animation.
-- By default, Snapwell does not check for updates. When you turn on automatic checks or click Check now, it checks GitHub Releases for new versions. Clicking Update and restart in the notice downloads the signed release package, verifies it, replaces the files and starts the new version. Nothing is downloaded until you click, and if the new version cannot be confirmed to start, Snapwell rolls back to the previous one.
+- By default, Snapwell does not check for updates. When you turn on automatic checks or click Check now, it checks GitHub Releases for new versions. Clicking Update and restart in the notice downloads the release package, verifies it against the update signature, replaces the files and starts the new version. Nothing is downloaded until you click, and if the new version cannot be confirmed to start, Snapwell rolls back to the previous one.
 - If you turned on Start as administrator, the first launch after an update does not run as administrator. It does from the next sign-in, or after you quit Snapwell and start it again.
 
 ## Requirements
@@ -170,7 +170,7 @@ The design is in [docs/DESIGN.md](docs/DESIGN.md) and the mockup is [docs/mockup
 
 Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by [SignPath Foundation](https://signpath.org/).
 
-This policy is written to apply for free code signing from SignPath Foundation. Until the application is approved, the builds we distribute are not signed. From the first release after approval, we sign under the following policy.
+This policy is written to apply for free code signing from SignPath Foundation. Until the application is approved, the builds we distribute are not signed. From the first release after approval, we sign under the following policy. The update signature that Snapwell checks before updating is a separate mechanism from this code signing.
 
 - We sign `Snapwell.exe` and `Snapwell.Settings.exe`, which go into the release zip. Third-party components, such as Microsoft's, are not re-signed.
 - Only builds made by the `release.yml` workflow on GitHub Actions, from a tagged commit of this repository, are signed. Builds made on a local machine are never signed.
@@ -190,7 +190,7 @@ This policy is written to apply for free code signing from SignPath Foundation. 
 
 This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it.
 
-By default, Snapwell makes no network connections. It does no analytics or tracking, has no accounts, and sends nothing else automatically. Only when you turn on automatic update checks or click Check now does it send a GET request to GitHub Releases for update information. It sends only the GET request and a User-Agent header (`Snapwell/<version>`), with no identifiers or usage data (GitHub can see your IP address). Only when you click Update and restart does Snapwell download a signed release package from GitHub (GET and User-Agent only). Snapwell stores settings only on this PC, in these folders:
+By default, Snapwell makes no network connections. It does no analytics or tracking, has no accounts, and sends nothing else automatically. Only when you turn on automatic update checks or click Check now does it send a GET request to GitHub Releases for update information. It sends only the GET request and a User-Agent header (`Snapwell/<version>`), with no identifiers or usage data (GitHub can see your IP address). Only when you click Update and restart does Snapwell download a release package from GitHub (GET and User-Agent only) and verify it against the update signature. Snapwell stores settings only on this PC, in these folders:
 
 - `%APPDATA%\Snapwell\` (settings)
 - `%LOCALAPPDATA%\Snapwell\` (the state of this PC, and the saved original values of OS settings)

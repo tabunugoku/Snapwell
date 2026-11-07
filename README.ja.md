@@ -21,7 +21,7 @@ Snapwell は Windows 11 用のウィンドウマネージャーです。ウィ�
 - 離した速さから止まる位置を予測し、ばね、磁石、壁でウィンドウを区画や四隅に運びます。
 - ホットキー、ランチャー、トレイのメニューで操作します。
 - x64 と ARM64 のネイティブ版です。x86 は対象外です。
-- 通信は、利用者が有効にした更新の確認と、「更新して再起動」を押したときの署名つきの配布ファイルのダウンロードだけです。DLL を他のアプリに差し込むこともしません。
+- 通信は、利用者が有効にした更新の確認と、「更新して再起動」を押したときの配布ファイルのダウンロード（更新用の署名で検証します）だけです。DLL を他のアプリに差し込むこともしません。
 
 ## 機能の詳細
 
@@ -170,7 +170,7 @@ dotnet publish src/Snapwell.Settings/Snapwell.Settings.csproj -c Release -r $rid
 
 Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by [SignPath Foundation](https://signpath.org/).
 
-この方針は SignPath Foundation の無償のコード署名を申請するためのものです。署名の承認を得るまで、配布しているビルドは署名されていません。承認を得たあとのリリースから、次の方針で署名します。
+この方針は SignPath Foundation の無償のコード署名を申請するためのものです。署名の承認を得るまで、配布しているビルドは署名されていません。承認を得たあとのリリースから、次の方針で署名します。更新の前に Snapwell が確認する更新用の署名は、このコード署名とは別の仕組みです。
 
 - 署名するのは、リリースの zip に入る `Snapwell.exe` と `Snapwell.Settings.exe` です。Microsoft など第三者のコンポーネントは、署名し直しません。
 - 署名は、このリポジトリのタグが付いたコミットから、GitHub Actions の `release.yml` が作ったビルドにだけ付けます。手元でビルドしたものには付けません。
@@ -190,7 +190,7 @@ Free code signing provided by [SignPath.io](https://about.signpath.io/), certifi
 
 This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it.
 
-Snapwell は既定ではどこにも通信しません。解析、トラッキング、アカウント、それ以外の自動送信は行いません。利用者が「更新を自動で確認する」を有効にしたときや「今すぐ確認」を押したときだけ、GitHub Releases へ GET 要求を送って更新を確認します。送信するのは GET 要求と User-Agent（`Snapwell/<版>`）だけで、識別子や利用状況は送信しません（接続先の GitHub には IP アドレスが見えます）。「更新して再起動」を押したときだけ、署名つきの配布ファイルを GitHub からダウンロードします（GET と User-Agent のみ）。設定は次のファイルに、この PC の中だけで保存します。
+Snapwell は既定ではどこにも通信しません。解析、トラッキング、アカウント、それ以外の自動送信は行いません。利用者が「更新を自動で確認する」を有効にしたときや「今すぐ確認」を押したときだけ、GitHub Releases へ GET 要求を送って更新を確認します。送信するのは GET 要求と User-Agent（`Snapwell/<版>`）だけで、識別子や利用状況は送信しません（接続先の GitHub には IP アドレスが見えます）。「更新して再起動」を押したときだけ、配布ファイルを GitHub からダウンロードし、更新用の署名で検証します（GET と User-Agent のみ）。設定は次のファイルに、この PC の中だけで保存します。
 
 - `%APPDATA%\Snapwell\`（設定）
 - `%LOCALAPPDATA%\Snapwell\`（この PC の状態と、OS の設定の退避値）

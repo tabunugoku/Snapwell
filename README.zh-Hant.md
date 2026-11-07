@@ -21,7 +21,7 @@ Snapwell 是一款適用於 Windows 11 的視窗管理員。把視窗甩出去�
 - 根據放開時的速度預測視窗會停在哪裡，再藉由彈簧、磁鐵和牆壁，把視窗送到某一格或螢幕四角。
 - 可透過快速鍵、啟動器和系統匣功能表操作。
 - 提供 x64 和 ARM64 原生版本，沒有 x86 版本。
-- 網路存取僅限於選用的更新檢查，以及您按一下「更新並重新啟動」時下載已簽署的發行套件。不會對其他應用程式注入 DLL。
+- 網路存取僅限於選用的更新檢查，以及您按一下「更新並重新啟動」時下載發行套件（以更新簽章驗證）。不會對其他應用程式注入 DLL。
 
 ## 功能詳解
 
@@ -106,7 +106,7 @@ Windows 內建的貼齊和貼齊版面配置會與 Snapwell 的視窗移動相�
 - 介面語言有日文、英文和中文（簡體、繁體）。中文自 1.0.6 起提供。預設會依照 Windows 的顯示語言。設定視窗、系統匣功能表和啟動器會依照 Windows 的淺色或深色主題。
 - 首次啟動時會開啟設定視窗中的初始設定：先播放一段簡短的開場動畫，再進入可以甩視窗試玩的歡迎畫面，然後依序決定 Windows 功能、快速鍵和網格。按一下滑鼠或按 Esc 可略過開場動畫。當 Windows 的動畫效果關閉，或 Snapwell 的「減少動畫」選項開啟時，會自動略過。
 - 「手感」頁面提供「減少動畫」選項。開啟它，或 Windows 的動畫效果處於關閉狀態時，視窗會不帶動畫地直接移到目標位置。
-- 預設不檢查更新。只有在您開啟「自動檢查更新」，或按一下「立即檢查」時，才會向 GitHub Releases 查詢新版本。在通知中按一下「更新並重新啟動」後，會下載已簽署的發行套件、驗證、取代檔案並啟動新版本。在您按一下之前不會下載任何內容；如果無法確認新版本能正常啟動，Snapwell 會還原為之前的版本。
+- 預設不檢查更新。只有在您開啟「自動檢查更新」，或按一下「立即檢查」時，才會向 GitHub Releases 查詢新版本。在通知中按一下「更新並重新啟動」後，會下載發行套件、以更新簽章驗證、取代檔案並啟動新版本。在您按一下之前不會下載任何內容；如果無法確認新版本能正常啟動，Snapwell 會還原為之前的版本。
 - 如果您開啟了「以系統管理員身分啟動」，更新後的第一次啟動不會以系統管理員身分執行。從下次登入起，或結束 Snapwell 後重新啟動時，才會以系統管理員身分執行。
 
 ## 系統需求
@@ -170,7 +170,7 @@ dotnet publish src/Snapwell.Settings/Snapwell.Settings.csproj -c Release -r $rid
 
 Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by [SignPath Foundation](https://signpath.org/).
 
-本政策是為向 SignPath Foundation 申請免費程式碼簽署而撰寫的。在申請獲准之前，我們散發的版本不帶簽章。從獲准後的第一個版本起，我們將依以下政策簽署。
+本政策是為向 SignPath Foundation 申請免費程式碼簽署而撰寫的。在申請獲准之前，我們散發的版本不帶簽章。從獲准後的第一個版本起，我們將依以下政策簽署。Snapwell 在更新前檢查的更新簽章，與此處的程式碼簽署是兩套不同的機制。
 
 - 我們簽署的是放入發行 zip 的 `Snapwell.exe` 和 `Snapwell.Settings.exe`。Microsoft 等第三方元件不會重新簽署。
 - 只有由 GitHub Actions 上的 `release.yml` 工作流程，根據本存放庫帶標籤的提交所建置的版本才會簽署。在本機建置的版本絕不簽署。
@@ -190,7 +190,7 @@ Free code signing provided by [SignPath.io](https://about.signpath.io/), certifi
 
 This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it.
 
-Snapwell 預設不建立任何網路連線。它不做分析或追蹤，沒有帳戶，也不會自動傳送其他任何內容。只有在您開啟自動檢查更新，或按一下「立即檢查」時，它才會向 GitHub Releases 傳送 GET 要求以取得更新資訊。傳送的只有 GET 要求和 User-Agent 標頭（`Snapwell/<版本>`），不含識別碼或使用資料（GitHub 能看到您的 IP 位址）。只有在您按一下「更新並重新啟動」時，Snapwell 才會從 GitHub 下載已簽署的發行套件（僅有 GET 和 User-Agent）。設定僅儲存在這台電腦上的以下資料夾中：
+Snapwell 預設不建立任何網路連線。它不做分析或追蹤，沒有帳戶，也不會自動傳送其他任何內容。只有在您開啟「自動檢查更新」，或按一下「立即檢查」時，它才會向 GitHub Releases 傳送 GET 要求以取得更新資訊。傳送的只有 GET 要求和 User-Agent 標頭（`Snapwell/<版本>`），不含識別碼或使用資料（GitHub 能看到您的 IP 位址）。只有在您按一下「更新並重新啟動」時，Snapwell 才會從 GitHub 下載發行套件（僅有 GET 和 User-Agent），並以更新簽章驗證。設定僅儲存在這台電腦上的以下資料夾中：
 
 - `%APPDATA%\Snapwell\`（設定）
 - `%LOCALAPPDATA%\Snapwell\`（這台電腦的狀態，以及已儲存的 Windows 設定原始值）
