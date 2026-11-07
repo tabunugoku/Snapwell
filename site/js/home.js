@@ -99,7 +99,8 @@
     if (persist) { try { localStorage.setItem('snapwell.lang', l); } catch (e) { /* 保存できない環境 */ } }
     $$('[data-aria-en]').forEach((el) => el.setAttribute('aria-label', el.dataset['aria' + ATTR_KEY[l]]));
     $$('[data-set-lang]').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.setLang === l)));
-    $('#langCur').textContent = $(`[data-set-lang="${l}"]`).textContent; // 現在の言語は、その言語自身の表記
+    const cur = $('#langCur'); const item = $(`[data-set-lang="${l}"]`); // 現在の言語は、その言語自身の表記と lang で出す
+    cur.textContent = item.textContent; cur.lang = item.lang;
     langHooks.forEach((f) => f());
   }
 
@@ -389,8 +390,8 @@
   const CARD_LABELS = {
     en: ['Mass', 'Frequency', 'Damping ratio', 'Overshoot'],
     ja: ['質量', '固有振動数', '減衰比', '行き過ぎ'],
-    'zh-hans': ['质量', '固有频率', '阻尼比', '过冲'],
-    'zh-hant': ['質量', '固有頻率', '阻尼比', '過衝'],
+    'zh-hans': ['质量', '固有频率', '阻尼比', '超调'],
+    'zh-hant': ['質量', '固有頻率', '阻尼比', '超越目標'],
   };
   function cardNums(card) {
     const p = P.PRESETS[card.dataset.v];
