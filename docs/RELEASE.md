@@ -57,6 +57,7 @@ Actions では秘密鍵を署名の手順だけに渡す。未登録なら処理
 
 ## ホームページ（GitHub Pages）
 - `site/` が公開元。main の `site/**` の変更と、リリースの公開で `.github/workflows/pages.yml` が自動で公開する (手動の実行もできる)。リリースのイベントはタグの ref で動き、github-pages 環境がタグを許さず失敗するため、`dispatch` ジョブが `workflow_dispatch` で main から再実行を頼む。URL は `https://tabunugoku.github.io/Snapwell/`
+- リリースで対応言語が変わるときは、`site/index.html` の機能 08 の文言を 4 言語（`data-l` が en・ja・zh-hans・zh-hant）とも直す
 - 初回だけ、リポジトリの Settings → Pages の Source を「GitHub Actions」にする
 - リポジトリは公開済みなので、プランの制約はない
 - `site/index.html` の版は `{{VERSION}}` と書き、公開の直前に、最新の正式版（下書きと pre-release を除く）の版へ置き換える。ダウンロードのボタンは `releases/download/v<版>/Snapwell-<版>-win-<rid>.zip` を直接指す。リリースを下書きから公開に切り替えると、ページも自動で追従する
