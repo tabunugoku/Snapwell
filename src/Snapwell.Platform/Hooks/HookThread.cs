@@ -16,14 +16,11 @@ public enum HookRehookEvidence
     /// <summary>環境の変化（ロック解除・復帰など）による。疑いの証拠はない。</summary>
     None = 0,
 
-    /// <summary>OS の最後の入力が、フックの最後のコールバックより猶予以上に新しい。</summary>
-    TimeGap = 1,
-
     /// <summary>キーが押されているのに、キーボードのコールバックが来ない。</summary>
-    KeyboardSilent = 2,
+    KeyboardSilent = 1,
 
     /// <summary>カーソルが動き、OS も入力を見たのに、マウスのコールバックが来ない。</summary>
-    MouseSilent = 4,
+    MouseSilent = 2,
 }
 
 /// <summary>
@@ -33,7 +30,7 @@ public enum HookRehookEvidence
 /// <param name="Succeeded">登録し直しが成功したか。</param>
 /// <param name="Count">何回目か。</param>
 /// <param name="Evidence">疑いの証拠の種類。</param>
-/// <param name="GapMs">OS の最後の入力から、フックの最後のコールバックまでの差（正なら OS のほうが新しい）。</param>
+/// <param name="GapMs">OS の最後の入力から、フックの最後のコールバックまでの差（正なら OS のほうが新しい）。参考値。</param>
 /// <param name="SinceKeyboardMs">キーボードのコールバックが最後に来てからの経過。</param>
 /// <param name="SinceMouseMs">マウスのコールバックが最後に来てからの経過。</param>
 /// <param name="SinceInputMs">OS の最後の入力からの経過。</param>
@@ -343,14 +340,16 @@ public sealed class HookThread : IDisposable
             // 最後の入力が分からないときは、疑わない。
             var lastInput = _api.TryGetLastInputTick(out var tick) ? tick : lastHook;
 
-            // 片方のフックだけが外されても、もう片方が時刻を更新し続けて見えなくなる。種類ごとの証拠で補う。
+            // 疑いの根拠は、種類ごとの証拠だけにする。OS の最後の入力とコールバックの時刻の食い違いは使わない:
+            // タッチ・ペン・タッチパッドの操作は OS の最後の入力を進めるがフックを呼ばず、通常の操作で誤検知した。
             // キーボード: 繰り返しのあるキーが猶予より長く押されているのに、コールバックが来ない。
             // OS の入力がキーボードのコールバックより新しいときだけ、全キーを調べる（静かな間の無駄なシステムコールを避ける）。
             var keyboardSilent = HookTicks.Diff(now, keyboard) > HookRehookPolicy.InputGraceMs &&
                 HookTicks.Diff(lastInput, keyboard) > HookRehookPolicy.InputGraceMs &&
                 _api.IsNonModifierKeyDown();
             // マウス: 前回の観測からカーソルが動き、OS も入力を見たのに、その間にコールバックが一度も来ない。
-            // SetCursorPos やタッチ・ペンはカーソルを動かしても OS の最後の入力にならないので、それだけでは疑わない。
+            // SetCursorPos はカーソルを動かしても OS の最後の入力にならないので、それだけでは疑わない。
+            // タッチ・ペンがカーソルを動かすときにこの証拠が誤検知しないかは、実機で確認する（MANUAL_TEST.md）。
             var cursorMoved = false;
             if (_api.TryGetCursorPosition(out var x, out var y))
             {
@@ -363,7 +362,7 @@ public sealed class HookThread : IDisposable
             _previousPollTick = now;
 
             var gap = HookTicks.Diff(lastInput, lastHook);
-            var reason = _policy.Evaluate(now, lastHook, lastInput, keyboardSilent || mouseSilent);
+            var reason = _policy.Evaluate(now, lastHook, keyboardSilent || mouseSilent);
             if (reason == HookRehookReason.None)
             {
                 return;
@@ -371,8 +370,7 @@ public sealed class HookThread : IDisposable
 
             // 調査用。種類ごとの証拠と、各時刻からの経過だけを残す（入力の中身は取らない）。
             var evidence = reason == HookRehookReason.InputMismatch
-                ? (gap > HookRehookPolicy.InputGraceMs ? HookRehookEvidence.TimeGap : HookRehookEvidence.None) |
-                    (keyboardSilent ? HookRehookEvidence.KeyboardSilent : HookRehookEvidence.None) |
+                ? (keyboardSilent ? HookRehookEvidence.KeyboardSilent : HookRehookEvidence.None) |
                     (mouseSilent ? HookRehookEvidence.MouseSilent : HookRehookEvidence.None)
                 : HookRehookEvidence.None;
             _rehookDetail = new HookRehookReport(

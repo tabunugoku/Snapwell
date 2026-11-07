@@ -35,13 +35,15 @@ public enum HookRehookReason
 /// </summary>
 /// <remarks>
 /// 低レベルフックは、コールバックが LowLevelHooksTimeout を超えたときなどに、通知なく OS に外される。
-/// 外されたことを直接知る手段はないので、「OS が見た最後の入力」と「自分のコールバックが最後に呼ばれた時刻」の
-/// 食い違いで疑う。昇格したウィンドウへの入力のように、フックに届かない正常な場合にも食い違うため、
-/// 疑いによる張り直しには指数バックオフをかける。コールバックが再び来たらバックオフを戻す。
+/// 外されたことを直接知る手段はないので、呼び出し側が集めた「片方のフックが黙っている」証拠で疑う。
+/// 「OS の最後の入力」と「最後のコールバック」の時刻の食い違いは使わない: タッチ・ペン・タッチパッドの操作は
+/// OS の最後の入力を進めるが、低レベルフックを呼ばないため、通常の操作で誤検知した（実機で確認）。
+/// 昇格したウィンドウへの入力のようにフックに届かない正常な場合にも疑うため、疑いによる張り直しには
+/// 指数バックオフをかける。コールバックが再び来たらバックオフを戻す。
 /// </remarks>
 public sealed class HookRehookPolicy
 {
-    /// <summary>OS の最後の入力が、フックの最後のコールバックよりこれ以上新しければ疑う。</summary>
+    /// <summary>コールバックがこれ以上来ていないことを、片方のフックが黙っている証拠の前提にする。</summary>
     public const uint InputGraceMs = 1500;
 
     /// <summary>どの理由でも、張り直しの間隔の下限。連打を避ける。</summary>
@@ -116,11 +118,10 @@ public sealed class HookRehookPolicy
     /// <summary>今張り直すべきかを判断し、張り直すならその時刻を記録する。</summary>
     /// <param name="now">現在の時刻。</param>
     /// <param name="lastHookTick">キーボードとマウスのどちらかのコールバックが最後に呼ばれた時刻。</param>
-    /// <param name="lastOsInputTick">OS が見た最後の入力の時刻。</param>
-    /// <param name="oneHookSilent">
-    /// 片方のフックだけ黙っている証拠がある。もう片方が生きていると、時刻の比較では見えないため。
+    /// <param name="hookSilent">
+    /// フックが黙っている証拠がある（キーが押されているのにキーボードが来ない、カーソルが動いたのにマウスが来ない）。
     /// </param>
-    public HookRehookReason Evaluate(uint now, uint lastHookTick, uint lastOsInputTick, bool oneHookSilent = false)
+    public HookRehookReason Evaluate(uint now, uint lastHookTick, bool hookSilent)
     {
         lock (_gate)
         {
@@ -134,7 +135,7 @@ public sealed class HookRehookPolicy
 
             // 張り直しのあとにコールバックが来たら、フックは生きている。疑いのバックオフを戻す。
             // 片方が黙ったままなら、もう片方のコールバックが来ても戻さない（張り直しで直らない場合に間引くため）。
-            if (_hasRehooked && !oneHookSilent && Newer(lastHookTick, _lastRehookTick))
+            if (_hasRehooked && !hookSilent && Newer(lastHookTick, _lastRehookTick))
             {
                 _backoffMs = 0;
             }
@@ -158,8 +159,7 @@ public sealed class HookRehookPolicy
                 return Approve(now, HookRehookReason.Environment);
             }
 
-            var suspected = HookTicks.Diff(lastOsInputTick, lastHookTick) > InputGraceMs || oneHookSilent;
-            if (suspected &&
+            if (hookSilent &&
                 sinceRehook >= Math.Max(MinIntervalMs, _backoffMs))
             {
                 _backoffMs = _backoffMs == 0 ? InitialBackoffMs : Math.Min(_backoffMs * 2, MaxBackoffMs);

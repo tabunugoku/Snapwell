@@ -465,24 +465,24 @@ public sealed class HookThreadTests
         Assert.Null(hooks.Failure);
     }
 
-    /// <summary>OS には入力があるのにコールバックが来ないときだけ、時計を進めて張り直す。</summary>
+    /// <summary>OS の入力だけが進み（タッチ・ペン・タッチパッド）コールバックが来なくても、証拠がなければ張り直さない。</summary>
     [Fact]
-    public void CheckHealthRehooksOnlyWhenOsInputOutrunsCallbacks()
+    public void OsInputWithoutCallbacksAloneDoesNotRehook()
     {
         using var api = new FakeHookApi();
         using var hooks = new HookThread(new HotkeyMatcher(), 8, api);
         Assert.True(hooks.Start());
         var start = unchecked((uint)Environment.TickCount);
         api.TickCount = start + 60_000;
-        api.LastInputTick = start - 5_000;
-        hooks.CheckHealth();
-        Assert.Equal(0, api.PostRehookCount);
-
         api.LastInputTick = start + 59_000;
-        hooks.CheckHealth();
-        Assert.Equal(1, api.PostRehookCount);
-        hooks.CheckHealth();
-        Assert.Equal(1, api.PostRehookCount);
+        for (var i = 0; i < 5; i++)
+        {
+            api.TickCount += 2_000;
+            api.LastInputTick = api.TickCount;
+            hooks.CheckHealth();
+        }
+
+        Assert.Equal(0, api.PostRehookCount);
         Assert.True(hooks.Stop());
     }
 
@@ -498,10 +498,11 @@ public sealed class HookThreadTests
         var start = api.TickCount;
         api.TickCount = start + 60_000;
         api.LastInputTick = start + 59_000;
+        api.KeyHeld = true;
         hooks.CheckHealth();
         Assert.True(reports.TryTake(out var report, TimeSpan.FromSeconds(5)));
         Assert.Equal(HookRehookReason.InputMismatch, report.Reason);
-        Assert.Equal(HookRehookEvidence.TimeGap, report.Evidence);
+        Assert.Equal(HookRehookEvidence.KeyboardSilent, report.Evidence);
         Assert.Equal(59_000, report.GapMs);
         Assert.Equal(60_000, report.SinceKeyboardMs);
         Assert.Equal(1_000, report.SinceInputMs);
