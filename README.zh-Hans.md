@@ -8,26 +8,26 @@
   <a href="README.md">English</a> | <a href="README.ja.md">日本語</a> | <strong>简体中文</strong> | <a href="README.zh-Hant.md">繁體中文</a>
 </p>
 
-Snapwell 是一款适用于 Windows 11 的窗口管理器。把窗口甩出去，弹簧与磁铁会把它吸向网格中最近的格。
+Snapwell 是一款适用于 Windows 11 的窗口管理器。把窗口甩出去，弹簧与磁铁会把它拉向网格中最近的格。
 
-[![Snapwell 宣传短片的一个场景：甩出的窗口停进一个格](docs/images/film-throw-en.jpg)](https://tabunugoku.github.io/Snapwell/)
+[![Snapwell 宣传短片的一个场景：甩出的窗口落入一个格](docs/images/film-throw-en.jpg)](https://tabunugoku.github.io/Snapwell/)
 
-短片配有音效和音乐。它不是应用的屏幕录像，而是用与 Snapwell 相同的物理模型驱动的界面示意图（mockup）。在[主页](https://tabunugoku.github.io/Snapwell/)上，您可以亲自甩一甩窗口。
+短片配有音效和音乐。它不是应用的录屏，而是用与 Snapwell 相同的物理模型驱动的模拟界面（mockup）。在[主页](https://tabunugoku.github.io/Snapwell/)上，您可以亲自甩一甩窗口。
 
 ## 特点
 
-- 将屏幕划分为 8 × 8 等网格，以整格为单位放置窗口并调整大小。
+- 将屏幕划分为网格（例如 8 × 8），以整格为单位放置窗口并调整大小。
 - 以像素为单位设置窗口之间的间距和屏幕边缘的边距。间距为 0 时，窗口紧挨排列。
 - 根据松开时的速度预测窗口会停在哪里，再借助弹簧、磁铁和墙壁，把窗口送到某个格或屏幕四角。
 - 可通过快捷键、启动器和托盘菜单操作。
 - 提供 x64 和 ARM64 原生版本，没有 x86 版本。
-- 网络访问仅限于您启用的更新检查，以及您单击“更新并重启”时下载已签名的发布包。不会向其他应用注入 DLL。
+- 网络访问仅限于可选的更新检查，以及您单击“更新并重启”时下载已签名的发布包。不会向其他应用注入 DLL。
 
 ## 功能详解
 
 ### 甩出即吸附
 
-抓住标题栏后松开。Snapwell 会根据松开瞬间的速度预测窗口会停在哪里，并把它送到最近的格。吸附目标可以选择格或四角，也可以显示预测线和窗口将落入的格的预览。
+抓住标题栏后松开。Snapwell 会根据松开瞬间的速度预测窗口会停在哪里，并把它送到最近的格。吸附目标可以选择格或四角，也可以显示预测线和“目标区域预览”（窗口将落入的格）。
 
 运动由质量、刚度和阻尼计算得出，没有固定的时长或缓动曲线。在设置窗口的“手感”页中，可以从 4 个预设里选择，也可以自行设置各项数值。
 
@@ -37,7 +37,7 @@ Snapwell 是一款适用于 Windows 11 的窗口管理器。把窗口甩出去�
 
 可以为每台显示器分别选择网格，例如 8 × 8、12 × 6 或 6 × 4。窗口间距和屏幕边缘的边距都可以在 0 到 200 px 之间设置。
 
-可以用快捷键将前台窗口每次扩大或缩小一格。还有一个选项：手动调整大小后松开时，窗口会对齐到最近的格边界。
+可以用快捷键将前台窗口每次扩大或缩小一格。还有一个选项：手动调整大小后松开时，窗口会吸附到最近的格边界。
 
 “居中”预设和 Ctrl+Alt+C 会左右、上下对称地使用最靠近屏幕中央的格。对于 12 × 12 这类无法恰好对准中央的网格也同样适用。
 
@@ -47,7 +47,7 @@ Snapwell 是一款适用于 Windows 11 的窗口管理器。把窗口甩出去�
 
 在启动器中还可以最多选择 9 个窗口，一并排列。
 
-[![4 × 3 网格上的启动器及预设（宣传短片的一个场景，短片为示意图）](docs/images/film-launcher-en.jpg)](https://tabunugoku.github.io/Snapwell/)
+[![4 × 3 网格上的启动器及预设（宣传短片的一个场景，短片为模拟界面）](docs/images/film-launcher-en.jpg)](https://tabunugoku.github.io/Snapwell/)
 
 ### 排列
 
@@ -93,11 +93,11 @@ Snapwell 提供 4 种排列方式。
 
 ### Windows 自带的贴靠
 
-Windows 内置的贴靠和贴靠布局会与 Snapwell 的运动相互重叠，因此可以在设置窗口中关闭内置贴靠。另一个选项可将 Win + 方向键替换为左、右、上、下半边。
+Windows 内置的贴靠和贴靠布局会与 Snapwell 的窗口移动相互冲突，因此可以在设置窗口中关闭内置贴靠。另一个选项可将 Win + 方向键改为执行 Snapwell 的左、右、上、下半边操作。
 
-只有在您同意并在设置窗口中打开后，Snapwell 才会更改 Windows 设置。更改前的原始值会保存在另一个文件中，并在您关闭该选项时、Snapwell 退出时，以及崩溃后下次启动时恢复。设置窗口中的“恢复 Windows 行为”按钮也能实现同样的效果。
+只有在您同意并在设置窗口中开启该选项后，Snapwell 才会更改 Windows 设置。更改前的原始值会保存在单独的文件中，并在您关闭该选项时、Snapwell 退出时，以及崩溃后下次启动时恢复。设置窗口中的“恢复 Windows 行为”按钮也能实现同样的效果。
 
-登录时自动启动同样在您打开之前不会注册，关闭后会移除注册。
+“登录时启动”同样在您开启之前不会注册，关闭后会移除注册。
 
 ### 其他
 
@@ -105,8 +105,8 @@ Windows 内置的贴靠和贴靠布局会与 Snapwell 的运动相互重叠，�
 - 支持导入和导出设置。
 - 界面语言有日语、英语和中文（简体、繁体）。中文自 1.0.6 起提供。默认跟随 Windows 的显示语言。设置窗口、托盘菜单和启动器会跟随 Windows 的浅色或深色主题。
 - 首次启动时会打开设置窗口中的初始设置：先播放一段简短的开场动画，再进入可以甩窗口试玩的欢迎界面，然后依次决定 Windows 功能、快捷键和网格。单击或按 Esc 可跳过开场动画。当 Windows 的动画效果关闭，或 Snapwell 的“减少动画”选项开启时，会自动跳过。
-- “手感”页提供“减少动画”选项。打开它，或 Windows 的动画效果处于关闭状态时，窗口会不带动画地直接移到目标位置。
-- 默认不检查更新。只有在您开启自动检查，或单击“立即检查”时，才会向 GitHub Releases 查询新版本。在通知中单击“更新并重启”后，会下载已签名的发布包、验证、替换文件并启动新版本。在您单击之前不会下载任何内容；如果无法确认新版本能正常启动，Snapwell 会回滚到之前的版本。
+- “手感”页提供“减少动画”选项。开启后，或 Windows 的动画效果处于关闭状态时，窗口会不带动画地直接移到目标位置。
+- 默认不检查更新。只有在您开启“自动检查更新”，或单击“立即检查”时，才会向 GitHub Releases 查询新版本。在通知中单击“更新并重启”后，会下载已签名的发布包、验证、替换文件并启动新版本。在您单击之前不会下载任何内容；如果无法确认新版本能正常启动，Snapwell 会回滚到之前的版本。
 - 如果您开启了“以管理员身份启动”，更新后的第一次启动不会以管理员身份运行。从下次登录起，或退出 Snapwell 后重新启动时，才会以管理员身份运行。
 
 ## 运行环境
@@ -161,10 +161,10 @@ dotnet publish src/Snapwell.Settings/Snapwell.Settings.csproj -c Release -r $rid
 | `src/Snapwell.App/` | 常驻托盘的应用本体、叠加层和启动器。 |
 | `src/Snapwell.Settings/` | 设置窗口（WinUI 3）。 |
 | `tests/` | xUnit 单元测试。 |
-| `docs/` | 设计、示意图（mockup）以及需要在真机上检查的项目。 |
+| `docs/` | 设计、模拟界面（mockup）以及需要在真机上检查的事项。 |
 | `site/` | 主页（GitHub Pages）。 |
 
-设计见 [docs/DESIGN.md](docs/DESIGN.md)，示意图是 [docs/mockups/snapwell.html](docs/mockups/snapwell.html)。发布步骤见 [docs/RELEASE.md](docs/RELEASE.md)，真机检查见 [docs/MANUAL_TEST.md](docs/MANUAL_TEST.md)。
+设计见 [docs/DESIGN.md](docs/DESIGN.md)，模拟界面是 [docs/mockups/snapwell.html](docs/mockups/snapwell.html)。发布步骤见 [docs/RELEASE.md](docs/RELEASE.md)，真机检查见 [docs/MANUAL_TEST.md](docs/MANUAL_TEST.md)。
 
 ## Code signing policy
 
@@ -190,10 +190,10 @@ Free code signing provided by [SignPath.io](https://about.signpath.io/), certifi
 
 This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it.
 
-Snapwell 默认不建立任何网络连接。它不做分析或跟踪，没有账户，也不会自动发送其他任何内容。只有在您开启自动检查更新，或单击“立即检查”时，它才会向 GitHub Releases 发送 GET 请求以获取更新信息。发送的只有 GET 请求和 User-Agent 标头（`Snapwell/<版本>`），不含标识符或使用数据（GitHub 能看到您的 IP 地址）。只有在您单击“更新并重启”时，Snapwell 才会从 GitHub 下载已签名的发布包（仅有 GET 和 User-Agent）。设置仅保存在这台电脑上的以下文件夹中：
+Snapwell 默认不建立任何网络连接。它不做分析或跟踪，没有账户，也不会自动发送其他任何内容。只有在您开启自动检查更新，或单击“立即检查”时，它才会向 GitHub Releases 发送 GET 请求以获取更新信息。发送的只有 GET 请求和 User-Agent 标头（`Snapwell/<版本>`），不含标识符或使用数据（GitHub 能看到您的 IP 地址）。只有在您单击“更新并重启”时，Snapwell 才会从 GitHub 下载已签名的发布包（仅有 GET 和 User-Agent）。设置仅保存在此电脑上的以下文件夹中：
 
 - `%APPDATA%\Snapwell\`（设置）
-- `%LOCALAPPDATA%\Snapwell\`（这台电脑的状态，以及已保存的 Windows 设置原始值）
+- `%LOCALAPPDATA%\Snapwell\`（此电脑的状态，以及已保存的 Windows 设置原始值）
 
 要同步设置，需由您选择同步文件夹。Snapwell 只读写该文件夹中的文件。把文件发送到云端的，是您所选的服务，例如 OneDrive 或 Dropbox。
 

@@ -10,26 +10,26 @@
 
 Snapwell 是一款適用於 Windows 11 的視窗管理員。把視窗甩出去，彈簧與磁鐵會把它吸向網格中最近的格。
 
-[![Snapwell 宣傳短片的一個場景：甩出的視窗停進一個格](docs/images/film-throw-en.jpg)](https://tabunugoku.github.io/Snapwell/)
+[![Snapwell 宣傳短片的一個場景：甩出的視窗落入一格](docs/images/film-throw-en.jpg)](https://tabunugoku.github.io/Snapwell/)
 
-短片配有音效和音樂。它不是應用程式的螢幕錄影，而是以與 Snapwell 相同的物理模型驅動的介面示意圖（mockup）。在[首頁](https://tabunugoku.github.io/Snapwell/)上，您可以親自甩一甩視窗。
+短片配有音效和音樂。它不是應用程式的螢幕錄影，而是以與 Snapwell 相同的物理模型驅動的模擬介面（mockup）。在[首頁](https://tabunugoku.github.io/Snapwell/)上，您可以親自甩一甩視窗。
 
 ## 特色
 
 - 將螢幕劃分為 8 × 8 等網格，以整格為單位放置視窗並調整大小。
 - 以像素為單位設定視窗之間的間距和螢幕邊緣的邊距。間距為 0 時，視窗會緊鄰排列。
-- 根據放開時的速度預測視窗會停在哪裡，再藉由彈簧、磁鐵和牆壁，把視窗送到某個格或螢幕四角。
+- 根據放開時的速度預測視窗會停在哪裡，再藉由彈簧、磁鐵和牆壁，把視窗送到某一格或螢幕四角。
 - 可透過快速鍵、啟動器和系統匣功能表操作。
 - 提供 x64 和 ARM64 原生版本，沒有 x86 版本。
-- 網路存取僅限於您啟用的更新檢查，以及您按一下「更新並重新啟動」時下載已簽署的發行套件。不會對其他應用程式注入 DLL。
+- 網路存取僅限於選用的更新檢查，以及您按一下「更新並重新啟動」時下載已簽署的發行套件。不會對其他應用程式注入 DLL。
 
 ## 功能詳解
 
 ### 甩出即吸附
 
-抓住標題列後放開。Snapwell 會根據放開瞬間的速度預測視窗會停在哪裡，並把它送到最近的格。吸附目標可以選擇格或四角，也可以顯示預測線和視窗將落入的格的預覽。
+抓住標題列後放開。Snapwell 會根據放開瞬間的速度預測視窗會停在哪裡，並把它送到最近的格。吸附目標可以選擇格或四角，也可以顯示預測線和「目標區域預覽」（視窗將落入的格）。
 
-動作由質量、剛性和阻尼計算得出，沒有固定的時間長度或緩動曲線。在設定視窗的「手感」頁面中，可以從 4 個預設中選擇，也可以自行設定各項數值。
+運動由質量、剛性和阻尼計算得出，沒有固定的時間長度或緩動曲線。在設定視窗的「手感」頁面中，可以從 4 個預設中選擇，也可以自行設定各項數值。
 
 ![設定視窗的「手感」頁面，含 4 個預設](docs/images/settings-feel-en.png)
 
@@ -47,7 +47,7 @@ Snapwell 是一款適用於 Windows 11 的視窗管理員。把視窗甩出去�
 
 在啟動器中還可以最多選取 9 個視窗，一併排列。
 
-[![4 × 3 網格上的啟動器及預設（宣傳短片的一個場景，短片為示意圖）](docs/images/film-launcher-en.jpg)](https://tabunugoku.github.io/Snapwell/)
+[![4 × 3 網格上的啟動器及預設（宣傳短片的一個場景，短片為模擬介面）](docs/images/film-launcher-en.jpg)](https://tabunugoku.github.io/Snapwell/)
 
 ### 排列
 
@@ -93,11 +93,11 @@ Snapwell 提供 4 種排列方式。
 
 ### Windows 內建的貼齊
 
-Windows 內建的貼齊和貼齊版面配置會與 Snapwell 的動作相互重疊，因此可以在設定視窗中關閉內建貼齊。另一個選項可將 Win + 方向鍵取代為左、右、上、下半邊。
+Windows 內建的貼齊和貼齊版面配置會與 Snapwell 的視窗移動相互衝突，因此可以在設定視窗中關閉內建貼齊。另一個選項可將 Win + 方向鍵取代為左、右、上、下半邊。
 
 只有在您同意並在設定視窗中開啟後，Snapwell 才會變更 Windows 設定。變更前的原始值會儲存在另一個檔案中，並在您關閉該選項時、Snapwell 結束時，以及當機後下次啟動時還原。設定視窗中的「還原 Windows 行為」按鈕也能達到同樣的效果。
 
-登入時自動啟動同樣在您開啟之前不會註冊，關閉後會移除註冊。
+「登入時啟動」同樣在您開啟之前不會註冊，關閉後會移除註冊。
 
 ### 其他
 
@@ -106,7 +106,7 @@ Windows 內建的貼齊和貼齊版面配置會與 Snapwell 的動作相互重�
 - 介面語言有日文、英文和中文（簡體、繁體）。中文自 1.0.6 起提供。預設會依照 Windows 的顯示語言。設定視窗、系統匣功能表和啟動器會依照 Windows 的淺色或深色主題。
 - 首次啟動時會開啟設定視窗中的初始設定：先播放一段簡短的開場動畫，再進入可以甩視窗試玩的歡迎畫面，然後依序決定 Windows 功能、快速鍵和網格。按一下滑鼠或按 Esc 可略過開場動畫。當 Windows 的動畫效果關閉，或 Snapwell 的「減少動畫」選項開啟時，會自動略過。
 - 「手感」頁面提供「減少動畫」選項。開啟它，或 Windows 的動畫效果處於關閉狀態時，視窗會不帶動畫地直接移到目標位置。
-- 預設不檢查更新。只有在您開啟自動檢查，或按一下「立即檢查」時，才會向 GitHub Releases 查詢新版本。在通知中按一下「更新並重新啟動」後，會下載已簽署的發行套件、驗證、取代檔案並啟動新版本。在您按一下之前不會下載任何內容；如果無法確認新版本能正常啟動，Snapwell 會還原為之前的版本。
+- 預設不檢查更新。只有在您開啟「自動檢查更新」，或按一下「立即檢查」時，才會向 GitHub Releases 查詢新版本。在通知中按一下「更新並重新啟動」後，會下載已簽署的發行套件、驗證、取代檔案並啟動新版本。在您按一下之前不會下載任何內容；如果無法確認新版本能正常啟動，Snapwell 會還原為之前的版本。
 - 如果您開啟了「以系統管理員身分啟動」，更新後的第一次啟動不會以系統管理員身分執行。從下次登入起，或結束 Snapwell 後重新啟動時，才會以系統管理員身分執行。
 
 ## 系統需求
@@ -157,14 +157,14 @@ dotnet publish src/Snapwell.Settings/Snapwell.Settings.csproj -c Release -r $rid
 | 資料夾 | 內容 |
 |---|---|
 | `src/Snapwell.Core/` | 物理模型、網格與間距的計算、排列、設定模型。不依賴 Win32。 |
-| `src/Snapwell.Platform/` | Win32 層：攔截（hook）、視窗移動、顯示器、DWM、對 Windows 內建貼齊的控制。 |
+| `src/Snapwell.Platform/` | Win32 層：攔截程序（hook）、視窗移動、顯示器、DWM、對 Windows 內建貼齊的控制。 |
 | `src/Snapwell.App/` | 常駐系統匣的應用程式本體、覆疊層和啟動器。 |
 | `src/Snapwell.Settings/` | 設定視窗（WinUI 3）。 |
 | `tests/` | xUnit 單元測試。 |
-| `docs/` | 設計、示意圖（mockup）以及需要在實機上檢查的項目。 |
+| `docs/` | 設計、模擬介面（mockup）以及需要在實機上檢查的事項。 |
 | `site/` | 首頁（GitHub Pages）。 |
 
-設計見 [docs/DESIGN.md](docs/DESIGN.md)，示意圖是 [docs/mockups/snapwell.html](docs/mockups/snapwell.html)。發行步驟見 [docs/RELEASE.md](docs/RELEASE.md)，實機檢查見 [docs/MANUAL_TEST.md](docs/MANUAL_TEST.md)。
+設計見 [docs/DESIGN.md](docs/DESIGN.md)，模擬介面是 [docs/mockups/snapwell.html](docs/mockups/snapwell.html)。發行步驟見 [docs/RELEASE.md](docs/RELEASE.md)，實機檢查見 [docs/MANUAL_TEST.md](docs/MANUAL_TEST.md)。
 
 ## Code signing policy
 
@@ -183,14 +183,14 @@ Free code signing provided by [SignPath.io](https://about.signpath.io/), certifi
 | 提交者與審查者 | [tabunugoku](https://github.com/tabunugoku) |
 | 核准者 | [tabunugoku](https://github.com/tabunugoku) |
 
-- 對存放庫的變更，由維護者審查後再合併。與簽署相關的 GitHub 和 SignPath 帳號均使用多重要素驗證加以保護。
+- 對存放庫的變更，由維護者審查後再合併。與簽署相關的 GitHub 和 SignPath 帳戶均使用多重要素驗證加以保護。
 - 如發現未簽署的版本或簽署問題，請在 [Issues](https://github.com/tabunugoku/Snapwell/issues) 中回報。
 
 ## 隱私權政策
 
 This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it.
 
-Snapwell 預設不建立任何網路連線。它不做分析或追蹤，沒有帳號，也不會自動傳送其他任何內容。只有在您開啟自動檢查更新，或按一下「立即檢查」時，它才會向 GitHub Releases 傳送 GET 要求以取得更新資訊。傳送的只有 GET 要求和 User-Agent 標頭（`Snapwell/<版本>`），不含識別碼或使用資料（GitHub 能看到您的 IP 位址）。只有在您按一下「更新並重新啟動」時，Snapwell 才會從 GitHub 下載已簽署的發行套件（僅有 GET 和 User-Agent）。設定僅儲存在這台電腦上的以下資料夾中：
+Snapwell 預設不建立任何網路連線。它不做分析或追蹤，沒有帳戶，也不會自動傳送其他任何內容。只有在您開啟自動檢查更新，或按一下「立即檢查」時，它才會向 GitHub Releases 傳送 GET 要求以取得更新資訊。傳送的只有 GET 要求和 User-Agent 標頭（`Snapwell/<版本>`），不含識別碼或使用資料（GitHub 能看到您的 IP 位址）。只有在您按一下「更新並重新啟動」時，Snapwell 才會從 GitHub 下載已簽署的發行套件（僅有 GET 和 User-Agent）。設定僅儲存在這台電腦上的以下資料夾中：
 
 - `%APPDATA%\Snapwell\`（設定）
 - `%LOCALAPPDATA%\Snapwell\`（這台電腦的狀態，以及已儲存的 Windows 設定原始值）
@@ -199,4 +199,4 @@ Snapwell 預設不建立任何網路連線。它不做分析或追蹤，沒有�
 
 ## 授權條款
 
-Snapwell 以 [MIT 授權條款](LICENSE)發行。動作的物理模型移植自 [feel](https://github.com/diip3sh/feel)（MIT）的演算法。著作權聲明見 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+Snapwell 以 [MIT 授權條款](LICENSE)發行。運動的物理模型移植自 [feel](https://github.com/diip3sh/feel)（MIT）的演算法。著作權聲明見 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
