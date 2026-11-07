@@ -20,9 +20,11 @@
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
-  const lang = new URLSearchParams(location.search).get('lang') === 'ja' ? 'ja' : 'en';
+  const q = new URLSearchParams(location.search).get('lang');
+  const lang = ['ja', 'zh-hans', 'zh-hant'].includes(q) ? q : 'en';
   const T = window.FILM_TEXT[lang];
-  document.documentElement.lang = lang;
+  // html の lang は BCP 47 の綴り (zh-Hans / zh-Hant)。Chrome が中国語の字形を選ぶ手がかりになる
+  document.documentElement.lang = { 'zh-hans': 'zh-Hans', 'zh-hant': 'zh-Hant' }[lang] || lang;
   $$('[data-t]').forEach((el) => { el.textContent = T[el.dataset.t]; });
 
   const cues = [];
@@ -237,7 +239,7 @@
     + `<div class="p-sep"></div>`
     + `<div class="row"><span class="lab">${T.hSync}</span><span class="path">Documents\\Sync\\Snapwell</span><span class="chip ok" id="synced">${T.synced}</span></div>`
     + `<div class="p-sep"></div>`
-    + `<div class="row"><span class="lab">${T.hLang}</span><span class="seg"><span class="chip${lang === 'ja' ? ' on' : ''}" id="lgJa">日本語</span><span class="chip${lang === 'en' ? ' on' : ''}" id="lgEn">English</span></span></div>`
+    + `<div class="row"><span class="lab">${T.hLang}</span><span class="seg"><span class="chip${lang !== 'en' ? ' on' : ''}" id="lgJa">${T.lgName || '日本語'}</span><span class="chip${lang === 'en' ? ' on' : ''}" id="lgEn">English</span></span></div>`
     + `<div class="row"><span class="lab">${T.hMotion}</span><span class="sw" id="msw"><i></i></span></div>`;
   const sw = { r0: swtch($('#rsw0')), r1: swtch($('#rsw1')), rep: swtch($('#repSw')), motion: swtch($('#msw')) };
   const hide = (sel, dy = 8) => fader($(sel), 0, dy);

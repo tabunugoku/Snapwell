@@ -10,8 +10,8 @@ p, dl, dd { margin: 0; }
 .cap { position: absolute; left: 0; top: 330px; width: 600px; opacity: 0; }
 .cap-h { font-size: 76px; font-weight: 600; line-height: 1.06; letter-spacing: -0.03em; color: var(--fg); margin: 0; }
 .cap-p { font-size: 28px; line-height: 1.45; color: var(--fg-3); margin: 24px 0 0; }
-html[lang="ja"] .cap-h { font-size: 64px; line-height: 1.18; letter-spacing: -0.01em; }
-html[lang="ja"] .cap-p { font-size: 28px; line-height: 1.6; }
+html[lang="ja"] .cap-h, html[lang="zh-Hans"] .cap-h, html[lang="zh-Hant"] .cap-h { font-size: 64px; line-height: 1.18; letter-spacing: -0.01em; }
+html[lang="ja"] .cap-p, html[lang="zh-Hans"] .cap-p, html[lang="zh-Hant"] .cap-p { font-size: 28px; line-height: 1.6; }
 .keys { display: flex; gap: 12px; margin: 34px 0 0; }
 .key { display: grid; place-items: center; min-width: 76px; height: 64px; padding: 0 20px; border-radius: 8px; background: var(--surface); border: 1px solid var(--border-strong); color: var(--fg); font-size: 26px; font-weight: 600; }
 .key-gap { margin-left: 28px; }
