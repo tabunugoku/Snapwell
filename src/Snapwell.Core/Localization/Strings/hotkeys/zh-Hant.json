@@ -77,7 +77,7 @@
   "Hotkeys.Anchor.NearEdgeName": "最近的邊",
   "Hotkeys.Anchor.NearEdgeDescription": "固定靠近工作區邊緣的一邊，移動另一邊",
   "Hotkeys.Anchor.TopLeftName": "左上",
-  "Hotkeys.Anchor.TopLeftDescription": "固定左上，移動右邊和下邊",
+  "Hotkeys.Anchor.TopLeftDescription": "固定左上，移動右邊與下邊",
   "Hotkeys.Status.Duplicate": "重複",
   "Hotkeys.Status.Unassigned": "未指派",
   "Hotkeys.Status.Changed": "已變更",
