@@ -138,6 +138,8 @@
     else if (e.key === 'Tab') closeLangMenu(false);
   });
   document.addEventListener('pointerdown', (e) => { if (!e.target.closest('#langMenu')) closeLangMenu(false); });
+  // キーボードや支援技術でフォーカスがメニューの外へ移ったときも閉じる (relatedTarget が null のとき、Safari のクリックなどは閉じない)
+  $('#langMenu').addEventListener('focusout', (e) => { if (e.relatedTarget && !e.relatedTarget.closest('#langMenu')) closeLangMenu(false); });
   langItems.forEach((b) => b.addEventListener('click', () => { setLang(b.dataset.setLang, true); closeLangMenu(true); }));
 
   // 紹介映像は言語に合わせて差し替える。再生位置と一時停止の状態は引き継ぐ
