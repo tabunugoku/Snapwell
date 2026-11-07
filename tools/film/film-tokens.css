@@ -61,6 +61,9 @@
   --font-ui: 'Segoe UI Variable Text', 'Segoe UI Variable', 'Segoe UI', 'Yu Gothic UI', 'Hiragino Sans', 'Helvetica Neue', Arial, sans-serif;
   --font-mono: 'Cascadia Mono', 'SF Mono', Consolas, monospace;
 }
+/* 中国語: 英字は Segoe のまま、漢字は游ゴシック (日本の字形) でなく、その言語の Windows 標準の書体で描く */
+:root:lang(zh-Hans) { --font-ui: 'Segoe UI Variable Text', 'Segoe UI Variable', 'Segoe UI', 'Microsoft YaHei UI', 'Microsoft YaHei', 'Noto Sans SC', sans-serif; }
+:root:lang(zh-Hant) { --font-ui: 'Segoe UI Variable Text', 'Segoe UI Variable', 'Segoe UI', 'Microsoft JhengHei UI', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif; }
 
 .monitor {
   position: relative; width: 100%; aspect-ratio: 16 / 7.4; overflow: hidden;
