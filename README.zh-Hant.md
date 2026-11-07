@@ -10,9 +10,9 @@
 
 Snapwell 是一款適用於 Windows 11 的視窗管理員。把視窗甩出去，彈簧與磁鐵會把它吸向網格中最近的格。
 
-[![Snapwell 宣傳短片的一個場景：甩出的視窗落入一格](docs/images/film-throw-en.jpg)](https://tabunugoku.github.io/Snapwell/)
+[![Snapwell 影片的一個場景：甩出的視窗落入一格](docs/images/film-throw-en.jpg)](https://tabunugoku.github.io/Snapwell/)
 
-短片配有音效和音樂。它不是應用程式的螢幕錄影，而是以與 Snapwell 相同的物理模型驅動的模擬介面（mockup）。在[首頁](https://tabunugoku.github.io/Snapwell/)上，您可以親自甩一甩視窗。
+影片配有音效和音樂。它不是應用程式的螢幕錄影，而是以與 Snapwell 相同的物理模型驅動的介面模型（mockup）。在[首頁](https://tabunugoku.github.io/Snapwell/)上，您可以親自甩一甩視窗。
 
 ## 特色
 
@@ -47,7 +47,7 @@ Snapwell 是一款適用於 Windows 11 的視窗管理員。把視窗甩出去�
 
 在啟動器中還可以最多選取 9 個視窗，一併排列。
 
-[![4 × 3 網格上的啟動器及預設（宣傳短片的一個場景，短片為模擬介面）](docs/images/film-launcher-en.jpg)](https://tabunugoku.github.io/Snapwell/)
+[![4 × 3 網格上的啟動器及預設（影片的一個場景，影片為介面模型）](docs/images/film-launcher-en.jpg)](https://tabunugoku.github.io/Snapwell/)
 
 ### 排列
 
@@ -60,7 +60,7 @@ Snapwell 提供 4 種排列方式。
 
 排列對象可以是目前的顯示器、所有顯示器，或在啟動器中選取的視窗。按 Ctrl+Alt+A，可將目前顯示器上的視窗依網格排列。
 
-[![4 個視窗依網格排列的場景（宣傳短片的一個場景）](docs/images/film-arrange-en.jpg)](https://tabunugoku.github.io/Snapwell/)
+[![4 個視窗依網格排列的場景（影片的一個場景）](docs/images/film-arrange-en.jpg)](https://tabunugoku.github.io/Snapwell/)
 
 ### 靠向相鄰視窗、在顯示器之間移動
 
@@ -117,10 +117,10 @@ Windows 內建的貼齊和貼齊版面配置會與 Snapwell 的視窗移動相�
 ## 下載與執行
 
 1. 從 [Releases](https://github.com/tabunugoku/Snapwell/releases) 下載與您的電腦相符的 zip：`Snapwell-<版本>-win-x64.zip` 或 `Snapwell-<版本>-win-arm64.zip`。
-2. 將 zip 的雜湊值與旁邊的 `.sha256` 檔案核對。在 PowerShell 中執行 `Get-FileHash <zip 的路徑> -Algorithm SHA256`。
+2. 將 zip 的檢查碼與旁邊的 `.sha256` 檔案核對。在 PowerShell 中執行 `Get-FileHash <zip 的路徑> -Algorithm SHA256`。
 3. 將 zip 解壓縮到任意位置，執行 `Snapwell.exe`。系統匣中會出現圖示。
 
-目前發行的版本未經程式碼簽署，因此 Windows SmartScreen 可能會顯示警告。核對雜湊值後，請選擇「其他資訊」，然後選擇「仍要執行」。關於簽署，請參閱下文的 Code signing policy。
+目前發行的版本未經程式碼簽署，因此 Windows SmartScreen 可能會顯示警告。核對檢查碼後，請選擇「其他資訊」，然後選擇「仍要執行」。關於簽署，請參閱下文的 Code signing policy。
 
 ## 從原始碼建置
 
@@ -150,7 +150,7 @@ dotnet publish src/Snapwell.Settings/Snapwell.Settings.csproj -c Release -r $rid
 
 推送以 `v` 開頭的標籤後，GitHub Actions 上的 `release.yml` 工作流程會為兩個 RID 建置 zip 和 SHA-256 檔案，並附加到草稿發行版本中。
 
-宣傳短片在 `tools/film/` 中製作，製作方法見 [docs/RELEASE.md](docs/RELEASE.md)。
+影片在 `tools/film/` 中製作，製作方法見 [docs/RELEASE.md](docs/RELEASE.md)。
 
 ## 專案結構
 
@@ -161,10 +161,10 @@ dotnet publish src/Snapwell.Settings/Snapwell.Settings.csproj -c Release -r $rid
 | `src/Snapwell.App/` | 常駐系統匣的應用程式本體、覆疊層和啟動器。 |
 | `src/Snapwell.Settings/` | 設定視窗（WinUI 3）。 |
 | `tests/` | xUnit 單元測試。 |
-| `docs/` | 設計、模擬介面（mockup）以及需要在實機上檢查的事項。 |
+| `docs/` | 設計、介面模型（mockup）以及需要在實機上檢查的事項。 |
 | `site/` | 首頁（GitHub Pages）。 |
 
-設計見 [docs/DESIGN.md](docs/DESIGN.md)，模擬介面是 [docs/mockups/snapwell.html](docs/mockups/snapwell.html)。發行步驟見 [docs/RELEASE.md](docs/RELEASE.md)，實機檢查見 [docs/MANUAL_TEST.md](docs/MANUAL_TEST.md)。
+設計見 [docs/DESIGN.md](docs/DESIGN.md)，介面模型是 [docs/mockups/snapwell.html](docs/mockups/snapwell.html)。發行步驟見 [docs/RELEASE.md](docs/RELEASE.md)，實機檢查見 [docs/MANUAL_TEST.md](docs/MANUAL_TEST.md)。
 
 ## Code signing policy
 

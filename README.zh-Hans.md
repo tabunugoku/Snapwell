@@ -10,9 +10,9 @@
 
 Snapwell 是一款适用于 Windows 11 的窗口管理器。把窗口甩出去，弹簧与磁铁会把它拉向网格中最近的格。
 
-[![Snapwell 宣传短片的一个场景：甩出的窗口落入一个格](docs/images/film-throw-en.jpg)](https://tabunugoku.github.io/Snapwell/)
+[![Snapwell 视频的一个场景：甩出的窗口落入一个格](docs/images/film-throw-en.jpg)](https://tabunugoku.github.io/Snapwell/)
 
-短片配有音效和音乐。它不是应用的录屏，而是用与 Snapwell 相同的物理模型驱动的模拟界面（mockup）。在[主页](https://tabunugoku.github.io/Snapwell/)上，您可以亲自甩一甩窗口。
+视频配有音效和音乐。它不是应用的屏幕录制，而是用与 Snapwell 相同的物理模型驱动的界面模型（mockup）。在[主页](https://tabunugoku.github.io/Snapwell/)上，您可以亲自甩一甩窗口。
 
 ## 特点
 
@@ -47,7 +47,7 @@ Snapwell 是一款适用于 Windows 11 的窗口管理器。把窗口甩出去�
 
 在启动器中还可以最多选择 9 个窗口，一并排列。
 
-[![4 × 3 网格上的启动器及预设（宣传短片的一个场景，短片为模拟界面）](docs/images/film-launcher-en.jpg)](https://tabunugoku.github.io/Snapwell/)
+[![4 × 3 网格上的启动器及预设（视频的一个场景，视频为界面模型）](docs/images/film-launcher-en.jpg)](https://tabunugoku.github.io/Snapwell/)
 
 ### 排列
 
@@ -60,7 +60,7 @@ Snapwell 提供 4 种排列方式。
 
 排列对象可以是当前显示器、所有显示器，或在启动器中选择的窗口。按 Ctrl+Alt+A，可将当前显示器上的窗口按网格排列。
 
-[![4 个窗口按网格排列的场景（宣传短片的一个场景）](docs/images/film-arrange-en.jpg)](https://tabunugoku.github.io/Snapwell/)
+[![4 个窗口按网格排列的场景（视频的一个场景）](docs/images/film-arrange-en.jpg)](https://tabunugoku.github.io/Snapwell/)
 
 ### 靠向相邻窗口、在显示器之间移动
 
@@ -117,10 +117,10 @@ Windows 内置的贴靠和贴靠布局会与 Snapwell 的窗口移动相互冲�
 ## 下载与运行
 
 1. 从 [Releases](https://github.com/tabunugoku/Snapwell/releases) 下载与您的电脑匹配的 zip：`Snapwell-<版本>-win-x64.zip` 或 `Snapwell-<版本>-win-arm64.zip`。
-2. 将 zip 的哈希值与旁边的 `.sha256` 文件核对。在 PowerShell 中运行 `Get-FileHash <zip 的路径> -Algorithm SHA256`。
+2. 将 zip 的校验和与旁边的 `.sha256` 文件核对。在 PowerShell 中运行 `Get-FileHash <zip 的路径> -Algorithm SHA256`。
 3. 将 zip 解压到任意位置，运行 `Snapwell.exe`。托盘中会出现图标。
 
-目前发布的版本未经代码签名，因此 Windows SmartScreen 可能会显示警告。核对哈希值后，请选择“更多信息”，然后选择“仍要运行”。关于签名，请参阅下文的 Code signing policy。
+目前发布的版本未经代码签名，因此 Windows SmartScreen 可能会显示警告。核对校验和后，请选择“更多信息”，然后选择“仍要运行”。关于签名，请参阅下文的 Code signing policy。
 
 ## 从源代码构建
 
@@ -150,7 +150,7 @@ dotnet publish src/Snapwell.Settings/Snapwell.Settings.csproj -c Release -r $rid
 
 推送以 `v` 开头的标签后，GitHub Actions 上的 `release.yml` 工作流会为两个 RID 构建 zip 和 SHA-256 文件，并附加到草稿发布中。
 
-宣传短片在 `tools/film/` 中制作，制作方法见 [docs/RELEASE.md](docs/RELEASE.md)。
+视频在 `tools/film/` 中制作，制作方法见 [docs/RELEASE.md](docs/RELEASE.md)。
 
 ## 项目结构
 
@@ -161,10 +161,10 @@ dotnet publish src/Snapwell.Settings/Snapwell.Settings.csproj -c Release -r $rid
 | `src/Snapwell.App/` | 常驻托盘的应用本体、叠加层和启动器。 |
 | `src/Snapwell.Settings/` | 设置窗口（WinUI 3）。 |
 | `tests/` | xUnit 单元测试。 |
-| `docs/` | 设计、模拟界面（mockup）以及需要在真机上检查的事项。 |
+| `docs/` | 设计、界面模型（mockup）以及需要在真机上检查的事项。 |
 | `site/` | 主页（GitHub Pages）。 |
 
-设计见 [docs/DESIGN.md](docs/DESIGN.md)，模拟界面是 [docs/mockups/snapwell.html](docs/mockups/snapwell.html)。发布步骤见 [docs/RELEASE.md](docs/RELEASE.md)，真机检查见 [docs/MANUAL_TEST.md](docs/MANUAL_TEST.md)。
+设计见 [docs/DESIGN.md](docs/DESIGN.md)，界面模型是 [docs/mockups/snapwell.html](docs/mockups/snapwell.html)。发布步骤见 [docs/RELEASE.md](docs/RELEASE.md)，真机检查见 [docs/MANUAL_TEST.md](docs/MANUAL_TEST.md)。
 
 ## Code signing policy
 
