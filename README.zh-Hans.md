@@ -31,7 +31,7 @@ Snapwell 是一款适用于 Windows 11 的窗口管理器。把窗口甩出去�
 
 运动由质量、刚度和阻尼计算得出，没有固定的时长或缓动曲线。在设置窗口的“手感”页中，可以从 4 个预设里选择，也可以自行设置各项数值。
 
-![设置窗口的“手感”页，含 4 个预设](docs/images/settings-feel-en.png)
+![设置窗口的“手感”页，含 4 个预设](docs/images/settings-feel-zh-hans.png)
 
 ### 网格与间距
 
@@ -85,7 +85,7 @@ Snapwell 提供 4 种排列方式。
 | 甩到下一个显示器 | Ctrl+Alt+PageUp、PageDown |
 | 暂停／恢复 | Ctrl+Alt+Pause |
 
-![设置窗口的“快捷键”页](docs/images/settings-keys-en.png)
+![设置窗口的“快捷键”页](docs/images/settings-keys-zh-hans.png)
 
 ### 应用规则
 
