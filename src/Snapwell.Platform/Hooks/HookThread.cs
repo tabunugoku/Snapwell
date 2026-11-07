@@ -362,7 +362,7 @@ public sealed class HookThread : IDisposable
 
             var mouseSilentNow = cursorMoved && HookTicks.Diff(mouse, _previousPollTick) < 0 &&
                 HookTicks.Diff(lastInput, _previousPollTick) > 0;
-            // タッチ・ペンはカーソルを動かし OS の入力を進めるが、フックを呼ばない (実機で 1 回誤検知した)。
+            // タッチ・ペンがカーソルを動かし OS の入力を進めてもフックを呼ばない、と推測する (実機未確認。実機で 1 回誤検知した)。
             // 本物のマウスが一度でも届けば途切れるので、連続して成り立つときだけ疑う。
             _mouseSilentStreak = mouseSilentNow ? _mouseSilentStreak + 1 : 0;
             var mouseSilent = _mouseSilentStreak >= MouseSilentPolls;
