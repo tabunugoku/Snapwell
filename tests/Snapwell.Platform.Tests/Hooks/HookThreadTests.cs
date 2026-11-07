@@ -372,7 +372,10 @@ public sealed class HookThreadTests
 
         hooks.Notify(HookEnvironmentChange.Unlocked);
         Assert.True(reports.TryTake(out var report, TimeSpan.FromSeconds(5)));
-        Assert.Equal(new HookRehookReport(HookRehookReason.Environment, true, 1), report);
+        Assert.Equal(HookRehookReason.Environment, report.Reason);
+        Assert.True(report.Succeeded);
+        Assert.Equal(1, report.Count);
+        Assert.Equal(HookRehookEvidence.None, report.Evidence);
         Assert.Equal(9, api.RegisterCount);
         Assert.Equal(2, api.UnregisterCount);
         Assert.Equal(["register", "register", "unregister", "unregister"], api.LowLevelOrder.Skip(2).Take(4));
@@ -462,24 +465,48 @@ public sealed class HookThreadTests
         Assert.Null(hooks.Failure);
     }
 
-    /// <summary>OS には入力があるのにコールバックが来ないときだけ、時計を進めて張り直す。</summary>
+    /// <summary>OS の入力だけが進み（タッチ・ペン・タッチパッド）コールバックが来なくても、証拠がなければ張り直さない。</summary>
     [Fact]
-    public void CheckHealthRehooksOnlyWhenOsInputOutrunsCallbacks()
+    public void OsInputWithoutCallbacksAloneDoesNotRehook()
     {
         using var api = new FakeHookApi();
         using var hooks = new HookThread(new HotkeyMatcher(), 8, api);
         Assert.True(hooks.Start());
         var start = unchecked((uint)Environment.TickCount);
         api.TickCount = start + 60_000;
-        api.LastInputTick = start - 5_000;
-        hooks.CheckHealth();
-        Assert.Equal(0, api.PostRehookCount);
-
         api.LastInputTick = start + 59_000;
+        for (var i = 0; i < 5; i++)
+        {
+            api.TickCount += 2_000;
+            api.LastInputTick = api.TickCount;
+            hooks.CheckHealth();
+        }
+
+        Assert.Equal(0, api.PostRehookCount);
+        Assert.True(hooks.Stop());
+    }
+
+    /// <summary>張り直しの記録に、疑いの証拠の種類と各経過が残る（入力の中身は残さない）。</summary>
+    [Fact]
+    public void RehookReportCarriesEvidenceAndElapsedTimes()
+    {
+        using var api = new FakeHookApi();
+        using var hooks = new HookThread(new HotkeyMatcher(), 8, api);
+        var reports = new BlockingCollection<HookRehookReport>();
+        hooks.Rehooked += reports.Add;
+        Assert.True(hooks.Start());
+        var start = api.TickCount;
+        api.TickCount = start + 60_000;
+        api.LastInputTick = start + 59_000;
+        api.KeyHeld = true;
         hooks.CheckHealth();
-        Assert.Equal(1, api.PostRehookCount);
-        hooks.CheckHealth();
-        Assert.Equal(1, api.PostRehookCount);
+        Assert.True(reports.TryTake(out var report, TimeSpan.FromSeconds(5)));
+        Assert.Equal(HookRehookReason.InputMismatch, report.Reason);
+        Assert.Equal(HookRehookEvidence.KeyboardSilent, report.Evidence);
+        Assert.Equal(59_000, report.GapMs);
+        Assert.Equal(60_000, report.SinceKeyboardMs);
+        Assert.Equal(1_000, report.SinceInputMs);
+        Assert.Equal(HookRehookPolicy.InitialBackoffMs, report.BackoffMs);
         Assert.True(hooks.Stop());
     }
 
@@ -517,9 +544,9 @@ public sealed class HookThreadTests
         Assert.True(hooks.Stop());
     }
 
-    /// <summary>キーボードが生きていても、カーソルが動いたのにマウスのコールバックが来なければ張り直す。</summary>
+    /// <summary>キーボードが生きていても、カーソルが動いたのにマウスのコールバックが来ない状態が続けば張り直す。</summary>
     [Fact]
-    public void CursorMovedWithSilentMouseHookRehooksEvenWhileKeyboardIsAlive()
+    public void CursorMovedWithSilentMouseHookRehooksOnlyWhenItPersists()
     {
         using var api = new FakeHookApi();
         using var hooks = new HookThread(new HotkeyMatcher(), 8, api);
@@ -529,13 +556,47 @@ public sealed class HookThreadTests
         api.TickCount = now + 2_000;
         api.LastInputTick = now;
         hooks.CheckHealth();
-        // 次の観測までにカーソルが動いたが、マウスのコールバックはない。キーボードは来ている。
-        api.TickCount = now + 4_000;
-        api.CursorX = 50;
-        api.LastInputTick = now + 4_000;
-        hooks.TouchKeyboard();
-        hooks.CheckHealth();
+        // 以降の観測ごとにカーソルが動き、OS も入力を見たが、マウスのコールバックはない。キーボードは来ている。
+        for (var i = 1; i <= HookThread.MouseSilentPolls; i++)
+        {
+            Assert.Equal(0, api.PostRehookCount);
+            api.TickCount = (uint)(now + 2_000 + (i * 2_000));
+            api.CursorX = 50 * i;
+            api.LastInputTick = api.TickCount;
+            hooks.TouchKeyboard();
+            hooks.CheckHealth();
+        }
+
         Assert.Equal(1, api.PostRehookCount);
+        Assert.True(hooks.Stop());
+    }
+
+    /// <summary>タッチ・ペンのように、途中で途切れる操作では疑わない。マウスが一度でも届けば数え直す。</summary>
+    [Fact]
+    public void BrokenStreakOfSilentMouseIsNotSuspicious()
+    {
+        using var api = new FakeHookApi();
+        using var hooks = new HookThread(new HotkeyMatcher(), 8, api);
+        Assert.True(hooks.Start());
+        var now = api.TickCount;
+        api.TickCount = now + 2_000;
+        api.LastInputTick = now;
+        hooks.CheckHealth();
+        for (var i = 1; i <= HookThread.MouseSilentPolls * 3; i++)
+        {
+            api.TickCount = (uint)(now + 2_000 + (i * 2_000));
+            api.CursorX = 50 * i;
+            api.LastInputTick = api.TickCount;
+            // 3 回ごとに、マウスのコールバックが届く。
+            if (i % 3 == 0)
+            {
+                hooks.TouchMouse();
+            }
+
+            hooks.CheckHealth();
+        }
+
+        Assert.Equal(0, api.PostRehookCount);
         Assert.True(hooks.Stop());
     }
 

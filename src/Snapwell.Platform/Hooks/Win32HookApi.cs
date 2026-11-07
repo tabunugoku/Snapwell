@@ -1,3 +1,4 @@
+using Snapwell.Core.Hooks;
 using Windows.Win32;
 using Windows.Win32.Foundation;
 using Windows.Win32.UI.Accessibility;
@@ -86,13 +87,8 @@ internal sealed unsafe class Win32HookApi : IHookApi
     {
         for (var key = 8; key < 0xFF; key++)
         {
-            // マウスボタン (1-6) は含まない。修飾キー・ロックキーは押しっぱなしでも繰り返しが来ない。
-            if (key is 0x10 or 0x11 or 0x12 or 0x14 or 0x5B or 0x5C or 0x90 or 0x91 or (>= 0xA0 and <= 0xA5))
-            {
-                continue;
-            }
-
-            if ((PInvoke.GetAsyncKeyState(key) & 0x8000) != 0)
+            // 繰り返しの届く通常のキーだけを見る。修飾キー・ロックキー・マウスボタン・IME/OEM のキーは除く。
+            if (HookKeyClasses.IsAutoRepeating(key) && (PInvoke.GetAsyncKeyState(key) & 0x8000) != 0)
             {
                 return true;
             }

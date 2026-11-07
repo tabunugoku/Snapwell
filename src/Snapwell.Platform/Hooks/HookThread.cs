@@ -9,8 +9,42 @@ using Windows.Win32.UI.WindowsAndMessaging;
 
 namespace Snapwell.Platform.Hooks;
 
-/// <summary>低レベルフックを張り直したときの記録。</summary>
-public readonly record struct HookRehookReport(HookRehookReason Reason, bool Succeeded, int Count);
+/// <summary>張り直しを疑った証拠の種類。入力の中身（キー・座標）は含めない。</summary>
+[Flags]
+public enum HookRehookEvidence
+{
+    /// <summary>環境の変化（ロック解除・復帰など）による。疑いの証拠はない。</summary>
+    None = 0,
+
+    /// <summary>キーが押されているのに、キーボードのコールバックが来ない。</summary>
+    KeyboardSilent = 1,
+
+    /// <summary>カーソルが動き、OS も入力を見たのに、マウスのコールバックが来ない。</summary>
+    MouseSilent = 2,
+}
+
+/// <summary>
+/// 低レベルフックを張り直したときの記録。原因の調査用に、証拠の種類と各時刻からの経過（ミリ秒）を持つ。
+/// </summary>
+/// <param name="Reason">張り直した理由。</param>
+/// <param name="Succeeded">登録し直しが成功したか。</param>
+/// <param name="Count">何回目か。</param>
+/// <param name="Evidence">疑いの証拠の種類。</param>
+/// <param name="GapMs">OS の最後の入力から、フックの最後のコールバックまでの差（正なら OS のほうが新しい）。参考値。</param>
+/// <param name="SinceKeyboardMs">キーボードのコールバックが最後に来てからの経過。</param>
+/// <param name="SinceMouseMs">マウスのコールバックが最後に来てからの経過。</param>
+/// <param name="SinceInputMs">OS の最後の入力からの経過。</param>
+/// <param name="BackoffMs">判断のあとの、疑いによる張り直しのバックオフ。</param>
+public readonly record struct HookRehookReport(
+    HookRehookReason Reason,
+    bool Succeeded,
+    int Count,
+    HookRehookEvidence Evidence = HookRehookEvidence.None,
+    int GapMs = 0,
+    int SinceKeyboardMs = 0,
+    int SinceMouseMs = 0,
+    int SinceInputMs = 0,
+    uint BackoffMs = 0);
 
 /// <summary>専用メッセージスレッドでフックを所有する、一回の起動と停止の単位。</summary>
 public sealed class HookThread : IDisposable
@@ -42,7 +76,11 @@ public sealed class HookThread : IDisposable
     private int _cursorX;
     private int _cursorY;
     private uint _previousPollTick;
-    private int _rehookReason;
+    private int _mouseSilentStreak;
+
+    /// <summary>マウスが黙っている証拠が、この回数だけ続けて確認の間隔ごとに成り立ったら疑う。</summary>
+    internal const int MouseSilentPolls = 3;
+    private HookRehookReport _rehookDetail;
     private int _rehookCount;
     private int _mouseTracking;
     private int _completed;
@@ -306,14 +344,15 @@ public sealed class HookThread : IDisposable
             // 最後の入力が分からないときは、疑わない。
             var lastInput = _api.TryGetLastInputTick(out var tick) ? tick : lastHook;
 
-            // 片方のフックだけが外されても、もう片方が時刻を更新し続けて見えなくなる。種類ごとの証拠で補う。
+            // 疑いの根拠は、種類ごとの証拠だけにする。OS の最後の入力とコールバックの時刻の食い違いは使わない:
+            // 通常の操作中に、OS の入力だけが進んでフックが呼ばれない場面があり、誤検知した（実機の app.log）。
             // キーボード: 繰り返しのあるキーが猶予より長く押されているのに、コールバックが来ない。
             // OS の入力がキーボードのコールバックより新しいときだけ、全キーを調べる（静かな間の無駄なシステムコールを避ける）。
             var keyboardSilent = HookTicks.Diff(now, keyboard) > HookRehookPolicy.InputGraceMs &&
                 HookTicks.Diff(lastInput, keyboard) > HookRehookPolicy.InputGraceMs &&
                 _api.IsNonModifierKeyDown();
             // マウス: 前回の観測からカーソルが動き、OS も入力を見たのに、その間にコールバックが一度も来ない。
-            // SetCursorPos やタッチ・ペンはカーソルを動かしても OS の最後の入力にならないので、それだけでは疑わない。
+            // SetCursorPos はカーソルを動かしても OS の最後の入力にならないので、それだけでは疑わない。
             var cursorMoved = false;
             if (_api.TryGetCursorPosition(out var x, out var y))
             {
@@ -321,19 +360,32 @@ public sealed class HookThread : IDisposable
                 (_hasCursor, _cursorX, _cursorY) = (true, x, y);
             }
 
-            var mouseSilent = cursorMoved && HookTicks.Diff(mouse, _previousPollTick) < 0 &&
+            var mouseSilentNow = cursorMoved && HookTicks.Diff(mouse, _previousPollTick) < 0 &&
                 HookTicks.Diff(lastInput, _previousPollTick) > 0;
+            // タッチ・ペンがカーソルを動かし OS の入力を進めてもフックを呼ばない、と推測する (実機未確認。実機で 1 回誤検知した)。
+            // 本物のマウスが一度でも届けば途切れるので、連続して成り立つときだけ疑う。
+            _mouseSilentStreak = mouseSilentNow ? _mouseSilentStreak + 1 : 0;
+            var mouseSilent = _mouseSilentStreak >= MouseSilentPolls;
             _previousPollTick = now;
 
-            var reason = _policy.Evaluate(now, lastHook, lastInput, keyboardSilent || mouseSilent);
+            var gap = HookTicks.Diff(lastInput, lastHook);
+            var reason = _policy.Evaluate(now, lastHook, keyboardSilent || mouseSilent);
             if (reason == HookRehookReason.None)
             {
                 return;
             }
 
+            // 調査用。種類ごとの証拠と、各時刻からの経過だけを残す（入力の中身は取らない）。
+            var evidence = reason == HookRehookReason.InputMismatch
+                ? (keyboardSilent ? HookRehookEvidence.KeyboardSilent : HookRehookEvidence.None) |
+                    (mouseSilent ? HookRehookEvidence.MouseSilent : HookRehookEvidence.None)
+                : HookRehookEvidence.None;
+            _rehookDetail = new HookRehookReport(
+                reason, false, 0, evidence, gap, HookTicks.Diff(now, keyboard), HookTicks.Diff(now, mouse),
+                HookTicks.Diff(now, lastInput), _policy.BackoffMs);
+
             // 張り直し後の基準。ここから先にコールバックが来れば、フックは生きている。
             ResetBaseline(now);
-            Volatile.Write(ref _rehookReason, (int)reason);
             _api.PostRehook(_threadId);
         }
     }
@@ -350,7 +402,14 @@ public sealed class HookThread : IDisposable
     /// </summary>
     private void Rehook()
     {
-        var reason = (HookRehookReason)Volatile.Read(ref _rehookReason);
+        // 依頼した側（_healthGate の中）が書いた判断の詳細。構造体なので同じ錠で読む。
+        HookRehookReport detail;
+        lock (_healthGate)
+        {
+            detail = _rehookDetail;
+        }
+
+        var reason = detail.Reason;
         var mouse = RegisterMouse(_api);
         var keyboard = RegisterKeyboard(_api);
         var succeeded = mouse != 0 && keyboard != 0;
@@ -371,7 +430,7 @@ public sealed class HookThread : IDisposable
             if (keyboard != 0) { _api.UnregisterLowLevel(keyboard); }
         }
 
-        var report = new HookRehookReport(reason, succeeded, Interlocked.Increment(ref _rehookCount));
+        var report = detail with { Succeeded = succeeded, Count = Interlocked.Increment(ref _rehookCount) };
         var handler = Rehooked;
         if (handler is not null)
         {
