@@ -56,7 +56,7 @@
   "Hotkey.Group.Move": "按格移动",
   "Hotkey.Group.Monitor": "显示器",
   "Hotkey.Group.Arrange": "排列",
-  "Hotkey.Group.Adjacent": "贴靠相邻窗口",
+  "Hotkey.Group.Adjacent": "靠向相邻窗口",
   "Hotkey.Group.Misc": "其他",
   "Hotkeys_Title.Text": "快捷键",
   "Hotkeys_Lead.Text": "单击按键栏并按新按键即可更改分配。共用按键的操作会标为“重复”。",
