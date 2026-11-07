@@ -10,7 +10,7 @@
 
 Snapwell 是一款适用于 Windows 11 的窗口管理器。把窗口甩出去，弹簧与磁铁会把它拉向网格中最近的格。
 
-[![Snapwell 视频的一个场景：甩出的窗口落入一个格](docs/images/film-throw-en.jpg)](https://tabunugoku.github.io/Snapwell/)
+[![Snapwell 视频的一个场景：甩出的窗口落入一个格](docs/images/film-throw-zh-hans.jpg)](https://tabunugoku.github.io/Snapwell/)
 
 视频配有音效和音乐。它不是应用的屏幕录制，而是用与 Snapwell 相同的物理模型驱动的界面模型（mockup）。在[主页](https://tabunugoku.github.io/Snapwell/)上，您可以亲自甩一甩窗口。
 
@@ -31,7 +31,7 @@ Snapwell 是一款适用于 Windows 11 的窗口管理器。把窗口甩出去�
 
 运动由质量、刚度和阻尼计算得出，没有固定的时长或缓动曲线。在设置窗口的“手感”页中，可以从 4 个预设里选择，也可以自行设置各项数值。
 
-![设置窗口的“手感”页，含 4 个预设](docs/images/settings-feel-en.png)
+![设置窗口的“手感”页，含 4 个预设](docs/images/settings-feel-zh-hans.png)
 
 ### 网格与间距
 
@@ -47,7 +47,7 @@ Snapwell 是一款适用于 Windows 11 的窗口管理器。把窗口甩出去�
 
 在启动器中还可以最多选择 9 个窗口，一并排列。
 
-[![4 × 3 网格上的启动器及预设（视频的一个场景，视频为界面模型）](docs/images/film-launcher-en.jpg)](https://tabunugoku.github.io/Snapwell/)
+[![4 × 3 网格上的启动器及预设（视频的一个场景，视频为界面模型）](docs/images/film-launcher-zh-hans.jpg)](https://tabunugoku.github.io/Snapwell/)
 
 ### 排列
 
@@ -60,7 +60,7 @@ Snapwell 提供 4 种排列方式。
 
 排列对象可以是当前显示器、所有显示器，或在启动器中选择的窗口。按 Ctrl+Alt+A，可将当前显示器上的窗口按网格排列。
 
-[![4 个窗口按网格排列的场景（视频的一个场景）](docs/images/film-arrange-en.jpg)](https://tabunugoku.github.io/Snapwell/)
+[![4 个窗口按网格排列的场景（视频的一个场景）](docs/images/film-arrange-zh-hans.jpg)](https://tabunugoku.github.io/Snapwell/)
 
 ### 靠向相邻窗口、在显示器之间移动
 
@@ -85,7 +85,7 @@ Snapwell 提供 4 种排列方式。
 | 甩到下一个显示器 | Ctrl+Alt+PageUp、PageDown |
 | 暂停／恢复 | Ctrl+Alt+Pause |
 
-![设置窗口的“快捷键”页](docs/images/settings-keys-en.png)
+![设置窗口的“快捷键”页](docs/images/settings-keys-zh-hans.png)
 
 ### 应用规则
 

@@ -10,7 +10,7 @@
 
 Snapwell 是一款適用於 Windows 11 的視窗管理員。把視窗甩出去，彈簧與磁鐵會把它吸向網格中最近的格。
 
-[![Snapwell 影片的一個場景：甩出的視窗落入一格](docs/images/film-throw-en.jpg)](https://tabunugoku.github.io/Snapwell/)
+[![Snapwell 影片的一個場景：甩出的視窗落入一格](docs/images/film-throw-zh-hant.jpg)](https://tabunugoku.github.io/Snapwell/)
 
 影片配有音效與音樂。它不是應用程式的螢幕錄影，而是以與 Snapwell 相同的物理模型驅動的介面模型（mockup）。在[首頁](https://tabunugoku.github.io/Snapwell/)上，您可以親自甩一甩視窗。
 
@@ -31,7 +31,7 @@ Snapwell 是一款適用於 Windows 11 的視窗管理員。把視窗甩出去�
 
 運動由質量、剛性與阻尼計算得出，沒有固定的時間長度或緩動曲線。在設定視窗的「手感」頁面中，可以從 4 個預設中選擇，也可以自行設定各項數值。
 
-![設定視窗的「手感」頁面，含 4 個預設](docs/images/settings-feel-en.png)
+![設定視窗的「手感」頁面，含 4 個預設](docs/images/settings-feel-zh-hant.png)
 
 ### 網格與間距
 
@@ -47,7 +47,7 @@ Snapwell 是一款適用於 Windows 11 的視窗管理員。把視窗甩出去�
 
 在啟動器中還可以最多選取 9 個視窗，一併排列。
 
-[![4 × 3 網格上的啟動器及預設（影片的一個場景，影片為介面模型）](docs/images/film-launcher-en.jpg)](https://tabunugoku.github.io/Snapwell/)
+[![4 × 3 網格上的啟動器及預設（影片的一個場景，影片為介面模型）](docs/images/film-launcher-zh-hant.jpg)](https://tabunugoku.github.io/Snapwell/)
 
 ### 排列
 
@@ -60,7 +60,7 @@ Snapwell 提供 4 種排列方式。
 
 排列對象可以是目前的顯示器、所有顯示器，或在啟動器中選取的視窗。按 Ctrl+Alt+A，可將目前顯示器上的視窗依網格排列。
 
-[![4 個視窗依網格排列的場景（影片的一個場景）](docs/images/film-arrange-en.jpg)](https://tabunugoku.github.io/Snapwell/)
+[![4 個視窗依網格排列的場景（影片的一個場景）](docs/images/film-arrange-zh-hant.jpg)](https://tabunugoku.github.io/Snapwell/)
 
 ### 靠向相鄰視窗、在顯示器之間移動
 
@@ -85,7 +85,7 @@ Snapwell 提供 4 種排列方式。
 | 甩到下一個顯示器 | Ctrl+Alt+PageUp、PageDown |
 | 暫停／繼續 | Ctrl+Alt+Pause |
 
-![設定視窗的「快速鍵」頁面](docs/images/settings-keys-en.png)
+![設定視窗的「快速鍵」頁面](docs/images/settings-keys-zh-hant.png)
 
 ### 應用程式規則
 
