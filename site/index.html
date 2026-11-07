@@ -22,13 +22,16 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preload" href="fonts/newsreader-500.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="css/home.css">
+<script src="js/lang.js"></script>
 <script>
-  // 言語を描画前に決める（保存した選択 → ブラウザーの言語）。保存は使えないこともある
+  // 言語を描画前に決める（保存した選択 → ブラウザーの言語の優先順）。保存は使えないこともある。判定は js/lang.js
   (function () {
     var l = null;
     try { l = localStorage.getItem('snapwell.lang'); } catch (e) { /* 使えない環境 */ }
-    if (l !== 'en' && l !== 'ja') l = /^ja\b/i.test(navigator.language || '') ? 'ja' : 'en';
-    document.documentElement.lang = l;
+    // lang.js が読めなかったときは、保存した選択だけを見て、なければ英語
+    if (window.SnapLang) l = SnapLang.choose(l, navigator.languages, navigator.language);
+    else if (l !== 'en' && l !== 'ja' && l !== 'zh-hans' && l !== 'zh-hant') l = 'en';
+    document.documentElement.lang = { en: 'en', ja: 'ja', 'zh-hans': 'zh-Hans', 'zh-hant': 'zh-Hant' }[l];
     document.documentElement.dataset.lang = l;
     // 配色: system（OS に従う）・light・dark。system のときは data-theme を付けない
     var t = null;
@@ -59,47 +62,57 @@
     <canvas id="introCanvas"></canvas>
     <div class="intro-logo" id="introLogo"><span class="logo-mark"></span><span class="logo-name">Snapwell</span></div>
   </div>
-  <button class="btn intro-skip" type="button" id="introSkip"><span data-l="en">Skip intro</span><span data-l="ja">オープニングを飛ばす</span></button>
+  <button class="btn intro-skip" type="button" id="introSkip"><span data-l="en">Skip intro</span><span data-l="ja">オープニングを飛ばす</span><span data-l="zh-hans">跳过开场</span><span data-l="zh-hant">略過開場</span></button>
 </div>
-<a class="skip" href="#main"><span data-l="en">Skip to content</span><span data-l="ja">本文へ移動</span></a>
+<a class="skip" href="#main"><span data-l="en">Skip to content</span><span data-l="ja">本文へ移動</span><span data-l="zh-hans">跳到正文</span><span data-l="zh-hant">跳到內文</span></a>
 
 <header class="nav" id="nav">
   <div class="nav-pill">
-    <a class="brand" href="#top" data-aria-en="Snapwell, top of page" data-aria-ja="Snapwell、ページの先頭へ" aria-label="Snapwell, top of page">
+    <a class="brand" href="#top" data-aria-en="Snapwell, top of page" data-aria-ja="Snapwell、ページの先頭へ" data-aria-zh-hans="Snapwell，回到页面顶部" data-aria-zh-hant="Snapwell，回到頁面頂端" aria-label="Snapwell, top of page">
       <img src="assets/favicon.svg" width="28" height="28" alt="">
       <span class="wordmark">Snapwell</span>
     </a>
-    <nav class="nav-links" data-aria-en="Page" data-aria-ja="ページ" aria-label="Page">
-      <a href="#film"><span data-l="en">Film</span><span data-l="ja">映像</span></a>
-      <a href="#feel"><span data-l="en">Feel</span><span data-l="ja">動き</span></a>
-      <a href="#features"><span data-l="en">Features</span><span data-l="ja">機能</span></a>
-      <a href="#faq"><span data-l="en">FAQ</span><span data-l="ja">質問</span></a>
+    <nav class="nav-links" data-aria-en="Page" data-aria-ja="ページ" data-aria-zh-hans="页面" data-aria-zh-hant="頁面" aria-label="Page">
+      <a href="#film"><span data-l="en">Film</span><span data-l="ja">映像</span><span data-l="zh-hans">视频</span><span data-l="zh-hant">影片</span></a>
+      <a href="#feel"><span data-l="en">Feel</span><span data-l="ja">動き</span><span data-l="zh-hans">手感</span><span data-l="zh-hant">手感</span></a>
+      <a href="#features"><span data-l="en">Features</span><span data-l="ja">機能</span><span data-l="zh-hans">功能</span><span data-l="zh-hant">功能</span></a>
+      <a href="#faq"><span data-l="en">FAQ</span><span data-l="ja">質問</span><span data-l="zh-hans">常见问题</span><span data-l="zh-hant">常見問題</span></a>
     </nav>
     <div class="nav-tools">
-      <div class="lang" role="group" data-aria-en="Language" data-aria-ja="言語" aria-label="Language">
-        <button type="button" data-set-lang="en" aria-pressed="true">EN</button>
-        <button type="button" data-set-lang="ja" aria-pressed="false" lang="ja">日本語</button>
+      <div class="langmenu" id="langMenu">
+        <button class="langmenu-btn" type="button" id="langBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="langList">
+          <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M1.8 8h12.4M8 1.8c1.9 1.8 2.9 3.9 2.9 6.2S9.9 12.4 8 14.2C6.1 12.4 5.1 10.3 5.1 8S6.1 3.6 8 1.8Z" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
+          <span class="vh"><span data-l="en">Language: </span><span data-l="ja">言語: </span><span data-l="zh-hans">语言：</span><span data-l="zh-hant">語言：</span></span>
+          <span class="langmenu-cur" id="langCur">English</span>
+          <svg class="chev" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false"><path d="M4 6.2 8 10l4-3.8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <ul class="langmenu-list" id="langList" role="menu" hidden data-aria-en="Language" data-aria-ja="言語" data-aria-zh-hans="语言" data-aria-zh-hant="語言" aria-label="Language">
+            <li role="none"><button type="button" role="menuitemradio" aria-checked="false" tabindex="-1" data-set-lang="en" lang="en">English</button></li>
+            <li role="none"><button type="button" role="menuitemradio" aria-checked="false" tabindex="-1" data-set-lang="ja" lang="ja">日本語</button></li>
+            <li role="none"><button type="button" role="menuitemradio" aria-checked="false" tabindex="-1" data-set-lang="zh-hans" lang="zh-Hans">简体中文</button></li>
+            <li role="none"><button type="button" role="menuitemradio" aria-checked="false" tabindex="-1" data-set-lang="zh-hant" lang="zh-Hant">繁體中文</button></li>
+        </ul>
       </div>
-      <div class="theme" role="group" id="themeCtl" data-aria-en="Color theme" data-aria-ja="配色" aria-label="Color theme">
-        <button type="button" data-set-theme="system" aria-pressed="true" data-title-en="System" data-title-ja="OS に合わせる" title="System">
+      <div class="theme" role="group" id="themeCtl" data-aria-en="Color theme" data-aria-ja="配色" data-aria-zh-hans="颜色主题" data-aria-zh-hant="色彩主題" aria-label="Color theme">
+        <button type="button" data-set-theme="system" aria-pressed="true" data-title-en="System" data-title-ja="OS に合わせる" data-title-zh-hans="跟随系统" data-title-zh-hant="跟隨系統" title="System">
           <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" focusable="false"><rect x="1.5" y="2.5" width="13" height="9" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M5.5 14h5M8 11.5V14" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-          <span class="vh"><span data-l="en">System</span><span data-l="ja">OS に合わせる</span></span>
+          <span class="vh"><span data-l="en">System</span><span data-l="ja">OS に合わせる</span><span data-l="zh-hans">跟随系统</span><span data-l="zh-hant">跟隨系統</span></span>
         </button>
-        <button type="button" data-set-theme="light" aria-pressed="false" data-title-en="Light" data-title-ja="ライト" title="Light">
+        <button type="button" data-set-theme="light" aria-pressed="false" data-title-en="Light" data-title-ja="ライト" data-title-zh-hans="浅色" data-title-zh-hant="淺色" title="Light">
           <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="3" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M8 1v1.6M8 13.4V15M1 8h1.6M13.4 8H15M3 3l1.1 1.1M11.9 11.9 13 13M3 13l1.1-1.1M11.9 4.1 13 3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-          <span class="vh"><span data-l="en">Light</span><span data-l="ja">ライト</span></span>
+          <span class="vh"><span data-l="en">Light</span><span data-l="ja">ライト</span><span data-l="zh-hans">浅色</span><span data-l="zh-hant">淺色</span></span>
         </button>
-        <button type="button" data-set-theme="dark" aria-pressed="false" data-title-en="Dark" data-title-ja="ダーク" title="Dark">
+        <button type="button" data-set-theme="dark" aria-pressed="false" data-title-en="Dark" data-title-ja="ダーク" data-title-zh-hans="深色" data-title-zh-hant="深色" title="Dark">
           <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" focusable="false"><path d="M13.5 9.6A6 6 0 0 1 6.4 2.5a6 6 0 1 0 7.1 7.1Z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
-          <span class="vh"><span data-l="en">Dark</span><span data-l="ja">ダーク</span></span>
+          <span class="vh"><span data-l="en">Dark</span><span data-l="ja">ダーク</span><span data-l="zh-hans">深色</span><span data-l="zh-hant">深色</span></span>
         </button>
       </div>
       <button class="motion-btn" type="button" id="motionBtn" aria-pressed="false">
         <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false"><path d="M1 8c2.2-4 4.4-4 6.6 0s4.4 4 6.6 0" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-        <span class="motion-label"><span data-l="en">Reduce motion</span><span data-l="ja">動きを減らす</span></span>
+        <span class="motion-label"><span data-l="en">Reduce motion</span><span data-l="ja">動きを減らす</span><span data-l="zh-hans">减少动画</span><span data-l="zh-hant">減少動畫</span></span>
       </button>
       <a class="nav-gh" href="https://github.com/tabunugoku/Snapwell" title="GitHub"><svg class="gh" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg><span class="nav-gh-label">GitHub</span></a>
-      <a class="btn btn-primary nav-dl" href="#download" data-mag><span data-l="en">Download</span><span data-l="ja">ダウンロード</span></a>
+      <a class="btn btn-primary nav-dl" href="#download" data-mag><span data-l="en">Download</span><span data-l="ja">ダウンロード</span><span data-l="zh-hans">下载</span><span data-l="zh-hant">下載</span></a>
     </div>
   </div>
 </header>
@@ -110,18 +123,18 @@
 <section class="hero" id="top" aria-labelledby="h1">
   <canvas class="field" id="field" aria-hidden="true"></canvas>
   <div class="hero-in">
-    <p class="eyebrow" data-rise><span class="dot" aria-hidden="true"></span><span data-l="en">Window manager for Windows 11</span><span data-l="ja">Windows 11 のウィンドウマネージャー</span></p>
+    <p class="eyebrow" data-rise><span class="dot" aria-hidden="true"></span><span data-l="en">Window manager for Windows 11</span><span data-l="ja">Windows 11 のウィンドウマネージャー</span><span data-l="zh-hans">Windows 11 窗口管理器</span><span data-l="zh-hant">Windows 11 視窗管理員</span></p>
     <h1 id="h1">
-      <span class="line"><span class="line-in" data-rise><span data-l="en">Throw a window.</span><span data-l="ja">ウィンドウを投げる</span></span></span>
-      <span class="line"><span class="line-in dim" data-rise><span data-l="en">It lands in place.</span><span data-l="ja">ぴたりと収まる</span></span></span>
+      <span class="line"><span class="line-in" data-rise><span data-l="en">Throw a window.</span><span data-l="ja">ウィンドウを投げる</span><span data-l="zh-hans">甩出窗口</span><span data-l="zh-hant">甩出視窗</span></span></span>
+      <span class="line"><span class="line-in dim" data-rise><span data-l="en">It lands in place.</span><span data-l="ja">ぴたりと収まる</span><span data-l="zh-hans">稳稳落位</span><span data-l="zh-hant">穩穩落位</span></span></span>
     </h1>
     <div class="hero-side">
-      <p class="lead" data-rise><span data-l="en">Let go mid-drag and a spring, a magnet and the screen's walls carry the window into the nearest zone of your grid. Every motion is computed from mass, stiffness and damping.</span><span data-l="ja">ドラッグの途中で手を離すと、ばねと磁石と画面の壁がウィンドウをグリッドのいちばん近い区画へ運びます。動きはすべて質量・剛性・減衰から計算しています。</span></p>
+      <p class="lead" data-rise><span data-l="en">Let go mid-drag and a spring, a magnet and the screen's walls carry the window into the nearest zone of your grid. Every motion is computed from mass, stiffness and damping.</span><span data-l="ja">ドラッグの途中で手を離すと、ばねと磁石と画面の壁がウィンドウをグリッドのいちばん近い区画へ運びます。動きはすべて質量・剛性・減衰から計算しています。</span><span data-l="zh-hans">在拖动途中松手，弹簧、磁铁和屏幕边界会把窗口送入网格中最近的格。所有动作都由质量、刚度和阻尼计算得出。</span><span data-l="zh-hant">在拖曳途中放開，彈簧、磁鐵與螢幕邊界會把視窗送進網格中最近的格。所有動作都由質量、剛度與阻尼計算而來。</span></p>
       <p class="actions" data-rise>
-        <a class="btn btn-primary" href="#download" data-mag><span data-l="en">Download v{{VERSION}}</span><span data-l="ja">v{{VERSION}} をダウンロード</span><i class="btn-icon" aria-hidden="true"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M8 2v11M3.5 8.5 8 13l4.5-4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i></a>
-        <a class="btn btn-action" href="#film" data-mag><span data-l="en">Watch the film</span><span data-l="ja">映像を見る</span></a>
+        <a class="btn btn-primary" href="#download" data-mag><span data-l="en">Download v{{VERSION}}</span><span data-l="ja">v{{VERSION}} をダウンロード</span><span data-l="zh-hans">下载 v{{VERSION}}</span><span data-l="zh-hant">下載 v{{VERSION}}</span><i class="btn-icon" aria-hidden="true"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M8 2v11M3.5 8.5 8 13l4.5-4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i></a>
+        <a class="btn btn-action" href="#film" data-mag><span data-l="en">Watch the film</span><span data-l="ja">映像を見る</span><span data-l="zh-hans">观看视频</span><span data-l="zh-hant">觀看影片</span></a>
       </p>
-      <p class="meta" data-rise><span data-l="en">Native x64 and ARM64 · Free and open source</span><span data-l="ja">x64 と ARM64 のネイティブ版 · 無料のオープンソース</span></p>
+      <p class="meta" data-rise><span data-l="en">Native x64 and ARM64 · Free and open source</span><span data-l="ja">x64 と ARM64 のネイティブ版 · 無料のオープンソース</span><span data-l="zh-hans">原生 x64 和 ARM64 · 免费开源</span><span data-l="zh-hant">原生 x64 與 ARM64 · 免費開源</span></p>
     </div>
   </div>
 
@@ -135,118 +148,118 @@
         </div>
       </div>
       <div class="stage-bar">
-        <div class="seg" role="group" id="heroFeel" data-aria-en="Feel preset" data-aria-ja="動きのプリセット" aria-label="Feel preset">
-          <button type="button" data-v="standard" aria-pressed="true"><span data-l="en">Standard</span><span data-l="ja">標準</span></button>
-          <button type="button" data-v="crisp" aria-pressed="false"><span data-l="en">Crisp</span><span data-l="ja">きびきび</span></button>
-          <button type="button" data-v="smooth" aria-pressed="false"><span data-l="en">Smooth</span><span data-l="ja">なめらか</span></button>
-          <button type="button" data-v="bouncy" aria-pressed="false"><span data-l="en">Bouncy</span><span data-l="ja">はずむ</span></button>
+        <div class="seg" role="group" id="heroFeel" data-aria-en="Feel preset" data-aria-ja="動きのプリセット" data-aria-zh-hans="手感预设" data-aria-zh-hant="手感預設" aria-label="Feel preset">
+          <button type="button" data-v="standard" aria-pressed="true"><span data-l="en">Standard</span><span data-l="ja">標準</span><span data-l="zh-hans">标准</span><span data-l="zh-hant">標準</span></button>
+          <button type="button" data-v="crisp" aria-pressed="false"><span data-l="en">Crisp</span><span data-l="ja">きびきび</span><span data-l="zh-hans">利落</span><span data-l="zh-hant">俐落</span></button>
+          <button type="button" data-v="smooth" aria-pressed="false"><span data-l="en">Smooth</span><span data-l="ja">なめらか</span><span data-l="zh-hans">顺滑</span><span data-l="zh-hant">順滑</span></button>
+          <button type="button" data-v="bouncy" aria-pressed="false"><span data-l="en">Bouncy</span><span data-l="ja">はずむ</span><span data-l="zh-hans">弹跳</span><span data-l="zh-hant">彈跳</span></button>
         </div>
         <dl class="readout" aria-live="polite">
-          <div><dt><span data-l="en">Release</span><span data-l="ja">離した速さ</span></dt><dd id="roSpeed">—</dd></div>
-          <div><dt><span data-l="en">Lands in</span><span data-l="ja">着地先</span></dt><dd id="roZone">—</dd></div>
-          <div class="ro-wide"><dt><span data-l="en">Spring</span><span data-l="ja">ばね</span></dt><dd id="roSpring">—</dd></div>
+          <div><dt><span data-l="en">Release</span><span data-l="ja">離した速さ</span><span data-l="zh-hans">松手速度</span><span data-l="zh-hant">放開速度</span></dt><dd id="roSpeed">—</dd></div>
+          <div><dt><span data-l="en">Lands in</span><span data-l="ja">着地先</span><span data-l="zh-hans">落点</span><span data-l="zh-hant">落點</span></dt><dd id="roZone">—</dd></div>
+          <div class="ro-wide"><dt><span data-l="en">Spring</span><span data-l="ja">ばね</span><span data-l="zh-hans">弹簧</span><span data-l="zh-hant">彈簧</span></dt><dd id="roSpring">—</dd></div>
         </dl>
-        <button class="btn btn-action" type="button" id="heroThrow" data-mag><span data-l="en">Throw one for me</span><span data-l="ja">自動で投げる</span></button>
+        <button class="btn btn-action" type="button" id="heroThrow" data-mag><span data-l="en">Throw one for me</span><span data-l="ja">自動で投げる</span><span data-l="zh-hans">自动甩出</span><span data-l="zh-hant">自動甩出</span></button>
       </div>
     </div>
-    <p class="stage-note"><span data-l="en">Drag a title bar and let go, or focus one and press the arrow keys. A mockup of the interface, running the app's presets and force law.</span><span data-l="ja">タイトルバーをつかんで投げてください。フォーカスして矢印キーを押しても動きます。画面はモックアップで、プリセットと力の式はアプリと同じです。</span></p>
+    <p class="stage-note"><span data-l="en">Drag a title bar and let go, or focus one and press the arrow keys. A mockup of the interface, running the app's presets and force law.</span><span data-l="ja">タイトルバーをつかんで投げてください。フォーカスして矢印キーを押しても動きます。画面はモックアップで、プリセットと力の式はアプリと同じです。</span><span data-l="zh-hans">拖动标题栏后松手，或让标题栏获得焦点后按方向键。画面是界面的模型，预设和力的公式与应用相同。</span><span data-l="zh-hant">拖曳標題列後放開，或將焦點移到標題列後按方向鍵。畫面是介面的模型，預設與力的公式皆與應用程式一致。</span></p>
   </div>
 </section>
 
 <section class="film" id="film" aria-labelledby="h-film">
   <div class="sec-head">
-    <p class="index" data-rise>01 <span class="rule" aria-hidden="true"></span> <span data-l="en">Film</span><span data-l="ja">映像</span></p>
-    <h2 id="h-film" data-rise><span data-l="en">Watch it work.</span><span data-l="ja">使い方を見る</span></h2>
+    <p class="index" data-rise>01 <span class="rule" aria-hidden="true"></span> <span data-l="en">Film</span><span data-l="ja">映像</span><span data-l="zh-hans">视频</span><span data-l="zh-hant">影片</span></p>
+    <h2 id="h-film" data-rise><span data-l="en">Watch it work.</span><span data-l="ja">使い方を見る</span><span data-l="zh-hans">看它如何运作</span><span data-l="zh-hant">看它如何運作</span></h2>
   </div>
   <div class="film-frame" id="filmFrame">
-    <video id="filmVideo" controls playsinline preload="metadata" poster="video/poster-en.jpg" width="1920" height="1080" data-lang="en" data-aria-en="Snapwell film, 38 seconds, with sound" data-aria-ja="Snapwell の紹介映像、38 秒、音つき" aria-label="Snapwell film, 38 seconds, with sound" aria-describedby="filmDesc">
+    <video id="filmVideo" controls playsinline preload="metadata" poster="video/poster-en.jpg" width="1920" height="1080" data-lang="en" data-aria-en="Snapwell film, 38 seconds, with sound" data-aria-ja="Snapwell の紹介映像、38 秒、音つき" data-aria-zh-hans="Snapwell 介绍视频，38 秒，含声音" data-aria-zh-hant="Snapwell 介紹影片，38 秒，含聲音" aria-label="Snapwell film, 38 seconds, with sound" aria-describedby="filmDesc">
       <source src="video/snapwell-en.webm" type="video/webm">
       <source src="video/snapwell-en.mp4" type="video/mp4">
     </video>
-    <p class="vh" id="filmDesc"><span data-l="en">A mockup of the interface shows throwing a window into a zone, placing it with the launcher, arranging windows, snapping to a neighbour, sending a window to another monitor, changing hotkeys and per-app rules, replacing Windows' snapping, and moving settings between machines.</span><span data-l="ja">インターフェースのモックアップで、ウィンドウを区画へ投げる操作、ランチャーでの配置、整列、隣への寄せ、別のモニターへの送り、ホットキーとアプリごとのルールの変更、標準スナップの置き換え、設定の持ち運びを紹介します。</span></p>
+    <p class="vh" id="filmDesc"><span data-l="en">A mockup of the interface shows throwing a window into a zone, placing it with the launcher, arranging windows, snapping to a neighbour, sending a window to another monitor, changing hotkeys and per-app rules, replacing Windows' snapping, and moving settings between machines.</span><span data-l="ja">インターフェースのモックアップで、ウィンドウを区画へ投げる操作、ランチャーでの配置、整列、隣への寄せ、別のモニターへの送り、ホットキーとアプリごとのルールの変更、標準スナップの置き換え、設定の持ち運びを紹介します。</span><span data-l="zh-hans">界面的模型演示了以下内容：把窗口甩进格中、用启动器放置、排列窗口、靠向相邻窗口、送到其他显示器、更改快捷键和各应用的规则、取代 Windows 内置的贴靠，以及在电脑之间带走设置。</span><span data-l="zh-hant">介面的模型示範了以下內容：把視窗甩進格中、用啟動器放置、排列視窗、靠向相鄰視窗、傳送到其他顯示器、變更快速鍵與各應用程式的規則、取代 Windows 內建的貼齊，以及在電腦之間攜帶設定。</span></p>
   </div>
-  <p class="note" data-rise><span data-l="en">Every frame is drawn from the same spring-and-magnet model as the demos on this page. It shows a mockup of the interface, not a screen recording.</span><span data-l="ja">どのコマもこのページのデモと同じばねと磁石のモデルで描いています。映っているのは画面のモックアップで、実際の録画ではありません。</span></p>
+  <p class="note" data-rise><span data-l="en">Every frame is drawn from the same spring-and-magnet model as the demos on this page. It shows a mockup of the interface, not a screen recording.</span><span data-l="ja">どのコマもこのページのデモと同じばねと磁石のモデルで描いています。映っているのは画面のモックアップで、実際の録画ではありません。</span><span data-l="zh-hans">每一帧都由与本页演示相同的弹簧与磁铁模型绘制。画面是界面的模型，不是屏幕录制。</span><span data-l="zh-hant">每一幀都由與本頁示範相同的彈簧與磁鐵模型繪製。畫面是介面的模型，不是螢幕錄影。</span></p>
 </section>
 
 <section class="feel" id="feel" aria-labelledby="h-feel">
   <div class="sec-head split">
     <div>
-      <p class="index" data-rise>02 <span class="rule" aria-hidden="true"></span> <span data-l="en">Feel</span><span data-l="ja">動き</span></p>
-      <h2 id="h-feel" data-rise><span data-l="en">Motion from mass,<br>not milliseconds.</span><span data-l="ja">動きは質量から決まる</span></h2>
+      <p class="index" data-rise>02 <span class="rule" aria-hidden="true"></span> <span data-l="en">Feel</span><span data-l="ja">動き</span><span data-l="zh-hans">手感</span><span data-l="zh-hant">手感</span></p>
+      <h2 id="h-feel" data-rise><span data-l="en">Motion from mass,<br>not milliseconds.</span><span data-l="ja">動きは質量から決まる</span><span data-l="zh-hans">动作由质量决定，<br>而非毫秒。</span><span data-l="zh-hant">動作由質量決定，<br>而非毫秒。</span></h2>
     </div>
-    <p class="lead" data-rise><span data-l="en">Four presets, each a mass, a natural frequency and a damping ratio. Or set your own, along with the magnet's strength. No motion in Snapwell runs on a fixed duration.</span><span data-l="ja">4 つのプリセットはそれぞれ質量・固有振動数・減衰比の組です。磁石の強さと合わせて、自分で値を決めることもできます。Snapwell の動きに、決まった継続時間はありません。</span></p>
+    <p class="lead" data-rise><span data-l="en">Four presets, each a mass, a natural frequency and a damping ratio. Or set your own, along with the magnet's strength. No motion in Snapwell runs on a fixed duration.</span><span data-l="ja">4 つのプリセットはそれぞれ質量・固有振動数・減衰比の組です。磁石の強さと合わせて、自分で値を決めることもできます。Snapwell の動きに、決まった継続時間はありません。</span><span data-l="zh-hans">四个预设，各由质量、固有频率和阻尼比组成。也可以自行设置，并调整磁铁的强度。Snapwell 的任何动作都不使用固定时长。</span><span data-l="zh-hant">四個預設，各由質量、固有頻率與阻尼比組成。也可以自行設定，並調整磁鐵的強度。Snapwell 的任何動作都不使用固定時長。</span></p>
   </div>
   <div class="cards" id="feelCards">
     <button class="card" type="button" data-v="standard" aria-pressed="true" data-rise>
-      <span class="card-top"><span class="card-name"><span data-l="en">Standard</span><span data-l="ja">標準</span></span><span class="card-tag"><span data-l="en">Default</span><span data-l="ja">既定</span></span></span>
+      <span class="card-top"><span class="card-name"><span data-l="en">Standard</span><span data-l="ja">標準</span><span data-l="zh-hans">标准</span><span data-l="zh-hant">標準</span></span><span class="card-tag"><span data-l="en">Default</span><span data-l="ja">既定</span><span data-l="zh-hans">默认</span><span data-l="zh-hant">預設</span></span></span>
       <svg class="curve" viewBox="0 0 240 120" preserveAspectRatio="none" aria-hidden="true"></svg>
       <span class="card-nums"></span>
     </button>
     <button class="card" type="button" data-v="crisp" aria-pressed="false" data-rise>
-      <span class="card-top"><span class="card-name"><span data-l="en">Crisp</span><span data-l="ja">きびきび</span></span></span>
+      <span class="card-top"><span class="card-name"><span data-l="en">Crisp</span><span data-l="ja">きびきび</span><span data-l="zh-hans">利落</span><span data-l="zh-hant">俐落</span></span></span>
       <svg class="curve" viewBox="0 0 240 120" preserveAspectRatio="none" aria-hidden="true"></svg>
       <span class="card-nums"></span>
     </button>
     <button class="card" type="button" data-v="smooth" aria-pressed="false" data-rise>
-      <span class="card-top"><span class="card-name"><span data-l="en">Smooth</span><span data-l="ja">なめらか</span></span></span>
+      <span class="card-top"><span class="card-name"><span data-l="en">Smooth</span><span data-l="ja">なめらか</span><span data-l="zh-hans">顺滑</span><span data-l="zh-hant">順滑</span></span></span>
       <svg class="curve" viewBox="0 0 240 120" preserveAspectRatio="none" aria-hidden="true"></svg>
       <span class="card-nums"></span>
     </button>
     <button class="card" type="button" data-v="bouncy" aria-pressed="false" data-rise>
-      <span class="card-top"><span class="card-name"><span data-l="en">Bouncy</span><span data-l="ja">はずむ</span></span></span>
+      <span class="card-top"><span class="card-name"><span data-l="en">Bouncy</span><span data-l="ja">はずむ</span><span data-l="zh-hans">弹跳</span><span data-l="zh-hant">彈跳</span></span></span>
       <svg class="curve" viewBox="0 0 240 120" preserveAspectRatio="none" aria-hidden="true"></svg>
       <span class="card-nums"></span>
     </button>
   </div>
-  <p class="note" data-rise><span data-l="en">Each curve is one keyboard move of a single zone from rest, over 1.4 s; the dashed line is the target. A throw uses the same frequency and damping, but it is a different motion. Pick a card to try it in the stage above.</span><span data-l="ja">曲線は、静止した状態からキー操作で 1 区画動かしたときの位置の変化を表します。横軸は 1.4 秒、破線は目標です。投げるときも同じ固有振動数と減衰比を使いますが、曲線とは別の運動です。カードを選ぶと、上の画面で試せます。</span></p>
+  <p class="note" data-rise><span data-l="en">Each curve is one keyboard move of a single zone from rest, over 1.4 s; the dashed line is the target. A throw uses the same frequency and damping, but it is a different motion. Pick a card to try it in the stage above.</span><span data-l="ja">曲線は、静止した状態からキー操作で 1 区画動かしたときの位置の変化を表します。横軸は 1.4 秒、破線は目標です。投げるときも同じ固有振動数と減衰比を使いますが、曲線とは別の運動です。カードを選ぶと、上の画面で試せます。</span><span data-l="zh-hans">每条曲线表示从静止开始、用按键移动 1 格时的位置变化，横轴为 1.4 秒，虚线是目标。甩出时使用相同的频率和阻尼，但运动方式不同。选择卡片，即可在上方画面中试用。</span><span data-l="zh-hant">每條曲線表示從靜止開始、用按鍵移動 1 格時的位置變化，橫軸為 1.4 秒，虛線是目標。甩出時使用相同的頻率與阻尼，但運動方式不同。選擇卡片，即可在上方畫面中試用。</span></p>
 </section>
 
 <section class="features" id="features" aria-labelledby="h-features">
   <div class="sec-head">
-    <p class="index" data-rise>03 <span class="rule" aria-hidden="true"></span> <span data-l="en">What it does</span><span data-l="ja">できること</span></p>
-    <h2 id="h-features" data-rise><span data-l="en">Every window, in its place.</span><span data-l="ja">どのウィンドウもあるべき場所に収まる</span></h2>
+    <p class="index" data-rise>03 <span class="rule" aria-hidden="true"></span> <span data-l="en">What it does</span><span data-l="ja">できること</span><span data-l="zh-hans">功能一览</span><span data-l="zh-hant">功能一覽</span></p>
+    <h2 id="h-features" data-rise><span data-l="en">Every window, in its place.</span><span data-l="ja">どのウィンドウもあるべき場所に収まる</span><span data-l="zh-hans">每个窗口，各得其所</span><span data-l="zh-hant">每個視窗，各得其所</span></h2>
   </div>
   <ol class="rows">
-    <li class="row" data-rise><span class="row-n">01</span><h3><span data-l="en">Zones and corners</span><span data-l="ja">区画と四隅</span></h3><p><span data-l="en">Throw toward a grid zone or a corner. A spring, a magnet and the walls pull the window in.</span><span data-l="ja">グリッドの区画か画面の四隅へ投げると、ばね・磁石・壁がウィンドウを引き込みます。</span></p><i class="row-line" aria-hidden="true"></i></li>
-    <li class="row" data-rise><span class="row-n">02</span><h3><span data-l="en">A grid per monitor</span><span data-l="ja">モニターごとのグリッド</span></h3><p><span data-l="en">Each monitor keeps its own grid and its own gap, from 0 to 200 px.</span><span data-l="ja">モニターごとに、グリッドと間隔（0〜200 px）を別々に設定できます。</span></p><i class="row-line" aria-hidden="true"></i></li>
-    <li class="row" data-rise><span class="row-n">03</span><h3><span data-l="en">The launcher</span><span data-l="ja">ランチャー</span></h3><p><span data-l="en">Ctrl+Alt+Space opens your zones. Drag across any span, or pick halves, quarters, thirds, center or maximize.</span><span data-l="ja">Ctrl+Alt+Space でランチャーを開き、なぞった範囲にウィンドウを置きます。半分・4 分割・3 分割・中央・最大化のプリセットもあります。</span></p><i class="row-line" aria-hidden="true"></i></li>
-    <li class="row" data-rise><span class="row-n">04</span><h3><span data-l="en">Arrange</span><span data-l="ja">整列</span></h3><p><span data-l="en">Grid, row, column, or one main window beside a stack. For the current monitor, every monitor, or up to nine windows you pick.</span><span data-l="ja">方式はグリッド・横一列・縦一列・メインとスタックの 4 つです。対象は現在のモニター、すべてのモニター、または選んだ 9 枚までのウィンドウです。</span></p><i class="row-line" aria-hidden="true"></i></li>
-    <li class="row" data-rise><span class="row-n">05</span><h3><span data-l="en">Neighbours and monitors</span><span data-l="ja">隣とモニター</span></h3><p><span data-l="en">Snap a window against its neighbour, or send it to another monitor.</span><span data-l="ja">隣のウィンドウにぴたりと寄せたり、別のモニターへ送ったりできます。</span></p><i class="row-line" aria-hidden="true"></i></li>
-    <li class="row" data-rise><span class="row-n">06</span><h3><span data-l="en">Your keys, your rules</span><span data-l="ja">ホットキーとルールの設定</span></h3><p><span data-l="en">Every hotkey can be changed, and rules can be set for individual apps.</span><span data-l="ja">ホットキーはすべて変えられます。アプリごとのルールも作れます。</span></p><i class="row-line" aria-hidden="true"></i></li>
-    <li class="row" data-rise><span class="row-n">07</span><h3><span data-l="en">Windows' snapping, replaced if you like</span><span data-l="ja">標準のスナップの置き換え</span></h3><p><span data-l="en">Optionally take over the built-in snapping. The settings it changes for this are put back.</span><span data-l="ja">Windows 標準のスナップを置き換えることもできます。そのために変えた設定は元に戻します。</span></p><i class="row-line" aria-hidden="true"></i></li>
-    <li class="row" data-rise><span class="row-n">08</span><h3><span data-l="en">Settings that travel</span><span data-l="ja">持ち運べる設定</span></h3><p><span data-l="en">A first-run tour, import and export, sync through a folder you choose, Japanese and English, and an option to reduce motion.</span><span data-l="ja">初回のツアーがあり、設定の書き出しと取り込み、選んだフォルダーでの同期ができます。日本語と英語に対応し、動きを減らすこともできます。</span></p><i class="row-line" aria-hidden="true"></i></li>
+    <li class="row" data-rise><span class="row-n">01</span><h3><span data-l="en">Zones and corners</span><span data-l="ja">区画と四隅</span><span data-l="zh-hans">格与四角</span><span data-l="zh-hant">格與四角</span></h3><p><span data-l="en">Throw toward a grid zone or a corner. A spring, a magnet and the walls pull the window in.</span><span data-l="ja">グリッドの区画か画面の四隅へ投げると、ばね・磁石・壁がウィンドウを引き込みます。</span><span data-l="zh-hans">朝网格中的某一格或屏幕四角甩出，弹簧、磁铁和边界会把窗口拉进去。</span><span data-l="zh-hant">朝網格中的某一格或螢幕四角甩出，彈簧、磁鐵與邊界會把視窗拉進去。</span></p><i class="row-line" aria-hidden="true"></i></li>
+    <li class="row" data-rise><span class="row-n">02</span><h3><span data-l="en">A grid per monitor</span><span data-l="ja">モニターごとのグリッド</span><span data-l="zh-hans">每个显示器一套网格</span><span data-l="zh-hant">每個顯示器一套網格</span></h3><p><span data-l="en">Each monitor keeps its own grid and its own gap, from 0 to 200 px.</span><span data-l="ja">モニターごとに、グリッドと間隔（0〜200 px）を別々に設定できます。</span><span data-l="zh-hans">每个显示器都有各自的网格和间距（0–200 px）。</span><span data-l="zh-hant">每個顯示器都有各自的網格與間距（0–200 px）。</span></p><i class="row-line" aria-hidden="true"></i></li>
+    <li class="row" data-rise><span class="row-n">03</span><h3><span data-l="en">The launcher</span><span data-l="ja">ランチャー</span><span data-l="zh-hans">启动器</span><span data-l="zh-hant">啟動器</span></h3><p><span data-l="en">Ctrl+Alt+Space opens your zones. Drag across any span, or pick halves, quarters, thirds, center or maximize.</span><span data-l="ja">Ctrl+Alt+Space でランチャーを開き、なぞった範囲にウィンドウを置きます。半分・4 分割・3 分割・中央・最大化のプリセットもあります。</span><span data-l="zh-hans">按 Ctrl+Alt+Space 打开启动器，拖选任意范围放置窗口，也可选择半边、1/4、1/3、居中或最大化预设。</span><span data-l="zh-hant">按 Ctrl+Alt+Space 開啟啟動器，拖曳選取任意範圍放置視窗，也可選擇半邊、1/4、1/3、置中或最大化預設。</span></p><i class="row-line" aria-hidden="true"></i></li>
+    <li class="row" data-rise><span class="row-n">04</span><h3><span data-l="en">Arrange</span><span data-l="ja">整列</span><span data-l="zh-hans">排列</span><span data-l="zh-hant">排列</span></h3><p><span data-l="en">Grid, row, column, or one main window beside a stack. For the current monitor, every monitor, or up to nine windows you pick.</span><span data-l="ja">方式はグリッド・横一列・縦一列・メインとスタックの 4 つです。対象は現在のモニター、すべてのモニター、または選んだ 9 枚までのウィンドウです。</span><span data-l="zh-hans">方式有网格、横向并排、纵向堆叠、主窗口与堆叠。对象可以是当前显示器、所有显示器，或选定的最多 9 个窗口。</span><span data-l="zh-hant">方式有網格、水平並排、垂直堆疊、主視窗與堆疊。對象可以是目前的顯示器、所有顯示器，或選取的最多 9 個視窗。</span></p><i class="row-line" aria-hidden="true"></i></li>
+    <li class="row" data-rise><span class="row-n">05</span><h3><span data-l="en">Neighbours and monitors</span><span data-l="ja">隣とモニター</span><span data-l="zh-hans">相邻窗口与显示器</span><span data-l="zh-hant">相鄰視窗與顯示器</span></h3><p><span data-l="en">Snap a window against its neighbour, or send it to another monitor.</span><span data-l="ja">隣のウィンドウにぴたりと寄せたり、別のモニターへ送ったりできます。</span><span data-l="zh-hans">让窗口靠向相邻窗口，或送到其他显示器。</span><span data-l="zh-hant">讓視窗靠向相鄰視窗，或傳送到其他顯示器。</span></p><i class="row-line" aria-hidden="true"></i></li>
+    <li class="row" data-rise><span class="row-n">06</span><h3><span data-l="en">Your keys, your rules</span><span data-l="ja">ホットキーとルールの設定</span><span data-l="zh-hans">快捷键与规则，由您设定</span><span data-l="zh-hant">快速鍵與規則，由您設定</span></h3><p><span data-l="en">Every hotkey can be changed, and rules can be set for individual apps.</span><span data-l="ja">ホットキーはすべて変えられます。アプリごとのルールも作れます。</span><span data-l="zh-hans">所有快捷键都可以更改，也可以为各个应用单独设置规则。</span><span data-l="zh-hant">所有快速鍵都可以變更，也可以為各個應用程式單獨設定規則。</span></p><i class="row-line" aria-hidden="true"></i></li>
+    <li class="row" data-rise><span class="row-n">07</span><h3><span data-l="en">Windows' snapping, replaced if you like</span><span data-l="ja">標準のスナップの置き換え</span><span data-l="zh-hans">可取代 Windows 内置的贴靠</span><span data-l="zh-hant">可取代 Windows 內建的貼齊</span></h3><p><span data-l="en">Optionally take over the built-in snapping. The settings it changes for this are put back.</span><span data-l="ja">Windows 標準のスナップを置き換えることもできます。そのために変えた設定は元に戻します。</span><span data-l="zh-hans">可选择接管系统内置的贴靠。为此更改过的设置都会还原。</span><span data-l="zh-hant">可選擇接管系統內建的貼齊。為此變更過的設定都會還原。</span></p><i class="row-line" aria-hidden="true"></i></li>
+    <li class="row" data-rise><span class="row-n">08</span><h3><span data-l="en">Settings that travel</span><span data-l="ja">持ち運べる設定</span><span data-l="zh-hans">可带走的设置</span><span data-l="zh-hant">可攜帶的設定</span></h3><p><span data-l="en">A first-run tour, import and export, sync through a folder you choose, Japanese and English, and an option to reduce motion.</span><span data-l="ja">初回のツアーがあり、設定の書き出しと取り込み、選んだフォルダーでの同期ができます。日本語と英語に対応し、動きを減らすこともできます。</span><span data-l="zh-hans">提供首次运行引导，支持导出和导入设置，也可通过您选定的文件夹同步。支持日语和英语，还可以减少动画。</span><span data-l="zh-hant">提供首次執行導覽，支援匯出與匯入設定，也可透過您選定的資料夾同步。支援日文與英文，還可以減少動畫。</span></p><i class="row-line" aria-hidden="true"></i></li>
   </ol>
 </section>
 
 <section class="launch" id="launcher" aria-labelledby="h-launch">
   <div class="launch-grid">
     <div class="launch-copy">
-      <p class="index" data-rise>04 <span class="rule" aria-hidden="true"></span> <span data-l="en">Launcher</span><span data-l="ja">ランチャー</span></p>
-      <h2 id="h-launch" data-rise><span data-l="en">Sweep to place.</span><span data-l="ja">区画をなぞって置く</span></h2>
-      <p class="lead" data-rise><span data-l="en">In the app, <kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Space</kbd> opens the launcher over your zones. Here, sweep across the cells or pick a preset, then pick again. The window springs on from wherever it is, as often as you like.</span><span data-l="ja">アプリでは <kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Space</kbd> で区画の上にランチャーが開きます。ここでは、区画をなぞるかプリセットを選べます。選んだあとも何度でも選び直せて、ウィンドウはいまの位置から、ばねで次の位置へ移ります。</span></p>
+      <p class="index" data-rise>04 <span class="rule" aria-hidden="true"></span> <span data-l="en">Launcher</span><span data-l="ja">ランチャー</span><span data-l="zh-hans">启动器</span><span data-l="zh-hant">啟動器</span></p>
+      <h2 id="h-launch" data-rise><span data-l="en">Sweep to place.</span><span data-l="ja">区画をなぞって置く</span><span data-l="zh-hans">拖选即放置</span><span data-l="zh-hant">拖曳選取即放置</span></h2>
+      <p class="lead" data-rise><span data-l="en">In the app, <kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Space</kbd> opens the launcher over your zones. Here, sweep across the cells or pick a preset, then pick again. The window springs on from wherever it is, as often as you like.</span><span data-l="ja">アプリでは <kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Space</kbd> で区画の上にランチャーが開きます。ここでは、区画をなぞるかプリセットを選べます。選んだあとも何度でも選び直せて、ウィンドウはいまの位置から、ばねで次の位置へ移ります。</span><span data-l="zh-hans">在应用中，按 <kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Space</kbd> 会在各格上方打开启动器。在这里，可以拖选若干格，或选择预设，之后还能反复重选，窗口会从当前位置用弹簧移到新位置。</span><span data-l="zh-hant">在應用程式中，按 <kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Space</kbd> 會在各格上方開啟啟動器。在這裡，可以拖曳選取若干格，或選擇預設，之後還能反覆重選，視窗會從目前位置用彈簧移到新位置。</span></p>
       <div class="presets" id="launchPresets" data-rise>
-        <div class="preset-row" role="group" data-aria-en="Halves" data-aria-ja="半分" aria-label="Halves">
-          <span class="preset-label"><span data-l="en">Halves</span><span data-l="ja">半分</span></span>
-          <button type="button" data-p="left-half"><span data-l="en">Left</span><span data-l="ja">左</span></button>
-          <button type="button" data-p="right-half"><span data-l="en">Right</span><span data-l="ja">右</span></button>
+        <div class="preset-row" role="group" data-aria-en="Halves" data-aria-ja="半分" data-aria-zh-hans="半边" data-aria-zh-hant="半邊" aria-label="Halves">
+          <span class="preset-label"><span data-l="en">Halves</span><span data-l="ja">半分</span><span data-l="zh-hans">半边</span><span data-l="zh-hant">半邊</span></span>
+          <button type="button" data-p="left-half"><span data-l="en">Left</span><span data-l="ja">左</span><span data-l="zh-hans">左</span><span data-l="zh-hant">左</span></button>
+          <button type="button" data-p="right-half"><span data-l="en">Right</span><span data-l="ja">右</span><span data-l="zh-hans">右</span><span data-l="zh-hant">右</span></button>
         </div>
-        <div class="preset-row" role="group" data-aria-en="Quarters" data-aria-ja="4 分割" aria-label="Quarters">
-          <span class="preset-label"><span data-l="en">Quarters</span><span data-l="ja">4 分割</span></span>
-          <button type="button" data-p="q-tl" data-aria-en="Top left quarter" data-aria-ja="左上の 4 分の 1" aria-label="Top left quarter"><i class="glyph" data-g="q-tl" aria-hidden="true"></i></button>
-          <button type="button" data-p="q-tr" data-aria-en="Top right quarter" data-aria-ja="右上の 4 分の 1" aria-label="Top right quarter"><i class="glyph" data-g="q-tr" aria-hidden="true"></i></button>
-          <button type="button" data-p="q-bl" data-aria-en="Bottom left quarter" data-aria-ja="左下の 4 分の 1" aria-label="Bottom left quarter"><i class="glyph" data-g="q-bl" aria-hidden="true"></i></button>
-          <button type="button" data-p="q-br" data-aria-en="Bottom right quarter" data-aria-ja="右下の 4 分の 1" aria-label="Bottom right quarter"><i class="glyph" data-g="q-br" aria-hidden="true"></i></button>
+        <div class="preset-row" role="group" data-aria-en="Quarters" data-aria-ja="4 分割" data-aria-zh-hans="1/4" data-aria-zh-hant="1/4" aria-label="Quarters">
+          <span class="preset-label"><span data-l="en">Quarters</span><span data-l="ja">4 分割</span><span data-l="zh-hans">1/4</span><span data-l="zh-hant">1/4</span></span>
+          <button type="button" data-p="q-tl" data-aria-en="Top left quarter" data-aria-ja="左上の 4 分の 1" data-aria-zh-hans="左上 1/4" data-aria-zh-hant="左上 1/4" aria-label="Top left quarter"><i class="glyph" data-g="q-tl" aria-hidden="true"></i></button>
+          <button type="button" data-p="q-tr" data-aria-en="Top right quarter" data-aria-ja="右上の 4 分の 1" data-aria-zh-hans="右上 1/4" data-aria-zh-hant="右上 1/4" aria-label="Top right quarter"><i class="glyph" data-g="q-tr" aria-hidden="true"></i></button>
+          <button type="button" data-p="q-bl" data-aria-en="Bottom left quarter" data-aria-ja="左下の 4 分の 1" data-aria-zh-hans="左下 1/4" data-aria-zh-hant="左下 1/4" aria-label="Bottom left quarter"><i class="glyph" data-g="q-bl" aria-hidden="true"></i></button>
+          <button type="button" data-p="q-br" data-aria-en="Bottom right quarter" data-aria-ja="右下の 4 分の 1" data-aria-zh-hans="右下 1/4" data-aria-zh-hant="右下 1/4" aria-label="Bottom right quarter"><i class="glyph" data-g="q-br" aria-hidden="true"></i></button>
         </div>
-        <div class="preset-row" role="group" data-aria-en="Thirds" data-aria-ja="3 分割" aria-label="Thirds">
-          <span class="preset-label"><span data-l="en">Thirds</span><span data-l="ja">3 分割</span></span>
-          <button type="button" data-p="t-l" data-aria-en="Left third" data-aria-ja="左の 3 分の 1" aria-label="Left third"><i class="glyph" data-g="t-l" aria-hidden="true"></i></button>
-          <button type="button" data-p="t-m" data-aria-en="Middle third" data-aria-ja="中央の 3 分の 1" aria-label="Middle third"><i class="glyph" data-g="t-m" aria-hidden="true"></i></button>
-          <button type="button" data-p="t-r" data-aria-en="Right third" data-aria-ja="右の 3 分の 1" aria-label="Right third"><i class="glyph" data-g="t-r" aria-hidden="true"></i></button>
+        <div class="preset-row" role="group" data-aria-en="Thirds" data-aria-ja="3 分割" data-aria-zh-hans="1/3" data-aria-zh-hant="1/3" aria-label="Thirds">
+          <span class="preset-label"><span data-l="en">Thirds</span><span data-l="ja">3 分割</span><span data-l="zh-hans">1/3</span><span data-l="zh-hant">1/3</span></span>
+          <button type="button" data-p="t-l" data-aria-en="Left third" data-aria-ja="左の 3 分の 1" data-aria-zh-hans="左 1/3" data-aria-zh-hant="左 1/3" aria-label="Left third"><i class="glyph" data-g="t-l" aria-hidden="true"></i></button>
+          <button type="button" data-p="t-m" data-aria-en="Middle third" data-aria-ja="中央の 3 分の 1" data-aria-zh-hans="中间 1/3" data-aria-zh-hant="中間 1/3" aria-label="Middle third"><i class="glyph" data-g="t-m" aria-hidden="true"></i></button>
+          <button type="button" data-p="t-r" data-aria-en="Right third" data-aria-ja="右の 3 分の 1" data-aria-zh-hans="右 1/3" data-aria-zh-hant="右 1/3" aria-label="Right third"><i class="glyph" data-g="t-r" aria-hidden="true"></i></button>
         </div>
-        <div class="preset-row" role="group" data-aria-en="Other layouts" data-aria-ja="そのほか" aria-label="Other layouts">
-          <span class="preset-label"><span data-l="en">Other</span><span data-l="ja">そのほか</span></span>
-          <button type="button" data-p="center"><span data-l="en">Center</span><span data-l="ja">中央</span></button>
-          <button type="button" data-p="max"><span data-l="en">Maximize</span><span data-l="ja">最大化</span></button>
+        <div class="preset-row" role="group" data-aria-en="Other layouts" data-aria-ja="そのほか" data-aria-zh-hans="其他布局" data-aria-zh-hant="其他版面" aria-label="Other layouts">
+          <span class="preset-label"><span data-l="en">Other</span><span data-l="ja">そのほか</span><span data-l="zh-hans">其他</span><span data-l="zh-hant">其他</span></span>
+          <button type="button" data-p="center"><span data-l="en">Center</span><span data-l="ja">中央</span><span data-l="zh-hans">居中</span><span data-l="zh-hant">置中</span></button>
+          <button type="button" data-p="max"><span data-l="en">Maximize</span><span data-l="ja">最大化</span><span data-l="zh-hans">最大化</span><span data-l="zh-hant">最大化</span></button>
         </div>
       </div>
     </div>
@@ -256,7 +269,7 @@
           <!-- 選んでいるセルの表示はウィンドウの下に描く（ウィンドウに重ねない）。入力は上の透明な層で受ける -->
           <div class="launch-vis" id="launchVis" aria-hidden="true"></div>
           <div class="workarea"></div>
-          <div class="launch-cells" id="launchCells" tabindex="0" role="application" aria-describedby="launchHelp" data-aria-en="Launcher cells, 4 by 3" data-aria-ja="ランチャーの区画（4 × 3）" aria-label="Launcher cells, 4 by 3"></div>
+          <div class="launch-cells" id="launchCells" tabindex="0" role="application" aria-describedby="launchHelp" data-aria-en="Launcher cells, 4 by 3" data-aria-ja="ランチャーの区画（4 × 3）" data-aria-zh-hans="启动器的格（4 × 3）" data-aria-zh-hant="啟動器的格（4 × 3）" aria-label="Launcher cells, 4 by 3"></div>
           <div class="taskbar" aria-hidden="true">
             <i class="tb-app start"></i><i class="tb-app"></i><i class="tb-app"></i>
             <span class="clock">10:24<br>2026/10/22</span>
@@ -264,79 +277,79 @@
         </div>
         <div class="stage-bar">
           <dl class="readout" aria-live="polite">
-            <div><dt><span data-l="en">Now</span><span data-l="ja">いまの位置</span></dt><dd id="launchNow">—</dd></div>
+            <div><dt><span data-l="en">Now</span><span data-l="ja">いまの位置</span><span data-l="zh-hans">当前位置</span><span data-l="zh-hant">目前位置</span></dt><dd id="launchNow">—</dd></div>
           </dl>
-          <button class="btn btn-action" type="button" id="launchReset"><span data-l="en">Reset</span><span data-l="ja">元に戻す</span></button>
+          <button class="btn btn-action" type="button" id="launchReset"><span data-l="en">Reset</span><span data-l="ja">元に戻す</span><span data-l="zh-hans">还原</span><span data-l="zh-hant">還原</span></button>
         </div>
       </div>
-      <p class="stage-note" id="launchHelp"><span data-l="en">Illustrative 4 × 3 grid; in the app the cells follow your own grid. Keyboard: focus the cells, move with the arrow keys, hold Shift to stretch the span, press Enter to place.</span><span data-l="ja">区画は説明用の 4 × 3 です。アプリでは、自分で決めたグリッドが区画になります。キーボードでは区画にフォーカスし、矢印キーで移動し、Shift を押しながら範囲を広げ、Enter で置きます。</span></p>
+      <p class="stage-note" id="launchHelp"><span data-l="en">Illustrative 4 × 3 grid; in the app the cells follow your own grid. Keyboard: focus the cells, move with the arrow keys, hold Shift to stretch the span, press Enter to place.</span><span data-l="ja">区画は説明用の 4 × 3 です。アプリでは、自分で決めたグリッドが区画になります。キーボードでは区画にフォーカスし、矢印キーで移動し、Shift を押しながら範囲を広げ、Enter で置きます。</span><span data-l="zh-hans">示例为 4 × 3 的网格；在应用中，各格会跟随您自己的网格。键盘操作：让格区域获得焦点，用方向键移动，按住 Shift 扩大范围，按 Enter 放置。</span><span data-l="zh-hant">示範為 4 × 3 的網格；在應用程式中，各格會依照您自己的網格。鍵盤操作：將焦點移到格區域，用方向鍵移動，按住 Shift 擴大範圍，按 Enter 放置。</span></p>
     </div>
   </div></section>
 
 <section class="quiet" id="quiet" aria-labelledby="h-quiet">
   <div class="sec-head">
-    <p class="index" data-rise>05 <span class="rule" aria-hidden="true"></span> <span data-l="en">Built quietly</span><span data-l="ja">静かなつくり</span></p>
-    <h2 id="h-quiet" data-rise><span data-l="en">Nothing hidden underneath.</span><span data-l="ja">見えないところも隠しません</span></h2>
+    <p class="index" data-rise>05 <span class="rule" aria-hidden="true"></span> <span data-l="en">Built quietly</span><span data-l="ja">静かなつくり</span><span data-l="zh-hans">安静运行</span><span data-l="zh-hant">安靜運作</span></p>
+    <h2 id="h-quiet" data-rise><span data-l="en">Nothing hidden underneath.</span><span data-l="ja">見えないところも隠しません</span><span data-l="zh-hans">看不见的地方，也不隐瞒</span><span data-l="zh-hant">看不見的地方，也不隱瞞</span></h2>
   </div>
   <ul class="facts">
-    <li data-rise><h3><span data-l="en">Native x64 and ARM64</span><span data-l="ja">x64 と ARM64 のネイティブ</span></h3><p><span data-l="en">Two native builds. No x86 build, and nothing runs through emulation.</span><span data-l="ja">2 つのネイティブ版だけを出しています。x86 版はなく、エミュレーションでは動かしません。</span></p></li>
-    <li data-rise><h3><span data-l="en">No DLL injection</span><span data-l="ja">DLL を注入しない</span></h3><p><span data-l="en">Only documented out-of-process and low-level hooks. It never loads code into another program.</span><span data-l="ja">文書化されたプロセス外のフックと低レベルフックだけを使い、ほかのプログラムにコードを読み込ませません。</span></p></li>
-    <li data-rise><h3><span data-l="en">No analytics, no tracking</span><span data-l="ja">解析も追跡もしない</span></h3><p><span data-l="en">The update check is off until you turn it on. Sync is a file in a folder you pick.</span><span data-l="ja">更新の確認はオンにするまで動きません。同期は選んだフォルダーにファイルを置くだけです。</span></p></li>
-    <li data-rise><h3><span data-l="en">Settings put back</span><span data-l="ja">設定は元に戻す</span></h3><p><span data-l="en">If you let it replace Windows' snapping, every setting it changed is put back when you switch it off, quit, or start again after a crash.</span><span data-l="ja">標準のスナップの置き換えを選んだ場合、変えた設定は、機能を切ったとき・終了したとき・異常終了後の起動時に元に戻します。</span></p></li>
+    <li data-rise><h3><span data-l="en">Native x64 and ARM64</span><span data-l="ja">x64 と ARM64 のネイティブ</span><span data-l="zh-hans">原生 x64 和 ARM64</span><span data-l="zh-hant">原生 x64 與 ARM64</span></h3><p><span data-l="en">Two native builds. No x86 build, and nothing runs through emulation.</span><span data-l="ja">2 つのネイティブ版だけを出しています。x86 版はなく、エミュレーションでは動かしません。</span><span data-l="zh-hans">只提供两个原生版本，没有 x86 版，也不通过模拟运行。</span><span data-l="zh-hant">只提供兩個原生版本，沒有 x86 版，也不透過模擬執行。</span></p></li>
+    <li data-rise><h3><span data-l="en">No DLL injection</span><span data-l="ja">DLL を注入しない</span><span data-l="zh-hans">不注入 DLL</span><span data-l="zh-hant">不注入 DLL</span></h3><p><span data-l="en">Only documented out-of-process and low-level hooks. It never loads code into another program.</span><span data-l="ja">文書化されたプロセス外のフックと低レベルフックだけを使い、ほかのプログラムにコードを読み込ませません。</span><span data-l="zh-hans">只使用有文档说明的进程外钩子和低级钩子，绝不向其他程序加载代码。</span><span data-l="zh-hant">只使用有文件說明的處理程序外的掛鉤與低階掛鉤，絕不將程式碼載入其他程式。</span></p></li>
+    <li data-rise><h3><span data-l="en">No analytics, no tracking</span><span data-l="ja">解析も追跡もしない</span><span data-l="zh-hans">不做分析，不追踪</span><span data-l="zh-hant">不做分析，不追蹤</span></h3><p><span data-l="en">The update check is off until you turn it on. Sync is a file in a folder you pick.</span><span data-l="ja">更新の確認はオンにするまで動きません。同期は選んだフォルダーにファイルを置くだけです。</span><span data-l="zh-hans">更新检查在您开启之前不会运行。同步只是把文件放进您选定的文件夹。</span><span data-l="zh-hant">更新檢查在您開啟之前不會執行。同步只是把檔案放進您選定的資料夾。</span></p></li>
+    <li data-rise><h3><span data-l="en">Settings put back</span><span data-l="ja">設定は元に戻す</span><span data-l="zh-hans">设置会还原</span><span data-l="zh-hant">設定會還原</span></h3><p><span data-l="en">If you let it replace Windows' snapping, every setting it changed is put back when you switch it off, quit, or start again after a crash.</span><span data-l="ja">標準のスナップの置き換えを選んだ場合、変えた設定は、機能を切ったとき・終了したとき・異常終了後の起動時に元に戻します。</span><span data-l="zh-hans">如果您让它取代 Windows 的贴靠，那么在您关闭该功能、退出，或崩溃后重新启动时，它更改过的所有设置都会还原。</span><span data-l="zh-hant">如果您讓它取代 Windows 的貼齊，那麼在您關閉該功能、結束，或當機後重新啟動時，它變更過的所有設定都會還原。</span></p></li>
   </ul>
 </section>
 
 <section class="get" id="download" aria-labelledby="h-get">
   <div class="get-panel" data-rise>
     <img class="get-mark" src="assets/favicon.svg" width="64" height="64" alt="">
-    <h2 id="h-get"><span data-l="en">Get Snapwell {{VERSION}}</span><span data-l="ja">Snapwell {{VERSION}} をダウンロード</span></h2>
-    <p class="lead"><span data-l="en">A portable zip: unpack it anywhere and run Snapwell.exe. Pick the build that matches your PC.</span><span data-l="ja">インストール不要の zip です。好きな場所に展開し、Snapwell.exe を実行します。お使いの PC に合う版を選んでください。</span></p>
+    <h2 id="h-get"><span data-l="en">Get Snapwell {{VERSION}}</span><span data-l="ja">Snapwell {{VERSION}} をダウンロード</span><span data-l="zh-hans">下载 Snapwell {{VERSION}}</span><span data-l="zh-hant">下載 Snapwell {{VERSION}}</span></h2>
+    <p class="lead"><span data-l="en">A portable zip: unpack it anywhere and run Snapwell.exe. Pick the build that matches your PC.</span><span data-l="ja">インストール不要の zip です。好きな場所に展開し、Snapwell.exe を実行します。お使いの PC に合う版を選んでください。</span><span data-l="zh-hans">免安装的 zip：解压到任意位置，运行 Snapwell.exe 即可。请选择与您的电脑匹配的版本。</span><span data-l="zh-hant">免安裝的 zip：解壓縮到任意位置，執行 Snapwell.exe 即可。請選擇與您的電腦相符的版本。</span></p>
     <p class="actions center">
-      <a class="btn btn-primary" href="https://github.com/tabunugoku/Snapwell/releases/download/v{{VERSION}}/Snapwell-{{VERSION}}-win-x64.zip" data-mag><span data-l="en">Download for x64</span><span data-l="ja">x64 版をダウンロード</span></a>
-      <a class="btn btn-action" href="https://github.com/tabunugoku/Snapwell/releases/download/v{{VERSION}}/Snapwell-{{VERSION}}-win-arm64.zip" data-mag><span data-l="en">Download for ARM64</span><span data-l="ja">ARM64 版をダウンロード</span></a>
+      <a class="btn btn-primary" href="https://github.com/tabunugoku/Snapwell/releases/download/v{{VERSION}}/Snapwell-{{VERSION}}-win-x64.zip" data-mag><span data-l="en">Download for x64</span><span data-l="ja">x64 版をダウンロード</span><span data-l="zh-hans">下载 x64 版</span><span data-l="zh-hant">下載 x64 版</span></a>
+      <a class="btn btn-action" href="https://github.com/tabunugoku/Snapwell/releases/download/v{{VERSION}}/Snapwell-{{VERSION}}-win-arm64.zip" data-mag><span data-l="en">Download for ARM64</span><span data-l="ja">ARM64 版をダウンロード</span><span data-l="zh-hans">下载 ARM64 版</span><span data-l="zh-hant">下載 ARM64 版</span></a>
     </p>
-    <p class="small"><a href="https://github.com/tabunugoku/Snapwell/releases/tag/v{{VERSION}}"><span data-l="en">Release notes and checksums</span><span data-l="ja">リリースノートとチェックサム</span></a></p>
+    <p class="small"><a href="https://github.com/tabunugoku/Snapwell/releases/tag/v{{VERSION}}"><span data-l="en">Release notes and checksums</span><span data-l="ja">リリースノートとチェックサム</span><span data-l="zh-hans">发行说明与校验和</span><span data-l="zh-hant">版本資訊與檢查碼</span></a></p>
     <div class="notice" role="note">
       <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" focusable="false"><path d="M10 2.5 18 17H2z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M10 8v4.2M10 14.4v.1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-      <p><span data-l="en">The v{{VERSION}} builds are not code-signed yet, so Windows SmartScreen warns you. Choose More info, then Run anyway. Once you have chosen to trust it yourself, the warning no longer appears. A SHA-256 checksum file sits beside each zip so you can check the download first.</span><span data-l="ja">v{{VERSION}} はまだコード署名をしていないため、Windows の SmartScreen が警告を出します。「詳細情報」を選んでから「実行」を選んでください。自分で信頼して実行すれば、そのあとは警告が出ません。zip ごとに SHA-256 のチェックサムファイルを置いているので、ダウンロードしたファイルを実行前に確かめられます。</span></p>
+      <p><span data-l="en">The v{{VERSION}} builds are not code-signed yet, so Windows SmartScreen warns you. Choose More info, then Run anyway. Once you have chosen to trust it yourself, the warning no longer appears. A SHA-256 checksum file sits beside each zip so you can check the download first.</span><span data-l="ja">v{{VERSION}} はまだコード署名をしていないため、Windows の SmartScreen が警告を出します。「詳細情報」を選んでから「実行」を選んでください。自分で信頼して実行すれば、そのあとは警告が出ません。zip ごとに SHA-256 のチェックサムファイルを置いているので、ダウンロードしたファイルを実行前に確かめられます。</span><span data-l="zh-hans">v{{VERSION}} 尚未进行代码签名，因此 Windows SmartScreen 会发出警告。请先选择“更多信息”，再选择“仍要运行”。自己选择信任并运行之后，就不会再出现警告。每个 zip 旁都有 SHA-256 校验和文件，运行前可用来核对下载的文件。</span><span data-l="zh-hant">v{{VERSION}} 尚未進行程式碼簽署，因此 Windows SmartScreen 會顯示警告。請先選擇「其他資訊」，再選擇「仍要執行」。自行選擇信任並執行之後，就不會再出現警告。每個 zip 旁都有 SHA-256 檢查碼檔案，執行前可用來核對下載的檔案。</span></p>
     </div>
-    <p class="small soft sign"><span data-l="en">We plan to apply for free code signing from <a href="https://about.signpath.io/">SignPath.io</a>, with a certificate from <a href="https://signpath.org/">SignPath Foundation</a>. Once the application is approved, builds will be signed under the <a href="https://github.com/tabunugoku/Snapwell#code-signing-policy">code signing policy</a>; until then they are unsigned.</span><span data-l="ja">無償のコード署名を <a href="https://about.signpath.io/">SignPath.io</a>、証明書を <a href="https://signpath.org/">SignPath Foundation</a> に申請する予定です。承認されたあとは、<a href="https://github.com/tabunugoku/Snapwell#code-signing-policy">コード署名のポリシー</a>に沿って署名します。それまでは署名なしです。</span></p>
+    <p class="small soft sign"><span data-l="en">We plan to apply for free code signing from <a href="https://about.signpath.io/">SignPath.io</a>, with a certificate from <a href="https://signpath.org/">SignPath Foundation</a>. Once the application is approved, builds will be signed under the <a href="https://github.com/tabunugoku/Snapwell#code-signing-policy">code signing policy</a>; until then they are unsigned.</span><span data-l="ja">無償のコード署名を <a href="https://about.signpath.io/">SignPath.io</a>、証明書を <a href="https://signpath.org/">SignPath Foundation</a> に申請する予定です。承認されたあとは、<a href="https://github.com/tabunugoku/Snapwell#code-signing-policy">コード署名のポリシー</a>に沿って署名します。それまでは署名なしです。</span><span data-l="zh-hans">我们计划向 <a href="https://about.signpath.io/">SignPath.io</a> 申请免费的代码签名，证书由 <a href="https://signpath.org/">SignPath Foundation</a> 提供。申请获批后，将按照<a href="https://github.com/tabunugoku/Snapwell#code-signing-policy">代码签名政策</a>对构建签名；在此之前均未签名。</span><span data-l="zh-hant">我們計劃向 <a href="https://about.signpath.io/">SignPath.io</a> 申請免費的程式碼簽署，憑證由 <a href="https://signpath.org/">SignPath Foundation</a> 提供。申請核准後，將依照<a href="https://github.com/tabunugoku/Snapwell#code-signing-policy">程式碼簽署原則</a>簽署建置；在此之前均未簽署。</span></p>
   </div>
 </section>
 
 <section class="faq" id="faq" aria-labelledby="h-faq">
   <div class="sec-head">
-    <p class="index" data-rise>06 <span class="rule" aria-hidden="true"></span> <span data-l="en">Questions</span><span data-l="ja">質問</span></p>
-    <h2 id="h-faq" data-rise><span data-l="en">Before you download.</span><span data-l="ja">ダウンロードの前に</span></h2>
+    <p class="index" data-rise>06 <span class="rule" aria-hidden="true"></span> <span data-l="en">Questions</span><span data-l="ja">質問</span><span data-l="zh-hans">常见问题</span><span data-l="zh-hant">常見問題</span></p>
+    <h2 id="h-faq" data-rise><span data-l="en">Before you download.</span><span data-l="ja">ダウンロードの前に</span><span data-l="zh-hans">下载之前</span><span data-l="zh-hant">下載之前</span></h2>
   </div>
   <div class="faq-list">
     <details name="faq" open data-rise>
-      <summary><span data-l="en">Which Windows does it run on?</span><span data-l="ja">どの Windows で動きますか？</span></summary>
-      <p><span data-l="en">Windows 11, as native builds for x64 and for ARM64. There is no x86 build.</span><span data-l="ja">Windows 11 です。x64 と ARM64 のネイティブ版があります。x86 版はありません。</span></p>
+      <summary><span data-l="en">Which Windows does it run on?</span><span data-l="ja">どの Windows で動きますか？</span><span data-l="zh-hans">在哪些 Windows 上运行？</span><span data-l="zh-hant">在哪些 Windows 上執行？</span></summary>
+      <p><span data-l="en">Windows 11, as native builds for x64 and for ARM64. There is no x86 build.</span><span data-l="ja">Windows 11 です。x64 と ARM64 のネイティブ版があります。x86 版はありません。</span><span data-l="zh-hans">Windows 11，提供 x64 和 ARM64 的原生版本，没有 x86 版。</span><span data-l="zh-hant">Windows 11，提供 x64 與 ARM64 的原生版本，沒有 x86 版。</span></p>
     </details>
     <details name="faq" data-rise>
-      <summary><span data-l="en">Will SmartScreen warn me?</span><span data-l="ja">SmartScreen の警告は出ますか？</span></summary>
-      <p><span data-l="en">For now, yes. The builds are not code-signed yet. Choose More info, then Run anyway; once you have chosen to trust it yourself, the warning no longer appears. Check the SHA-256 file beside each zip if you want to verify the download.</span><span data-l="ja">今は出ます。まだコード署名をしていないためです。「詳細情報」を選んでから「実行」を選んでください。自分で信頼して実行すれば、そのあとは警告が出ません。ダウンロードしたファイルを確かめたいときは、zip と同じ場所にある SHA-256 のファイルを使ってください。</span></p>
+      <summary><span data-l="en">Will SmartScreen warn me?</span><span data-l="ja">SmartScreen の警告は出ますか？</span><span data-l="zh-hans">会出现 SmartScreen 警告吗？</span><span data-l="zh-hant">會出現 SmartScreen 警告嗎？</span></summary>
+      <p><span data-l="en">For now, yes. The builds are not code-signed yet. Choose More info, then Run anyway; once you have chosen to trust it yourself, the warning no longer appears. Check the SHA-256 file beside each zip if you want to verify the download.</span><span data-l="ja">今は出ます。まだコード署名をしていないためです。「詳細情報」を選んでから「実行」を選んでください。自分で信頼して実行すれば、そのあとは警告が出ません。ダウンロードしたファイルを確かめたいときは、zip と同じ場所にある SHA-256 のファイルを使ってください。</span><span data-l="zh-hans">目前会，因为还没有进行代码签名。请先选择“更多信息”，再选择“仍要运行”；自己选择信任并运行之后，就不会再出现警告。想核对下载的文件，可以使用每个 zip 旁的 SHA-256 文件。</span><span data-l="zh-hant">目前會，因為還沒有進行程式碼簽署。請先選擇「其他資訊」，再選擇「仍要執行」；自行選擇信任並執行之後，就不會再出現警告。想核對下載的檔案，可以使用每個 zip 旁的 SHA-256 檔案。</span></p>
     </details>
     <details name="faq" data-rise>
-      <summary><span data-l="en">Does it send anything anywhere?</span><span data-l="ja">どこかへ何かを送りますか？</span></summary>
-      <p><span data-l="en">No analytics and no tracking. The only exception is updating. The update check is off until you turn it on, and the signed download from GitHub happens only when you choose Update and restart. Settings sync is only a file in a folder you pick, such as one that OneDrive or Dropbox already syncs.</span><span data-l="ja">解析も追跡もしません。例外は更新だけです。更新の確認はオンにするまで動きません。「更新して再起動」を押したときだけ、署名つきの配布ファイルを GitHub からダウンロードします。設定の同期は、OneDrive や Dropbox などで同期しているフォルダーにファイルを置くだけです。</span></p>
+      <summary><span data-l="en">Does it send anything anywhere?</span><span data-l="ja">どこかへ何かを送りますか？</span><span data-l="zh-hans">它会向外发送什么吗？</span><span data-l="zh-hant">它會向外傳送任何資料嗎？</span></summary>
+      <p><span data-l="en">No analytics and no tracking. The only exception is updating. The update check is off until you turn it on, and the download from GitHub, verified with the update signature, happens only when you choose Update and restart. Settings sync is only a file in a folder you pick, such as one that OneDrive or Dropbox already syncs.</span><span data-l="ja">解析も追跡もしません。例外は更新だけです。更新の確認はオンにするまで動きません。「更新して再起動」を押したときだけ、GitHub からファイルをダウンロードし、更新用の署名で検証します。設定の同期は、OneDrive や Dropbox などで同期しているフォルダーにファイルを置くだけです。</span><span data-l="zh-hans">不做分析，也不追踪。唯一的例外是更新：更新检查在您开启之前不会运行，只有在您选择“更新并重启”时，才会从 GitHub 下载文件，并用更新签名验证。设置同步只是把文件放进您选定的文件夹，例如 OneDrive 或 Dropbox 已在同步的文件夹。</span><span data-l="zh-hant">不做分析，也不追蹤。唯一的例外是更新：更新檢查在您開啟之前不會執行，只有在您選擇「更新並重新啟動」時，才會從 GitHub 下載檔案，並以更新簽章驗證。設定同步只是把檔案放進您選定的資料夾，例如 OneDrive 或 Dropbox 已在同步的資料夾。</span></p>
     </details>
     <details name="faq" data-rise>
-      <summary><span data-l="en">Does it inject code into my apps?</span><span data-l="ja">アプリにコードを注入しますか？</span></summary>
-      <p><span data-l="en">No. Snapwell uses out-of-process event hooks and the low-level keyboard and mouse hooks, the documented ones. It never loads a DLL into another program.</span><span data-l="ja">しません。文書化されたプロセス外のイベントフックと、キーボード・マウスの低レベルフックだけを使います。ほかのプログラムに DLL を読み込ませることはありません。</span></p>
+      <summary><span data-l="en">Does it inject code into my apps?</span><span data-l="ja">アプリにコードを注入しますか？</span><span data-l="zh-hans">会向我的应用注入代码吗？</span><span data-l="zh-hant">會向我的應用程式注入程式碼嗎？</span></summary>
+      <p><span data-l="en">No. Snapwell uses out-of-process event hooks and the low-level keyboard and mouse hooks, the documented ones. It never loads a DLL into another program.</span><span data-l="ja">しません。文書化されたプロセス外のイベントフックと、キーボード・マウスの低レベルフックだけを使います。ほかのプログラムに DLL を読み込ませることはありません。</span><span data-l="zh-hans">不会。Snapwell 只使用有文档说明的进程外事件钩子，以及键盘和鼠标的低级钩子，绝不会向其他程序加载 DLL。</span><span data-l="zh-hant">不會。Snapwell 只使用有文件說明的處理程序外事件掛鉤，以及鍵盤與滑鼠的低階掛鉤，絕不會將 DLL 載入其他程式。</span></p>
     </details>
     <details name="faq" data-rise>
-      <summary><span data-l="en">Does it change Windows settings?</span><span data-l="ja">Windows の設定を変えますか？</span></summary>
-      <p><span data-l="en">Only if you ask it to replace Windows' own snapping. It remembers the original values and puts them back when you switch it off, quit, or start again after a crash. Starting with Windows is also off until you turn it on.</span><span data-l="ja">標準のスナップの置き換えを選んだ場合だけです。元の値を覚えておき、機能を切ったとき・終了したとき・異常終了後の起動時に元に戻します。Windows と一緒に起動する設定も、オンにするまでは無効です。</span></p>
+      <summary><span data-l="en">Does it change Windows settings?</span><span data-l="ja">Windows の設定を変えますか？</span><span data-l="zh-hans">会更改 Windows 设置吗？</span><span data-l="zh-hant">會變更 Windows 設定嗎？</span></summary>
+      <p><span data-l="en">Only if you ask it to replace Windows' own snapping. It remembers the original values and puts them back when you switch it off, quit, or start again after a crash. Starting with Windows is also off until you turn it on.</span><span data-l="ja">標準のスナップの置き換えを選んだ場合だけです。元の値を覚えておき、機能を切ったとき・終了したとき・異常終了後の起動時に元に戻します。Windows と一緒に起動する設定も、オンにするまでは無効です。</span><span data-l="zh-hans">只有在您要求它取代 Windows 内置的贴靠时才会。它会记住原来的值，并在您关闭该功能、退出，或崩溃后重新启动时还原。随 Windows 启动的选项在您开启之前也是关闭的。</span><span data-l="zh-hant">只有在您要求它取代 Windows 內建的貼齊時才會。它會記住原來的值，並在您關閉該功能、結束，或當機後重新啟動時還原。隨 Windows 啟動的選項在您開啟之前也是關閉的。</span></p>
     </details>
     <details name="faq" data-rise>
-      <summary><span data-l="en">Can I change how windows move?</span><span data-l="ja">動き方は変えられますか？</span></summary>
-      <p><span data-l="en">Yes. Pick Standard, Crisp, Smooth or Bouncy, or set mass, natural frequency, damping ratio and magnet strength yourself. The page above uses the same model.</span><span data-l="ja">変えられます。標準・きびきび・なめらか・はずむから選ぶか、質量・固有振動数・減衰比・磁石の強さを自分で決めてください。このページのデモも同じモデルです。</span></p>
+      <summary><span data-l="en">Can I change how windows move?</span><span data-l="ja">動き方は変えられますか？</span><span data-l="zh-hans">可以更改窗口的移动方式吗？</span><span data-l="zh-hant">可以變更視窗的移動方式嗎？</span></summary>
+      <p><span data-l="en">Yes. Pick Standard, Crisp, Smooth or Bouncy, or set mass, natural frequency, damping ratio and magnet strength yourself. The page above uses the same model.</span><span data-l="ja">変えられます。標準・きびきび・なめらか・はずむから選ぶか、質量・固有振動数・減衰比・磁石の強さを自分で決めてください。このページのデモも同じモデルです。</span><span data-l="zh-hans">可以。可选择标准、利落、顺滑或弹跳，也可以自行设置质量、固有频率、阻尼比和磁铁强度。本页上方的演示使用同一个模型。</span><span data-l="zh-hant">可以。可選擇標準、俐落、順滑或彈跳，也可以自行設定質量、固有頻率、阻尼比與磁鐵強度。本頁上方的示範使用同一個模型。</span></p>
     </details>
     <details name="faq" data-rise>
-      <summary><span data-l="en">Where do I set it up?</span><span data-l="ja">どこで設定しますか？</span></summary>
-      <p><span data-l="en">The tray icon opens a settings window with a short first-run tour. Everything can be changed there, hotkeys included.</span><span data-l="ja">トレイのアイコンから設定画面を開きます。初回は短いツアーがあります。ホットキーも含めて、すべてそこで変えられます。</span></p>
+      <summary><span data-l="en">Where do I set it up?</span><span data-l="ja">どこで設定しますか？</span><span data-l="zh-hans">在哪里设置？</span><span data-l="zh-hant">在哪裡設定？</span></summary>
+      <p><span data-l="en">The tray icon opens a settings window with a short first-run tour. Everything can be changed there, hotkeys included.</span><span data-l="ja">トレイのアイコンから設定画面を開きます。初回は短いツアーがあります。ホットキーも含めて、すべてそこで変えられます。</span><span data-l="zh-hans">点击托盘图标会打开设置窗口，首次运行时有简短的引导。包括快捷键在内，所有内容都可以在那里更改。</span><span data-l="zh-hant">按一下系統匣圖示會開啟設定視窗，首次執行時有簡短的導覽。包括快速鍵在內，所有內容都可以在那裡變更。</span></p>
     </details>
   </div>
 </section>
@@ -346,15 +359,15 @@
 <footer class="foot">
   <div class="foot-brand">
     <span class="wordmark wordmark-lg">Snapwell</span>
-    <p class="soft"><span data-l="en">A window manager for Windows 11.</span><span data-l="ja">Windows 11 のウィンドウマネージャー。</span></p>
+    <p class="soft"><span data-l="en">A window manager for Windows 11.</span><span data-l="ja">Windows 11 のウィンドウマネージャー。</span><span data-l="zh-hans">Windows 11 的窗口管理器。</span><span data-l="zh-hant">Windows 11 的視窗管理員。</span></p>
   </div>
-  <nav class="foot-links" data-aria-en="Project" data-aria-ja="プロジェクト" aria-label="Project">
+  <nav class="foot-links" data-aria-en="Project" data-aria-ja="プロジェクト" data-aria-zh-hans="项目" data-aria-zh-hant="專案" aria-label="Project">
     <a href="https://github.com/tabunugoku/Snapwell"><svg class="gh" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>GitHub</a>
-    <a href="https://github.com/tabunugoku/Snapwell/issues"><span data-l="en">Issues</span><span data-l="ja">Issues（不具合と要望）</span></a>
-    <a href="https://github.com/tabunugoku/Snapwell/blob/main/LICENSE"><span data-l="en">MIT License</span><span data-l="ja">MIT ライセンス</span></a>
-    <a href="https://github.com/tabunugoku/Snapwell/blob/main/THIRD_PARTY_NOTICES.md"><span data-l="en">Third-party notices</span><span data-l="ja">サードパーティーのライセンス表示</span></a>
+    <a href="https://github.com/tabunugoku/Snapwell/issues"><span data-l="en">Issues</span><span data-l="ja">Issues（不具合と要望）</span><span data-l="zh-hans">Issues（问题与建议）</span><span data-l="zh-hant">Issues（問題與建議）</span></a>
+    <a href="https://github.com/tabunugoku/Snapwell/blob/main/LICENSE"><span data-l="en">MIT License</span><span data-l="ja">MIT ライセンス</span><span data-l="zh-hans">MIT 许可证</span><span data-l="zh-hant">MIT 授權</span></a>
+    <a href="https://github.com/tabunugoku/Snapwell/blob/main/THIRD_PARTY_NOTICES.md"><span data-l="en">Third-party notices</span><span data-l="ja">サードパーティーのライセンス表示</span><span data-l="zh-hans">第三方许可声明</span><span data-l="zh-hant">第三方授權聲明</span></a>
   </nav>
-  <p class="foot-end soft">2026 · <span data-l="en">Motion by</span><span data-l="ja">動きは</span> <a href="https://github.com/diip3sh/feel">feel</a><span data-l="ja"> をもとにしています</span> · <button class="text-btn" type="button" id="introReplay"><span data-l="en">Replay intro</span><span data-l="ja">オープニングをもう一度見る</span></button></p>
+  <p class="foot-end soft">2026 · <span data-l="en">Motion by</span><span data-l="ja">動きは</span><span data-l="zh-hans">动效源自</span><span data-l="zh-hant">動效源自</span> <a href="https://github.com/diip3sh/feel">feel</a><span data-l="ja"> をもとにしています</span> · <button class="text-btn" type="button" id="introReplay"><span data-l="en">Replay intro</span><span data-l="ja">オープニングをもう一度見る</span><span data-l="zh-hans">重看开场</span><span data-l="zh-hant">重看開場</span></button></p>
 </footer>
 
 <script src="js/feel.js"></script>
