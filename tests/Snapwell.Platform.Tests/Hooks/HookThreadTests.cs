@@ -544,9 +544,9 @@ public sealed class HookThreadTests
         Assert.True(hooks.Stop());
     }
 
-    /// <summary>キーボードが生きていても、カーソルが動いたのにマウスのコールバックが来なければ張り直す。</summary>
+    /// <summary>キーボードが生きていても、カーソルが動いたのにマウスのコールバックが来ない状態が続けば張り直す。</summary>
     [Fact]
-    public void CursorMovedWithSilentMouseHookRehooksEvenWhileKeyboardIsAlive()
+    public void CursorMovedWithSilentMouseHookRehooksOnlyWhenItPersists()
     {
         using var api = new FakeHookApi();
         using var hooks = new HookThread(new HotkeyMatcher(), 8, api);
@@ -556,13 +556,47 @@ public sealed class HookThreadTests
         api.TickCount = now + 2_000;
         api.LastInputTick = now;
         hooks.CheckHealth();
-        // 次の観測までにカーソルが動いたが、マウスのコールバックはない。キーボードは来ている。
-        api.TickCount = now + 4_000;
-        api.CursorX = 50;
-        api.LastInputTick = now + 4_000;
-        hooks.TouchKeyboard();
-        hooks.CheckHealth();
+        // 以降の観測ごとにカーソルが動き、OS も入力を見たが、マウスのコールバックはない。キーボードは来ている。
+        for (var i = 1; i <= HookThread.MouseSilentPolls; i++)
+        {
+            Assert.Equal(0, api.PostRehookCount);
+            api.TickCount = (uint)(now + 2_000 + (i * 2_000));
+            api.CursorX = 50 * i;
+            api.LastInputTick = api.TickCount;
+            hooks.TouchKeyboard();
+            hooks.CheckHealth();
+        }
+
         Assert.Equal(1, api.PostRehookCount);
+        Assert.True(hooks.Stop());
+    }
+
+    /// <summary>タッチ・ペンのように、途中で途切れる操作では疑わない。マウスが一度でも届けば数え直す。</summary>
+    [Fact]
+    public void BrokenStreakOfSilentMouseIsNotSuspicious()
+    {
+        using var api = new FakeHookApi();
+        using var hooks = new HookThread(new HotkeyMatcher(), 8, api);
+        Assert.True(hooks.Start());
+        var now = api.TickCount;
+        api.TickCount = now + 2_000;
+        api.LastInputTick = now;
+        hooks.CheckHealth();
+        for (var i = 1; i <= HookThread.MouseSilentPolls * 3; i++)
+        {
+            api.TickCount = (uint)(now + 2_000 + (i * 2_000));
+            api.CursorX = 50 * i;
+            api.LastInputTick = api.TickCount;
+            // 3 回ごとに、マウスのコールバックが届く。
+            if (i % 3 == 0)
+            {
+                hooks.TouchMouse();
+            }
+
+            hooks.CheckHealth();
+        }
+
+        Assert.Equal(0, api.PostRehookCount);
         Assert.True(hooks.Stop());
     }
 

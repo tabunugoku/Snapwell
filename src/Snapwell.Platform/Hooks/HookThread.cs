@@ -76,6 +76,10 @@ public sealed class HookThread : IDisposable
     private int _cursorX;
     private int _cursorY;
     private uint _previousPollTick;
+    private int _mouseSilentStreak;
+
+    /// <summary>マウスが黙っている証拠が、この回数だけ続けて確認の間隔ごとに成り立ったら疑う。</summary>
+    internal const int MouseSilentPolls = 3;
     private HookRehookReport _rehookDetail;
     private int _rehookCount;
     private int _mouseTracking;
@@ -341,7 +345,7 @@ public sealed class HookThread : IDisposable
             var lastInput = _api.TryGetLastInputTick(out var tick) ? tick : lastHook;
 
             // 疑いの根拠は、種類ごとの証拠だけにする。OS の最後の入力とコールバックの時刻の食い違いは使わない:
-            // タッチ・ペン・タッチパッドの操作は OS の最後の入力を進めるがフックを呼ばず、通常の操作で誤検知した。
+            // 通常の操作中に、OS の入力だけが進んでフックが呼ばれない場面があり、誤検知した（実機の app.log）。
             // キーボード: 繰り返しのあるキーが猶予より長く押されているのに、コールバックが来ない。
             // OS の入力がキーボードのコールバックより新しいときだけ、全キーを調べる（静かな間の無駄なシステムコールを避ける）。
             var keyboardSilent = HookTicks.Diff(now, keyboard) > HookRehookPolicy.InputGraceMs &&
@@ -349,7 +353,6 @@ public sealed class HookThread : IDisposable
                 _api.IsNonModifierKeyDown();
             // マウス: 前回の観測からカーソルが動き、OS も入力を見たのに、その間にコールバックが一度も来ない。
             // SetCursorPos はカーソルを動かしても OS の最後の入力にならないので、それだけでは疑わない。
-            // タッチ・ペンがカーソルを動かすときにこの証拠が誤検知しないかは、実機で確認する（MANUAL_TEST.md）。
             var cursorMoved = false;
             if (_api.TryGetCursorPosition(out var x, out var y))
             {
@@ -357,8 +360,12 @@ public sealed class HookThread : IDisposable
                 (_hasCursor, _cursorX, _cursorY) = (true, x, y);
             }
 
-            var mouseSilent = cursorMoved && HookTicks.Diff(mouse, _previousPollTick) < 0 &&
+            var mouseSilentNow = cursorMoved && HookTicks.Diff(mouse, _previousPollTick) < 0 &&
                 HookTicks.Diff(lastInput, _previousPollTick) > 0;
+            // タッチ・ペンはカーソルを動かし OS の入力を進めるが、フックを呼ばない (実機で 1 回誤検知した)。
+            // 本物のマウスが一度でも届けば途切れるので、連続して成り立つときだけ疑う。
+            _mouseSilentStreak = mouseSilentNow ? _mouseSilentStreak + 1 : 0;
+            var mouseSilent = _mouseSilentStreak >= MouseSilentPolls;
             _previousPollTick = now;
 
             var gap = HookTicks.Diff(lastInput, lastHook);
