@@ -40,12 +40,10 @@ public enum HookRehookReason
 /// フックが呼ばれない場面があった（実機の app.log。入力の機器は特定していない。タッチ・ペン・タッチパッドを疑う）。
 /// 昇格したウィンドウへの入力のようにフックに届かない正常な場合にも疑うため、疑いによる張り直しには
 /// 指数バックオフをかける。疑いが一定時間なくなったらバックオフを戻す。
+/// 同じフックが QuietResetMs 以内に外され直すと、再検知はバックオフ（最大 MaxBackoffMs）まで遅れる。
 /// </remarks>
 public sealed class HookRehookPolicy
 {
-    /// <summary>コールバックがこれ以上来ていないことを、片方のフックが黙っている証拠の前提にする。</summary>
-    public const uint InputGraceMs = 1500;
-
     /// <summary>どの理由でも、張り直しの間隔の下限。連打を避ける。</summary>
     public const uint MinIntervalMs = 3000;
 

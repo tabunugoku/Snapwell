@@ -62,8 +62,12 @@ public sealed class HookRehookPolicyTests
         // 静かな期間が過ぎたら戻る。10 秒後の疑いで張り直せる（戻っていなければ 20 秒待たされる）。
         var quiet = second + HookRehookPolicy.QuietResetMs;
         Assert.Equal(HookRehookReason.None, policy.Evaluate(quiet, hookSilent: false));
-        var third = quiet + HookRehookPolicy.InitialBackoffMs;
+        // 戻ったあとは、最小の間隔 (3 秒) の次の疑いで張り直せる。
+        var third = quiet + HookRehookPolicy.MinIntervalMs;
         Assert.Equal(HookRehookReason.InputMismatch, policy.Evaluate(third, hookSilent: true));
+        // 戻したあとの最初の疑いなので、バックオフは最初 (10 秒) から数え直す。
+        Assert.Equal(HookRehookReason.None,
+            policy.Evaluate(third + HookRehookPolicy.InitialBackoffMs - 1, hookSilent: true));
     }
 
     /// <summary>管理者権限のウィンドウのように、片方が黙り続けて証拠が途切れ途切れに出る場面でも、間隔が縮まない。</summary>

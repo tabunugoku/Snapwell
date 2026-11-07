@@ -52,16 +52,12 @@ internal sealed class HookService : IHookService
         _hooks = hooks;
         _log = log;
         // 張り直しは稀で、原因の調査に要る。端末内の app.log にだけ残す。呼び出しはフックのスレッドの外。
-        hooks.Rehooked += report => _log.Error(new InvalidOperationException(
-            // i18n-keep: 画面に出さない開発者向けの例外・ログ。
-            $"低レベルフックを張り直した (理由={report.Reason}、成功={report.Succeeded}、{report.Count} 回目、" +
-            // i18n-keep: 同上。
-            $"証拠={report.Evidence}、OS の入力とフックの差={report.GapMs}ms、" +
-            // i18n-keep: 同上。
-            $"キーボードの無音={report.SinceKeyboardMs}ms、マウスの無音={report.SinceMouseMs}ms、" +
-            // i18n-keep: 同上。
-            $"OS の入力からの経過={report.SinceInputMs}ms、バックオフ={report.BackoffMs}ms)。"));
+        hooks.Rehooked += report => _log.Error(new InvalidOperationException(Describe(report)));
     }
+
+    private static string Describe(HookRehookReport report) =>
+        // i18n-keep: 画面に出さない開発者向けの例外・ログ。
+        $"低レベルフックを張り直した (理由={report.Reason}、成功={report.Succeeded}、{report.Count} 回目、証拠={report.Evidence}、OS の入力とフックの差={report.GapMs}ms、キーボードの無音={report.SinceKeyboardMs}ms、マウスの無音={report.SinceMouseMs}ms、OS の入力からの経過={report.SinceInputMs}ms、バックオフ={report.BackoffMs}ms)。";
 
     /// <summary>ロック・復帰などを伝える。ウィンドウプロシージャから呼ぶので、すぐ返る。</summary>
     public void Notify(HookEnvironmentChange change) => _hooks.Notify(change);

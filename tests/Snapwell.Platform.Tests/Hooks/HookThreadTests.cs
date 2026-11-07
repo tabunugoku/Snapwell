@@ -550,6 +550,8 @@ public sealed class HookThreadTests
     {
         using var api = new FakeHookApi();
         using var hooks = new HookThread(new HotkeyMatcher(), 8, api);
+        var reports = new BlockingCollection<HookRehookReport>();
+        hooks.Rehooked += reports.Add;
         Assert.True(hooks.Start());
         var now = api.TickCount;
         // 最初の観測。カーソルの位置を覚えるだけ。
@@ -568,6 +570,33 @@ public sealed class HookThreadTests
         }
 
         Assert.Equal(1, api.PostRehookCount);
+        Assert.True(reports.TryTake(out var report, TimeSpan.FromSeconds(5)));
+        Assert.Equal(HookRehookEvidence.MouseSilent, report.Evidence);
+        Assert.True(hooks.Stop());
+    }
+
+    /// <summary>通知から呼ばれた短い間隔の余分な確認は、連続の回数に数えない。</summary>
+    [Fact]
+    public void ExtraChecksFromNotificationsDoNotCountTowardTheMouseStreak()
+    {
+        using var api = new FakeHookApi();
+        using var hooks = new HookThread(new HotkeyMatcher(), 8, api);
+        Assert.True(hooks.Start());
+        var now = api.TickCount;
+        api.TickCount = now + 2_000;
+        api.LastInputTick = now;
+        hooks.CheckHealth();
+        // 同じ 2 秒の間に、通知で 10 回確認が走る。カーソルは動き、OS も入力を見ている。
+        for (var i = 1; i <= 10; i++)
+        {
+            api.TickCount = (uint)(now + 2_000 + (i * 100));
+            api.CursorX = 50 * i;
+            api.LastInputTick = api.TickCount;
+            hooks.TouchKeyboard();
+            hooks.CheckHealth();
+        }
+
+        Assert.Equal(0, api.PostRehookCount);
         Assert.True(hooks.Stop());
     }
 
