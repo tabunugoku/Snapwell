@@ -1,4 +1,4 @@
-// 紹介動画を書き出す: node render.mjs --lang en|ja [--fps 60] [--out out] [--frames 120] [--still 6.9,12.5,...] [--poster 6.9]
+// 紹介動画を書き出す: node render.mjs --lang en|ja|zh-hans|zh-hant [--fps 60] [--out out] [--frames 120] [--still 6.9,12.5,...] [--poster 6.9]
 // 映像 (無音の mp4 と webm)、ポスター、効果音のきっかけ cues.json を out/<lang>/ に作る。音は README の手順で足す。
 // feel の物理モデルを偽の時計で進め、1 コマずつ画面を撮り、ffmpeg で mp4 と webm にまとめる。
 // --still: 動画は作らず、指定した秒の静止画だけを out/<lang>/stills/ に書く (場面の確認用。時計は進めるが撮るのは指定の秒だけ)。
@@ -11,7 +11,7 @@ import { spawnSync } from 'node:child_process';
 const here = dirname(fileURLToPath(import.meta.url));
 const arg = (name, def) => { const i = process.argv.indexOf(`--${name}`); return i > 0 ? process.argv[i + 1] : def; };
 const lang = arg('lang', 'en');
-if (!['en', 'ja'].includes(lang)) throw new Error('--lang は en か ja');
+if (!['en', 'ja', 'zh-hans', 'zh-hant'].includes(lang)) throw new Error('--lang は en・ja・zh-hans・zh-hant');
 const fps = Number(arg('fps', 60));
 const out = resolve(arg('out', resolve(here, 'out')), lang);
 const only = arg('frames', null); // 試し撮り: 先頭の枚数だけ撮る (mp4 などは作らない)
