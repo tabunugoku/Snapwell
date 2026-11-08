@@ -1,23 +1,28 @@
 #!/usr/bin/env bash
 # 使い方: .claude/codex/run-agy-exec.sh <worktree> <prompt.md> <出力フォルダ> [model]
+# model の既定は gemini-3.8-flash-high。gemini-4-argon-high は利用者が指示したときだけ、明示して使う (.claude/guides/implementers.md)。
 # Antigravity CLI (agy) のヘッドレスで Gemini に実装させる。run-codex-exec.sh と同じく
 # Claude Code の Bash の run_in_background で起動し、出力フォルダの last.json にコミット計画を書く。
 # 許可は ~/.gemini/antigravity-cli/settings.json の permissions.allow の command(regex:dotnet build .*) だけ。
 # 許可の外のコマンドを出すと、その時点で何も返さずに終わる (agy-preamble.md で避けさせる)。
 set -u
-W="$1"; P="$2"; OUT="$3"; MODEL="${4:-gemini-4-argon-high}"
+W="$1"; P="$2"; OUT="$3"; MODEL="${4:-gemini-3.8-flash-high}"
 HERE="$(cd "$(dirname "$0")" && pwd)"
 AGY="${AGY:-$(cygpath "$LOCALAPPDATA")/agy/bin/agy.exe}"
-mkdir -p "$OUT"
-cat "$HERE/agy-preamble.md" "$P" > "$OUT/prompt.md"
+# 出力フォルダは絶対パスにする (下の cd のあとでも同じ場所を指すため)
+mkdir -p "$OUT" && OUT="$(cd "$OUT" && pwd)" || { echo "cannot prepare output folder" >&2; exit 2; }
+cat "$HERE/agy-preamble.md" "$P" > "$OUT/prompt.md" || { echo "cannot assemble prompt" >&2; exit 2; }
 # プロンプトはコマンドラインの引数で渡すので、Windows の上限 (32767 字) に収める
 if [ "$(wc -m < "$OUT/prompt.md")" -gt 30000 ]; then
   echo "prompt too long: $(wc -m < "$OUT/prompt.md") chars" >&2; exit 2
 fi
+# cd の前にプロンプトを読む。空なら古い prompt.md を渡さずに止める
+PROMPT="$(cat "$OUT/prompt.md")"
+[ -n "$PROMPT" ] || { echo "empty prompt" >&2; exit 2; }
 start=$(date +%s)
 export DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1 DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
 # accept-edits でファイルの編集だけを自動で許可する。--sandbox で端末の操作を制限する
-(cd "$W" && "$AGY" -p "$(cat "$OUT/prompt.md")" --model "$MODEL" --mode accept-edits --sandbox \
+(cd "$W" && "$AGY" -p "$PROMPT" --model "$MODEL" --mode accept-edits --sandbox \
   --output-format json --json-schema "$HERE/commit-plan.schema.json" --print-timeout 60m) \
   > "$OUT/result.json" 2> "$OUT/stderr.log"
 code=$?

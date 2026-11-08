@@ -14,6 +14,12 @@ if (plan.shared_files.length) {
   console.error('shared_files があるので止める:', plan.shared_files.map((f) => f.path).join(', '));
   process.exit(2);
 }
+// すでにステージされた変更があると、git commit が項目の範囲を越えてまとめてコミットする
+const staged = git('diff', '--cached', '--name-only').split('\n').filter(Boolean);
+if (staged.length) {
+  console.error('ステージ済みの変更があるので止める (git restore --staged で戻す):', staged.join(', '));
+  process.exit(4);
+}
 const changed = new Set(git('status', '--porcelain', '-uall').split('\n').filter(Boolean).map((l) => l.slice(3)));
 const planned = plan.items.flatMap((item) => item.files);
 const missing = [...changed].filter((path) => !planned.includes(path));
@@ -26,5 +32,11 @@ for (const item of plan.items) {
   if (dryRun) continue;
   git('add', '--', ...item.files);
   git('commit', '-q', '-m', item.message + trailer);
+  const committed = git('diff-tree', '--no-commit-id', '--name-only', '-r', 'HEAD').split('\n').filter(Boolean);
+  const stray = committed.filter((path) => !item.files.includes(path));
+  if (stray.length) {
+    console.error(`${item.id}: 項目の外のファイルが入った。止める:`, stray.join(', '));
+    process.exit(5);
+  }
 }
 
