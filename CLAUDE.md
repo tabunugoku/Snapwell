@@ -61,7 +61,7 @@ Codex、Gemini、Claude Code のどれが書いても、同じ見た目にそろ
 - 1 項目 1 コミット。各コミットでビルド（両 RID）とテストが通る状態を保つ。main へのマージは、ユーザーが指示したときだけ
 - **リリースは、公開の前に、下書きの zip の `Snapwell.Settings.exe`（x64・ARM64）を起動して確かめる**。確かめるまで `--draft=false` にしない。壊れた版を公開したときは、同じ版番号を使い回さず、次の版で直すほうが安全（更新の案内が出るため）
 - 実機で確かめられないこと（フック、DWM、マルチモニター、スリープ復帰、ARM64 実機）は、`docs/MANUAL_TEST.md` に「実機未確認」のチェック項目として残す。このPCは ARM64 なので、ARM64 の実機確認はここでできる
-- 補助ツール（`.claude/`）: スキル `codex-prompt`（実装役に渡すプロンプトの作成）、サブエージェント `constraints-reviewer`（「守ること」だけの点検）、`codex/` に実装役の起動（Codex は `run-codex-exec.sh`、Gemini は `run-agy-exec.sh`）とコミット計画の適用のスクリプト、`tools/launch-with-dbg.ps1`（exe を起動してデバッグ出力を表示する。XAML の解析失敗の原因のキーが分かる）
+- 補助ツール（`.claude/`）: スキル `codex-prompt`（実装役に渡すプロンプトの作成）、サブエージェント `constraints-reviewer`（「守ること」だけの点検）、`codex/` に実装役の起動（Codex は `run-codex-exec.sh`、Gemini は `run-agy-exec.sh`）とコミット計画の適用のスクリプト（直したら `bash .claude/codex/check-scripts.sh` で回帰を確かめる）、`tools/launch-with-dbg.ps1`（exe を起動してデバッグ出力を表示する。XAML の解析失敗の原因のキーが分かる）
 
 ## 実装役（Codex・Gemini）との分担
 実装役の割り当て、`/codex-prompt`、PR を作るときは `.claude/guides/implementers.md` を読む。

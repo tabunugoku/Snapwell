@@ -18,9 +18,9 @@ CLAUDE.md から移した。実装役の割り当て、`/codex-prompt`、PR を�
   1. 要件の確認（`docs/DESIGN.md`、必要ならモックアップ）
   2. 実装役を決め、`git worktree add ../Snapwell-wt/<名前> -b <codex か gemini>/<名前> origin/main` で作業のフォルダを作り、そこで `dotnet restore` をしておく（`Directory.Build.props` の `RuntimeIdentifiers` で x64 と ARM64 の両方を復元する。`-r` を付けると片方だけになるので付けない。実装役は `dotnet restore` を実行しない・できないため）
   3. `/codex-prompt` でプロンプトを書く。項目ごとに触ってよいファイルを決め、項目の間でファイルを重ねない。各項目に「受け入れ条件（テストで確かめる）」と「競合・境界の観点」を書き、最後の応答をコミット計画の JSON にさせる
-  4. Codex なら `.claude/codex/run-codex-exec.sh <worktree> <プロンプト> <出力フォルダ>`、Gemini なら `.claude/codex/run-agy-exec.sh <worktree> <プロンプト> <出力フォルダ> [モデル]` を、Bash の `run_in_background` で起動する。終わると通知が 1 回届くので、待つ間に状態を見に行かない（ポーリングしない）。`run-agy-exec.sh` は、拒否されたコマンド（`denied=`）があったときや結果の JSON が無いときに 0 以外で終わる
+  4. Codex なら `.claude/codex/run-codex-exec.sh <worktree> <プロンプト> <出力フォルダ>`、Gemini なら `.claude/codex/run-agy-exec.sh <worktree> <プロンプト> <出力フォルダ> [モデル]`（モデルの既定は `gemini-3.8-flash-high`）を、Bash の `run_in_background` で起動する。終わると通知が 1 回届くので、待つ間に状態を見に行かない（ポーリングしない）。`run-agy-exec.sh` は、拒否されたコマンド（`denied=`）があったときや結果の JSON が無いときに 0 以外で終わる
   5. 出力フォルダの `last.json`（コミット計画・チェックの結果・notes・manual_test）と差分を読み、ローカルでビルド（両 RID）・テスト・format を通す
-  6. `node .claude/codex/apply-commit-plan.mjs <worktree> <出力フォルダ>/last.json` で、項目ごとにコミットする（先に `--dry-run` で確かめる）。複数の項目が触ったファイルや、計画に無い変更があれば止まるので、そのときは手で分ける。push して PR を作る
+  6. `node .claude/codex/apply-commit-plan.mjs <worktree> <出力フォルダ>/last.json` で、項目ごとにコミットする（先に `--dry-run` で確かめる）。複数の項目が触ったファイル（`shared_files` が空でも、項目の `files` の重複を検出する）、ステージ済みの変更、計画に無い変更があれば止まるので、そのときは手で分ける。push して PR を作る
   7. `/codex:adversarial-review` とサブエージェント `constraints-reviewer` で見る。フォーカスの文に「指摘ごとに、マージを止めるものか後回しでよいものかを書く」を入れる。Gemini が実装した作業も、レビューは同じ手順で行う（実装したのと別のモデルに見せるため）。敵対的レビューは Codex の枠を使うので、Codex の制限中はレビューを後ろにずらし、制限の解除後にまとめて行う
   8. マージを止める指摘だけを直す（やり取りは 2 往復まで。直すのは、原則としてその作業を実装した実装役）。後回しの指摘は `docs/MANUAL_TEST.md` か、次の作業の候補に回す。採るかどうかの最後の判断は Opus が行う
   9. main へのマージ（ユーザーが指示したときだけ）→ worktree とブランチを消す

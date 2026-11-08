@@ -160,7 +160,7 @@
 | 割り当て | assignment | 分配 | 指派 | 「割り当てを外す」→ Remove／移除分配／移除指派 |
 | 未割り当て | Not assigned | 未分配 | 未指派 | |
 | 重複 | Duplicate | 重复 | 重複 | タグ |
-| ほかのアプリが使用中 | In use by another app | 已被其他应用占用 | 其他應用程式使用中 | en は状態の列 120 に収まらない見込み（`I18N.md` §8 の 10）。短い形 “In use” |
+| ほかのアプリが使用中 | In use by another app | 已被其他应用占用 | 其他應用程式使用中 | en は状態の列 120 に収まらない見込み（`I18N.md` §8 の 9）。短い形 “In use” |
 | 初回セットアップ | Setup | 初始设置 | 初始設定 | 窓のタイトル “Snapwell setup”／“Snapwell 初始设置”／“Snapwell 初始設定” |
 | ようこそ | Welcome | 欢迎 | 歡迎 | |
 | Snapwell の設定（窓のタイトル） | Snapwell settings | Snapwell 设置 | Snapwell 設定 | |
