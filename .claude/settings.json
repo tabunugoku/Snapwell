@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bash .claude/codex/run-codex-exec.sh:*)",
+      "Bash(.claude/codex/run-codex-exec.sh:*)",
+      "Bash(bash .claude/codex/run-agy-exec.sh:*)",
+      "Bash(.claude/codex/run-agy-exec.sh:*)",
+      "Bash(node .claude/codex/apply-commit-plan.mjs:*)",
+      "Bash(git worktree:*)",
+      "Bash(dotnet restore:*)",
+      "Bash(dotnet build:*)",
+      "Bash(dotnet test:*)",
+      "Bash(dotnet format:*)"
+    ]
+  }
+}

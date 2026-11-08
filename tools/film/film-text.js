@@ -93,7 +93,7 @@ window.FILM_TEXT = {
     c8h: '可攜帶的設定', c8p: '可匯出、匯入，或透過您選擇的資料夾同步。',
     endh: '甩出視窗，吸附到位。', endp: 'Windows 11 視窗管理員 · x64 與 ARM64 原生版', endu: 'tabunugoku.github.io/Snapwell',
     rFeel: '手感', rSpeed: '放開時的速度', rZone: '吸附目標',
-    feel: { standard: '標準', crisp: '俐落', smooth: '順滑', bouncy: '彈跳' },
+    feel: { standard: '標準', crisp: '俐落', smooth: '滑順', bouncy: '彈跳' },
     zones: ['左上', '上中', '右上', '左下', '下中', '右下'],
     wins: ['筆記', '相片', '郵件', '小算盤'],
     lDrag: '在網格上拖曳', lCells: (c, r) => `${c} × ${r} 格`,
