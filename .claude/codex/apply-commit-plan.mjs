@@ -14,6 +14,17 @@ if (plan.shared_files.length) {
   console.error('shared_files があるので止める:', plan.shared_files.map((f) => f.path).join(', '));
   process.exit(2);
 }
+// shared_files は計画の自己申告なので、items の files そのものから複数の項目に属するパスを数える
+const owners = new Map();
+for (const item of plan.items) {
+  for (const path of item.files) owners.set(path, [...(owners.get(path) ?? []), item.id]);
+}
+const duplicated = [...owners].filter(([, ids]) => ids.length > 1);
+if (duplicated.length) {
+  console.error('複数の項目に属するファイルがあるので止める:',
+    duplicated.map(([path, ids]) => `${path} (${ids.join(', ')})`).join(', '));
+  process.exit(6);
+}
 // すでにステージされた変更があると、git commit が項目の範囲を越えてまとめてコミットする
 const staged = git('diff', '--cached', '--name-only').split('\n').filter(Boolean);
 if (staged.length) {

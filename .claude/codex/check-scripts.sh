@@ -23,8 +23,21 @@ node "$HERE/apply-commit-plan.mjs" "$R" "$T/plan.json" >/dev/null 2>&1; code=$?
 { [ $code -eq 4 ] && [ "$(git -C "$R" rev-parse HEAD)" = "$before" ]; } \
   && ok "staged later item: stopped without committing" || ng "staged later item (exit=$code)"
 
-# ステージが空なら、項目ごとに自分のファイルだけがコミットされる
+# shared_files が空でも、複数の項目に同じファイルがある計画は、dry-run も含めて何も変えずに止める
+echo c > "$R/common.txt"; echo a2 > "$R/a2.txt"; echo b2 > "$R/b2.txt"
+cat > "$T/dup.json" <<'JSON'
+{"shared_files":[],"items":[{"id":"A","message":"a","files":["common.txt","a2.txt"]},{"id":"B","message":"b","files":["common.txt","b2.txt"]}]}
+JSON
 git -C "$R" restore --staged b.txt
+before="$(git -C "$R" rev-parse HEAD)"
+node "$HERE/apply-commit-plan.mjs" "$R" "$T/dup.json" --dry-run >/dev/null 2>&1; dcode=$?
+node "$HERE/apply-commit-plan.mjs" "$R" "$T/dup.json" >/dev/null 2>&1; code=$?
+{ [ $dcode -eq 6 ] && [ $code -eq 6 ] && [ "$(git -C "$R" rev-parse HEAD)" = "$before" ] \
+  && [ -z "$(git -C "$R" diff --cached --name-only)" ]; } \
+  && ok "duplicate path across items: rejected (dry-run too)" || ng "duplicate path (dry-run=$dcode, run=$code)"
+rm -f "$R/common.txt" "$R/a2.txt" "$R/b2.txt"
+
+# ステージが空なら、項目ごとに自分のファイルだけがコミットされる
 node "$HERE/apply-commit-plan.mjs" "$R" "$T/plan.json" >/dev/null 2>&1; code=$?
 { [ $code -eq 0 ] && [ "$(git -C "$R" show --name-only --format= HEAD~1)" = "a.txt" ] \
   && [ "$(git -C "$R" show --name-only --format= HEAD)" = "b.txt" ]; } \
