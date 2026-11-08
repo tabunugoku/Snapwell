@@ -45,7 +45,7 @@
   "General.Startup.TaskFailed": "无法注册到任务计划程序。",
   "General.Startup.AdminNextSignIn": "下次登录时将以管理员身份启动。",
   "General.Startup.Failed": "无法读写自动启动注册信息。请检查访问权限。",
-  "General.Language.Future": "设备状态来自更新的版本，无法更改语言。请更新 Snapwell。",
+  "General.Language.Future": "此电脑的设置由更新的版本保存，无法更改语言。请更新 Snapwell。",
   "General.Language.SaveFailed": "无法保存语言。请检查文件位置和访问权限。",
   "Language.Auto": "自动（跟随系统）",
   "Language.Japanese": "日本語",

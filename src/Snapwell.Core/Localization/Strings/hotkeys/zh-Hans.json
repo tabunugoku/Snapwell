@@ -99,6 +99,6 @@
   "Hotkeys.Capture.Cancel": "取消",
   "Hotkeys.Capture.NameSeparator": "”“",
   "Hotkeys.Capture.DuplicateMessage": "{chord} 也分配给了“{names}”。",
-  "Hotkeys.Capture.InUseMessage": "{chord} 已被其他应用或 Windows 使用。分配后，该应用将无法使用此按键。Windows 保留的按键可能无法传给 Snapwell。",
+  "Hotkeys.Capture.InUseMessage": "{chord} 已被其他应用或 Windows 使用。分配后，该应用可能无法再使用此按键。Windows 保留的按键可能无法传给 Snapwell。",
   "Hotkeys.Capture.Announcement": "{name}：{text}"
 }

@@ -171,7 +171,7 @@ public sealed class FeelPageSourceTests
     [InlineData(UiLanguage.Japanese, "標準", "きびきび", "なめらか", "はずむ")]
     [InlineData(UiLanguage.English, "Standard", "Crisp", "Smooth", "Bouncy")]
     [InlineData(UiLanguage.ChineseSimplified, "标准", "利落", "顺滑", "弹跳")]
-    [InlineData(UiLanguage.ChineseTraditional, "標準", "俐落", "順滑", "彈跳")]
+    [InlineData(UiLanguage.ChineseTraditional, "標準", "俐落", "滑順", "彈跳")]
     public void PresetNamesAreLocalized(UiLanguage language, string standard, string crisp, string smooth, string bouncy)
     {
         var catalog = TextCatalog.Load(language);

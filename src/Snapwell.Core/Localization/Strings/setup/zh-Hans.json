@@ -33,7 +33,7 @@
   "Setup.Grid.NotSelected": "未选择",
   "Setup.Grid.Gap": "窗口间距",
   "Setup.Grid.GapName": "窗口间距（px）",
-  "Setup.Plan.8x8": "推荐。可二分之一和四分之一。",
+  "Setup.Plan.8x8": "推荐。适合二分之一和四分之一。",
   "Setup.Plan.12x6": "也支持三分之一和三分之二。",
   "Setup.Plan.6x4": "格较大，便于快速布局。",
   "Setup.Error.Load": "无法读取或写入设置。请检查文件位置、访问权限和 Snapwell 版本，然后重新打开初始设置。",

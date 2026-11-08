@@ -45,7 +45,7 @@
   "General.Startup.TaskFailed": "無法註冊到工作排程器。",
   "General.Startup.AdminNextSignIn": "下次登入時將以系統管理員身分啟動。",
   "General.Startup.Failed": "無法讀寫自動啟動註冊資訊。請檢查存取權限。",
-  "General.Language.Future": "裝置狀態來自較新的版本，無法變更語言。請更新 Snapwell。",
+  "General.Language.Future": "這台電腦的設定由較新的版本儲存，無法變更語言。請更新 Snapwell。",
   "General.Language.SaveFailed": "無法儲存語言。請檢查檔案位置與存取權限。",
   "Language.Auto": "自動（依照系統）",
   "Language.Japanese": "日本語",
